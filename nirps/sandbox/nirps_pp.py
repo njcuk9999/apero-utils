@@ -1,8 +1,9 @@
 import numpy as np
 from astropy.io import fits
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import os
 from scipy.ndimage import zoom
+import glob
 
 def med32(im):
     # input image MUST be 4096x4096
@@ -57,7 +58,7 @@ def medbin(im,bx,by):
     out = np.nanmedian(np.nanmedian(im.reshape([bx,sz[0]//bx,by, sz[1]//bx]), axis=1), axis=2)
     return out
 
-if not os.path.isfile('mask.fits'):
+def mk_mask():
     # creation of the mask image
     im_flat = 'SIMU_NIRPS_HA_3f(flat_flat).fits'
     im = fits.getdata(im_flat)
@@ -94,34 +95,61 @@ if not os.path.isfile('mask.fits'):
 
     fits.writeto('mask.fits',np.array(mask,dtype = int), overwrite = True)
 
+    return []
 
-file = '20200207143909_HA_FP_FP.fits'
-im = fits.getdata(file)
+def nirps_pp(files):
+    if type(files) == str:
+        files = glob.glob(files)
 
-mask = np.array(fits.getdata('mask.fits'),dtype = bool)
+    for file in files:
+        outname = '_pp.'.join(file.split('.'))
 
-im2 = np.array(im)
-im2[mask] = np.nan
+        if '_pp.' in file:
+            print(file+' is a _pp file')
+            continue
 
-fits.writeto('test1.fits',im2,overwrite = True)
+        if os.path.isfile(outname):
+            print('File : '+outname +' exisits')
+            continue
+        else:
+            print('We pre-process '+file)
 
-# we find the low level frequencies
-# we bin in regions of 32x32 pixels. This CANNOT be
-# smaller than the order footprint on the array
-# as it would lead to a set of NaNs in the downsized
-# image and chaos afterward
-binsize = 32 # pixels
+            hdr = fits.getheader(file)
+            im = fits.getdata(file)
 
-# median-bin and expand back to original size
-lowf = zoom(medbin(im2,binsize,binsize),4096//binsize)
+            mask = np.array(fits.getdata('mask.fits'),dtype = bool)
 
-# subtract low-frequency from masked image
-im2 -= lowf
+            im2 = np.array(im)
+            im2[mask] = np.nan
 
-# find the amplifier x-talk map
-xtalk = med32(im2)
+            # we find the low level frequencies
+            # we bin in regions of 32x32 pixels. This CANNOT be
+            # smaller than the order footprint on the array
+            # as it would lead to a set of NaNs in the downsized
+            # image and chaos afterward
+            binsize = 32 # pixels
 
-# subtract both low-frequency and x-talk from input image
-im -= (lowf+xtalk)
+            # median-bin and expand back to original size
+            lowf = zoom(medbin(im2,binsize,binsize),4096//binsize)
 
-fits.writeto('test2.fits',im,overwrite = True)
+            # subtract low-frequency from masked image
+            im2 -= lowf
+
+            # find the amplifier x-talk map
+            xtalk = med32(im2)
+            im2 -= xtalk
+
+            # subtract both low-frequency and x-talk from input image
+            im -= (lowf+xtalk)
+
+            tmp = np.nanmedian(im2,axis=0)
+
+            im -= np.tile(tmp, 4096).reshape(4096, 4096)
+
+            # rotates the image so that it matches the order geometry of SPIRou and HARPS
+            # redder orders at the bottom and redder wavelength within each order on the left
+            im = np.rot90(im[::-1,::],1)
+
+            fits.writeto(outname,im,hdr,overwrite = True)
+
+    return []
