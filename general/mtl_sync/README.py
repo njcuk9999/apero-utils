@@ -1,10 +1,10 @@
-Montreal APERO data sync
+Montreal APERO data sync (apero_mtl_sync.py)
 
 ===============================================
 Options are:
 ===============================================
 
---name={NAME}       Change the directory name (i.e. {DATA_DIR})
+--name={NAME}       Change the directory name (i.e. mini_data_0_6_037)
 
 --exclude           Night directories to exclude (separated by commas NO SPACES)
                     If spaces required use strings i.e.
@@ -30,7 +30,7 @@ Options are:
                     be run when not in debug mode
 
 --instrument        Change the instrument to download for (Default: SPIROU)
-                    Must be one of the following {INSTRUMENT}
+                    Must be one of the following SPIROU, NIRPS_HA
 
 --help / -h         Display this help message
 
@@ -46,7 +46,7 @@ REDUCED             Download all reduced data
 CALIBDB             Download all calibration data (from calibDB)
 TELLUDB             Download all telluric data (from telluDB)
 
-Individual recipes
+Individual recipes (Warning these require APERO to be installed to use)
 
 PP                  Download outputs for cal_preprocessing
 BAD                 Download outputs for cal_badpix
@@ -71,9 +71,9 @@ Examples:
 ===============================================
 
 The following example would download all calibration and telluric files
-    for {DATA_DIR}  (in debug mode) - prints only rsync command
+    for mini_data_0_6_037  (in debug mode) - prints only rsync command
     
->> mtl_sync.py --debug --name={DATA_DIR} CALIBDB TELLUDB
+>> apero_mtl_sync.py --debug --name=mini_data_0_6_037 CALIBDB TELLUDB
 
 --------------------------------------------------------------------------------
 
@@ -81,28 +81,28 @@ The following example would download all extracted and ccf outputs
     for mini_data_0_6_037 in night directories 2019-04-20 and 2019-04-19
     in test mode (runs rsync but does not copy files)
     
->> mtl_sync.py --test --name={DATA_DIR} --include='2019-04-20,2019-04-19' EXT CCF 
+>> apero_mtl_sync.py --test --name=mini_data_0_6_037 --include='2019-04-20,2019-04-19' EXT CCF 
 
 --------------------------------------------------------------------------------
 
 The following example would download badpix outputs
-    for {DATA_DIR} except for night directories 2019-02-20 and 2019-02-19
+    for mini_data_0_6_037 except for night directories 2019-02-20 and 2019-02-19
     in test mode (runs rsync but does not copy files)
     
->> mtl_sync.py --test --name={DATA_DIR} --exclude='2019-04-20,2019-04-19' BAD 
+>> apero_mtl_sync.py --test --name=mini_data_0_6_037 --exclude='2019-04-20,2019-04-19' BAD 
 
 --------------------------------------------------------------------------------
 
 The following example would download all raw data for 2019-04-20
 
->> mtl_sync.py --test --name={DATA_DIR} --include=2019-04-20 RAW
+>> apero_mtl_sync.py --test --name=mini_data_0_6_037 --include=2019-04-20 RAW
 
 --------------------------------------------------------------------------------
 
 The following example would download all e2ds_AB files from the reduced directory
-    for {DATA_DIR} in the night directory 2019-04-20
+    for mini_data_0_6_037 in the night directory 2019-04-20
     in test mode (runs rsync but does not copy files)
 
->> mtl_sync.py --test --name={DATA_DIR} --suffix=e2ds_AB --include=2019-04-20 REDUCED
+>> apero_mtl_sync.py --test --name=mini_data_0_6_037 --suffix=e2ds_AB --include=2019-04-20 REDUCED
 
 --------------------------------------------------------------------------------
