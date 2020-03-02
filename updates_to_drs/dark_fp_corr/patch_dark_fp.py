@@ -84,6 +84,11 @@ for fic_AB in all_files:
     for iord in np.arange(49):
         # scale the leakage for that order to the observed amplitude of
         sci_AB[iord] -= master_AB[iord]/ratio[iord]
+        
+    # to be kept in the header as a measure of FP versus science flux ratio
+    ratio_leak = np.zeros(49)
+    for iord in np.arange(49):
+        ratio_leak[iord] = np.nanpercentile(sci_C[iord],90)/np.nanmedian(sci_AB[iord])
 
     # overwrite the AB file with the corrected from
     fits.writeto('x_'+fic_AB,sci_AB,hdr,overwrite = True)
