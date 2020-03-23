@@ -5,6 +5,28 @@ import os
 from scipy.ndimage import zoom
 import glob
 
+def rot8(im,nrot):
+    """
+    Rotation of a 2d image with the 8 possible geometries. Rotation 0-3
+    do not flip the image, 4-7 perform a flip
+
+    nrot = 0 -> same as input
+    nrot = 1 -> 90deg counter-clock-wise
+    nrot = 2 -> 180deg
+    nrot = 3 -> 90deg clock-wise
+    nrot = 4 -> flip top-bottom
+    nrot = 5 -> flip top-bottom and rotate 90 deg counter-clock-wise
+    nrot = 6 -> flip top-bottom and rotate 180 deg
+    nrot = 7 -> flip top-bottom and rotate 90 deg clock-wise
+    nrot >=8 -> performs a modulo 8 anyway
+
+    :param im: input image
+    :param nrot: integer between 0 and 7
+    :return: rotated and/or flipped image
+    """
+    nrot = int(nrot % 8)
+    return np.rot90( im[::1-2*(nrot//4)],nrot % 4 )
+
 def med32(im):
     # input image MUST be 4096x4096
     # and have 32 amplifiers with a mirror
@@ -98,6 +120,9 @@ def mk_mask():
     return []
 
 def nirps_pp(files):
+
+    ref_hdr = fits.getheader('ref_hdr.fits')
+
     if type(files) == str:
         files = glob.glob(files)
 
@@ -109,7 +134,7 @@ def nirps_pp(files):
             continue
 
         if os.path.isfile(outname):
-            print('File : '+outname +' exisits')
+            print('File : '+outname +' exists')
             continue
         else:
             print('We pre-process '+file)
@@ -148,8 +173,168 @@ def nirps_pp(files):
 
             # rotates the image so that it matches the order geometry of SPIRou and HARPS
             # redder orders at the bottom and redder wavelength within each order on the left
-            im = np.rot90(im[::-1,::],1)
 
-            fits.writeto(outname,im,hdr,overwrite = True)
+            # NIRPS = 5
+            # SPIROU = 3
+            im = rot8(im,5)
+
+            #DPRTYPE
+            """
+            MJDMID  =    58875.10336167315 / Mid Observation time [mjd]                     
+            BERVOBSM= 'header  '           / BERV method used to calc observation time      
+            DPRTYPE = 'FP_FP   '           / The type of file (from pre-process)            
+            PVERSION= '0.6.029 '           / DRS Pre-Processing version                     
+            DRSVDATE= '2020-01-27'         / DRS Release date                               
+            DRSPDATE= '2020-01-30 22:16:00.344' / DRS Processed date                        
+            DRSPID  = 'PID-00015804225603440424-JKBM' / The process ID that outputted this f
+            INF1000 = '2466774a.fits'      / Input file used to create output infile=0      
+            QCC001N = 'snr_hotpix'         / All quality control passed                     
+            QCC001V =    876.2474157597072 / All quality control passed                     
+            QCC001L = 'snr_hotpix < 1.00000e+01' / All quality control passed               
+            QCC001P =                    1 / All quality control passed                     
+            QCC002N = 'max(rms_list)'      / All quality control passed                     
+            QCC002V = 0.002373232122258537 / All quality control passed                     
+            QCC002L = 'max(rms_list) > 1.5000e-01' / All quality control passed             
+            QCC002P =                    1 / All quality control passed                     
+            QCC_ALL =                    T                                                  
+            DETOFFDX=                    0 / Pixel offset in x from readout lag             
+            DETOFFDY=                    0 / Pixel offset in y from readout lag    
+
+            """
+
+            if 'MJDEND' not in hdr:
+                hdr['MJDEND'] = 0.00
+                hdr['EXPTIME'] = 5.57*len(hdr['INTT*'])
+
+            hdr['MJDMID'] = hdr['MJDEND'] - hdr['EXPTIME']/2.0/86400.0
+
+            hdr['INF1000'] = file
+            DPRTYPES = ['DARK_DARK','DARK_FP','FLAT_FLAT','DARK_FLAT',
+                        'FLAT_DARK','HC_FP','FP_HC','FP_FP','OBJ_DARK','OBJ_FP','HC_DARK','DARK_HC','HC_HC']
+
+            if 'STAR_DARK' in file:
+                hdr['DPRTYPE'] = 'OBJ_DARK'
+
+            if 'STAR_FP' in file:
+                hdr['DPRTYPE'] = 'OBJ_FP'
+
+
+            for DPRTYPE in DPRTYPES:
+                if DPRTYPE in file:
+                    if DPRTYPE == 'DARK_DARK':
+                        hdr['DPRTYPE'] = 'DARK_DARK_TEL'
+                    elif DPRTYPE == 'HC_HC':
+                        hdr['DPRTYPE'] = 'HCONE_HCONE'
+                    elif DPRTYPE == 'FP_HC':
+                        hdr['DPRTYPE'] = 'FP_HCONE'
+                    elif DPRTYPE == 'HC_FP':
+                        hdr['DPRTYPE'] = 'HCONE_FP'
+                    elif DPRTYPE == 'DARK_HC':
+                        hdr['DPRTYPE'] = 'DARK_HCONE'
+                    elif DPRTYPE == 'HC_DARK':
+                        hdr['DPRTYPE'] = 'HCONE_DARK'
+                    else:
+                        hdr['DPRTYPE '] = DPRTYPE
+
+
+            if 'DPRTYPE' not in hdr:
+                print('error, with DPRTYPE for ',file)
+                return
+
+
+            if 'OBJECT' not in hdr:
+                hdr['OBJECT'] = 'none'
+
+            if 'RDNOISE' not in hdr:
+                hdr['RDNOISE']= 10.0,'rdnoise *not* provided, added by _pp'
+
+            if 'GAIN' not in hdr:
+                hdr['GAIN']= 1.000,'gain *not* provided, added by _pp'
+
+            if 'SATURATE' not in hdr:
+                hdr['SATURATE']= 60000,'saturate *not* provided, added by _pp'
+
+            if 'PVERSION' not in hdr:
+                hdr['PVERSION'] = 'NIRPS_SIMU_PP'
+
+            if 'OBSTYPE' not in hdr:
+                if hdr['DPRTYPE'][0:4] == 'FLAT':
+                    hdr['OBSTYPE'] = 'FLAT'
+
+                if hdr['DPRTYPE'][0:4] == 'DARK':
+                    hdr['OBSTYPE'] = 'DARK'
+
+                if hdr['DPRTYPE'][0:2] == 'FP':
+                    hdr['OBSTYPE'] = 'ALIGN'
+
+                if hdr['DPRTYPE'][0:2] == 'HC':
+                    hdr['OBSTYPE'] = 'COMPARISON'
+
+                if hdr['DPRTYPE'][0:3] == 'OBJ':
+                    hdr['OBSTYPE'] = 'OBJECT'
+
+            if hdr['DPRTYPE'][0:3] == 'OBJ':
+                hdr['TRG_TYPE'] = 'TARGET'
+            else:
+                hdr['TRG_TYPE'] = ''
+
+            necessary_kwrd = ['OBSTYPE','TRG_TYPE','OBJECT','OBJRA','OBJDEC','OBJECT','OBJEQUIN','OBJRAPM','OBJDECPM','AIRMASS','RELHUMID','OBJTEMP','GAIA_ID','OBJPLX','OBSRV','GAIN','RDNOISE','FRMTIME','EXPTIME','PI_NAME','CMPLTEXP','NEXP','MJDATE','MJDEND','SBCREF_P','SBCCAS_P','SBCALI_P','SBCDEN_P','DATE-OBS','UTC-OBS','SATURATE','TEMPERAT','SB_POL_T']
+
+            missing = False
+            for key in necessary_kwrd:
+                if key not in hdr:
+                    print('missing keyword : {0}'.format(key))
+                    missing = True
+
+                    if key in ref_hdr:
+                        hdr[key] = ref_hdr[key]
+
+            # pad values that are nan as really low
+            notfinite = np.isfinite(im) == 0
+            im[notfinite] = -9999
+
+
+            b = fits.getdata(file,ext = 2)
+            errslope = fits.getdata(file,ext = 3)
+            n = fits.getdata(file,ext = 4)
+
+            b = rot8(b,5)
+            errslope = rot8(errslope,5)
+            n = rot8(n,5)
+
+            # if not finite, then there are not valid readouts
+            b[notfinite] = -9999
+            errslope[notfinite] = -9999
+            n[notfinite] = 0
+
+
+            hdu1 = fits.PrimaryHDU()
+            hdu1.header = hdr
+            hdu1.header['NEXTEND'] = 4
+            hdu2 = fits.ImageHDU(im)
+            hdu2.header['UNITS'] = ('ADU/S', 'Slope of fit, flux vs time')
+            hdu2.header['EXTNAME'] = ('slope', 'Slope of fit, flux vs time')
+
+            hdu3 = fits.ImageHDU(b)
+            hdu3.header['UNITS'] = ('ADU', 'Intercept of the pixel/time fit.')
+            hdu3.header['EXTNAME'] = ('intercept', 'Intercept of the pixel/time fit.')
+
+            hdu4 = fits.ImageHDU(errslope)
+            hdu4.header['UNITS'] = ('ADU/S', 'Formal error on slope fit')
+            hdu4.header['EXTNAME'] = ('errslope', 'Formal error on slope fit')
+
+            hdu5 = fits.ImageHDU(n)
+            hdu5.header['UNITS'] = ('Nimages', 'N readouts below saturation')
+            hdu5.header['EXTNAME'] = ('count', 'N readouts below saturation')
+
+            new_hdul = fits.HDUList([hdu1, hdu2, hdu3, hdu4, hdu5])
+
+            # just to avoid an error message with writeto
+            if os.path.isfile(outname):
+                print('file : ' + outname + ' exists, we are overwriting it')
+                os.system('rm ' + outname + '')
+
+            new_hdul.writeto(outname, clobber=True)
+
 
     return []
