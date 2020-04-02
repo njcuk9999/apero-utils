@@ -82,7 +82,7 @@ def medbin(im,bx,by):
 
 def mk_mask():
     # creation of the mask image
-    im_flat = 'SIMU_NIRPS_HA_3f(flat_flat).fits'
+    im_flat = '20200401164256_ramp_020_HA_FLAT_FLAT.fits'
     im = fits.getdata(im_flat)
     # find pixel that are more than 10 absolute deviations
     # from the image median
@@ -303,9 +303,9 @@ def nirps_pp(files):
             n = rot8(n,5)
 
             # if not finite, then there are not valid readouts
-            b[notfinite] = -9999
-            errslope[notfinite] = -9999
-            n[notfinite] = 0
+            #b[notfinite] = -9999
+            #errslope[notfinite] = -9999
+            #n[notfinite] = 0
 
 
             hdu1 = fits.PrimaryHDU()
@@ -334,7 +334,7 @@ def nirps_pp(files):
                 print('file : ' + outname + ' exists, we are overwriting it')
                 os.system('rm ' + outname + '')
 
-            new_hdul.writeto(outname, clobber=True)
+            new_hdul.writeto(outname, overwrite=True)
 
 
     return []
