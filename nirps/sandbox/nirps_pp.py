@@ -233,6 +233,10 @@ def nirps_pp(files):
                         hdr['DPRTYPE'] = 'DARK_HCONE'
                     elif DPRTYPE == 'HC_DARK':
                         hdr['DPRTYPE'] = 'HCONE_DARK'
+                    elif DPRTYPE == 'FP_DARK':
+                        hdr['DPRTYPE'] = 'FP_DARK'
+                    elif DPRTYPE == 'DARK_FP':
+                        hdr['DPRTYPE'] = 'DARK_FP'
                     else:
                         hdr['DPRTYPE '] = DPRTYPE
 
