@@ -289,10 +289,6 @@ def nirps_pp(files):
                     if key in ref_hdr:
                         hdr[key] = ref_hdr[key]
 
-            # pad values that are nan as really low
-            notfinite = np.isfinite(im) == 0
-            im[notfinite] = -9999
-
 
             b = fits.getdata(file,ext = 2)
             errslope = fits.getdata(file,ext = 3)
@@ -301,11 +297,6 @@ def nirps_pp(files):
             b = rot8(b,5)
             errslope = rot8(errslope,5)
             n = rot8(n,5)
-
-            # if not finite, then there are not valid readouts
-            #b[notfinite] = -9999
-            #errslope[notfinite] = -9999
-            #n[notfinite] = 0
 
 
             hdu1 = fits.PrimaryHDU()
