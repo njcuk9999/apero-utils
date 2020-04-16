@@ -98,7 +98,8 @@ if CASE == 1:
     MASK_MIN_WEIGHT = 0.0              # CCF_MASK_MIN_WEIGHT
     CCF_STEP = 0.5                     # CCF_DEFAULT_STEP (or user input)
     CCF_WIDTH = 300                    # CCF_DEFAULT_WIDTH (or user input)
-    CCF_RV_NULL = -9999.99             # CCF_OBJRV_NULL_VAL
+    CCF_RV_NULL = 1000                 # CCF_OBJRV_NULL_VAL (max allowed)
+    IN_RV = None                       # user input [km/s]
     CCF_N_ORD_MAX = 48                 # CCF_N_ORD_MAX
     BLAZE_NORM_PERCENTILE = 90         # CCF_BLAZE_NORM_PERCENTILE
     BLAZE_THRESHOLD = 0.3              # WAVE_FP_BLAZE_THRES
@@ -120,7 +121,8 @@ elif CASE == 2:
     MASK_MIN_WEIGHT = 0.0              # CCF_MASK_MIN_WEIGHT
     CCF_STEP = 0.5                     # WAVE_CCF_STEP
     CCF_WIDTH = 7.5                    # WAVE_CCF_WIDTH
-    CCF_RV_NULL = -9999.99             # CCF_OBJRV_NULL_VAL
+    CCF_RV_NULL = 1000                 # CCF_OBJRV_NULL_VAL (max allowed)
+    IN_RV = None                       # user input [km/s]
     CCF_N_ORD_MAX = 48                 # WAVE_CCF_N_ORD_MAX
     BLAZE_NORM_PERCENTILE = 90         # CCF_BLAZE_NORM_PERCENTILE
     BLAZE_THRESHOLD = 0.3              # WAVE_FP_BLAZE_THRES
@@ -901,10 +903,12 @@ if __name__ == '__main__':
     # get rv from header (or set to zero)
     if ('OBJRV' in header) and dprtype == 'OBJ':
         targetrv = header['OBJRV']
-        if np.isnan(targetrv) or targetrv == CCF_RV_NULL:
+        if np.isnan(targetrv) or np.abs(targetrv) > CCF_RV_NULL:
             targetrv = 0.0
     else:
         targetrv = 0.0
+    if IN_RV is not None:
+        targetrv = float(IN_RV)
     # --------------------------------------------------------------------------
     # get mask centers, and weights
     _, mask_centers, mask_weights = get_mask(masktable, MASK_WIDTH,
