@@ -102,17 +102,19 @@ PLOT = True
 # which case 1: science (OBJ) 2: reference (FP)
 CASE = 1
 
+
 # Pick you CCF convolution kernel. See explanantions below in the
 # CCF function. Uncomment the kernel type you want and change the
 # parameter.
+
 # CCF is a set of Dirac functions
-# KERNEL = None
+KERNEL = None
 # boxcar length expressed in km/s
-# KERNEL = ['boxcar',5]
+# KERNEL = ['boxcar', 5]
 # gaussian with e-width in km/s
 # KERNEL = ['gaussian', 3.5]
 # supergaussian e-width + exponent
-KERNEL = ['supergaussian', 3.5, 4]
+# KERNEL = ['supergaussian', 3.5, 4]
 
 # deal with cases (quick switch between fiber=AB (OBJ) and fiber=C (FP)
 if CASE == 1:
@@ -518,7 +520,7 @@ def ccf_calculation(wave, image, blaze, targetrv, mask_centers, mask_weights,
     if isinstance(kernel, list):
         if kernel[0] == 'boxcar':
             # ones with a length of kernel[1]
-            ker = np.ones(kernel[1] // CCF_STEP)
+            ker = np.ones(int(np.round(kernel[1] / CCF_STEP)))
         elif kernel[0] == 'gaussian':
             # width of the gaussian expressed in
             # steps of CCF
@@ -531,7 +533,7 @@ def ccf_calculation(wave, image, blaze, targetrv, mask_centers, mask_weights,
             # between 0.1 and 10.. Values above
             # 10 are (nearly) the same as a boxcar.
             if (kernel[1] < 0.1) or (kernel[1] > 10):
-                raise ValueError('CCF ERROR: kernel[1] is out of range.)
+                raise ValueError('CCF ERROR: kernel[1] is out of range.')
 
             ew = kernel[1] / CCF_STEP
 
@@ -544,7 +546,7 @@ def ccf_calculation(wave, image, blaze, targetrv, mask_centers, mask_weights,
 
         ker = ker / np.sum(ker)
 
-        if len(ker) > (len(rv_ccf)-1):
+        if len(ker) > (len(rv_ccf)-1):
             # TODO : give a proper error
             err_msg = """
             The size of your convolution kernel is too big for your
