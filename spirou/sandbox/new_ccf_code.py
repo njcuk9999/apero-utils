@@ -20,7 +20,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 from scipy.stats import chisquare
 import matplotlib.pyplot as plt
-
+from scipy.signal import convolve
 
 helpstr = """
 ----------------------------------------------------------------------------
@@ -40,7 +40,7 @@ code
         WAVE:   *wave_night_{fiber}.fits
 
 2. Finding masks
-    
+
     a) go to your apero-drs installation directory
     b) go to data/spirou/ccf sub-directory
     c) use one of these masks
@@ -50,30 +50,47 @@ code
     a) copy all data to a directory of your choice ({path})
         i) copy this code there and set W1='' and W2=''
         ii) or set W1={path} and W2={path}
-        
+
     b) set the paths for your data (W1) and your mask directory (W2)
-    
+
     Then update the filenames:
         IN_FILE: the e2dsff_C or e2dsff_tcorr _AB file
         BLAZE_FILE: the blaze file from calibDB - get the fiber correct!
         WAVE_FILE: the wave file from calibDB - get the fiber correct!
         MASK_FILE: the mask file
-        
+
     Note there are two cases (set CASE=1 or CASE=2)
-    
+
     For case=1 we assume your IN_FILE is a OBJ
     For case=2 we assume your IN_FILe is a FP
 
 
+Adding a convolution kernel. You can pass a kernel argument that 
+describes the convolution of the LSF. 'None' produces a Dirac comb
+while 3 others are described below.
+
+    --> boxcar convolution
+    ['boxcar', width]
+    kernel = [1, 1, ...., 1, 1]
+
+    --> gaussian convolution
+    ['gaussian', e-width]
+    kernel = exp( -0.5*(x/ew)**2 )
+
+    --> super gaussian
+    ['supergaussian', e-width, beta]
+    kernel = exp( -0.5*(x/ew)**beta )
+
+    Other functions could be added 
+
 ----------------------------------------------------------------------------
 """
-
 
 # =============================================================================
 # Define variables
 # =============================================================================
 # constants
-SPEED_OF_LIGHT = 299792.458    # [km/s]
+SPEED_OF_LIGHT = 299792.458  # [km/s]
 # if all files copied to same directory set these to ''
 # W1 = ''
 # W2 = ''
@@ -83,7 +100,20 @@ W2 = '/scratch3/rali/drs/apero-drs/apero/data/spirou/ccf/'
 # whether to plot (True or False)
 PLOT = True
 # which case 1: science (OBJ) 2: reference (FP)
-CASE = 2
+CASE = 1
+
+# Pick you CCF convolution kernel. See explanantions below in the
+# CCF function. Uncomment the kernel type you want and change the
+# parameter.
+# CCF is a set of Dirac functions
+# KERNEL = None
+# boxcar length expressed in km/s
+# KERNEL = ['boxcar',5]
+# gaussian with e-width in km/s
+# KERNEL = ['gaussian', 3.5]
+# supergaussian e-width + exponent
+KERNEL = ['supergaussian', 3.5, 4]
+
 # deal with cases (quick switch between fiber=AB (OBJ) and fiber=C (FP)
 if CASE == 1:
     # build file paths
@@ -94,19 +124,19 @@ if CASE == 1:
     MASK_COLS = ['ll_mask_s', 'll_mask_e', 'w_mask']
     # variables
     # These values are taken from the constants file
-    MASK_WIDTH = 1.7                   # CCF_MASK_WIDTH
-    MASK_MIN_WEIGHT = 0.0              # CCF_MASK_MIN_WEIGHT
-    CCF_STEP = 0.5                     # CCF_DEFAULT_STEP (or user input)
-    CCF_WIDTH = 300                    # CCF_DEFAULT_WIDTH (or user input)
-    CCF_RV_NULL = 1000                 # CCF_OBJRV_NULL_VAL (max allowed)
-    IN_RV = None                       # user input [km/s]
-    CCF_N_ORD_MAX = 48                 # CCF_N_ORD_MAX
-    BLAZE_NORM_PERCENTILE = 90         # CCF_BLAZE_NORM_PERCENTILE
-    BLAZE_THRESHOLD = 0.3              # WAVE_FP_BLAZE_THRES
-    IMAGE_PIXEL_SIZE = 2.28            # IMAGE_PIXEL_SIZE
-    NOISE_SIGDET = 8.0                 # CCF_NOISE_SIGDET
-    NOISE_SIZE = 12                    # CCF_NOISE_BOXSIZE
-    NOISE_THRES = 1.0e9                # CCF_NOISE_THRES
+    MASK_WIDTH = 1.7  # CCF_MASK_WIDTH
+    MASK_MIN_WEIGHT = 0.0  # CCF_MASK_MIN_WEIGHT
+    CCF_STEP = 0.5  # CCF_DEFAULT_STEP (or user input)
+    CCF_WIDTH = 300  # CCF_DEFAULT_WIDTH (or user input)
+    CCF_RV_NULL = 1000  # CCF_OBJRV_NULL_VAL (max allowed)
+    IN_RV = None  # user input [km/s]
+    CCF_N_ORD_MAX = 48  # CCF_N_ORD_MAX
+    BLAZE_NORM_PERCENTILE = 90  # CCF_BLAZE_NORM_PERCENTILE
+    BLAZE_THRESHOLD = 0.3  # WAVE_FP_BLAZE_THRES
+    IMAGE_PIXEL_SIZE = 2.28  # IMAGE_PIXEL_SIZE
+    NOISE_SIGDET = 8.0  # CCF_NOISE_SIGDET
+    NOISE_SIZE = 12  # CCF_NOISE_BOXSIZE
+    NOISE_THRES = 1.0e9  # CCF_NOISE_THRES
 
 elif CASE == 2:
     # build file paths
@@ -117,19 +147,19 @@ elif CASE == 2:
     MASK_COLS = ['ll_mask_s', 'll_mask_e', 'w_mask']
     # variables
     # These values are taken from the constants file
-    MASK_WIDTH = 1.7                   # CCF_MASK_WIDTH
-    MASK_MIN_WEIGHT = 0.0              # CCF_MASK_MIN_WEIGHT
-    CCF_STEP = 0.5                     # WAVE_CCF_STEP
-    CCF_WIDTH = 7.5                    # WAVE_CCF_WIDTH
-    CCF_RV_NULL = 1000                 # CCF_OBJRV_NULL_VAL (max allowed)
-    IN_RV = None                       # user input [km/s]
-    CCF_N_ORD_MAX = 48                 # WAVE_CCF_N_ORD_MAX
-    BLAZE_NORM_PERCENTILE = 90         # CCF_BLAZE_NORM_PERCENTILE
-    BLAZE_THRESHOLD = 0.3              # WAVE_FP_BLAZE_THRES
-    IMAGE_PIXEL_SIZE = 2.28            # IMAGE_PIXEL_SIZE
-    NOISE_SIGDET = 8.0                 # WAVE_CCF_NOISE_SIGDET
-    NOISE_SIZE = 12                    # WAVE_CCF_NOISE_BOXSIZE
-    NOISE_THRES = 1.0e9                # WAVE_CCF_NOISE_THRES
+    MASK_WIDTH = 1.7  # CCF_MASK_WIDTH
+    MASK_MIN_WEIGHT = 0.0  # CCF_MASK_MIN_WEIGHT
+    CCF_STEP = 0.5  # WAVE_CCF_STEP
+    CCF_WIDTH = 7.5  # WAVE_CCF_WIDTH
+    CCF_RV_NULL = 1000  # CCF_OBJRV_NULL_VAL (max allowed)
+    IN_RV = None  # user input [km/s]
+    CCF_N_ORD_MAX = 48  # WAVE_CCF_N_ORD_MAX
+    BLAZE_NORM_PERCENTILE = 90  # CCF_BLAZE_NORM_PERCENTILE
+    BLAZE_THRESHOLD = 0.3  # WAVE_FP_BLAZE_THRES
+    IMAGE_PIXEL_SIZE = 2.28  # IMAGE_PIXEL_SIZE
+    NOISE_SIGDET = 8.0  # WAVE_CCF_NOISE_SIGDET
+    NOISE_SIZE = 12  # WAVE_CCF_NOISE_BOXSIZE
+    NOISE_THRES = 1.0e9  # WAVE_CCF_NOISE_THRES
 
 else:
     raise ValueError('INPUT ERROR: Case must be 1 or 2')
@@ -198,10 +228,10 @@ def relativistic_waveshift(dv, units='km/s'):
     """
     # get c in correct units
     # noinspection PyUnresolvedReferences
-    if units == 'km/s' or units == uu.km/uu.s:
+    if units == 'km/s' or units == uu.km / uu.s:
         c = SPEED_OF_LIGHT
     # noinspection PyUnresolvedReferences
-    elif units == 'm/s' or units == uu.m/uu.s:
+    elif units == 'm/s' or units == uu.m / uu.s:
         c = SPEED_OF_LIGHT * 1000
     else:
         raise ValueError("Wrong units for dv ({0})".format(units))
@@ -445,7 +475,7 @@ def fwhm(sigma=1.0):
 
 
 def ccf_calculation(wave, image, blaze, targetrv, mask_centers, mask_weights,
-                    berv, fit_type):
+                    berv, fit_type, kernel=None):
     # get rvmin and rvmax
     rvmin = targetrv - CCF_WIDTH
     rvmax = targetrv + CCF_WIDTH + CCF_STEP
@@ -461,6 +491,71 @@ def ccf_calculation(wave, image, blaze, targetrv, mask_centers, mask_weights,
     ccf_lines = []
     ccf_all_snr = []
     ccf_norm_all = []
+
+    # if we have defined 'kernel', it must be a list
+    # with the first element being the type of convolution
+    # and subsequent arguments being parameters. For now,
+    # we have :
+    #
+    #  --> boxcar convolution
+    # ['boxcar', width]
+    #
+    # kernel = [1, 1, ...., 1, 1]
+    #
+    # --> gaussian convolution
+    #
+    # ['gaussian', e-width]
+    # kernel = exp( -0.5*(x/ew)**2 )
+    #
+    # --> super gaussian
+    #
+    # ['supergaussian', e-width, beta]
+    #
+    # kernel = exp( -0.5*(x/ew)**beta )
+    #
+    # Other functions could be added below
+    #
+    if isinstance(kernel, list):
+        if kernel[0] == 'boxcar':
+            # ones with a length of kernel[1]
+            ker = np.ones(kernel[1] // CCF_STEP)
+        elif kernel[0] == 'gaussian':
+            # width of the gaussian expressed in
+            # steps of CCF
+            ew = kernel[1] / CCF_STEP
+            index = np.arange(-4 * np.ceil(ew), 4 * np.ceil(ew) + 1)
+            ker = np.exp(-0.5 * (index / ew) ** 2)
+        elif kernel[0] == 'supergaussian':
+            # width of the gaussian expressed in
+            # steps of CCF. Exponents should be
+            # between 0.1 and 10.. Values above
+            # 10 are (nearly) the same as a boxcar.
+            if (kernel[1] < 0.1) or (kernel[1] > 10):
+                raise ValueError('CCF ERROR: kernel[1] is out of range.)
+
+            ew = kernel[1] / CCF_STEP
+
+            index = np.arange(-4 * np.ceil(ew), 4 * np.ceil(ew) + 1)
+            ker = np.exp(-0.5 * np.abs(index / ew) ** kernel[2])
+
+        else:
+                # kernel name is not known - generate error
+            raise ValueError('CCF ERROR: name of kernel not accepted!')
+
+        ker = ker / np.sum(ker)
+
+        if len(ker) > (len(rv_ccf)-1):
+            # TODO : give a proper error
+            err_msg = """
+            The size of your convolution kernel is too big for your
+            CCF size. Please either increase the CCF_WIDTH value or
+            decrease the width of your convolution kernel. In boxcar, 
+            this implies a length bigger than CCF_WIDTH/CCF_STEP, in 
+            gaussian and supergaussian, this means that 
+            CCF_WIDTH/CCF_STEP is >8*ew. The kernel has to run from
+            -4 sigma to +4 sigma.
+            """
+            raise ValueError('CCF ERROR: {0}'.format(err_msg))
 
     # ----------------------------------------------------------------------
     # loop around the orders
@@ -568,6 +663,11 @@ def ccf_calculation(wave, image, blaze, targetrv, mask_centers, mask_weights,
             ccf_all_snr.append(np.nan)
             ccf_norm_all.append(np.nan)
             continue
+        # ------------------------------------------------------------------
+        # Convolve by the appropriate CCF kernel, if any
+        if type(kernel) == list:
+            weight = np.convolve(np.ones(len(ccf_ord)), ker, mode='same')
+            ccf_ord = np.convolve(ccf_ord, ker, mode='same') / weight
         # ------------------------------------------------------------------
         # normalise each orders CCF to median
         ccf_norm = np.nanmedian(ccf_ord)
@@ -680,7 +780,7 @@ def plot_individual_ccf(props, nbo):
         fig, frame = plt.subplots(ncols=1, nrows=1)
         frame.plot(props['RV_CCF'], props['CCF'][order_num], color='b',
                    marker='+', ls='None', label='data')
-        frame.plot(props['RV_CCF'], props['CCF_FIT'][order_num], color='r',)
+        frame.plot(props['RV_CCF'], props['CCF_FIT'][order_num], color='r', )
         rvorder = props['CCF_FIT_COEFFS'][order_num][1]
         frame.set(title='Order {0}  RV = {1} km/s'.format(order_num, rvorder),
                   xlabel='RV [km/s]', ylabel='CCF')
@@ -764,7 +864,6 @@ def plotloop(looplist):
 
 
 def write_file(props, infile, maskname, header, wheader):
-
     # ----------------------------------------------------------------------
     # construct out file name
     inbasename = os.path.basename(infile).split('.')[0]
@@ -928,7 +1027,7 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------
     print('\nRunning CCF calculation')
     props = ccf_calculation(wave, image, blaze, targetrv, mask_centers,
-                            mask_weights, berv, fit_type)
+                            mask_weights, berv, fit_type, kernel=KERNEL)
     # --------------------------------------------------------------------------
     # Calculate the mean CCF
     # --------------------------------------------------------------------------
@@ -951,7 +1050,6 @@ if __name__ == '__main__':
     # --------------------------------------------------------------------------
     # write the two tables to file CCFTABLE_{filename}_{mask}.fits
     write_file(props, IN_FILE, MASK_FILE, header, wheader)
-
 
 # ==============================================================================
 # End of code
