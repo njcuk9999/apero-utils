@@ -35,7 +35,7 @@ RECIPE_DEFINITIONS = dict()
 RECIPE_DEFINITIONS['SPIROU'] = 'apero.core.instruments.spirou.recipe_definitions'
 RECIPE_DEFINITIONS['NIRPS_HA'] = 'apero.core.instruments.nirps_ha.recipe_definitions'
 # default data dir
-DATA_DIR = 'mini_data_0_6_037'
+DATA_DIR = 'mini_data_0_6_082'
 # set raw sub dir
 RAW_DIR = 'raw'
 # set tmp sub dir
@@ -472,6 +472,12 @@ def print_help():
     print(HELP_MESSAGE)
 
 
+def add_final_sep(path):
+    if path[-1] != os.sep:
+        path += os.sep
+    return path
+
+
 def construct_command(filetypes, options):
 
     # get rsync folder
@@ -482,7 +488,8 @@ def construct_command(filetypes, options):
 
     for filetype in filetypes:
         # construct args
-        args = ['', rsync_server, filetype.inpath, filetype.outpath]
+        args = ['', rsync_server, add_final_sep(filetype.inpath),
+                add_final_sep(filetype.outpath)]
         # ----------------------------------------------------------------------
         # deal with excluding nights
         if len(options['exclude']) > 0:
@@ -585,9 +592,6 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     main()
 
-
-
 # =============================================================================
 # End of code
 # =============================================================================
-
