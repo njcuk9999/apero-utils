@@ -61,6 +61,7 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, Force = False, 
 
     # keep track of amplitudes per order
     amps = np.zeros(49)
+    fgood = np.zeros(49)
 
     for i in range(len(files)):
         # loop through files
@@ -78,7 +79,7 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, Force = False, 
 
         wave = fits2wave(hdr)*dv
 
-        for iord in tqdm(range(49), leave = False):
+        for iord in range(49):
             if np.max(np.isfinite(data[iord])) == False:
                 data[iord] = np.nan
                 continue
@@ -145,12 +146,23 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, Force = False, 
                 plt.plot(wave[iord],data_tmp,'r', label = 'observed')
                 plt.plot(wave[iord],model_tmp, label = 'model' )
                 plt.plot(wave[iord],data[iord],'k', label = 'sanitized')
+                plt.ylabel('normalized flux')
+                plt.xlabel('wavelength (nm)')
                 plt.legend()
                 plt.show()
 
             data[iord]/=np.nanmedian(data[iord])
             data[iord]*=amps[iord]
 
+            fgood[iord] = np.nanmean(pp)
+            print('order #{0}, frac input {1:4.2f}%'.format(iord,fgood[iord]*100))
+
         print('We write file {0}'.format(outname))
+
+        if doplot:
+            plt.plot(1-fgood,'go')
+            plt.xlabel('Nth order')
+            plt.ylabel('Model padding fraction')
+            plt.show()
         fits.writeto(outname, data, hdr, overwrite = True)
 
