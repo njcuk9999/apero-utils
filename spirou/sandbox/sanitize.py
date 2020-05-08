@@ -66,12 +66,13 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, Force = False, 
     for i in range(len(files)):
         # loop through files
         print('Sanitizing file #{0} in {1} -> {2}'.format(i+1,len(files),files[i]))
-        outname = 'sanitized'.join(files[i].split('tcorr'))
+        outname = 'sanit'.join(files[i].split('tcorr'))
 
         if os.path.isfile(outname) and (Force == False):
             continue
 
         data, hdr = fits.getdata(files[i], header = True)
+
 
         nanmask = np.isfinite(data) == False
 
@@ -93,42 +94,19 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, Force = False, 
             model_tmp = template(wave[iord])*blaze[iord]
             model_tmp[model_tmp == 0] = np.nan
 
-
-            ker = np.exp(-.5*(np.arange(121)-60)**2/(20)**2)
-            ker /=np.nansum(ker)
-            for ite in range(1):
-
-                ratio = np.nanmedian(data_tmp/model_tmp)#,)201)
-                #ratio[]
-
-                #mask = np.isfinite(ratio)
-                #ratio[~mask] = 0
-                #mask[~mask] = 0
-
-                #w = np.convolve(mask*1.0,ker,mode = 'same')
-
-                #ratio[w!=0] = np.convolve(ratio,ker,mode = 'same')[w!=0]/w[w!=0]
-                #ratio[blaze[iord]<0.5] = 0
-
-                #fig, ax = plt.subplots(nrows=3,ncols=1,sharex=  True)
-                #ax[0].plot(data_tmp)
-                #ax[0].plot(model_tmp)
-                #ax[1].plot(ratio)
-
-                data_tmp /=ratio#[ratio != 0]
-
-                #plt.show()
-            #stop
+            ratio = np.nanmedian(data_tmp/model_tmp)
+            data_tmp /=ratio
 
             residual = data_tmp - model_tmp
 
+            # finding a robust_sigma value with the 1-sigma percentiles
             sig = (np.nanpercentile(residual,84)-np.nanpercentile(residual,16))/2
 
             nsig = residual / sig
 
             prob_good = np.exp( -0.5*nsig**2)
 
-            pp = prob_good / (prob_bad+prob_good)
+            pp = prob_good * (1+prob_bad) / (prob_bad+prob_good)
 
             data[iord] = data_tmp*pp+model_tmp*(1-pp)
 
@@ -156,6 +134,10 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, Force = False, 
 
             fgood[iord] = np.nanmean(pp)
             print('order #{0}, frac input {1:4.2f}%'.format(iord,fgood[iord]*100))
+            str_iord = str(iord)
+            if len(str_iord) <2:
+                str_iord = '0'+str_iord
+            hdr['PSANI'+str_iord] = fgood[iord],'Order {0} mean(p) sanitize'.format(iord)
 
         print('We write file {0}'.format(outname))
 
