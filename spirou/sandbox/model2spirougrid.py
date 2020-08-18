@@ -7,7 +7,7 @@ from PyAstronomy.pyasl import rotBroad
 from PyAstronomy import funcFit as fuf
 from scipy.signal import convolve
 
-c = 2.99e5
+c = 2.99792458e5
 
 def epsilon(wave):
     # for a wavelength in nm, return the Epsilon value
