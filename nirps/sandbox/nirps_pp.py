@@ -1,9 +1,11 @@
 import numpy as np
 from astropy.io import fits
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import os
 from scipy.ndimage import zoom
 import glob
+from scipy.ndimage.morphology import binary_dilation
+from scipy.ndimage import median_filter
 
 def rot8(im,nrot):
     """
@@ -27,7 +29,7 @@ def rot8(im,nrot):
     nrot = int(nrot % 8)
     return np.rot90( im[::1-2*(nrot//4)],nrot % 4 )
 
-def med32(im):
+def med32(im,doplot = False):
     # input image MUST be 4096x4096
     # and have 32 amplifiers with a mirror
     # odd/even symmetry. We fold the image
@@ -53,9 +55,40 @@ def med32(im):
             sig = -1
 
         cube[i, :, :] = im[:, i1:i2:sig]
+        cube[i, :, :] -= np.nanmedian(cube[i, :, :])
     # derive median amplifier structure
-    med = np.nanmedian(cube, axis=0)
 
+    med = np.nanmedian(cube, axis=0)
+    cube2 = np.array(cube)
+
+    diff_cuts = np.zeros(32)
+    for i in range(32):
+        cube2[i,:,:] -= med
+        tmp = cube2[i,:,:]
+        cut1 = np.nanpercentile(tmp,5)
+        cut2 = np.nanpercentile(tmp,95)
+        diff_cuts[i] = cut2-cut1
+        tmp[tmp<cut1] = np.nan
+        tmp[tmp>cut2] = np.nan
+        cube2[i,:,:] = tmp
+    bad_amps = diff_cuts>1.5*np.nanmedian(diff_cuts)
+
+    cube[bad_amps,:,:] = np.nan
+    cube2[bad_amps,:,:] = np.nan
+
+    if doplot:
+        plt.plot(np.arange(32),diff_cuts,'go', label = 'RMS of amplifier post-xtalk subtract')
+        plt.plot(np.arange(32)[bad_amps],diff_cuts[bad_amps],'ro',label = 'removed amps')
+        plt.ylabel('5th to 95th difference')
+        plt.xlabel('nth amplifier')
+        plt.legend()
+        plt.show()
+        cube[np.isfinite(cube2) ==  False] = np.nan
+
+        #fits.writeto('cube.fits',cube,overwrite =  True)
+        #fits.writeto('cube2.fits',cube2,overwrite =  True)
+
+    med = np.nanmedian(cube, axis=0)
 
     # pad back onto the output image
     im2 = np.zeros_like(im)
@@ -80,18 +113,25 @@ def medbin(im,bx,by):
     out = np.nanmedian(np.nanmedian(im.reshape([bx,sz[0]//bx,by, sz[1]//bx]), axis=1), axis=2)
     return out
 
-def mk_mask():
+def get_mask(mask_file):
+    # we need to pass a flat image to get the corresponding mask.
+
+
+    outname = mask_file.split('.fits')[0]+'_mask.fits'
+
+    if os.path.isfile(outname):
+        return fits.getdata(outname)
+
     # creation of the mask image
-    im_flat = '20200401164256_ramp_020_HA_FLAT_FLAT.fits'
-    im = fits.getdata(im_flat)
-    # find pixel that are more than 10 absolute deviations
+    im = fits.getdata(mask_file)
+    # find pixel that are more than 5 absolute deviations
     # from the image median
     im -= np.nanmedian(im)
 
     sig = np.nanmedian(np.abs(im))
 
     # generate a first estimate of the mask
-    mask = im>10*sig
+    mask = im>5*sig
     # now apply a proper filtering of the image
     im2 = np.array(im)
     im2[mask] = np.nan
@@ -113,13 +153,84 @@ def mk_mask():
     im -= (lowf + xtalk)
 
     # generate a better estimate of the mask
-    mask = im>10*sig
+    mask = im>5*sig
+    mask[np.isfinite(mask) == False] = np.nan
+    mask = binary_dilation(mask, iterations = 4)
 
-    fits.writeto('mask.fits',np.array(mask,dtype = int), overwrite = True)
+    fits.writeto(outname,np.array(mask,dtype = int), overwrite = True)
 
-    return []
+    return np.array(mask,dtype = int)
 
-def nirps_pp(files):
+def top_bottom(im, doplot = False):
+    # remove the ramp in pixel values between the top and bottom of the array
+    # corrects for amplified DC level offsets
+
+    # map of pixel values within an amplified
+    y, x = np.indices([4096, 128])
+    y = y / 4096 # fraction of position on the amplifier
+
+    med1 = np.zeros(32)
+    med2 = np.zeros(32)
+    for i in range(32):
+        # median of bottom ref pixels
+        med1[i] = np.nanmedian(im[0:4, i * 128:(i + 1) * 128])
+        # median of top ref pixels
+        med2[i] = np.nanmedian(im[-4:, i * 128:(i + 1) * 128])
+        # subtraction of slope between top and bottom
+        im[:, i * 128:(i + 1) * 128] -= (med1[i] + y * (med2[i] - med1[i]))
+
+    if doplot:
+        plt.plot(med1,'go',label = 'bottom ref pix')
+        plt.plot(med2,'ro',label = 'top ref pix')
+        plt.xlabel('Nth amplifier')
+        plt.ylabel('median flux')
+        plt.title('top/bottom ref pixel correction')
+        plt.legend()
+        plt.show()
+    return im
+
+def left_right(im, width = 15, doplot = False):
+    # we correct for the left-right reference pixels
+    # we take the median of the 8 left-right pixels to derive
+    # a noise pattern that is 4096 pixels long. This noise pattern
+    # is median-filtered with a kernel with a "width". Typical
+    # values for this parameter are 10-20 pixels
+    #
+    reference_pixels_sides = im[:,[0,1,2,3,4092,4093,4094,4095]]
+    for i in range(8):
+        # remove DC level between pixels so that the median+axis=1 really
+        # filters noise. Otherwise, the median would just select the pixel
+        # that has the median DC level
+        reference_pixels_sides[:,i] -= np.nanmedian(reference_pixels_sides[:,i])
+
+    # median profile of the 8 pixels
+    medprofile = np.nanmedian(reference_pixels_sides,axis=1)
+
+    medprofile_filtered = median_filter(medprofile,width)
+    # correlated noise replicated onto the output image format
+    correlated_noise = np.repeat(medprofile, 4096).reshape(4096, 4096)
+
+    if doplot:
+        plt.plot(medprofile, label = 'median profile')
+        plt.plot(medprofile_filtered,alpha = 0.5,label = 'after filtering by running median: {0} pixels'.format(width))
+        plt.legend()
+        plt.title('left-right pixel correction\ncorrelated noise correction')
+        plt.show()
+
+    return im - correlated_noise
+
+def nirps_pp(files,mask_file = '', doplot = False, force = False):
+    # pre-processing of NIRPS images with only left/right and top/bottom pixels
+    # if we pass the name of a flat_flat file as 'mask_file', then we also
+    # correct for correlated noise between amps using dark pixels. This should
+    # not be done on an LED image. You can set plot = True or force = True
+    # if you want to see nice plots or force the overwrite of existing pre-process
+    # files.
+
+    if mask_file == '':
+        xtalk_filter = False
+    else:
+        xtalk_filter = True
 
     ref_hdr = fits.getheader('ref_hdr.fits')
 
@@ -127,25 +238,29 @@ def nirps_pp(files):
         files = glob.glob(files)
 
     for file in files:
-        outname = '_pp.'.join(file.split('.'))
+        outname = '_pp.fits'.join(file.split('.fits'))
 
         if '_pp.' in file:
             print(file+' is a _pp file')
             continue
 
-        if os.path.isfile(outname):
+        if os.path.isfile(outname) and (force == False):
             print('File : '+outname +' exists')
             continue
         else:
             print('We pre-process '+file)
 
             hdr = fits.getheader(file)
+
+
             im = fits.getdata(file)
+            # before we even get started, we remove top/bottom ref pixels
+            # to reduce DC level differences between ampliers
+            for ite in range(3):
+                im = top_bottom(im,doplot = doplot)
+                im = left_right(im,width = 15,doplot = doplot)
 
-            mask = np.array(fits.getdata('mask.fits'),dtype = bool)
 
-            im2 = np.array(im)
-            im2[mask] = np.nan
 
             # we find the low level frequencies
             # we bin in regions of 32x32 pixels. This CANNOT be
@@ -153,54 +268,6 @@ def nirps_pp(files):
             # as it would lead to a set of NaNs in the downsized
             # image and chaos afterward
             binsize = 32 # pixels
-
-            # median-bin and expand back to original size
-            lowf = zoom(medbin(im2,binsize,binsize),4096//binsize)
-
-            # subtract low-frequency from masked image
-            im2 -= lowf
-
-            # find the amplifier x-talk map
-            xtalk = med32(im2)
-            im2 -= xtalk
-
-            # subtract both low-frequency and x-talk from input image
-            im -= (lowf+xtalk)
-
-            tmp = np.nanmedian(im2,axis=0)
-
-            im -= np.tile(tmp, 4096).reshape(4096, 4096)
-
-            # rotates the image so that it matches the order geometry of SPIRou and HARPS
-            # redder orders at the bottom and redder wavelength within each order on the left
-
-            # NIRPS = 5
-            # SPIROU = 3
-            im = rot8(im,5)
-
-            #DPRTYPE
-            """
-            MJDMID  =    58875.10336167315 / Mid Observation time [mjd]                     
-            BERVOBSM= 'header  '           / BERV method used to calc observation time      
-            DPRTYPE = 'FP_FP   '           / The type of file (from pre-process)            
-            PVERSION= '0.6.029 '           / DRS Pre-Processing version                     
-            DRSVDATE= '2020-01-27'         / DRS Release date                               
-            DRSPDATE= '2020-01-30 22:16:00.344' / DRS Processed date                        
-            DRSPID  = 'PID-00015804225603440424-JKBM' / The process ID that outputted this f
-            INF1000 = '2466774a.fits'      / Input file used to create output infile=0      
-            QCC001N = 'snr_hotpix'         / All quality control passed                     
-            QCC001V =    876.2474157597072 / All quality control passed                     
-            QCC001L = 'snr_hotpix < 1.00000e+01' / All quality control passed               
-            QCC001P =                    1 / All quality control passed                     
-            QCC002N = 'max(rms_list)'      / All quality control passed                     
-            QCC002V = 0.002373232122258537 / All quality control passed                     
-            QCC002L = 'max(rms_list) > 1.5000e-01' / All quality control passed             
-            QCC002P =                    1 / All quality control passed                     
-            QCC_ALL =                    T                                                  
-            DETOFFDX=                    0 / Pixel offset in x from readout lag             
-            DETOFFDY=                    0 / Pixel offset in y from readout lag    
-
-            """
 
             if 'MJDEND' not in hdr:
                 hdr['MJDEND'] = 0.00
@@ -210,7 +277,8 @@ def nirps_pp(files):
 
             hdr['INF1000'] = file
             DPRTYPES = ['DARK_DARK','DARK_FP','FLAT_FLAT','DARK_FLAT',
-                        'FLAT_DARK','HC_FP','FP_HC','FP_FP','OBJ_DARK','OBJ_FP','HC_DARK','DARK_HC','HC_HC']
+                        'FLAT_DARK','HC_FP','FP_HC','FP_FP','OBJ_DARK',
+                        'OBJ_FP','HC_DARK','DARK_HC','HC_HC','DARK_FP', 'FP_DARK','LED_LED']
 
             if 'STAR_DARK' in file:
                 hdr['DPRTYPE'] = 'OBJ_DARK'
@@ -218,6 +286,7 @@ def nirps_pp(files):
             if 'STAR_FP' in file:
                 hdr['DPRTYPE'] = 'OBJ_FP'
 
+            hdr['DPRTYPE'] = 'DARK_DARK'
 
             for DPRTYPE in DPRTYPES:
                 if DPRTYPE in file:
@@ -237,14 +306,13 @@ def nirps_pp(files):
                         hdr['DPRTYPE'] = 'FP_DARK'
                     elif DPRTYPE == 'DARK_FP':
                         hdr['DPRTYPE'] = 'DARK_FP'
-                    else:
-                        hdr['DPRTYPE '] = DPRTYPE
+                    elif DPRTYPE == 'LED_LED':
+                        hdr['DPRTYPE'] = 'LED_LED'
 
 
             if 'DPRTYPE' not in hdr:
                 print('error, with DPRTYPE for ',file)
                 return
-
 
             if 'OBJECT' not in hdr:
                 hdr['OBJECT'] = 'none'
@@ -277,6 +345,9 @@ def nirps_pp(files):
                 if hdr['DPRTYPE'][0:3] == 'OBJ':
                     hdr['OBSTYPE'] = 'OBJECT'
 
+                if hdr['DPRTYPE'][0:3] == 'LED':
+                    hdr['OBSTYPE'] = 'LED'
+
             if hdr['DPRTYPE'][0:3] == 'OBJ':
                 hdr['TRG_TYPE'] = 'TARGET'
             else:
@@ -292,6 +363,40 @@ def nirps_pp(files):
 
                     if key in ref_hdr:
                         hdr[key] = ref_hdr[key]
+
+            if hdr['OBSTYPE'] == 'LED':
+                # we cannot correct the capacitive coupling between amplifiers if we have an LED image
+                xtalk_filter = False
+
+
+            if xtalk_filter:
+                mask = get_mask(mask_file)
+
+                im2 = np.array(im)
+                im2[mask] = np.nan
+
+                # median-bin and expand back to original size
+                lowf = zoom(medbin(im2,binsize,binsize),4096//binsize)
+                # subtract low-frequency from masked image
+
+                # find the amplifier x-talk map
+                xtalk = med32(im2-lowf,doplot = doplot)
+                im2 -= xtalk
+                # subtract both low-frequency and x-talk from input image
+                im -= xtalk
+
+            fits.writeto(outname,im, hdr, overwrite = True)
+
+            return
+
+            """
+            # rotates the image so that it matches the order geometry of SPIRou and HARPS
+            # redder orders at the bottom and redder wavelength within each order on the left
+
+            # NIRPS = 5
+            # SPIROU = 3
+            im = rot8(im,5)
+
 
 
             b = fits.getdata(file,ext = 2)
@@ -330,6 +435,7 @@ def nirps_pp(files):
                 os.system('rm ' + outname + '')
 
             new_hdul.writeto(outname, overwrite=True)
+            """
 
 
     return []
