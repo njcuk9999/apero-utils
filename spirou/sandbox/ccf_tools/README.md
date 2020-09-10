@@ -7,7 +7,7 @@ that may be called _all_ccfs_ (you can name it something else by giving a
 parameter to the function _dispatch_object_).
 
 Download all the CCFs from the DRS. These files will have names will look like _2434981o_pp_e2dsff_tcorr_AB_ccf_masque_sept18_andres_trans50_AB.fits_ and 
-they should all be in the appropriate sub-folder (unless you want to tempt devil, that should be
+they should all be in the appropriate sub-folder (unless you want to tempt devil, they should be in the sub-folder
 _all_ccfs_). 
 
 Dispatch all CCF files into per-object folders.
