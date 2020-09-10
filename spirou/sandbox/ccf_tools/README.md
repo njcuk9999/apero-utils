@@ -22,7 +22,7 @@ You are (or should) be all set to get some RV measurements!
 
 Try getting an RV for a random object:
 
-_ccf2rv('TOI-1278')_
+- _ccf2rv('TOI-1278')_
 
 You can measure RVs with a number of 'methods' (2 are currently defined):
 
@@ -33,8 +33,8 @@ percentile of the CCF, that would be method = 'bisector_30_70'
 ... you are invited to contribute other methods!
 
 If you obtained CCFs with a number of masks, then you need to specify a mask name as 
-an input parameter: mask = 'my_clever_mask', otherwise it uses the DRS default.
-
+an input parameter to the _ccf2rv_ function: mask = 'my_clever_mask', otherwise it uses the DRS default.
+ 
 Outputs :
 
 Lot's of plots and a CSV file that are named OBJECT_mask_MASKNAME_METHOD.csv. This file
