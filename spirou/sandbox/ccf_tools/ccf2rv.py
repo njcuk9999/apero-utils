@@ -8,7 +8,22 @@ from astropy.table import Table
 from bisector import *
 from scipy.optimize import curve_fit
 
-PATH = '/Users/eartigau/wrap_drs_rv'
+#
+# we get the user name. as we are just a few people in the team, we could all
+# have our paths hard coded here.
+#
+name = os.popen('whoami').read().split('\n')[0]
+
+if name == 'eartigau':
+    PATH = '/Users/eartigau/wrap_drs_rv';
+elif name=='andres':
+    PATH = '/some/folder/somewhere';
+elif name == 'pascal':
+    PATH = '/some/folder/somewhere';
+else:
+    default: PATH = ''
+
+
 
 def gauss(v,v0,ew,zp,amp):
     # gaussian with a constant offset. As we know that the ccfs are negative structures, amp will be negative
@@ -64,7 +79,7 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     #          bisector_N_M returns the velocity between N and Mth percentile of line depth.
     #
     #         gaussfit --> fits a gaussian to the mean CCF
-
+    #
 
     ccf_files = glob.glob('{0}/{1}/*tcorr*{2}*.fits'.format(PATH,object,mask))
 
@@ -223,7 +238,6 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     # get a per-file weighted mean CCF
     mean_ccf = np.nansum(ccf_cube_norm,axis=0)
 
-
     fig,ax = plt.subplots(nrows = 2, ncols = 1)
     for i in range(len(ccf_files)):
         color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
@@ -233,7 +247,6 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
     ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
                                                                                            ccf_RV[id_min]+10])
-
     plt.tight_layout()
     plt.savefig('{0}_CCFs.pdf'.format(batch_name))
     plt.show()
