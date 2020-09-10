@@ -180,7 +180,6 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     # we normalize the sum of the weights to one
     weights /= np.nansum(weights)
 
-
     fig,ax = plt.subplots(nrows = 3, ncols=1,sharex = True)
     ax[0].plot(weights,'go')
     ax[0].set(title = '{0}, mask {1}'.format(object,mask),xlabel = 'Nth order', ylabel = 'Relative order weight')
