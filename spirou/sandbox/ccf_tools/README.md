@@ -10,11 +10,12 @@ Download all the CCFs from the DRS. These files will have names will look like _
 they should all be in the appropriate sub-folder (unless you want to tempt devil, they should be in the sub-folder
 _all_ccfs_). 
 
-Dispatch all CCF files into per-object folders.
+
+First, dispatch all CCF files into per-object folders.
 - Start python
 - from ccf2rv import *
 - Assuming that you want to create folders for **all** objects ever, just run 
-_dispatch_object('all')_ (maybe with _all_ccf_dir = 'all_ccfs'_ as a parameter)
+_dispatch_object('all')_ (maybe with _all_ccf_dir = 'my_devil_folder'_ as a parameter)
 - Maybe you just want one object, then run _dispatch_object('TOI-1278')_
 
 You are (or should) be all set to get some RV measurements!
