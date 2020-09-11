@@ -24,7 +24,6 @@ else:
     default: PATH = ''
 
 
-
 def gauss(v,v0,ew,zp,amp):
     # gaussian with a constant offset. As we know that the ccfs are negative structures, amp will be negative
     return zp+amp*np.exp( -0.5*(v-v0)**2/ew**2)

@@ -35,7 +35,7 @@ percentile of the CCF, that would be method = 'bisector_30_70'
 If you obtained CCFs with a number of masks, then you need to specify a mask name as 
 an input parameter to the _ccf2rv_ function: mask = 'my_clever_mask', otherwise it uses the DRS default.
  
-Outputs :
+Outputs : 
 
 Lot's of plots and a CSV file that are named OBJECT_mask_MASKNAME_METHOD.csv. This file
 contains tons of info about the data the velocity of your object.
