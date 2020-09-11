@@ -95,7 +95,7 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
 
     # keywords from file headers to be added to the CSV table.
     keywords = ['MJDATE','BERV', 'RV_DRIFT','EXTSN035','AIRMASS','TLPEH2O','TLPEOTR','RV_WAVFP','RV_SIMFP','DATE',
-                'MJDMID']
+                'MJDMID','DATE-OBS','EXPTIME']
 
 
     # add method-specific keywords
@@ -324,6 +324,7 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
         plt.tight_layout()
         plt.savefig('{0}_RV.pdf'.format(batch_name))
         plt.show()
+
 
     # output to csv file
     tbl.write('{0}.csv'.format(batch_name),overwrite = True)
