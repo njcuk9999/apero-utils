@@ -60,7 +60,7 @@ def dispatch_object(object, all_ccf_dir = 'all_ccfs'):
     print('We found {0} files for that object. It includes {1} AB files and {2} C drift files'.format(ngood_AB+ngood_C,ngood_AB, ngood_C))
 
 def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
-                  weight_table = ''):
+                  weight_table = '', force = True):
     # parameters :
     #
     # object -> name of the object to be analyzed, linked to the folder where the data should be. You need
@@ -88,6 +88,10 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
 
     # form a unique batch name with mask, object and method
     batch_name = '{0}/{1}_mask_{2}_{3}'.format(PATH,object,mask,method)
+
+    if force == False:
+        if os.path.isfile('{0}.csv'.format(batch_name)):
+            return Table.read('{0}.csv'.format(batch_name))
 
     tbl = Table()# output table to be saved as CSV file with RV measurements
     tbl['FILES'] = ccf_files
@@ -319,8 +323,8 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
         fig,ax = plt.subplots(nrows = 2, ncols=1,sharex = True)
         ax[0].plot(tbl['MJDATE'], tbl['RV'], 'g.')
         ax[0].set(title='Velocity',xlabel = 'MJDATE',ylabel = 'RV [km/s]')
-        ax[1].plot(tbl['MJDATE'], tbl['GAUSS_WIDTH'], 'g.')
-        ax[1].set(title='Gaussian width',xlabel = 'MJDATE',ylabel = 'Gaussian e-width [km/s]')
+        ax[1].plot(tbl['MJDATE'], tbl['GAUSS_WIDTH']*2.354, 'g.')
+        ax[1].set(title='Gaussian width',xlabel = 'MJDATE',ylabel = 'Gaussian FWHM [km/s]')
         plt.tight_layout()
         plt.savefig('{0}_RV.pdf'.format(batch_name))
         plt.show()

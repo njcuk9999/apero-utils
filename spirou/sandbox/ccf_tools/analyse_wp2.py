@@ -7,9 +7,13 @@ from astropy.time import Time
 from ccf2rv import *
 
 
+exclude_orders = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,27,28,35,36,40,41,42,46]
 
-tbl = get_object_rv('TOI-1278',method = 'bisector_40_60')
-period = 14.4
+# tbl = get_object_rv('TOI-1278',method = 'gaussian',force = True,exclude_orders = exclude_orders)
+# period = 14.4
+
+# tbl = get_object_rv('TOI-1452',method = 'gaussian',force = True,)
+# period = 11.064093
 
 udates = np.unique(tbl['DATE-OBS'])
 
@@ -61,6 +65,9 @@ time_plot = np.arange(np.min(tbl_bin['MJDATE_MEAN'])-dt/10,np.max(tbl_bin['MJDAT
 model_plot = amps[0]+amps[1]*np.sin(2*np.pi*time_plot/period)+amps[2]*np.cos(2*np.pi*time_plot/period)
 
 model_data = amps[0]+amps[1]*np.sin(phase)+amps[2]*np.cos(phase)
+
+print('Amplitude of the sinusoidal at {0} days: {1} m/s'.format(period,np.sqrt(amps[1]**2+amps[2]**2)))
+print('Mean/Median per-epoch STDDEV {0}/{1} m/s'.format(np.mean(tbl_bin["RV_SIG"]),np.median(tbl_bin["RV_SIG"])))
 
 
 fig, ax = plt.subplots(nrows = 2, ncols = 1)
