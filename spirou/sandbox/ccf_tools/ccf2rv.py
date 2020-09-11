@@ -79,6 +79,10 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     #
     #         gaussfit --> fits a gaussian to the mean CCF
     #
+    # if you want to force a weight onto orders rather than let the program decide automatically, then provide a
+    # value for weight_table (e.g., weigth_table = "my_weights.csv". It must have 49 rows, one column name
+    # "WEIGHT" (all capitals) and be read as a proper numpy.table file
+    #
 
     ccf_files = glob.glob('{0}/{1}/*tcorr*{2}*.fits'.format(PATH,object,mask))
 
@@ -176,36 +180,50 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     ccf_depth[ccf_depth<0] = 0
 
 
-    # now we find the RMS of the Nth spectrum relative to the median
-    rms = np.zeros([len(ccf_files),49])
-    for i in range(len(ccf_files)):
-        rms[i,:] = np.nanstd(ccf_cube[:,:,i]-med_ccf,axis=1)
-        rms[i, :] /= np.nanmedian(rms[i, :])
+    if weight_table == "":
+        # now we find the RMS of the Nth spectrum relative to the median
+        rms = np.zeros([len(ccf_files),49])
+        for i in range(len(ccf_files)):
+            rms[i,:] = np.nanstd(ccf_cube[:,:,i]-med_ccf,axis=1)
+            rms[i, :] /= np.nanmedian(rms[i, :])
 
-    # this is the typical noise from the ccf dispersion
-    ccf_rms = np.nanmedian(rms,axis=0)
+        # this is the typical noise from the ccf dispersion
+        ccf_rms = np.nanmedian(rms,axis=0)
 
-    # set to NaN values that are invalid
-    ccf_rms[ccf_rms == 0] = np.nan
+        # set to NaN values that are invalid
+        ccf_rms[ccf_rms == 0] = np.nan
 
-    # assuming that the CCF has the same depth everywhere, this is the correct weighting of orders
-    ccf_snr = ccf_depth / ccf_rms
-    weights = ccf_snr**2
-    # we normalize the sum of the weights to one
-    weights /= np.nansum(weights)
+        # assuming that the CCF has the same depth everywhere, this is the correct weighting of orders
+        ccf_snr = ccf_depth / ccf_rms
+        weights = ccf_snr**2
+        # we normalize the sum of the weights to one
+        weights /= np.nansum(weights)
 
-    fig,ax = plt.subplots(nrows = 3, ncols=1,sharex = True)
-    ax[0].plot(weights,'go')
-    ax[0].set(title = '{0}, mask {1}'.format(object,mask),xlabel = 'Nth order', ylabel = 'Relative order weight')
+        fig,ax = plt.subplots(nrows = 3, ncols=1,sharex = True)
+        ax[0].plot(weights,'go')
+        ax[0].set(title = '{0}, mask {1}'.format(object,mask),xlabel = 'Nth order', ylabel = 'Relative order weight')
 
-    ax[1].plot(ccf_depth,'go')
-    ax[1].set(xlabel = 'Nth order', ylabel = 'ccf depth')
+        ax[1].plot(ccf_depth,'go')
+        ax[1].set(xlabel = 'Nth order', ylabel = 'ccf depth')
 
-    ax[2].plot(1/ccf_rms**2,'go')
-    ax[2].set(xlabel = 'Nth order', ylabel = '1/$\sigma_{CCF}^2$')
-    plt.tight_layout()
-    plt.savefig('{0}_weights.pdf'.format(batch_name))
-    plt.show()
+        ax[2].plot(1/ccf_rms**2,'go')
+        ax[2].set(xlabel = 'Nth order', ylabel = '1/$\sigma_{CCF}^2$')
+        plt.tight_layout()
+        plt.savefig('{0}_weights.pdf'.format(batch_name))
+        plt.show()
+
+        tbl_weights = Table()
+        tbl_weights['order'] = np.arange(49)
+        tbl_weights['weights'] = weights
+        tbl_weights['ccf_depth'] = ccf_depth
+        tbl_weights['ccf_snr'] = ccf_snr
+        tbl_weights.write('{0}_weights.csv'.format(batch_name),overwrite = True)
+
+    else:
+        print('You provided a weight file, we load it and apply weights accordingly')
+        tbl_weights = Table.read(weight_table)
+        weights = np.array(tbl_weights['weights'],dtype = float)
+        weights /= np.nansum(weights)
 
 
     plt.imshow(med_ccf,aspect = 'auto',vmin = 0.8,vmax= 1.05)
