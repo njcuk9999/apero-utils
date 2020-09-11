@@ -329,3 +329,4 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     # output to csv file
     tbl.write('{0}.csv'.format(batch_name),overwrite = True)
 
+    return tbl
