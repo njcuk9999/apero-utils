@@ -7,10 +7,11 @@ from astropy.time import Time
 from ccf2rv import *
 
 
-exclude_orders = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,27,28,35,36,40,41,42,46]
+# exclude_orders = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,27,28,35,36,40,41,42,46]
+exclude_orders = [-1]
 
-# tbl = get_object_rv('TOI-1278',method = 'gaussian',force = True,exclude_orders = exclude_orders)
-# period = 14.4
+tbl = get_object_rv('TOI-1278',method = 'bisector_30_70',force = True,exclude_orders = exclude_orders)
+period = 14.4
 
 # tbl = get_object_rv('TOI-1452',method = 'gaussian',force = True,)
 # period = 11.064093
