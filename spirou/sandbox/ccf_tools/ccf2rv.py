@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 from bisector import *
 from scipy.optimize import curve_fit
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
 #
 # we get the user name. as we are just a few people in the team, we could all
@@ -59,7 +60,15 @@ def dispatch_object(object, all_ccf_dir = 'all_ccfs'):
 
     print('We found {0} files for that object. It includes {1} AB files and {2} C drift files'.format(ngood_AB+ngood_C,ngood_AB, ngood_C))
 
-def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
+
+object = 'TOI-1278'
+mask = 'sept18_andres_trans50'
+method = 'template'
+exclude_orders = [-1]
+weight_table = ''
+force = True
+
+def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
                   weight_table = '', force = True):
     # parameters :
     #
@@ -91,7 +100,8 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
 
     if force == False:
         if os.path.isfile('{0}.csv'.format(batch_name)):
-            return Table.read('{0}.csv'.format(batch_name))
+            stop
+            #return Table.read('{0}.csv'.format(batch_name))
 
     tbl = Table()# output table to be saved as CSV file with RV measurements
     tbl['FILES'] = ccf_files
@@ -148,7 +158,7 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
             if np.sum(ccf_RV != ccf_RV_previous):
                 print('We have a big problem! The RV vector of CCF files are not all the same')
                 print('Files {0} and {1} have different RV vectors.'.format(ccf_files[i-1],ccf_files[i]))
-                return
+                stop
         ccf_RV_previous = np.array(ccf_RV)
 
 
@@ -271,6 +281,47 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     plt.tight_layout()
     plt.savefig('{0}_CCFs.pdf'.format(batch_name))
     plt.show()
+
+    if 'template' in method:
+        print('')
+
+        g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
+
+        for ite in range(10):
+            corr_ccf = np.array(mean_ccf)
+            for i in range(len(ccf_files)):
+                spline = ius(ccf_RV,mean_ccf[:,i],ext=3)
+                corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
+
+            med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
+            deriv = np.gradient(med_corr_ccf)/np.gradient(ccf_RV)
+            deriv = deriv[g]
+            deriv = deriv/np.nansum(deriv**2)
+
+            for i in range(len(ccf_files)):
+                tbl['RV'][i]-=np.nansum( (corr_ccf[:,i]-med_corr_ccf)[g]*deriv)
+
+            tbl['RV'] -= np.nanmean(tbl['RV'])
+            plt.plot( tbl['RV'],'.')
+        plt.show()
+        tbl['RV']+=ccf_RV[id_min]
+
+
+
+        fig,ax = plt.subplots(nrows = 2, ncols = 1)
+        for i in range(len(ccf_files)):
+            color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
+            ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
+            ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
+
+        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
+        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
+                                                                                               ccf_RV[id_min]+10])
+        plt.tight_layout()
+        plt.savefig('{0}_CCFs.pdf'.format(batch_name))
+        plt.show()
+
+
 
     # we use the bisector method, the name should be something like
     # method = 'bisector_30_70' to get the mean bisector between the 30th and 70th percentile
