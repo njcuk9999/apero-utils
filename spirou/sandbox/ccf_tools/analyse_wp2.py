@@ -10,13 +10,15 @@ def sinusoidal(phase,dphase,amp,zp):
     return np.sin( (phase+dphase))*amp+zp
 
 
-exclude_orders = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,27,28,35,36,40,41,42,46]
-#exclude_orders = [0,1,10,18,11,12,13,14,15,16,20,22,40,42,43,48]
+#exclude_orders = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,27,28,35,36,40,41,42,46]
+#exclude_orders = [0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,11,12,13,14,15,16,20,22,40,42,43,48]
 
-tbl = get_object_rv('TOI-1278',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders)
-period = 14.4
-
-
+if True:  # best setup for TOI-1278
+    exclude_orders = [11,12,13,14,20,21,22,48]
+    # number of median-absolute deviations within an epoch to consider a point discrepant
+    nMAD_cut = 4
+    tbl = get_object_rv('TOI-1278',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders)
+    period = 14.4
 
 
 #tbl = get_object_rv('TOI-1452',method = 'template',force = True,exclude_orders = exclude_orders)
@@ -50,7 +52,7 @@ for ite in range(2):
         nsig = np.abs(nsig)
         print(np.max(nsig))
 
-        g[g] = nsig<5
+        g[g] = nsig<nMAD_cut
         tbl['KEEP'][g] = True
 
         tbl_bin['RV'][i] = np.mean(tbl['RV'][g])
