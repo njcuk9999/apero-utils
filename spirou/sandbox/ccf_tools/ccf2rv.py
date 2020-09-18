@@ -106,6 +106,7 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
     tbl = Table()# output table to be saved as CSV file with RV measurements
     tbl['FILES'] = ccf_files
     tbl['RV'] = np.zeros_like(ccf_files,dtype = float) # measured RV
+    tbl['CCF_RESIDUAL_RMS']= np.zeros_like(ccf_files,dtype = float) # RMS of CCF - median(CCF)
 
     # keywords from file headers to be added to the CSV table.
     keywords = ['MJDATE','BERV', 'RV_DRIFT','EXTSN035','AIRMASS','TLPEH2O','TLPEOTR','RV_WAVFP','RV_SIMFP','DATE',
@@ -240,15 +241,15 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
         weights /= np.nansum(weights)
 
 
-    plt.imshow(med_ccf,aspect = 'auto',vmin = 0.8,vmax= 1.05)
-    plt.xlabel('Velocity bin')
+    plt.imshow(med_ccf,aspect = 'auto',vmin = 0.8,vmax= 1.05,extent = [np.min(ccf_RV),np.max(ccf_RV),49,0])
+    plt.xlabel('Velocity bin [km/s] ')
     plt.ylabel('Nth order')
     plt.title('Median CCF')
     plt.savefig('{0}_medianccf.pdf'.format(batch_name))
     plt.show()
 
-    plt.imshow(ccf_cube[:,:,0]-med_ccf,aspect = 'auto',vmin = -0.1,vmax= 0.1)
-    plt.xlabel('Velocity bin')
+    plt.imshow(ccf_cube[:,:,0]-med_ccf,aspect = 'auto',vmin = -0.1,vmax= 0.1,extent = [np.min(ccf_RV),np.max(ccf_RV),49,0])
+    plt.xlabel('Velocity bin [km/s]')
     plt.ylabel('Nth order')
     plt.title('Sample residual CCF map')
     plt.savefig('{0}_residualccf.pdf'.format(batch_name))
@@ -379,6 +380,31 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
         plt.tight_layout()
         plt.savefig('{0}_RV.pdf'.format(batch_name))
         plt.show()
+
+
+
+    # we add a measurement of the STDDEV of each mean CCF relative to the median CCF after correcting for the measured
+    # velocity. If you are going to add 'methods', add them before this line
+    corr_ccf = np.array(mean_ccf)
+    for i in range(len(ccf_files)):
+        spline = ius(ccf_RV,mean_ccf[:,i],ext=3)
+        corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i]-np.mean(tbl['RV']))
+
+    med_corr_ccf = np.nanmedian(corr_ccf, axis=1)
+    g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
+
+    plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.5,label = 'median CCF')
+    for i in range(len(ccf_files)):
+        residual = corr_ccf[:,i] - med_corr_ccf
+        tbl['CCF_RESIDUAL_RMS'][i] = np.std(residual[g])
+
+        color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
+        plt.plot(ccf_RV,residual+1,color = color,alpha = 0.2)
+    plt.title('Residual CCFs')
+    plt.xlabel('velocity [km/s]')
+    plt.ylabel('CCF depth')
+    plt.legend()
+    plt.show()
 
 
     # output to csv file
