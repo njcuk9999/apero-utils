@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 from bisector import *
 from scipy.optimize import curve_fit
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
 #
 # we get the user name. as we are just a few people in the team, we could all
@@ -22,7 +23,6 @@ elif name == 'pascal':
     PATH = '/some/folder/somewhere';
 else:
     default: PATH = ''
-
 
 
 def gauss(v,v0,ew,zp,amp):
@@ -60,8 +60,16 @@ def dispatch_object(object, all_ccf_dir = 'all_ccfs'):
 
     print('We found {0} files for that object. It includes {1} AB files and {2} C drift files'.format(ngood_AB+ngood_C,ngood_AB, ngood_C))
 
-def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
-                  weight_table = ''):
+
+object = 'TOI-1278'
+mask = 'sept18_andres_trans50'
+method = 'template'
+exclude_orders = [-1]
+weight_table = ''
+force = True
+
+def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
+                  weight_table = '', force = True):
     # parameters :
     #
     # object -> name of the object to be analyzed, linked to the folder where the data should be. You need
@@ -80,11 +88,20 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     #
     #         gaussfit --> fits a gaussian to the mean CCF
     #
+    # if you want to force a weight onto orders rather than let the program decide automatically, then provide a
+    # value for weight_table (e.g., weigth_table = "my_weights.csv". It must have 49 rows, one column name
+    # "WEIGHT" (all capitals) and be read as a proper numpy.table file
+    #
 
     ccf_files = glob.glob('{0}/{1}/*tcorr*{2}*.fits'.format(PATH,object,mask))
 
     # form a unique batch name with mask, object and method
     batch_name = '{0}/{1}_mask_{2}_{3}'.format(PATH,object,mask,method)
+
+    if force == False:
+        if os.path.isfile('{0}.csv'.format(batch_name)):
+            stop
+            #return Table.read('{0}.csv'.format(batch_name))
 
     tbl = Table()# output table to be saved as CSV file with RV measurements
     tbl['FILES'] = ccf_files
@@ -92,7 +109,7 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
 
     # keywords from file headers to be added to the CSV table.
     keywords = ['MJDATE','BERV', 'RV_DRIFT','EXTSN035','AIRMASS','TLPEH2O','TLPEOTR','RV_WAVFP','RV_SIMFP','DATE',
-                'MJDMID']
+                'MJDMID','DATE-OBS','EXPTIME']
 
 
     # add method-specific keywords
@@ -141,7 +158,7 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
             if np.sum(ccf_RV != ccf_RV_previous):
                 print('We have a big problem! The RV vector of CCF files are not all the same')
                 print('Files {0} and {1} have different RV vectors.'.format(ccf_files[i-1],ccf_files[i]))
-                return
+                stop
         ccf_RV_previous = np.array(ccf_RV)
 
 
@@ -177,36 +194,50 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     ccf_depth[ccf_depth<0] = 0
 
 
-    # now we find the RMS of the Nth spectrum relative to the median
-    rms = np.zeros([len(ccf_files),49])
-    for i in range(len(ccf_files)):
-        rms[i,:] = np.nanstd(ccf_cube[:,:,i]-med_ccf,axis=1)
-        rms[i, :] /= np.nanmedian(rms[i, :])
+    if weight_table == "":
+        # now we find the RMS of the Nth spectrum relative to the median
+        rms = np.zeros([len(ccf_files),49])
+        for i in range(len(ccf_files)):
+            rms[i,:] = np.nanstd(ccf_cube[:,:,i]-med_ccf,axis=1)
+            rms[i, :] /= np.nanmedian(rms[i, :])
 
-    # this is the typical noise from the ccf dispersion
-    ccf_rms = np.nanmedian(rms,axis=0)
+        # this is the typical noise from the ccf dispersion
+        ccf_rms = np.nanmedian(rms,axis=0)
 
-    # set to NaN values that are invalid
-    ccf_rms[ccf_rms == 0] = np.nan
+        # set to NaN values that are invalid
+        ccf_rms[ccf_rms == 0] = np.nan
 
-    # assuming that the CCF has the same depth everywhere, this is the correct weighting of orders
-    ccf_snr = ccf_depth / ccf_rms
-    weights = ccf_snr**2
-    # we normalize the sum of the weights to one
-    weights /= np.nansum(weights)
+        # assuming that the CCF has the same depth everywhere, this is the correct weighting of orders
+        ccf_snr = ccf_depth / ccf_rms
+        weights = ccf_snr**2
+        # we normalize the sum of the weights to one
+        weights /= np.nansum(weights)
 
-    fig,ax = plt.subplots(nrows = 3, ncols=1,sharex = True)
-    ax[0].plot(weights,'go')
-    ax[0].set(title = '{0}, mask {1}'.format(object,mask),xlabel = 'Nth order', ylabel = 'Relative order weight')
+        fig,ax = plt.subplots(nrows = 3, ncols=1,sharex = True)
+        ax[0].plot(weights,'go')
+        ax[0].set(title = '{0}, mask {1}'.format(object,mask),xlabel = 'Nth order', ylabel = 'Relative order weight')
 
-    ax[1].plot(ccf_depth,'go')
-    ax[1].set(xlabel = 'Nth order', ylabel = 'ccf depth')
+        ax[1].plot(ccf_depth,'go')
+        ax[1].set(xlabel = 'Nth order', ylabel = 'ccf depth')
 
-    ax[2].plot(1/ccf_rms**2,'go')
-    ax[2].set(xlabel = 'Nth order', ylabel = '1/$\sigma_{CCF}^2$')
-    plt.tight_layout()
-    plt.savefig('{0}_weights.pdf'.format(batch_name))
-    plt.show()
+        ax[2].plot(1/ccf_rms**2,'go')
+        ax[2].set(xlabel = 'Nth order', ylabel = '1/$\sigma_{CCF}^2$')
+        plt.tight_layout()
+        plt.savefig('{0}_weights.pdf'.format(batch_name))
+        plt.show()
+
+        tbl_weights = Table()
+        tbl_weights['order'] = np.arange(49)
+        tbl_weights['weights'] = weights
+        tbl_weights['ccf_depth'] = ccf_depth
+        tbl_weights['ccf_snr'] = ccf_snr
+        tbl_weights.write('{0}_weights.csv'.format(batch_name),overwrite = True)
+
+    else:
+        print('You provided a weight file, we load it and apply weights accordingly')
+        tbl_weights = Table.read(weight_table)
+        weights = np.array(tbl_weights['weights'],dtype = float)
+        weights /= np.nansum(weights)
 
 
     plt.imshow(med_ccf,aspect = 'auto',vmin = 0.8,vmax= 1.05)
@@ -250,6 +281,47 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
     plt.tight_layout()
     plt.savefig('{0}_CCFs.pdf'.format(batch_name))
     plt.show()
+
+    if 'template' in method:
+        print('')
+
+        g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
+
+        for ite in range(10):
+            corr_ccf = np.array(mean_ccf)
+            for i in range(len(ccf_files)):
+                spline = ius(ccf_RV,mean_ccf[:,i],ext=3)
+                corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
+
+            med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
+            deriv = np.gradient(med_corr_ccf)/np.gradient(ccf_RV)
+            deriv = deriv[g]
+            deriv = deriv/np.nansum(deriv**2)
+
+            for i in range(len(ccf_files)):
+                tbl['RV'][i]-=np.nansum( (corr_ccf[:,i]-med_corr_ccf)[g]*deriv)
+
+            tbl['RV'] -= np.nanmean(tbl['RV'])
+            plt.plot( tbl['RV'],'.')
+        plt.show()
+        tbl['RV']+=ccf_RV[id_min]
+
+
+
+        fig,ax = plt.subplots(nrows = 2, ncols = 1)
+        for i in range(len(ccf_files)):
+            color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
+            ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
+            ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
+
+        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
+        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
+                                                                                               ccf_RV[id_min]+10])
+        plt.tight_layout()
+        plt.savefig('{0}_CCFs.pdf'.format(batch_name))
+        plt.show()
+
+
 
     # we use the bisector method, the name should be something like
     # method = 'bisector_30_70' to get the mean bisector between the 30th and 70th percentile
@@ -302,12 +374,14 @@ def get_object_rv(object,mask = 'sept18_andres_trans50', method = 'bisector_40_6
         fig,ax = plt.subplots(nrows = 2, ncols=1,sharex = True)
         ax[0].plot(tbl['MJDATE'], tbl['RV'], 'g.')
         ax[0].set(title='Velocity',xlabel = 'MJDATE',ylabel = 'RV [km/s]')
-        ax[1].plot(tbl['MJDATE'], tbl['GAUSS_WIDTH'], 'g.')
-        ax[1].set(title='Gaussian width',xlabel = 'MJDATE',ylabel = 'Gaussian e-width [km/s]')
+        ax[1].plot(tbl['MJDATE'], tbl['GAUSS_WIDTH']*2.354, 'g.')
+        ax[1].set(title='Gaussian width',xlabel = 'MJDATE',ylabel = 'Gaussian FWHM [km/s]')
         plt.tight_layout()
         plt.savefig('{0}_RV.pdf'.format(batch_name))
         plt.show()
 
+
     # output to csv file
     tbl.write('{0}.csv'.format(batch_name),overwrite = True)
 
+    return tbl
