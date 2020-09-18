@@ -22,7 +22,7 @@ You are (or should) be all set to get some RV measurements!
 
 Try getting an RV for a random object:
 
-- _ccf2rv('TOI-1278')_
+- _get_object_rv('TOI-1278')_
 
 You can measure RVs with a number of 'methods' (2 are currently defined):
 

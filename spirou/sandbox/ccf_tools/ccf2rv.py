@@ -34,7 +34,7 @@ def dispatch_object(object, all_ccf_dir = 'all_ccfs'):
     #
     # set object to "all" to dispatch all files in folders
     #
-    all_ccf_files = glob.glob(PATH+'/'+all_ccf_dir+'/*ccf*.fits')
+    all_ccf_files = glob.glob(PATH+'/'+all_ccf_dir+'/*ccf*AB.fits')
 
     ngood_AB = 0
     ngood_C = 0
