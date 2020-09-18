@@ -295,6 +295,7 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
 
         g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
 
+        rv_prev = np.array(tbl['RV'])
         for ite in range(10):
             corr_ccf = np.array(mean_ccf)
             for i in range(len(ccf_files)):
@@ -310,8 +311,11 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
                 tbl['RV'][i]-=np.nansum( (corr_ccf[:,i]-med_corr_ccf)[g]*deriv)
 
             tbl['RV'] -= np.nanmean(tbl['RV'])
-            plt.plot( tbl['RV'],'.')
-        plt.show()
+            #plt.plot( tbl['RV'],'.')
+            print('Template CCF iteration number {0}, rms RV change {1} km/s for this step'.format(ite+1,np.nanstd(rv_prev - tbl['RV'])))
+            rv_prev = np.array(tbl['RV'])
+
+        #plt.show()
         tbl['RV']+=ccf_RV[id_min]
 
 
@@ -326,7 +330,7 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
         ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
                                                                                                ccf_RV[id_min]+10])
         plt.tight_layout()
-        plt.savefig('{0}_CCFs.pdf'.format(batch_name))
+        plt.savefig('{0}_template.pdf'.format(batch_name))
         plt.show()
 
 
@@ -411,6 +415,8 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
     plt.xlabel('velocity [km/s]')
     plt.ylabel('CCF depth')
     plt.legend()
+    plt.savefig('{0}_residual_CCF.pdf'.format(batch_name))
+
     plt.show()
 
 
