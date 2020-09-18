@@ -16,8 +16,17 @@ def sinusoidal(phase,dphase,amp,zp):
 if True:  # best setup for TOI-1278
     exclude_orders = [10,11,12,13,14,16,17,18,20,21,22,48]
     # number of median-absolute deviations within an epoch to consider a point discrepant
+    nMAD_cut = 6
+    tbl = get_object_rv('TOI-1278',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders,
+                        snr_min = 20.0)
+    period = 14.4
+
+if False:  # best setup for TOI-1278
+    exclude_orders = [-1]
+    # number of median-absolute deviations within an epoch to consider a point discrepant
     nMAD_cut = 4
-    tbl = get_object_rv('TOI-1278',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders)
+    tbl = get_object_rv('Gl846',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders,
+                        snr_min = 120)
     period = 14.4
 
 

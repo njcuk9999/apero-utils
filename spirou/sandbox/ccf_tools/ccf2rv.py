@@ -69,7 +69,7 @@ weight_table = ''
 force = True
 
 def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
-                  weight_table = '', force = True):
+                  weight_table = '', force = True,snr_min = 0.0):
     # parameters :
     #
     # object -> name of the object to be analyzed, linked to the folder where the data should be. You need
@@ -93,7 +93,7 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
     # "WEIGHT" (all capitals) and be read as a proper numpy.table file
     #
 
-    ccf_files = glob.glob('{0}/{1}/*tcorr*{2}*.fits'.format(PATH,object,mask))
+    ccf_files = np.array(glob.glob('{0}/{1}/*tcorr*{2}*.fits'.format(PATH,object,mask)))
 
     # form a unique batch name with mask, object and method
     batch_name = '{0}/{1}_mask_{2}_{3}'.format(PATH,object,mask,method)
@@ -181,6 +181,13 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
                 # we normalize to a continuum of 1
                 tmp /= np.polyval(np.polyfit(ccf_RV, tmp, 1), ccf_RV)
                 ccf_cube[j,:,i] = tmp
+
+    # we apply the SNR threshold
+    keep = tbl['EXTSN035']>snr_min
+    tbl = tbl[keep]
+    ccf_cube = ccf_cube[:,:,keep]
+    ccf_files = ccf_files[keep]
+
 
     # this is the median CCF  all epochs for the 49 orders
     med_ccf =  np.nanmedian(ccf_cube,axis = 2)
