@@ -14,11 +14,12 @@ def sinusoidal(phase,dphase,amp,zp):
 #exclude_orders = [0,1,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,11,12,13,14,15,16,20,22,40,42,43,48]
 
 if True:  # best setup for TOI-1278
-    exclude_orders = [11,12,13,14,20,21,22,48]
+    exclude_orders = [10,11,12,13,14,16,17,18,20,21,22,48]
     # number of median-absolute deviations within an epoch to consider a point discrepant
     nMAD_cut = 4
     tbl = get_object_rv('TOI-1278',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders)
     period = 14.4
+
 
 
 #tbl = get_object_rv('TOI-1452',method = 'template',force = True,exclude_orders = exclude_orders)
@@ -41,19 +42,18 @@ tbl_bin['MJDATE_MAX'] = np.zeros(len(udates), dtype = float)
 tbl['RV'] -= np.nanmean(tbl['RV'])
 tbl['RV'] = 1000*tbl['RV']
 
-tbl['KEEP'] = np.zeros_like(tbl,dtype = bool)
+tbl['KEEP'] = np.ones_like(tbl,dtype = bool)
 # Table per night
-for ite in range(2):
+for ite in range(3):
     tbl2 = Table()
     for i in range(len(udates)):
         g = (udates[i] == tbl['DATE-OBS'])
 
-        nsig = (tbl['RV'][g] - np.nanmedian(tbl['RV'][g]))/np.nanmedian(np.abs(tbl['RV'][g] - np.nanmedian(tbl['RV'][g])))
-        nsig = np.abs(nsig)
-        print(np.max(nsig))
+        nMAD = (tbl['RV'][g] - np.nanmedian(tbl['RV'][g]))/np.nanmedian(np.abs(tbl['RV'][g] - np.nanmedian(tbl['RV'][g])))
+        nMAD = np.abs(nMAD)
+        print(np.max(nMAD))
 
-        g[g] = nsig<nMAD_cut
-        tbl['KEEP'][g] = True
+        tbl['KEEP'][g] = nMAD<nMAD_cut
 
         tbl_bin['RV'][i] = np.mean(tbl['RV'][g])
         tbl_bin['RV_SIG'][i] = np.std(tbl['RV'][g])
@@ -66,6 +66,7 @@ for ite in range(2):
 
         tbl_bin['FORMAL_SIG'][i] =  tbl_bin['RV_SIG'][i]/np.sqrt(tbl_bin['RV_N'][i])
 
+    print(len(tbl))
     tbl = tbl[tbl['KEEP']]
 
 t2 = Time(tbl_bin['MJDATE_MEAN'], format = 'mjd')
