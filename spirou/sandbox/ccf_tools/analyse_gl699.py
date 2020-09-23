@@ -6,27 +6,26 @@ from bisector import *
 from astropy.time import Time
 from ccf2rv import *
 
-def sinusoidal(phase,dphase,amp,zp):
-    return np.sin( (phase+dphase))*amp+zp
+
+exclude_orders = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,40,41,42,43,44,45,46,47,48]#10,11,12,13,14,16,17,18,20,21,22,48]
+# number of median-absolute deviations within an epoch to consider a point discrepant
+nMAD_cut = 5
+tbl = get_object_rv('Gl699',mask = 'gl699_neg',method = 'bisector_40_60',force = True,exclude_orders = exclude_orders,
+                    snr_min = 120.0,weight_type = '')
 
 
-if True:  # best setup for TOI-1278
-    exclude_orders = [10,11,12,13,14,16,17,18,20,21,22,48]
-    # number of median-absolute deviations within an epoch to consider a point discrepant
-    nMAD_cut = 5
-    tbl = get_object_rv('TOI-1278',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders,
-                        snr_min = 20.0)
-    period = 14.4
+fig,ax = plt.subplots(nrows = 2, ncols=1)
 
-if False:  # best setup for TOI-1278
-    exclude_orders = [10,11,12,13,14,16,17,18,20,21,22,48]
-    # number of median-absolute deviations within an epoch to consider a point discrepant
-    nMAD_cut = 5
-    tbl = get_object_rv('Gl699',mask = 'gl699_neg',method = 'template',force = True,exclude_orders = exclude_orders,
-                        snr_min = 100.0)
-    period = 14.4
+ax[0].plot(tbl['RV'],'g.')
+ax[1].plot(tbl['BIS_SLOPE'],'g.')
+In [23]: plt.show()
 
 
+tbl['RV'] -= np.nanmedian(tbl['RV'])
+
+plt.plot(tbl['MJDATE'],tbl['RV'],'g.')
+#plt.plot(tbl['MJDATE'],tbl['RV_WAVFP']-tbl['RV_SIMFP'],'r.')
+plt.show()
 
 #tbl = get_object_rv('TOI-1452',method = 'template',force = True,exclude_orders = exclude_orders)
 #period = 11.064093
@@ -50,7 +49,7 @@ tbl['RV'] = 1000*tbl['RV']
 
 tbl['KEEP'] = np.ones_like(tbl,dtype = bool)
 # Table per night
-for ite in range(3):
+for ite in range(1):
     tbl2 = Table()
     for i in range(len(udates)):
         g = (udates[i] == tbl['DATE-OBS'])
@@ -75,6 +74,8 @@ for ite in range(3):
     print(len(tbl))
     tbl = tbl[tbl['KEEP']]
 
+
+stop
 t2 = Time(tbl_bin['MJDATE_MEAN'], format = 'mjd')
 t3 = Time(tbl['MJDATE'], format = 'mjd')
 

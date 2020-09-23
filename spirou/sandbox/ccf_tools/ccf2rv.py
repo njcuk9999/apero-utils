@@ -61,15 +61,17 @@ def dispatch_object(object, all_ccf_dir = 'all_ccfs'):
     print('We found {0} files for that object. It includes {1} AB files and {2} C drift files'.format(ngood_AB+ngood_C,ngood_AB, ngood_C))
 
 
-object = 'TOI-1278'
-mask = 'sept18_andres_trans50'
+object = 'Gl699'
+mask = 'gl699_neg'
 method = 'template'
 exclude_orders = [-1]
 weight_table = ''
 force = True
+snr_min = 0.0
+weight_type = ''
 
 def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
-                  weight_table = '', force = True,snr_min = 0.0):
+                  weight_table = '', force = True,snr_min = 0.0,weight_type = ''):
     # parameters :
     #
     # object -> name of the object to be analyzed, linked to the folder where the data should be. You need
@@ -206,14 +208,22 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
         # now we find the RMS of the Nth spectrum relative to the median
         rms = np.zeros([len(ccf_files),49])
         for i in range(len(ccf_files)):
-            rms[i,:] = np.nanstd(ccf_cube[:,:,i]-med_ccf,axis=1)
+            rms[i,:] = np.nanmedian(np.abs(ccf_cube[:,:,i]-med_ccf),axis=1)
             rms[i, :] /= np.nanmedian(rms[i, :])
 
+        plt.imshow(rms)
+        plt.show()
         # this is the typical noise from the ccf dispersion
         ccf_rms = np.nanmedian(rms,axis=0)
 
         # set to NaN values that are invalid
         ccf_rms[ccf_rms == 0] = np.nan
+
+        if weight_type == 'depth_only':
+            ccf_rms[np.isfinite(ccf_rms)] = 1.0
+
+        if weight_type == 'rms_only':
+            ccf_depth[np.isfinite(ccf_depth)] = 1.0
 
         # assuming that the CCF has the same depth everywhere, this is the correct weighting of orders
         ccf_snr = ccf_depth / ccf_rms
@@ -290,48 +300,58 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
     plt.savefig('{0}_CCFs.pdf'.format(batch_name))
     plt.show()
 
-    if 'template' in method:
-        print('')
+    #if 'template' in method:
+    #print('')
 
-        g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
+    g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
 
-        rv_prev = np.array(tbl['RV'])
-        for ite in range(10):
-            corr_ccf = np.array(mean_ccf)
-            for i in range(len(ccf_files)):
-                spline = ius(ccf_RV,mean_ccf[:,i],ext=3)
-                corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
+    rv_prev = np.array(tbl['RV'])
+    for ite in range(10):
+        corr_ccf = np.array(mean_ccf)
+        med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
 
-            med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
-            deriv = np.gradient(med_corr_ccf)/np.gradient(ccf_RV)
-            deriv = deriv[g]
-            deriv = deriv/np.nansum(deriv**2)
-
-            for i in range(len(ccf_files)):
-                tbl['RV'][i]-=np.nansum( (corr_ccf[:,i]-med_corr_ccf)[g]*deriv)
-
-            tbl['RV'] -= np.nanmean(tbl['RV'])
-            #plt.plot( tbl['RV'],'.')
-            print('Template CCF iteration number {0}, rms RV change {1} km/s for this step'.format(ite+1,np.nanstd(rv_prev - tbl['RV'])))
-            rv_prev = np.array(tbl['RV'])
-
-        #plt.show()
-        tbl['RV']+=ccf_RV[id_min]
-
-
-
-        fig,ax = plt.subplots(nrows = 2, ncols = 1)
         for i in range(len(ccf_files)):
-            color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
-            ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
-            ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
+            spline = ius(ccf_RV,mean_ccf[:,i],ext=3)
+            corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
 
-        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
-        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
-                                                                                               ccf_RV[id_min]+10])
-        plt.tight_layout()
-        plt.savefig('{0}_template.pdf'.format(batch_name))
-        plt.show()
+            fit = np.polyfit(med_corr_ccf, corr_ccf[:,i],1)
+            #mean_ccf[:, i]-=fit[1]
+            mean_ccf[:, i]/=fit[0]
+            #print(fit)
+            fit = np.polyfit(ccf_RV,mean_ccf[:, i]-med_corr_ccf,2)
+            #print(fit)
+            mean_ccf[:, i] -= np.polyval(fit,ccf_RV)
+
+        deriv = np.gradient(med_corr_ccf)/np.gradient(ccf_RV)
+        deriv = deriv[g]
+        deriv = deriv/np.nansum(deriv**2)
+
+
+        for i in range(len(ccf_files)):
+            tbl['RV'][i]-=np.nansum( (corr_ccf[:,i]-med_corr_ccf)[g]*deriv)
+
+        tbl['RV'] -= np.nanmean(tbl['RV'])
+        #plt.plot( tbl['RV'],'.')
+        print('Template CCF iteration number {0}, rms RV change {1} km/s for this step'.format(ite+1,np.nanstd(rv_prev - tbl['RV'])))
+        rv_prev = np.array(tbl['RV'])
+    #stop
+    #plt.show()
+    tbl['RV']+=ccf_RV[id_min]
+
+
+
+    fig,ax = plt.subplots(nrows = 2, ncols = 1)
+    for i in range(len(ccf_files)):
+        color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
+        ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
+        ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
+
+    ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
+    ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
+                                                                                           ccf_RV[id_min]+10])
+    plt.tight_layout()
+    plt.savefig('{0}_template.pdf'.format(batch_name))
+    plt.show()
 
 
 
