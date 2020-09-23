@@ -362,8 +362,7 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
         #plt.plot( tbl['RV'],'.')
         print('Template CCF iteration number {0}, rms RV change {1} km/s for this step'.format(ite+1,np.nanstd(rv_prev - tbl['RV'])))
         rv_prev = np.array(tbl['RV'])
-    #stop
-    #plt.show()
+
     tbl['RV']+=ccf_RV[id_min]
 
 
