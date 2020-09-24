@@ -2,6 +2,14 @@ import numpy as np
 from astropy.table import Table
 
 def per_epoch_table(tbl_input,nMAD_cut = np.inf):
+    #
+    # Takes a table with many visits for each epoch
+    # and computes stats to get a per-epoch mean velocity
+    # One can provide a maximum median absolute deviation
+    # to reject outliers. Reasonable values for the
+    # nMAD_cut range from 3 (agressive clipping)
+    # to 7 (pretty moderate clipping)
+    #
     tbl = Table(tbl_input)
 
     udates = np.unique(tbl['DATE-OBS'])
