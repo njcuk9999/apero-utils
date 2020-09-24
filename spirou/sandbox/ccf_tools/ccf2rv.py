@@ -9,6 +9,7 @@ from bisector import *
 from scipy.optimize import curve_fit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from fits2wave import *
+import warnings
 import sys
 #
 # we get the user name. as we are just a few people in the team, we could all
@@ -182,7 +183,7 @@ def get_object_rv(object,
                 if np.sum(ccf_RV != ccf_RV_previous):
                     print('We have a big problem! The RV vector of CCF files are not all the same')
                     print('Files {0} and {1} have different RV vectors.'.format(ccf_files[i-1],ccf_files[i]))
-                    stop
+                    sys.exit()
             ccf_RV_previous = np.array(ccf_RV)
 
             print('V[min/max] {0:.1f} / {1:.1f} km/s, file {2}'.format(np.min(ccf_RV),np.max(ccf_RV),ccf_files[i]))
@@ -244,8 +245,10 @@ def get_object_rv(object,
     ccf_cube = ccf_cube[:,:,keep]
     ccf_files = ccf_files[keep]
 
-    # this is the median CCF  all epochs for the 49 orders
-    med_ccf =  np.nanmedian(ccf_cube,axis = 2)
+    with warnings.catch_warnings(record=True) as _:
+        # some slices in the sum are NaNs, that's OK
+        # this is the median CCF  all epochs for the 49 orders
+        med_ccf =  np.nanmedian(ccf_cube,axis = 2)
 
     for iord in range(49):
         if iord not in exclude_orders:
@@ -266,12 +269,15 @@ def get_object_rv(object,
             if bad_orders[iord]:
                 print('The CCF of order {0} has its minima {1:.2f} km/s from median CCF, above threshold of +-{2:.2f} km/s'.
                       format(iord,dv_CCF_min[iord],dvmax_per_order))
-                #exclude_orders = np.append(exclude_orders,iord)
+                exclude_orders = np.append(exclude_orders,iord)
 
     # find valid pixels to measure CCF properties
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
 
-    ccf_Q = np.nansum(np.gradient(med_ccf[:,g],axis=1)**2, axis = 1)
+    with warnings.catch_warnings(record=True) as _:
+        # some slices in the sum are NaNs, that's OK
+        ccf_Q = np.nansum(np.gradient(med_ccf[:,g],axis=1)**2, axis = 1)
+
     ccf_Q[ccf_Q == 0] = np.nan
     ccf_depth = 1-med_ccf[:,id_min]
 
@@ -292,7 +298,9 @@ def get_object_rv(object,
             # now we find the RMS of the Nth spectrum relative to the median
             rms = np.zeros([len(ccf_files),49])
             for i in range(len(ccf_files)):
-                rms[i,:] = np.nanmedian(np.abs(ccf_cube[:,:,i]-med_ccf),axis=1)
+                with warnings.catch_warnings(record=True) as _:
+                # some slices in the median are NaNs, that's OK
+                    rms[i,:] = np.nanmedian(np.abs(ccf_cube[:,:,i]-med_ccf),axis=1)
                 rms[i, :] /= np.nanmedian(rms[i, :])
 
             if doplot:
@@ -301,8 +309,11 @@ def get_object_rv(object,
                 plt.ylabel('Nth frame')
                 plt.title('RMS of CCF relative to median')
                 plt.show()
-            # this is the typical noise from the ccf dispersion
-            ccf_rms = np.nanmedian(rms,axis=0)
+
+            with warnings.catch_warnings(record=True) as _:
+                # some slices in the sum are NaNs, that's OK
+                # this is the typical noise from the ccf dispersion
+                ccf_rms = np.nanmedian(rms,axis=0)
 
             # set to NaN values that are invalid
             ccf_rms[ccf_rms == 0] = np.nan
