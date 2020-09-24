@@ -1,7 +1,7 @@
 import numpy as np
 from astropy.table import Table
 
-def per_epoch_table(tbl_input):
+def per_epoch_table(tbl_input,nMAD_cut = np.inf):
     tbl = Table(tbl_input)
 
     udates = np.unique(tbl['DATE-OBS'])
@@ -18,8 +18,6 @@ def per_epoch_table(tbl_input):
     tbl_bin['MJDATE_MEAN'] = np.zeros(len(udates), dtype = float)
     tbl_bin['MJDATE_MIN'] = np.zeros(len(udates), dtype = float)
     tbl_bin['MJDATE_MAX'] = np.zeros(len(udates), dtype = float)
-
-    tbl['RV'] -= np.nanmean(tbl['RV'])
 
     tbl['KEEP'] = np.ones_like(tbl,dtype = bool)
     # Table per night

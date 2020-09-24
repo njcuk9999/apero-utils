@@ -61,14 +61,15 @@ def dispatch_object(object, all_ccf_dir = 'all_ccfs'):
     print('We found {0} files for that object. It includes {1} AB files and {2} C drift files'.format(ngood_AB+ngood_C,ngood_AB, ngood_C))
 
 
-object = 'Gl699'
-mask = 'gl699_neg'
+object = 'TOI-1452'
+mask = 'gl846_neg'
 method = 'template'
 exclude_orders = [-1]
 weight_table = ''
 force = True
 snr_min = 0.0
 weight_type = ''
+sanitize = True
 
 def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
                   weight_table = '', force = True,snr_min = 0.0,weight_type = 'DVRMS_CC',sanitize = False):
@@ -282,8 +283,8 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
             weights /= np.nansum(weights)
 
 
-    for ifile in range(len(ccf_files)):
-        tbl['ERROR_RV'][ifile] = 1 / np.sqrt(np.nansum((weights/np.mean(weights)) / DVRMS_CC[:, ifile] ** 2))
+    #for ifile in range(len(ccf_files)):
+    #    tbl['ERROR_RV'][ifile] = 1 / np.sqrt(np.nansum((weights/np.mean(weights)) / DVRMS_CC[:, ifile] ** 2))
 
 
     plt.imshow(med_ccf,aspect = 'auto',vmin = 0.8,vmax= 1.05,extent = [np.min(ccf_RV),np.max(ccf_RV),49,0])
@@ -452,9 +453,17 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
     g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
 
     plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.5,label = 'median CCF')
+
+
+
+    # pix scale expressed in CCF pixels
+    pix_scale = 2.3/np.nanmedian( np.gradient(ccf_RV))
     for i in range(len(ccf_files)):
         residual = corr_ccf[:,i] - med_corr_ccf
         tbl['CCF_RESIDUAL_RMS'][i] = np.std(residual[g])
+
+        dvrms = (np.nanstd(residual) * np.sqrt(pix_scale)) / (np.gradient(med_corr_ccf) / np.gradient(ccf_RV))
+        tbl['ERROR_RV'][i] = 1 / np.sqrt(np.sum(1 / dvrms ** 2))
 
         color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
         plt.plot(ccf_RV,residual+1,color = color,alpha = 0.2)
