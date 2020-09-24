@@ -8,16 +8,24 @@ import os
 from sanitize import *
 import sys
 
+"""
+This code is only used at UdeM but could be used to replicate the batches of CCFs at other sites.
 
+You can get inspired by this code to construct a similar batch script.
+"""
+
+
+# that's batches to come
 tbl = Table.read('ccf_wrap.tbl',format = 'csv')
 objects = np.array(tbl['OBJECT'])
 masks = np.array(tbl['MASK'])
 do_sanitize_all = tbl['SANITIZE'] == 'True'
 
+# you absolutely need to modify these paths
 path_to_masks = '/spirou/drs/apero-drs/apero/data/spirou/ccf/'
 path = '/spirou/cfht_nights/cfht_july1/reduced/20??-??-??/*o_pp_e2dsff_tcorr_AB.fits'
 
-
+# chack that masks are there
 all_mask_files_OK = True
 for mask_file in np.array(np.unique(tbl['MASK'])):
     if not os.path.isfile(path_to_masks+mask_file):
@@ -135,8 +143,6 @@ for iobj in range(len(objects)):
 
     os.system('rsync -av -e "ssh  -oPort=5822" all_ccfs artigau@venus.astro.umontreal.ca:/home/artigau/www')
 
-    #os.system('rsync -av -e "ssh  -oPort=5822" all_ccfs artigau@venus.astro.umontreal.ca:/home/artigau/www')
-
     tar_files = glob.glob('all_ccfs/*.tar')
     sz = np.zeros(len(tar_files),dtype = '<U99')
     for i in range(len(tar_files)):
@@ -158,14 +164,6 @@ for iobj in range(len(objects)):
         f.write('cd ..\n')
     f.close()
 
-
-#f.write('This is an automated email to list all CCF compilations done to date.\n')
-
-
-
-#os.system('rsync -av -e "ssh  -oPort=5822" all_ccfs artigau@venus.astro.umontreal.ca:/home/artigau/www')
-
-
 f = open('email','w')
 f.write('This is an automated email to list all CCF compilations done to date.\n')
 f.write('Copy-paste the commands below in a terminal to get all CCF files. To \n')
@@ -182,10 +180,6 @@ f.write('\t chmod a+x download_ccf.script\n')
 f.write('\t ./download_ccf.script\n')
 f.write('\t rm download_ccf.script\n')
 
-#for i in range(len(tar_files)):
-#    f.write('wget http://www.astro.umontreal.ca/~artigau/all_ccfs/{0}\n'.format(tar_files[i]))
-#for i in range(len(tar_files)):
-#    f.write('tar -xvf {0} \n'.format(tar_files[i]))
 f.write('\n')
 f.write('Files that will be downloaded and extracted from tar\n')
 
