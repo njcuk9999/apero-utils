@@ -9,7 +9,7 @@ from bisector import *
 from scipy.optimize import curve_fit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from fits2wave import *
-
+import sys
 #
 # we get the user name. as we are just a few people in the team, we could all
 # have our paths hard coded here.
@@ -17,14 +17,13 @@ from fits2wave import *
 name = os.popen('whoami').read().split('\n')[0]
 
 if name == 'eartigau':
-    PATH = '/Users/eartigau/wrap_drs_rv';
+    PATH = '/Users/eartigau/wrap_drs_rv'
 elif name=='andres':
-    PATH = '/some/folder/somewhere';
+    PATH = '/some/folder/somewhere'
 elif name == 'pascal':
-    PATH = '/some/folder/somewhere';
+    PATH = '/some/folder/somewhere'
 else:
     default: PATH = ''
-
 
 def gauss(v,v0,ew,zp,amp):
     # gaussian with a constant offset. As we know that the ccfs are negative structures, amp will be negative
@@ -60,17 +59,6 @@ def dispatch_object(object, all_ccf_dir = 'all_ccfs'):
                 ngood_C+=1
 
     print('We found {0} files for that object. It includes {1} AB files and {2} C drift files'.format(ngood_AB+ngood_C,ngood_AB, ngood_C))
-
-
-object = 'TOI-1452'
-mask = 'gl846_neg'
-method = 'template'
-exclude_orders = [-1]
-weight_table = ''
-force = True
-snr_min = 0.0
-weight_type = ''
-sanitize = True
 
 def get_object_rv(object,
                   mask = 'sept18_andres_trans50',
@@ -151,8 +139,7 @@ def get_object_rv(object,
 
     if force == False:
         if os.path.isfile('{0}.csv'.format(batch_name)):
-            stop
-            #return Table.read('{0}.csv'.format(batch_name))
+            return Table.read('{0}.csv'.format(batch_name))
 
     tbl = Table()# output table to be saved as CSV file with RV measurements
     tbl['FILES'] = ccf_files
@@ -234,8 +221,7 @@ def get_object_rv(object,
 
             tmp =  ccf_tbl['ORDER'+str(j).zfill(2)]
 
-
-            if False not in  np.isfinite(tmp):
+            if False not in np.isfinite(tmp):
                 # we normalize to a continuum of 1
                 tmp /= np.polyval(np.polyfit(ccf_RV, tmp, 1), ccf_RV)
                 ccf_cube[j,:,i] = tmp

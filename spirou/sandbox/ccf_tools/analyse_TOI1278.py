@@ -56,10 +56,12 @@ fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
 
 for i in range(len(t2)):
     ax[0].plot_date(t2.plot_date,tbl_bin['RV'],'g.')
-    ax[0].plot_date([t2[i].plot_date,t2[i].plot_date],[tbl_bin['RV'][i]-tbl_bin['ERROR_RV'][i],tbl_bin['RV'][i]+tbl_bin['ERROR_RV'][i]],'g')
+    ax[0].plot_date([t2[i].plot_date,t2[i].plot_date],[tbl_bin['RV'][i]-tbl_bin['ERROR_RV'][i],
+                                                       tbl_bin['RV'][i]+tbl_bin['ERROR_RV'][i]],'g')
 
 ax[0].plot_date(t3.plot_date,tbl['RV'],'r.',alpha = 0.5)
-ax[1].errorbar(t3.plot_date,tbl['RV'] - model,yerr=tbl['ERROR_RV'], linestyle="None", fmt='o',color = 'green', alpha = 0.2)
+ax[1].errorbar(t3.plot_date,tbl['RV'] - model,yerr=tbl['ERROR_RV'], linestyle="None",
+               fmt='o',color = 'green', alpha = 0.2)
 
 ax[0].plot(Time(time_plot, format = 'mjd').plot_date,model_plot,'r:')
 ax[0].set(ylabel = 'Velocity [km/s]',title = object)
