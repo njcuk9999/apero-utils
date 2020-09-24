@@ -394,10 +394,22 @@ def get_object_rv(object,
     rv_prev = np.array(tbl['RV'])
     corr_ccf = np.array(mean_ccf)
 
-    for ite in range(10):
+    nite_max = 20
+    ite = 0
+    rms_rv_ite = np.inf
+    # we iterate until we have an rms from iteration to iteration of <10 cm/s or we reached a max of 20 iterations
+    while (rms_rv_ite>1e-4) and (ite<nite_max):
         med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
+
         # normalize continuum to 1
-        med_corr_ccf/=np.nanmedian(med_corr_ccf[np.abs(ccf_RV-ccf_RV[id_min])>velocity_window])
+        continuum = np.abs(ccf_RV-ccf_RV[id_min])>velocity_window
+        med_corr_ccf/=np.nanmedian(med_corr_ccf[continuum])
+
+        fit = np.polyfit(ccf_RV[continuum], med_corr_ccf[continuum], 2)
+        corr = np.polyval(fit, ccf_RV)
+        corr -= np.mean(corr)
+        med_corr_ccf -= corr
+
 
         for i in range(len(ccf_files)):
             spline = ius(ccf_RV,mean_ccf[:,i],ext=3,k=5)
@@ -411,11 +423,10 @@ def get_object_rv(object,
             amp = np.nansum( (corr_ccf[:,i] - np.mean(corr_ccf[:,i]))*(med_corr_ccf - np.mean(med_corr_ccf)) )/np.nansum((med_corr_ccf - np.mean(med_corr_ccf))**2)
             mean_ccf[:, i] = (mean_ccf[:,i] - np.mean(mean_ccf[:,i]))/np.sqrt(amp)+np.mean(mean_ccf[:,i])
 
-            # correcting 3rd order polynomial structures in continuum
-            fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],3)
+            # correcting 2rd order polynomial structures in continuum
+            fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],2)
             corr = np.polyval(fit, ccf_RV)
-            corr -= np.mean(corr)
-            mean_ccf[:, i] += corr
+            mean_ccf[:, i] += corr/2
 
         deriv = np.gradient(med_corr_ccf) / np.gradient(ccf_RV)
         deriv = deriv[g]
@@ -426,8 +437,10 @@ def get_object_rv(object,
 
         tbl['RV'] -= np.nanmean(tbl['RV'])
         #plt.plot( tbl['RV'],'.')
-        print('Template CCF iteration number {0}, rms RV change {1} km/s for this step'.format(ite+1,np.nanstd(rv_prev - tbl['RV'])))
+        rms_rv_ite = np.nanstd(rv_prev - tbl['RV'])
+        print('Template CCF iteration number {0}, rms RV change {1} km/s for this step'.format(ite+1,rms_rv_ite))
         rv_prev = np.array(tbl['RV'])
+        ite+=1
 
     tbl['RV']+=ccf_RV[id_min]
 
@@ -515,7 +528,7 @@ def get_object_rv(object,
     g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
 
     if doplot:
-        plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.5,label = 'median CCF')
+        plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.4,label = 'median CCF', linewidth=2)
 
 
     # pix scale expressed in CCF pixels
@@ -525,10 +538,9 @@ def get_object_rv(object,
         residual = corr_ccf[:,i] - med_corr_ccf
         tbl['CCF_RESIDUAL_RMS'][i] = np.std(residual[g])
 
-        denominator = (np.gradient(med_corr_ccf) / np.gradient(ccf_RV))
-        denominator[denominator == 0] = 1e9
-        dvrms = (np.nanstd(residual) * np.sqrt(pix_scale)) / (np.gradient(med_corr_ccf) / np.gradient(ccf_RV))
-        tbl['ERROR_RV'][i] = 1 / np.sqrt(np.nansum(1 / dvrms ** 2))
+        # 1/dvrms -avoids division by zero
+        inv_dvrms = (np.gradient(med_corr_ccf) / np.gradient(ccf_RV))/((np.nanstd(residual) * np.sqrt(pix_scale)) )
+        tbl['ERROR_RV'][i] = 1 / np.sqrt(np.nansum(inv_dvrms** 2))
 
         color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
         if doplot:
