@@ -18,7 +18,7 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
     tbl_bin = Table()
 
     tbl_bin['RV'] = np.zeros(len(udates), dtype = float)
-    tbl_bin['RV_SIG'] = np.zeros(len(udates), dtype = float)
+    tbl_bin['ERROR_RV'] = np.zeros(len(udates), dtype = float)
     tbl_bin['FORMAL_SIG'] = np.zeros(len(udates), dtype = float)
     tbl_bin['SIG_FROM_MAD'] = np.zeros(len(udates), dtype = float)
 
@@ -32,6 +32,8 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
     tbl2 = Table()
     for i in range(len(udates)):
         g = (udates[i] == tbl['DATE-OBS'])
+        weights = 1 / tbl[g]['ERROR_RV'] ** 2
+        weights /= np.nansum(weights)
 
         nMAD = (tbl['RV'][g] - np.nanmedian(tbl['RV'][g]))/np.nanmedian(np.abs(tbl['RV'][g] - np.nanmedian(tbl['RV'][g])))
         nMAD = np.abs(nMAD)
@@ -39,8 +41,9 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
 
         tbl['KEEP'][g] = nMAD<nMAD_cut
 
-        tbl_bin['RV'][i] = np.mean(tbl['RV'][g])
-        tbl_bin['RV_SIG'][i] = np.std(tbl['RV'][g])
+        tbl_bin['RV'][i] = np.sum(weights*tbl['RV'][g])
+        tbl_bin['ERROR_RV'][i] = 1/np.sqrt(np.nansum(1/tbl[g]['ERROR_RV']**2))
+
         tbl_bin['RV_N'][i] = np.sum(g)
 
         # normalized to the equivalent of 1 sigma
@@ -50,9 +53,8 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
         tbl_bin['MJDATE_MIN'][i] = np.min(tbl['MJDATE'][g])
         tbl_bin['MJDATE_MAX'][i] = np.max(tbl['MJDATE'][g])
 
-        tbl_bin['FORMAL_SIG'][i] =  tbl_bin['RV_SIG'][i]/np.sqrt(tbl_bin['RV_N'][i])
+        tbl_bin['FORMAL_SIG'][i] =  tbl_bin['ERROR_RV'][i]/np.sqrt(tbl_bin['RV_N'][i])
 
     print(len(tbl))
-    tbl = tbl[tbl['KEEP']]
 
     return(tbl_bin)

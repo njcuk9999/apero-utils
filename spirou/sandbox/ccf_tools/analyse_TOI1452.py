@@ -29,16 +29,11 @@ ax[1].set(xlabel = 'nth frame', ylabel ='ratio not sanitize/sanitize')
 ax[0].legend()
 plt.show()
 
-#tbl2 = get_object_rv('TOI-1452',mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders,
-#                    snr_min = 20.0,sanitize = False, weight_type = 'ccf_depth')
-
 tbl_bin1 = per_epoch_table(tbl1)
 
-tbl['RV'] -= np.nanmedian(tbl['RV'])
-tbl = tbl[tbl['CCF_RESIDUAL_RMS'] <0.008]
 
-plt.errorbar(tbl1['MJDATE'], tbl1['RV'],yerr=tbl1['ERROR_RV'], linestyle="None", fmt='o')
+plt.errorbar(tbl1['MJDATE'], tbl1['RV'],yerr=tbl1['ERROR_RV'], linestyle="None", fmt='o', alpha = 0.5)
+plt.errorbar(tbl_bin1['MJDATE_MEAN'], tbl_bin1['RV'],yerr=tbl_bin1['ERROR_RV'], linestyle="None", color = 'red',
+             fmt='o', alpha = 0.5)
+
 plt.show()
-
-print(np.nanstd(tbl['RV']  )  ,np.nanmedian(np.abs(tbl['RV'])))
-print(np.nanmedian(np.abs(tbl['RV'][1:]-tbl['RV'][:-1]))/np.sqrt(2) )

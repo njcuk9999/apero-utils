@@ -123,7 +123,7 @@ def get_object_rv(object,
     # Y = 938.600	1113.400
     # J = 1153.586	1354.422
     # H = 1462.897	1808.544
-    # k = 1957.792	2500 # modified to get to the edge of the SPIRou domain
+    # k = 1957.792	2400 # modified to get to the edge of the SPIRou domain
 
     # get typical wavelength solution from first file and central wavelength grid per order
     wave_middle = np.nanmean(fits2wave(fits.getheader(ccf_files[0], ext=1)), axis=1)
@@ -136,7 +136,7 @@ def get_object_rv(object,
     if 'H' in bandpass:
         keep_orders[(wave_middle>1462)*(wave_middle<1808)] = True
     if 'K' in bandpass:
-        keep_orders[(wave_middle>1957)*(wave_middle<2500)] = True
+        keep_orders[(wave_middle>1957)*(wave_middle<2400)] = True
 
     for i in range(49):
         if i in exclude_orders:
@@ -525,8 +525,10 @@ def get_object_rv(object,
         residual = corr_ccf[:,i] - med_corr_ccf
         tbl['CCF_RESIDUAL_RMS'][i] = np.std(residual[g])
 
+        denominator = (np.gradient(med_corr_ccf) / np.gradient(ccf_RV))
+        denominator[denominator == 0] = 1e9
         dvrms = (np.nanstd(residual) * np.sqrt(pix_scale)) / (np.gradient(med_corr_ccf) / np.gradient(ccf_RV))
-        tbl['ERROR_RV'][i] = 1 / np.sqrt(np.sum(1 / dvrms ** 2))
+        tbl['ERROR_RV'][i] = 1 / np.sqrt(np.nansum(1 / dvrms ** 2))
 
         color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
         if doplot:
