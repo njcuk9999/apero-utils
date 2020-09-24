@@ -299,6 +299,9 @@ def get_object_rv(object,
 
             if doplot:
                 plt.imshow(rms)
+                plt.xlabel('Nth order')
+                plt.ylabel('Nth frame')
+                plt.title('RMS of CCF relative to median')
                 plt.show()
             # this is the typical noise from the ccf dispersion
             ccf_rms = np.nanmedian(rms,axis=0)
@@ -526,7 +529,8 @@ def get_object_rv(object,
         tbl['ERROR_RV'][i] = 1 / np.sqrt(np.sum(1 / dvrms ** 2))
 
         color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
-        plt.plot(ccf_RV,residual+1,color = color,alpha = 0.2)
+        if doplot:
+            plt.plot(ccf_RV,residual+1,color = color,alpha = 0.2)
 
     if doplot:
         plt.title('Residual CCFs')
