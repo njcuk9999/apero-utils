@@ -33,7 +33,6 @@ if all_mask_files_OK == False:
         print(files[i])
     sys.exit()
 
-
 step = 0.1
 width = 60.0
 prob_bad = 1e-4
