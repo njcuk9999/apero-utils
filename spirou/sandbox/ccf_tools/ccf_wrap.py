@@ -66,11 +66,13 @@ while all_done == False:
         do_sanitize_all = tbl['SANITIZE'] == 'True'
 
 
+
         object = objects[0]
         mask = masks[0]
         do_sanitize = do_sanitize_all[0]
         tar_name = tar_names[0]
 
+        print('\n\n\tOBJECT = {0}\n\tmask = {1}\n\tsanitize = {1}\n\n'.format(object,mask,do_sanitize ))
 
 
         if os.path.isfile(tar_name):
