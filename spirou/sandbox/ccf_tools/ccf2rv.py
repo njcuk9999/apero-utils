@@ -71,8 +71,9 @@ snr_min = 0.0
 weight_type = ''
 sanitize = True
 
-def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_60', exclude_orders = [-1],
-                  weight_table = '', force = True,snr_min = 0.0,weight_type = 'DVRMS_CC',sanitize = False):
+def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', exclude_orders = [-1],
+                  weight_table = '', force = True,snr_min = 0.0,weight_type = '',sanitize = False):
+    #
     # parameters :
     #
     # object -> name of the object to be analyzed, linked to the folder where the data should be. You need
@@ -457,6 +458,7 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
 
 
     # pix scale expressed in CCF pixels
+    # SPIRou pixels are about 2.3 km/s
     pix_scale = 2.3/np.nanmedian( np.gradient(ccf_RV))
     for i in range(len(ccf_files)):
         residual = corr_ccf[:,i] - med_corr_ccf
@@ -467,6 +469,7 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'bisector_40_
 
         color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
         plt.plot(ccf_RV,residual+1,color = color,alpha = 0.2)
+
     plt.title('Residual CCFs')
     plt.xlabel('velocity [km/s]')
     plt.ylabel('CCF depth')
