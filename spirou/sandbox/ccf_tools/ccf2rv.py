@@ -72,9 +72,19 @@ snr_min = 0.0
 weight_type = ''
 sanitize = True
 
-def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', exclude_orders = [-1],
-                  weight_table = '', force = True,snr_min = 0.0,weight_type = '',sanitize = False,
-                  bandpass = 'YJHK'):
+def get_object_rv(object,
+                  mask = 'sept18_andres_trans50',
+                  method = 'template',
+                  exclude_orders = [-1],
+                  weight_table = '',
+                  force = True,
+                  snr_min = 0.0,
+                  weight_type = '',
+                  sanitize = False,
+                  bandpass = 'YJHK',
+                  velocity_window = 10,
+                  dvmax_per_order = 1.0,
+                  doplot = True):
     #
     # parameters :
     #
@@ -132,7 +142,9 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
         if i in exclude_orders:
             keep_orders[i] = False
 
+    # update orders rejected because of domain as well as input requirements.
     exclude_orders = np.where(keep_orders == False)[0]
+
 
     # form a unique batch name with mask, object and method
     batch_name = '{0}/{1}_mask_{2}_{3}'.format(PATH,object,mask,method)
@@ -234,18 +246,39 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
     ccf_cube = ccf_cube[:,:,keep]
     ccf_files = ccf_files[keep]
 
-
     # this is the median CCF  all epochs for the 49 orders
     med_ccf =  np.nanmedian(ccf_cube,axis = 2)
+
+    for iord in range(49):
+        if iord not in exclude_orders:
+            if not np.isfinite(np.mean(med_ccf[iord,:])):
+                print('Order {0} has a CCF full of NaNs. Added to the rejected orders '.format(iord))
+                exclude_orders = np.append(exclude_orders,iord)
 
     # find minimum for CCF. This is used to fit a gaussian to each order and force
     # velocity to zero
     id_min = np.nanargmin( np.nanmedian(med_ccf,axis=0))
-    # find the depth of the CCF at minimum position
+
+    # find if a given CCF is off by more than the pre-defined threshold
+    dv_CCF_min = (ccf_RV[np.argmin(med_ccf,axis = 1)] - ccf_RV[id_min])
+    bad_orders = dvmax_per_order<np.abs(dv_CCF_min )
+
+    for iord in range(49):
+        if iord not in exclude_orders:
+            if bad_orders[iord]:
+                print('The CCF of order {0} has its minima {1:.2f} km/s from median CCF, above threshold of +-{2:.2f} km/s'.
+                      format(iord,dv_CCF_min[iord],dvmax_per_order))
+                #exclude_orders = np.append(exclude_orders,iord)
+
+    # find valid pixels to measure CCF properties
+    g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
+
+    ccf_Q = np.nansum(np.gradient(med_ccf[:,g],axis=1)**2, axis = 1)
+    ccf_Q[ccf_Q == 0] = np.nan
     ccf_depth = 1-med_ccf[:,id_min]
-    # this is analoguous to signal. We could add a factor linked to the width of the line to be even
-    # ore accurate
-    ccf_depth[ccf_depth<0] = 0
+
+    #ccf_depth[ccf_depth<0] = 0
+
 
     if weight_type == 'DVRMS_CC':
         weights = 1/np.nanmedian(DVRMS_CC,axis=1)**2
@@ -264,44 +297,40 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
                 rms[i,:] = np.nanmedian(np.abs(ccf_cube[:,:,i]-med_ccf),axis=1)
                 rms[i, :] /= np.nanmedian(rms[i, :])
 
-            plt.imshow(rms)
-            plt.show()
+            if doplot:
+                plt.imshow(rms)
+                plt.show()
             # this is the typical noise from the ccf dispersion
             ccf_rms = np.nanmedian(rms,axis=0)
 
             # set to NaN values that are invalid
             ccf_rms[ccf_rms == 0] = np.nan
 
-            if weight_type == 'depth_only':
-                ccf_rms[np.isfinite(ccf_rms)] = 1.0
-
-            if weight_type == 'rms_only':
-                ccf_depth[np.isfinite(ccf_depth)] = 1.0
 
             # assuming that the CCF has the same depth everywhere, this is the correct weighting of orders
-            ccf_snr = ccf_depth / ccf_rms
-            weights = ccf_snr**2
+            weights = ccf_Q/ccf_rms**2
             # we normalize the sum of the weights to one
             weights /= np.nansum(weights)
 
-            fig,ax = plt.subplots(nrows = 3, ncols=1,sharex = True)
-            ax[0].plot(weights,'go')
-            ax[0].set(title = '{0}, mask {1}'.format(object,mask),xlabel = 'Nth order', ylabel = 'Relative order weight')
+            if doplot:
+                fig,ax = plt.subplots(nrows = 3, ncols=1,sharex = True)
+                ax[0].plot(weights,'go')
+                ax[0].set(title = '{0}, mask {1}'.format(object,mask),xlabel = 'Nth order', ylabel = 'Relative order weight')
 
-            ax[1].plot(ccf_depth,'go')
-            ax[1].set(xlabel = 'Nth order', ylabel = 'ccf depth')
+                ax[1].plot(ccf_Q,'go')
+                ax[1].set(xlabel = 'Nth order', ylabel = 'ccf Q')
 
-            ax[2].plot(1/ccf_rms**2,'go')
-            ax[2].set(xlabel = 'Nth order', ylabel = '1/$\sigma_{CCF}^2$')
-            plt.tight_layout()
-            plt.savefig('{0}_weights.pdf'.format(batch_name))
-            plt.show()
+                ax[2].plot(1/ccf_rms**2,'go')
+                ax[2].set(xlabel = 'Nth order', ylabel = '1/$\sigma_{CCF}^2$')
+                plt.tight_layout()
+                plt.savefig('{0}_weights.pdf'.format(batch_name))
+                plt.show()
 
             tbl_weights = Table()
             tbl_weights['order'] = np.arange(49)
             tbl_weights['weights'] = weights
             tbl_weights['ccf_depth'] = ccf_depth
-            tbl_weights['ccf_snr'] = ccf_snr
+            tbl_weights['ccf_Q'] = ccf_Q
             tbl_weights.write('{0}_weights.csv'.format(batch_name),overwrite = True)
 
         else:
@@ -310,31 +339,27 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
             weights = np.array(tbl_weights['weights'],dtype = float)
             weights /= np.nansum(weights)
 
+    if doplot:
+        plt.imshow(med_ccf,aspect = 'auto',vmin = 0.8,vmax= 1.05,extent = [np.min(ccf_RV),np.max(ccf_RV),49,0])
+        plt.xlabel('Velocity bin [km/s] ')
+        plt.ylabel('Nth order')
+        plt.title('Median CCF')
+        plt.savefig('{0}_medianccf.pdf'.format(batch_name))
+        plt.show()
 
-    #for ifile in range(len(ccf_files)):
-    #    tbl['ERROR_RV'][ifile] = 1 / np.sqrt(np.nansum((weights/np.mean(weights)) / DVRMS_CC[:, ifile] ** 2))
+        plt.imshow(ccf_cube[:,:,0]-med_ccf,aspect = 'auto',vmin = -0.1,vmax= 0.1,extent = [np.min(ccf_RV),np.max(ccf_RV),49,0])
+        plt.xlabel('Velocity bin [km/s]')
+        plt.ylabel('Nth order')
+        plt.title('Sample residual CCF map')
+        plt.savefig('{0}_residualccf.pdf'.format(batch_name))
+        plt.show()
 
-
-    plt.imshow(med_ccf,aspect = 'auto',vmin = 0.8,vmax= 1.05,extent = [np.min(ccf_RV),np.max(ccf_RV),49,0])
-    plt.xlabel('Velocity bin [km/s] ')
-    plt.ylabel('Nth order')
-    plt.title('Median CCF')
-    plt.savefig('{0}_medianccf.pdf'.format(batch_name))
-    plt.show()
-
-    plt.imshow(ccf_cube[:,:,0]-med_ccf,aspect = 'auto',vmin = -0.1,vmax= 0.1,extent = [np.min(ccf_RV),np.max(ccf_RV),49,0])
-    plt.xlabel('Velocity bin [km/s]')
-    plt.ylabel('Nth order')
-    plt.title('Sample residual CCF map')
-    plt.savefig('{0}_residualccf.pdf'.format(batch_name))
-    plt.show()
-
-    plt.plot(tbl['MJDATE'], tbl['EXTSN035'], 'g.')
-    plt.xlabel('MJDATE')
-    plt.ylabel('SNR for order 35\n(around 1.6 $\mu$m)')
-    plt.title('Signal-to-noise ratio')
-    plt.savefig('{0}_snr.pdf'.format(batch_name))
-    plt.show()
+        plt.plot(tbl['MJDATE'], tbl['EXTSN035'], 'g.')
+        plt.xlabel('MJDATE')
+        plt.ylabel('SNR for order 35\n(around 1.6 $\mu$m)')
+        plt.title('Signal-to-noise ratio')
+        plt.savefig('{0}_snr.pdf'.format(batch_name))
+        plt.show()
 
     ccf_cube_norm = np.zeros_like(ccf_cube)
     for i in range(49):
@@ -344,48 +369,57 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
     # get a per-file weighted mean CCF
     mean_ccf = np.nansum(ccf_cube_norm,axis=0)
 
-    fig,ax = plt.subplots(nrows = 2, ncols = 1)
-    for i in range(len(ccf_files)):
-        color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
-        ax[0].plot(ccf_RV,mean_ccf[:,i],color = color,alpha = 0.2)
-        ax[1].plot(ccf_RV, mean_ccf[:, i], color=color, alpha=0.2)
+    if doplot:
+        fig,ax = plt.subplots(nrows = 2, ncols = 1)
+        for i in range(len(ccf_files)):
+            color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
+            ax[0].plot(ccf_RV,mean_ccf[:,i],color = color,alpha = 0.2)
+            ax[1].plot(ccf_RV, mean_ccf[:, i], color=color, alpha=0.2)
 
-    ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
-    ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
-                                                                                           ccf_RV[id_min]+10])
-    plt.tight_layout()
-    plt.savefig('{0}_CCFs.pdf'.format(batch_name))
-    plt.show()
+        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
+        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
+                                                                                               ccf_RV[id_min]+10])
+        plt.tight_layout()
+        plt.savefig('{0}_CCFs.pdf'.format(batch_name))
+        plt.show()
 
     #if 'template' in method:
     #print('')
 
-    g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
+    g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
 
     rv_prev = np.array(tbl['RV'])
+    corr_ccf = np.array(mean_ccf)
+
     for ite in range(10):
-        corr_ccf = np.array(mean_ccf)
         med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
+        # normalize continuum to 1
+        med_corr_ccf/=np.nanmedian(med_corr_ccf[np.abs(ccf_RV-ccf_RV[id_min])>velocity_window])
 
         for i in range(len(ccf_files)):
-            spline = ius(ccf_RV,mean_ccf[:,i],ext=3)
+            spline = ius(ccf_RV,mean_ccf[:,i],ext=3,k=5)
             corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
 
-            fit = np.polyfit(med_corr_ccf, corr_ccf[:,i],1)
-            #mean_ccf[:, i]-=fit[1]
-            mean_ccf[:, i]/=fit[0]
-            #print(fit)
-            fit = np.polyfit(ccf_RV,mean_ccf[:, i]-med_corr_ccf,2)
-            #print(fit)
-            mean_ccf[:, i] -= np.polyval(fit,ccf_RV)
+            # correcting median of CCF
+            med =  np.nanmedian(corr_ccf[:,i] - med_corr_ccf)
+            mean_ccf[:, i] -= med
 
-        deriv = np.gradient(med_corr_ccf)/np.gradient(ccf_RV)
+            # correcting depth of CCF
+            amp = np.nansum( (corr_ccf[:,i] - np.mean(corr_ccf[:,i]))*(med_corr_ccf - np.mean(med_corr_ccf)) )/np.nansum((med_corr_ccf - np.mean(med_corr_ccf))**2)
+            mean_ccf[:, i] = (mean_ccf[:,i] - np.mean(mean_ccf[:,i]))/np.sqrt(amp)+np.mean(mean_ccf[:,i])
+
+            # correcting 3rd order polynomial structures in continuum
+            fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],3)
+            corr = np.polyval(fit, ccf_RV)
+            corr -= np.mean(corr)
+            mean_ccf[:, i] += corr
+
+        deriv = np.gradient(med_corr_ccf) / np.gradient(ccf_RV)
         deriv = deriv[g]
-        deriv = deriv/np.nansum(deriv**2)
-
+        deriv = deriv / np.nansum(deriv ** 2)
 
         for i in range(len(ccf_files)):
-            tbl['RV'][i]-=np.nansum( (corr_ccf[:,i]-med_corr_ccf)[g]*deriv)
+            tbl['RV'][i]-=np.nansum( (corr_ccf[:,i] - med_corr_ccf)[g]*deriv)
 
         tbl['RV'] -= np.nanmean(tbl['RV'])
         #plt.plot( tbl['RV'],'.')
@@ -394,22 +428,19 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
 
     tbl['RV']+=ccf_RV[id_min]
 
+    if doplot:
+        fig,ax = plt.subplots(nrows = 2, ncols = 1)
+        for i in range(len(ccf_files)):
+            color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
+            ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
+            ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
 
-
-    fig,ax = plt.subplots(nrows = 2, ncols = 1)
-    for i in range(len(ccf_files)):
-        color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
-        ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
-        ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
-
-    ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
-    ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
-                                                                                           ccf_RV[id_min]+10])
-    plt.tight_layout()
-    plt.savefig('{0}_template.pdf'.format(batch_name))
-    plt.show()
-
-
+        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
+        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
+                                                                                               ccf_RV[id_min]+10])
+        plt.tight_layout()
+        plt.savefig('{0}_template.pdf'.format(batch_name))
+        plt.show()
 
     # we use the bisector method, the name should be something like
     # method = 'bisector_30_70' to get the mean bisector between the 30th and 70th percentile
@@ -480,8 +511,8 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
     med_corr_ccf = np.nanmedian(corr_ccf, axis=1)
     g = np.abs(ccf_RV - ccf_RV[id_min]) < 10
 
-    plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.5,label = 'median CCF')
-
+    if doplot:
+        plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.5,label = 'median CCF')
 
 
     # pix scale expressed in CCF pixels
@@ -497,14 +528,14 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
         color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
         plt.plot(ccf_RV,residual+1,color = color,alpha = 0.2)
 
-    plt.title('Residual CCFs')
-    plt.xlabel('velocity [km/s]')
-    plt.ylabel('CCF depth')
-    plt.legend()
-    plt.savefig('{0}_residual_CCF.pdf'.format(batch_name))
+    if doplot:
+        plt.title('Residual CCFs')
+        plt.xlabel('velocity [km/s]')
+        plt.ylabel('CCF depth')
+        plt.legend()
+        plt.savefig('{0}_residual_CCF.pdf'.format(batch_name))
 
-    plt.show()
-
+        plt.show()
 
     # output to csv file
     tbl.write('{0}.csv'.format(batch_name),overwrite = True)

@@ -15,7 +15,9 @@ nMAD_cut = 5
 tbl = get_object_rv('TOI-1278',mask = 'gl846_neg',
                     method = 'template',force = True,
                     exclude_orders = exclude_orders,
-                    snr_min = 20.0, sanitize = False)
+                    snr_min = 20.0, sanitize = False,
+                    dvmax_per_order = 3.0, bandpass = 'YHK',
+                    doplot = False)
 period = 14.4
 
 tbl_bin = per_epoch_table(tbl,nMAD_cut = 5)
