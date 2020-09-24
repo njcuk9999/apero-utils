@@ -11,16 +11,16 @@ def sinusoidal(phase,dphase,amp,zp):
     return np.sin( (phase+dphase))*amp+zp
 
 object = 'TOI-1452'
-exclude_orders =[0,11,12,13,15,16,20,21,22,47,48]
+exclude_orders = [0,11,12,13,15,16,20,21,22,47,48]
 # number of median-absolute deviations within an epoch to consider a point discrepant
 nMAD_cut = 5
 
 # compare with and without sanitizing
 tbl1 = get_object_rv(object,mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders,
-                    snr_min = 20.0,sanitize = True, weight_type = 'ccf_depth')
+                    snr_min = 20.0,sanitize = True, weight_type = 'ccf_depth', bandpass = 'YJHK')
 
 tbl2 = get_object_rv(object,mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders,
-                    snr_min = 20.0,sanitize = False, weight_type = 'ccf_depth')
+                    snr_min = 20.0,sanitize = False, weight_type = 'ccf_depth', bandpass = 'YJHK')
 
 fig, ax = plt.subplots(nrows = 2, ncols = 1)
 ax[0].plot(tbl1['ERROR_RV'],'o', color = 'blue',label = 'error with sanitize')

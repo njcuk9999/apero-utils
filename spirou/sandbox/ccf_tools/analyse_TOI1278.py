@@ -20,7 +20,7 @@ tbl = get_object_rv(object,mask = 'gl846_neg',
                     method = 'template',force = True,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
-                    dvmax_per_order = 3.0, bandpass = 'YJHK',
+                    dvmax_per_order = 3.0, bandpass = 'HK',
                     doplot = True)
 
 # period for the sinusoidal currve
