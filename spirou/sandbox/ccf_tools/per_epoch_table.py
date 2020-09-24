@@ -30,6 +30,7 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
     tbl['KEEP'] = np.ones_like(tbl,dtype = bool)
     # Table per night
     tbl2 = Table()
+    print('\n')
     for i in range(len(udates)):
         g = (udates[i] == tbl['DATE-OBS'])
         weights = 1 / tbl[g]['ERROR_RV'] ** 2
@@ -37,7 +38,7 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
 
         nMAD = (tbl['RV'][g] - np.nanmedian(tbl['RV'][g]))/np.nanmedian(np.abs(tbl['RV'][g] - np.nanmedian(tbl['RV'][g])))
         nMAD = np.abs(nMAD)
-        print(np.max(nMAD))
+
 
         tbl['KEEP'][g] = nMAD<nMAD_cut
 
@@ -55,6 +56,9 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
 
         tbl_bin['FORMAL_SIG'][i] =  tbl_bin['ERROR_RV'][i]/np.sqrt(tbl_bin['RV_N'][i])
 
-    print(len(tbl))
+        print('For epoch MJD = {0:5.2f}, the biggest outlier is at {1:.3f} median abs deviation'.format(tbl_bin['MJDATE_MEAN'][i],
+                                                                                                  np.max(nMAD)))
 
+
+    print('\nThe binned table has {0} distinct epochs\n'.format(len(tbl_bin)))
     return(tbl_bin)

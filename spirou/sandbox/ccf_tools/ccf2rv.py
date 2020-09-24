@@ -165,17 +165,58 @@ def get_object_rv(object,
 
     #... feel free to add columns here
 
-    DVRMS_SP = np.zeros([49,len(ccf_files)])
-    DVRMS_CC = np.zeros([49,len(ccf_files)])
 
-    print('we load all CCFs into one big cube')
+    npy_file = '{0}/{0}_{1}_{2}_ccf_cube.npy'.format(object,sp_type,mask)
+
+    if not os.path.isfile(npy_file):
+        print('we load all CCFs into one big cube')
+        for i in (range(len(ccf_files))):
+            # we loop through all files
+            ccf_tbl = fits.getdata(ccf_files[i])
+
+            ccf_RV = ccf_tbl['RV'] # ccf velocity offset, not to be confused with measured RV
+
+            # We must absolutely have always the same RV grid for the CCF. We must check that consecutive ccf_RV are i
+            # identical
+            if i != 0:
+                if np.sum(ccf_RV != ccf_RV_previous):
+                    print('We have a big problem! The RV vector of CCF files are not all the same')
+                    print('Files {0} and {1} have different RV vectors.'.format(ccf_files[i-1],ccf_files[i]))
+                    stop
+            ccf_RV_previous = np.array(ccf_RV)
+
+            print('V[min/max] {0:.1f} / {1:.1f} km/s, file {2}'.format(np.min(ccf_RV),np.max(ccf_RV),ccf_files[i]))
+            # if this is the first file, we create a cube that contains all CCFs for all orders for all files
+            if i ==0:
+                ccf_cube = np.zeros([49,len(ccf_tbl),len(ccf_files)])+np.nan
+
+            # we input the CCFs in the CCF cube
+            for j in range(49):
+                # if we need to exlude orders, we do it here.
+                if j in exclude_orders:
+                    continue
+
+                tmp =  ccf_tbl['ORDER'+str(j).zfill(2)]
+
+                if False not in np.isfinite(tmp):
+                    # we normalize to a continuum of 1
+                    tmp /= np.polyval(np.polyfit(ccf_RV, tmp, 1), ccf_RV)
+                    ccf_cube[j,:,i] = tmp
+
+        print('We save {0}, this will speed things up next time you run this code'.format(npy_file))
+        np.save(npy_file,ccf_cube)
+
+    else:
+        print('We load {0}, this is speedier'.format(npy_file))
+        ccf_cube = np.load(npy_file)
+
+        # we need to load the first file just to get the velocity grid
+        ccf_tbl = fits.getdata(ccf_files[0])
+        ccf_RV = ccf_tbl['RV']
+
+    print('We load values from headers, slower on first run, faster later')
     for i in (range(len(ccf_files))):
-        # we loop through all files
-        ccf_tbl, hdr = fits.getdata(ccf_files[i], header=True)
-        ccf_tbl2, hdr2 = fits.getdata(ccf_files[i], header=True, ext = 2)
-        DVRMS_CC[:,i] = ccf_tbl2['DVRMS_CC']
-        DVRMS_SP[:,i] = ccf_tbl2['DVRMS_SP']
-
+        hdr = fits.getheader(ccf_files[i],ext = 1)
         if i ==0:
             # now that we have a first header, we add the relevant columns to the CSV table
             for key in keywords:
@@ -196,35 +237,6 @@ def get_object_rv(object,
             if key in hdr:
                 tbl[key][i] = hdr[key]
 
-        ccf_RV = ccf_tbl['RV'] # ccf velocity offset, not to be confused with measured RV
-
-        # We must absolutely have always the same RV grid for the CCF. We must check that consecutive ccf_RV are i
-        # identical
-        if i != 0:
-            if np.sum(ccf_RV != ccf_RV_previous):
-                print('We have a big problem! The RV vector of CCF files are not all the same')
-                print('Files {0} and {1} have different RV vectors.'.format(ccf_files[i-1],ccf_files[i]))
-                stop
-        ccf_RV_previous = np.array(ccf_RV)
-
-
-        print(np.min(ccf_RV),np.max(ccf_RV),ccf_files[i])
-        # if this is the first file, we create a cube that contains all CCFs for all orders for all files
-        if i ==0:
-            ccf_cube = np.zeros([49,len(ccf_tbl),len(ccf_files)])+np.nan
-
-        # we input the CCFs in the CCF cube
-        for j in range(49):
-            # if we need to exlude orders, we do it here.
-            if j in exclude_orders:
-                continue
-
-            tmp =  ccf_tbl['ORDER'+str(j).zfill(2)]
-
-            if False not in np.isfinite(tmp):
-                # we normalize to a continuum of 1
-                tmp /= np.polyval(np.polyfit(ccf_RV, tmp, 1), ccf_RV)
-                ccf_cube[j,:,i] = tmp
 
     # we apply the SNR threshold
     keep = tbl['EXTSN035']>snr_min
@@ -384,6 +396,7 @@ def get_object_rv(object,
     ite = 0
     rms_rv_ite = np.inf
     # we iterate until we have an rms from iteration to iteration of <10 cm/s or we reached a max of 20 iterations
+    print('\n')
     while (rms_rv_ite>1e-4) and (ite<nite_max):
         med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
 
@@ -424,7 +437,7 @@ def get_object_rv(object,
         tbl['RV'] -= np.nanmean(tbl['RV'])
         #plt.plot( tbl['RV'],'.')
         rms_rv_ite = np.nanstd(rv_prev - tbl['RV'])
-        print('Template CCF iteration number {0}, rms RV change {1} km/s for this step'.format(ite+1,rms_rv_ite))
+        print('Template CCF iteration number {0:3}, rms RV change {1:3.4f} km/s for this step'.format(ite+1,rms_rv_ite))
         rv_prev = np.array(tbl['RV'])
         ite+=1
 

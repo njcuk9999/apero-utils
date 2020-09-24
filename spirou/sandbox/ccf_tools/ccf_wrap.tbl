@@ -1,5 +1,6 @@
 OBJECT, MASK, SANITIZE
 TOI-1278,  Gl846_neg.mas, False
+TOI-1278, masque_sept18_andres_trans50.mas, False
 Gl514, Gl514_neg.mas, True
 Gl514, M2_weighted_RV_10.mas, True
 Gl699, Gl699_neg.mas, False
