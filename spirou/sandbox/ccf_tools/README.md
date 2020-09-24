@@ -10,8 +10,6 @@ Download all the CCFs from the DRS. These files will have names will look like _
 they should all be in the appropriate sub-folder (unless you want to tempt devil, they should be in the sub-folder
 _all_ccfs_). 
 
-Coucou Claire!
-
 First, dispatch all CCF files into per-object folders.
 - Start python
 - from ccf2rv import *

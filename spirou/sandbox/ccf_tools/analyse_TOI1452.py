@@ -11,7 +11,7 @@ def sinusoidal(phase,dphase,amp,zp):
     return np.sin( (phase+dphase))*amp+zp
 
 object = 'TOI-1452'
-exclude_orders = [0,11,12,13,15,16,20,21,22,47,48]
+exclude_orders = [-1]# [0,11,12,13,15,16,20,21,22,47,48]
 # number of median-absolute deviations within an epoch to consider a point discrepant
 nMAD_cut = 5
 tbl1 = get_object_rv(object,mask = 'gl846_neg',method = 'template',force = True,exclude_orders = exclude_orders,

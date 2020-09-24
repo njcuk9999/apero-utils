@@ -8,6 +8,7 @@ from astropy.table import Table
 from bisector import *
 from scipy.optimize import curve_fit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
+from fits2wave import *
 
 #
 # we get the user name. as we are just a few people in the team, we could all
@@ -72,7 +73,8 @@ weight_type = ''
 sanitize = True
 
 def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', exclude_orders = [-1],
-                  weight_table = '', force = True,snr_min = 0.0,weight_type = '',sanitize = False):
+                  weight_table = '', force = True,snr_min = 0.0,weight_type = '',sanitize = False,
+                  bandpass = 'YJHK'):
     #
     # parameters :
     #
@@ -105,7 +107,32 @@ def get_object_rv(object, mask = 'sept18_andres_trans50', method = 'template', e
 
     ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}*.fits'.format(PATH,object,mask,sp_type)))
 
+    # definition of photometric bandpasses
+    #http: // svo2.cab.inta - csic.es / svo / theory / fps3 / index.php?mode = browse & gname = CFHT & gname2 = Wircam & asttype =
+    # see values here
+    # Y = 938.600	1113.400
+    # J = 1153.586	1354.422
+    # H = 1462.897	1808.544
+    # k = 1957.792	2500 # modified to get to the edge of the SPIRou domain
 
+    # get typical wavelength solution from first file and central wavelength grid per order
+    wave_middle = np.nanmean(fits2wave(fits.getheader(ccf_files[0], ext=1)), axis=1)
+
+    keep_orders = np.zeros(49)
+    if 'Y' in bandpass:
+        keep_orders[(wave_middle>938)*(wave_middle<1113)] = True
+    if 'J' in bandpass:
+        keep_orders[(wave_middle>1153)*(wave_middle<1354)] = True
+    if 'H' in bandpass:
+        keep_orders[(wave_middle>1462)*(wave_middle<1808)] = True
+    if 'K' in bandpass:
+        keep_orders[(wave_middle>1957)*(wave_middle<2500)] = True
+
+    for i in range(49):
+        if i in exclude_orders:
+            keep_orders[i] = False
+
+    exclude_orders = np.where(keep_orders == False)[0]
 
     # form a unique batch name with mask, object and method
     batch_name = '{0}/{1}_mask_{2}_{3}'.format(PATH,object,mask,method)
