@@ -38,5 +38,5 @@ plt.errorbar(tbl_bin1['MJDATE_MEAN'], tbl_bin1['RV'],yerr=tbl_bin1['ERROR_RV'], 
                alpha = 0.5, capsize = 2, color = 'black')
 plt.xlabel('MJD')
 plt.ylabel('Velocity [km/s]')
-plt.title(object)
+plt.title('Object = {0}, sanitized = {1}'.format(object, True))
 plt.show()
