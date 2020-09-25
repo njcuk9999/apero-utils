@@ -30,6 +30,14 @@ width = 60.0 # width (from -width/2 to +width/2) of scan around systemic velocit
 # don't know that this is about.
 prob_bad = 1e-4
 
+# get host name. Some uploads are only done if we are on maestria.
+hostname = os.popen('hostname').read().split('\n')[0]
+
+
+
+# we must have a folder called 'all_ccfs'. If not present, then create it
+if not os.path.isdir('all_ccfs'):
+    os.system('mkdir all_ccfs')
 
 if input_table == '':
     # fetch the latest table with the table of requests
@@ -131,7 +139,7 @@ while all_done == False:
         for i in range(len(files)):
             print('\n\tFile {0}/{1}\n'.format(i,len(files)))
 
-            outname = '/spirou/cfht_nights/cfht_july1/reduced/'+nights[i]+'/'+files[i].split('.')[0]+'_ccf_'+mask.split('.')[0].lower()+'_AB.fits'
+            outname = file.split('reduced/')[0]+'reduced/'+nights[i]+'/'+files[i].split('.')[0]+'_ccf_'+mask.split('.')[0].lower()+'_AB.fits'
 
             if i ==0:
                 tmp = cal_ccf_spirou.main(nights[i], files[i], mask=mask, rv=0.0, step=step, width=300.0)
@@ -155,76 +163,80 @@ while all_done == False:
         for i in range(len(outnames)):
             os.system('rm '+outnames[i])
 
-        tar_files = glob.glob('all_ccfs/*.tar')
-        sz = np.zeros(len(tar_files),dtype = '<U99')
-        for i in range(len(tar_files)):
-            sz[i] =  '['+str(np.round((os.stat(tar_files[i]).st_size)/1e6,1))+' Mb]'
-            tar_files[i] = tar_files[i].split('/')[-1]
+        # some things done only in Montreal
+        if hostname == 'maestria':
+            tar_files = glob.glob('all_ccfs/*.tar')
+            sz = np.zeros(len(tar_files),dtype = '<U99')
+            for i in range(len(tar_files)):
+                sz[i] =  '['+str(np.round((os.stat(tar_files[i]).st_size)/1e6,1))+' Mb]'
+                tar_files[i] = tar_files[i].split('/')[-1]
 
-        f = open('all_ccfs/download_ccf.script','w')
+            f = open('all_ccfs/download_ccf.script','w')
 
-        for i in range(len(tar_files)):
-            f.write('wget http://www.astro.umontreal.ca/~artigau/all_ccfs/{0}\n'.format(tar_files[i]))
+            for i in range(len(tar_files)):
+                f.write('wget http://www.astro.umontreal.ca/~artigau/all_ccfs/{0}\n'.format(tar_files[i]))
 
-        for i in range(len(tar_files)):
-            obj = tar_files[i].split('_mask_')[0]
-            f.write('mkdir {0}\n'.format(obj))
-            f.write('mv {0} {1}\n'.format(tar_files[i],obj))
-            f.write('cd {0}\n'.format(obj))
-            f.write('tar -xvf {0}\n'.format(tar_files[i]))
-            f.write('rm  {0}\n'.format(tar_files[i]))
-            f.write('cd ..\n')
-        f.close()
+            for i in range(len(tar_files)):
+                obj = tar_files[i].split('_mask_')[0]
+                f.write('mkdir {0}\n'.format(obj))
+                f.write('mv {0} {1}\n'.format(tar_files[i],obj))
+                f.write('cd {0}\n'.format(obj))
+                f.write('tar -xvf {0}\n'.format(tar_files[i]))
+                f.write('rm  {0}\n'.format(tar_files[i]))
+                f.write('cd ..\n')
+            f.close()
 
-        os.system('rsync -av -e "ssh  -oPort=5822" all_ccfs artigau@venus.astro.umontreal.ca:/home/artigau/www')
+            os.system('rsync -av -e "ssh  -oPort=5822" all_ccfs artigau@venus.astro.umontreal.ca:/home/artigau/www')
 
-        tar_files = glob.glob('all_ccfs/*.tar')
-        sz = np.zeros(len(tar_files),dtype = '<U99')
-        for i in range(len(tar_files)):
-            sz[i] =  '['+str(np.round((os.stat(tar_files[i]).st_size)/1e6,1))+' Mb]'
-            tar_files[i] = tar_files[i].split('/')[-1]
+            tar_files = glob.glob('all_ccfs/*.tar')
+            sz = np.zeros(len(tar_files),dtype = '<U99')
+            for i in range(len(tar_files)):
+                sz[i] =  '['+str(np.round((os.stat(tar_files[i]).st_size)/1e6,1))+' Mb]'
+                tar_files[i] = tar_files[i].split('/')[-1]
 
-        f = open('all_ccfs/download_ccf.script','w')
+            f = open('all_ccfs/download_ccf.script','w')
 
-        for i in range(len(tar_files)):
-            f.write('wget http://www.astro.umontreal.ca/~artigau/all_ccfs/{0}\n'.format(tar_files[i]))
+            for i in range(len(tar_files)):
+                f.write('wget http://www.astro.umontreal.ca/~artigau/all_ccfs/{0}\n'.format(tar_files[i]))
 
-        for i in range(len(tar_files)):
-            obj = tar_files[i].split('_mask_')[0]
-            f.write('mkdir {0}\n'.format(obj))
-            f.write('mv {0} {1}\n'.format(tar_files[i],obj))
-            f.write('cd {0}\n'.format(obj))
-            f.write('tar -xvf {0}\n'.format(tar_files[i]))
-            f.write('rm  {0}\n'.format(tar_files[i]))
-            f.write('cd ..\n')
-        f.close()
+            for i in range(len(tar_files)):
+                obj = tar_files[i].split('_mask_')[0]
+                f.write('mkdir {0}\n'.format(obj))
+                f.write('mv {0} {1}\n'.format(tar_files[i],obj))
+                f.write('cd {0}\n'.format(obj))
+                f.write('tar -xvf {0}\n'.format(tar_files[i]))
+                f.write('rm  {0}\n'.format(tar_files[i]))
+                f.write('cd ..\n')
+            f.close()
 
-f = open('email','w')
-f.write('This is an automated email to list all CCF compilations done to date.\n')
-f.write('Copy-paste the commands below in a terminal to get all CCF files. To \n')
-f.write('perform the analysis of these files, use the code provided here :\n')
-f.write('\n')
-f.write('https://github.com/njcuk9999/apero-utils/tree/master/spirou/sandbox/ccf_tools\n')
-f.write('\n')
-f.write('Lines to copy-paste, it is best to run this script in the folder used \n')
-f.write('for your CCF analysis. The scirpt will create per-object folders and  \n')
-f.write('distribute files in these folders\n')
-f.write('\n')
-f.write('\t wget http://www.astro.umontreal.ca/~artigau/all_ccfs/download_ccf.script\n')
-f.write('\t chmod a+x download_ccf.script\n')
-f.write('\t ./download_ccf.script\n')
-f.write('\t rm download_ccf.script\n')
-f.write('\n')
-f.write('Files that will be downloaded and extracted from tar\n')
+# some things done only in Montreal
+if hostname == 'maestria':
+    f = open('email','w')
+    f.write('This is an automated email to list all CCF compilations done to date.\n')
+    f.write('Copy-paste the commands below in a terminal to get all CCF files. To \n')
+    f.write('perform the analysis of these files, use the code provided here :\n')
+    f.write('\n')
+    f.write('https://github.com/njcuk9999/apero-utils/tree/master/spirou/sandbox/ccf_tools\n')
+    f.write('\n')
+    f.write('Lines to copy-paste, it is best to run this script in the folder used \n')
+    f.write('for your CCF analysis. The scirpt will create per-object folders and  \n')
+    f.write('distribute files in these folders\n')
+    f.write('\n')
+    f.write('\t wget http://www.astro.umontreal.ca/~artigau/all_ccfs/download_ccf.script\n')
+    f.write('\t chmod a+x download_ccf.script\n')
+    f.write('\t ./download_ccf.script\n')
+    f.write('\t rm download_ccf.script\n')
+    f.write('\n')
+    f.write('Files that will be downloaded and extracted from tar\n')
 
-for i in range(len(tar_files)):
-    f.write('\t{0} {1}\n'.format(tar_files[i],sz[i]))
+    for i in range(len(tar_files)):
+        f.write('\t{0} {1}\n'.format(tar_files[i],sz[i]))
 
-f.write('\n')
-f.write('May the CCF be with you,\n')
-f.write('The DRS team')
-f.close()
+    f.write('\n')
+    f.write('May the CCF be with you,\n')
+    f.write('The DRS team')
+    f.close()
 
-emails = ['cadieux','vandal','doyon','artigau','andres.carmona@univ-grenoble-alpes.fr']
-for email in emails:
-    os.system('cat email | mail -s "Automated links to compiled CCFs" {0}'.format(email))
+    emails = ['cadieux','vandal','doyon','artigau','andres.carmona@univ-grenoble-alpes.fr']
+    for email in emails:
+        os.system('cat email | mail -s "Automated links to compiled CCFs" {0}'.format(email))
