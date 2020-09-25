@@ -1,6 +1,5 @@
 import os
 import numpy as np
-import glob
 
 
 def check_blacklist(file_list):

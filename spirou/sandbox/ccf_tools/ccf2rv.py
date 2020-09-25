@@ -11,6 +11,8 @@ from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from fits2wave import *
 import warnings
 import sys
+from check_blacklist import *
+
 #
 # we get the user name. as we are just a few people in the team, we could all
 # have our paths hard coded here.

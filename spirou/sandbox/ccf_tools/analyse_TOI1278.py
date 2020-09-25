@@ -21,7 +21,7 @@ tbl = get_object_rv(object,mask = 'gl846_neg',
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
                     dvmax_per_order = 3.0, bandpass = 'HK',
-                    doplot = True)
+                    doplot = True, do_blacklist = True)
 
 # period for the sinusoidal currve
 period = 14.4
@@ -75,4 +75,11 @@ ax[1].set(xlabel = 'Date', ylabel = 'Residuals [km/s]')
 plt.tight_layout()
 plt.savefig(object+'.png')
 plt.show()
+
+
+sigma = np.std((tbl_bin['RV'] - model_bin))
+mean_error = np.mean(tbl_bin['ERROR_RV'])
+reduced_chi2 = np.std((tbl_bin['RV'] - model_bin)/tbl_bin['ERROR_RV'])
+
+print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, reduced chi2 {2:.2f} '.format(sigma*1e3, mean_error*1e3, reduced_chi2))
 

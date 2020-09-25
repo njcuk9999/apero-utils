@@ -18,19 +18,43 @@ You can get inspired by this code to construct a similar batch script.
 path_to_masks = '/spirou/drs/apero-drs/apero/data/spirou/ccf/'
 path = '/spirou/cfht_nights/cfht_july1/reduced/20??-??-??/*o_pp_e2dsff_tcorr_AB.fits'
 
-# fetch the latest table with the table of requests
-os.system('rm ccf_wrap.tbl')
-os.system('wget https://raw.githubusercontent.com/njcuk9999/apero-utils/master/spirou/sandbox/ccf_tools/ccf_wrap.tbl')
+# if you want to provide your own input table, then add a file name here. If you leave this
+# as '' will, then we'll download the table from the GitHub
+input_table = ''
 
-step = 0.1
-width = 60.0
+
+# Parameters to be changed to modify the properties of CCFs
+step = 0.1 # velocity step in km/s
+width = 60.0 # width (from -width/2 to +width/2) of scan around systemic velocity
+# parameter for sanitizing. Likelihood of having a bad pixel. Don't change if you
+# don't know that this is about.
 prob_bad = 1e-4
+
+
+if input_table == '':
+    # fetch the latest table with the table of requests
+    os.system('rm ccf_wrap.tbl')
+    os.system('wget https://raw.githubusercontent.com/njcuk9999/apero-utils/master/spirou/sandbox/ccf_tools/ccf_wrap.tbl')
+    input_table = 'ccf_wrap.tbl'
+
+
+# we check that the table is OK
+tbl = Table.read(input_table,format = 'csv')
+
+keys = ['OBJECT', 'MASK','SANITIZE']
+for key in keys:
+    if key not in tbl.keys():
+        print('We have a problem, no key {0} column in {1}'.format(key,input_table))
+        sys.exit()
+    else:
+        print('key {0} is present in table {1}, all good!'.format(key,input_table))
+
 
 all_done = False
 
 while all_done == False:
     # that's batches to come
-    tbl = Table.read('ccf_wrap.tbl',format = 'csv')
+    tbl = Table.read(input_table,format = 'csv')
     objects = np.array(tbl['OBJECT'])
     masks = np.array(tbl['MASK'])
     do_sanitize_all = tbl['SANITIZE'] == 'True'
