@@ -59,6 +59,7 @@ for key in keys:
 
 
 all_done = False
+send_email = False # only send email if something has been reduced
 
 while all_done == False:
     # that's batches to come
@@ -97,6 +98,7 @@ while all_done == False:
         masks = np.array(tbl['MASK'])
         do_sanitize_all = tbl['SANITIZE'] == 'True'
 
+        send_email = True
 
 
         object = objects[0]
@@ -211,32 +213,41 @@ while all_done == False:
 
 # some things done only in Montreal
 if hostname == 'maestria':
-    f = open('email','w')
-    f.write('This is an automated email to list all CCF compilations done to date.\n')
-    f.write('Copy-paste the commands below in a terminal to get all CCF files. To \n')
-    f.write('perform the analysis of these files, use the code provided here :\n')
-    f.write('\n')
-    f.write('https://github.com/njcuk9999/apero-utils/tree/master/spirou/sandbox/ccf_tools\n')
-    f.write('\n')
-    f.write('Lines to copy-paste, it is best to run this script in the folder used \n')
-    f.write('for your CCF analysis. The scirpt will create per-object folders and  \n')
-    f.write('distribute files in these folders\n')
-    f.write('\n')
-    f.write('\t wget http://www.astro.umontreal.ca/~artigau/all_ccfs/download_ccf.script\n')
-    f.write('\t chmod a+x download_ccf.script\n')
-    f.write('\t ./download_ccf.script\n')
-    f.write('\t rm download_ccf.script\n')
-    f.write('\n')
-    f.write('Files that will be downloaded and extracted from tar\n')
+    if send_email:
+        tar_files = glob.glob('all_ccfs/*.tar')
+        sz = np.zeros(len(tar_files), dtype='<U99')
+        for i in range(len(tar_files)):
+            sz[i] = '[' + str(np.round((os.stat(tar_files[i]).st_size) / 1e6, 1)) + ' Mb]'
+            tar_files[i] = tar_files[i].split('/')[-1]
 
-    for i in range(len(tar_files)):
-        f.write('\t{0} {1}\n'.format(tar_files[i],sz[i]))
+        f = open('email','w')
+        f.write('This is an automated email to list all CCF compilations done to date.\n')
+        f.write('Copy-paste the commands below in a terminal to get all CCF files. To \n')
+        f.write('perform the analysis of these files, use the code provided here :\n')
+        f.write('\n')
+        f.write('https://github.com/njcuk9999/apero-utils/tree/master/spirou/sandbox/ccf_tools\n')
+        f.write('\n')
+        f.write('Lines to copy-paste, it is best to run this script in the folder used \n')
+        f.write('for your CCF analysis. The scirpt will create per-object folders and  \n')
+        f.write('distribute files in these folders\n')
+        f.write('\n')
+        f.write('\t wget http://www.astro.umontreal.ca/~artigau/all_ccfs/download_ccf.script\n')
+        f.write('\t chmod a+x download_ccf.script\n')
+        f.write('\t ./download_ccf.script\n')
+        f.write('\t rm download_ccf.script\n')
+        f.write('\n')
+        f.write('Files that will be downloaded and extracted from tar\n')
 
-    f.write('\n')
-    f.write('May the CCF be with you,\n')
-    f.write('The DRS team')
-    f.close()
+        for i in range(len(tar_files)):
+            f.write('\t{0} {1}\n'.format(tar_files[i],sz[i]))
 
-    emails = ['cadieux','vandal','doyon','artigau','andres.carmona@univ-grenoble-alpes.fr']
-    for email in emails:
-        os.system('cat email | mail -s "Automated links to compiled CCFs" {0}'.format(email))
+        f.write('\n')
+        f.write('May the CCF be with you,\n')
+        f.write('The DRS team')
+        f.close()
+
+        emails = ['cadieux','vandal','doyon','artigau','andres.carmona@univ-grenoble-alpes.fr']
+        for email in emails:
+            os.system('cat email | mail -s "Automated links to compiled CCFs" {0}'.format(email))
+    else:
+        print('We will *not* send an email, nothing new to report.')
