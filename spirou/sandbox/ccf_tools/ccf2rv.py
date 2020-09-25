@@ -79,7 +79,8 @@ def get_object_rv(object,
                   bandpass = 'YJHK',
                   velocity_window = 10,
                   dvmax_per_order = 1.0,
-                  doplot = True):
+                  doplot = True,
+                  do_blacklist = False):
     #
     # parameters :
     #
@@ -111,6 +112,9 @@ def get_object_rv(object,
 
 
     ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}*.fits'.format(PATH,object,mask,sp_type)))
+
+    if do_blacklist:
+        ccf_files = check_blacklist(ccf_files)
 
     # definition of photometric bandpasses
     #http: // svo2.cab.inta - csic.es / svo / theory / fps3 / index.php?mode = browse & gname = CFHT & gname2 = Wircam & asttype =

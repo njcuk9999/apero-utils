@@ -97,3 +97,6 @@ to reject these orders. You get a warning when this happens.
 ### doplot = True
 Set to _False_ if you don't want to see all the nice plots I prepared for you. Can be useful if you
 want to put the code in a big batch and don't want to spend your weekends closing python windows.
+### do_blacklist = True
+Check if the files you input are blacklisted. Default is _False_ as this 
+adds some overheads.
