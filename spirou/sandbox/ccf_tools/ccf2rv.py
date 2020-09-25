@@ -19,10 +19,16 @@ name = os.popen('whoami').read().split('\n')[0]
 
 if name == 'eartigau':
     PATH = '/Users/eartigau/wrap_drs_rv'
+
+elif name == 'clairemoutou':
+    PATH = '/Users/clairemoutou/apero/data'
+
 elif name=='andres':
     PATH = '/some/folder/somewhere'
+
 elif name == 'pascal':
     PATH = '/some/folder/somewhere'
+
 else:
     default: PATH = ''
 
