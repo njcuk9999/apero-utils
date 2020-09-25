@@ -49,7 +49,7 @@ model_bin =  sinusoidal(phase_bin,*fit)
 model=  sinusoidal(phase,*fit)
 model_plot =  sinusoidal(phase_plot,*fit)
 
-print('Amplitude of the sinusoidal at {0} days: {1} m/s'.format(period,fit[1]))
+print('Amplitude of the sinusoidal at {0} days: {1:.2} km/s'.format(period,fit[1]))
 print('Mean/Median per-epoch STDDEV {0}/{1} m/s'.format(np.mean(tbl_bin["ERROR_RV"]),np.median(tbl_bin["ERROR_RV"])))
 
 fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
