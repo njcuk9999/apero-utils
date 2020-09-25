@@ -134,6 +134,9 @@ def get_object_rv(object,
     # update orders rejected because of domain as well as input requirements.
     exclude_orders = np.where(keep_orders == False)[0]
 
+    for i in range(49):
+        if i in exclude_orders:
+            keep_orders[i] = False
 
     # form a unique batch name with mask, object and method
     batch_name = '{0}/{1}_mask_{2}_{3}'.format(PATH,object,mask,method)
@@ -256,6 +259,7 @@ def get_object_rv(object,
                 print('Order {0} has a CCF full of NaNs. Added to the rejected orders '.format(iord))
                 exclude_orders = np.append(exclude_orders,iord)
 
+
     # find minimum for CCF. This is used to fit a gaussian to each order and force
     # velocity to zero
     id_min = np.nanargmin( np.nanmedian(med_ccf,axis=0))
@@ -271,6 +275,9 @@ def get_object_rv(object,
                       format(iord,dv_CCF_min[iord],dvmax_per_order))
                 exclude_orders = np.append(exclude_orders,iord)
 
+    ccf_cube[exclude_orders, :, :] = np.nan
+
+
     # find valid pixels to measure CCF properties
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
 
@@ -281,7 +288,6 @@ def get_object_rv(object,
     ccf_Q[ccf_Q == 0] = np.nan
     ccf_depth = 1-med_ccf[:,id_min]
 
-    #ccf_depth[ccf_depth<0] = 0
 
 
     if weight_type == 'DVRMS_CC':
@@ -303,6 +309,8 @@ def get_object_rv(object,
                     rms[i,:] = np.nanmedian(np.abs(ccf_cube[:,:,i]-med_ccf),axis=1)
                 rms[i, :] /= np.nanmedian(rms[i, :])
 
+            rms[:,exclude_orders] = np.nan
+
             if doplot:
                 plt.imshow(rms)
                 plt.xlabel('Nth order')
@@ -321,6 +329,8 @@ def get_object_rv(object,
 
             # assuming that the CCF has the same depth everywhere, this is the correct weighting of orders
             weights = ccf_Q/ccf_rms**2
+            weights[weights == 0] = np.nan
+            weights[exclude_orders] = np.nan
             # we normalize the sum of the weights to one
             weights /= np.nansum(weights)
 
@@ -377,6 +387,7 @@ def get_object_rv(object,
     for i in range(49):
         if np.isfinite(weights[i]):
             ccf_cube_norm[i, :, :] = (ccf_cube[i,:,:] * weights[i])
+
 
     # get a per-file weighted mean CCF
     mean_ccf = np.nansum(ccf_cube_norm,axis=0)
