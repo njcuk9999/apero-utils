@@ -4,26 +4,55 @@ from astropy.table import Table
 from scipy.interpolate import InterpolatedUnivariateSpline
 import matplotlib.pyplot as plt
 from scipy.signal import medfilt
+import os as os
 
-template = 'Template_s1d_Gl699_sc1d_v_file_AB.fits'
-# template = 'Template_s1d_Gl15A_sc1d_v_file_AB.fits'
-# template = 'Template_s1d_HD189733_sc1d_v_file_AB.fits'
+#
+# Code to generate a mask that can be used with the DRS. You need to provide a template file name
+# and the code finds features and correlates the mask against a model at the proper temperature
+# (from header or 3600K if not provided). This gets you the systemic velocity, so you can offset
+# your lines to a zero velocity. The code creates both .csv and .mas files. The csv can be read
+# with astropy.table, while the .mas files are in the right format for the DRS. You get masks for
+# the negative and positive spectroscopic features (_neg and _pos) masks. You also get a _full mask,
+# but the DRS does not handle both positive and negative features yet.
+#
 
+# Provide a template file, needs to be a _s1d_v file
+template = 'Template_s1d_Gl687_sc1d_v_file_AB.fits'
+
+
+# Path where models are saved
+path_to_models = 'HiResFITS'
+
+# some parameters, don't worry
 dv = 0.00  # km/s -- width of the CCF box
-c = 2.99792458e5
+c = 2.99792458e5 # speed of light
+
+
+# create directory if needed
+if not os.path.isdir(path_to_models):
+    os.system('mkdir {0}'.format(path_to_models))
 
 # read wavelength and flux. The wavelength is expressed in Ang, we convert to µm
-wave_phoenix = fits.getdata('WAVE_PHOENIX-ACES-AGSS-COND-2011.fits') / 10
+ftp_link = 'ftp://phoenix.astro.physik.uni-goettingen.de/HiResFITS/'
+wave_file = 'WAVE_PHOENIX-ACES-AGSS-COND-2011.fits'
+if not os.path.isfile(path_to_models+'/'+wave_file):
+    os.system('wget {0}{1}'.format(ftp_link,wave_file) )
+    os.system('mv {0} {1}'.format(wave_file,path_to_models))
+wave_phoenix = fits.getdata(path_to_models+'/'+wave_file) / 10
 
-# get goettigen models. Use only you don't have the models locally
-if False:
-    import os as os
+# get goettigen models if you don't have them.
+for temperature in np.arange(3000, 6100, 100):
+    temperature = str(np.int(np.round(temperature, -2)))
+    outname = '{0}/lte0{1}-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits'.format(path_to_models,temperature)
 
-    for temperature in np.arange(3000, 6100, 100):
-        temperature = str(np.int(np.round(temperature, -2)))
-        print(temperature)
+    if not os.path.isfile(outname):
         os.system(
-            'wget ftp://phoenix.astro.physik.uni-goettingen.de/HiResFITS/PHOENIX-ACES-AGSS-COND-2011/Z-0.0/lte0' + temperature + '-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits')
+            'wget {0}PHOENIX-ACES-AGSS-COND-2011/Z-0.0/lte0{1}-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits'.format(ftp_link,temperature))
+
+        os.system('mv lte0{1}-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits {0}'.format(path_to_models,temperature,))
+    else:
+        print('File {0} exists, we are happy!'.format(outname))
+
 
 # read template and header
 tbl, hdr = fits.getdata(template, ext=1, header=True)
@@ -41,9 +70,9 @@ else:
     temperature = '3600'
 
 print('Temperature = ', temperature)
-model_file = 'lte0' + temperature + '-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits'
-print('Model file = ', model_file)
-flux_phoenix = fits.getdata(model_file)
+outname = '{0}/lte0{1}-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits'.format(path_to_models, temperature)
+print('Model file = ', outname)
+flux_phoenix = fits.getdata(outname)
 
 # get wave and flux vectors
 w = np.array(tbl['wavelength'])
@@ -118,6 +147,9 @@ for ite in range(2):
     scale /= 10.0
 
     plt.plot(dvs, cc)
+    plt.title('CCF of model SP with target''s line list\nThis gets you the systemic velocity')
+    plt.xlabel('Velocity')
+    plt.ylabel('Abritrary flux')
     plt.show()
 
 minpos = np.argmin(cc)
@@ -126,13 +158,16 @@ fit = np.polyfit(dvs[minpos - 1:minpos + 2], cc[minpos - 1:minpos + 2], 2)
 systemic_velocity = -.5 * fit[1] / fit[0]
 
 hdr['SYSVELO'] = systemic_velocity, 'meas. systemic velocity (km/s)'
-hdr['VELOFILE'] = model_file, 'model used for SYSVEL cc'
+hdr['VELOFILE'] = outname, 'model used for SYSVEL cc'
 
-print('systemic velocity : ', systemic_velocity, 'km/s')
+print('\n\tsystemic velocity : {0:.2f}km/s\n'.format(systemic_velocity))
 
-plt.plot(w,f, 'g-.')
-plt.vlines(tbl[tbl['w_mask'] < 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'k')
-plt.vlines(tbl[tbl['w_mask'] > 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'r')
+plt.plot(w,f, 'g-',label = 'input spectrum')
+plt.vlines(tbl[tbl['w_mask'] < 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'k',alpha = 0.2,label = 'positive feature')
+plt.vlines(tbl[tbl['w_mask'] > 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'r',alpha = 0.2,label = 'negative feature')
+plt.legend()
+plt.xlabel('Wavelength [nm]')
+plt.ylabel('Arbitrary flux')
 plt.show()
 
 
@@ -142,16 +177,33 @@ corrv = np.sqrt((1 + systemic_velocity / c) / (1 - systemic_velocity / c))
 tbl['ll_mask_s'] = tbl['ll_mask_s'] / corrv
 tbl['ll_mask_e'] = tbl['ll_mask_e'] / corrv
 
-# ll_mask_s', 'll_mask_e', 'w_mask
-
-
 # write the output table
 fits.writeto(hdr['OBJECT'] + '.fits', tbl, hdr, overwrite=True)
 
-tbl[tbl['w_mask'] < 0].write(hdr['OBJECT'] + '_pos.mas', format='ascii', overwrite=True)
-tbl[tbl['w_mask'] > 0].write(hdr['OBJECT'] + '_neg.mas', format='ascii', overwrite=True)
+pos_mask = tbl['w_mask']<0
+neg_mask = tbl['w_mask']>0
+
+tbl['w_mask']/=np.nanmean(np.abs(tbl['w_mask']))
+
+tbl[pos_mask].write(hdr['OBJECT'] + '_pos.csv', format='ascii', overwrite=True)
+tbl[neg_mask].write(hdr['OBJECT'] + '_neg.csv', format='ascii', overwrite=True)
 tbl.write(hdr['OBJECT'] + '_full.mas', format='ascii', overwrite=True)
 
 
+tbl2 = tbl[tbl['w_mask'] > 0]
+tbl2['w_mask'] /= np.nanmedian(tbl2['w_mask'])
 
+f = open(hdr['OBJECT'] + '_neg.mas', 'w')
+for i in range(len(tbl2)):
+    f.write('      ' + '      '.join(
+        [str(tbl2['ll_mask_s'][i])[0:14], str(tbl2['ll_mask_e'][i])[0:14], str(tbl2['w_mask'][i])[0:12]]) + '\n')
+f.close()
 
+tbl2 = tbl[tbl['w_mask'] < 0]
+tbl2['w_mask'] /= np.nanmedian(tbl2['w_mask'])
+
+f = open(hdr['OBJECT'] + '_pos.mas', 'w')
+for i in range(len(tbl2)):
+    f.write('      ' + '      '.join(
+        [str(tbl2['ll_mask_s'][i])[0:14], str(tbl2['ll_mask_e'][i])[0:14], str(tbl2['w_mask'][i])[0:12]]) + '\n')
+f.close()
