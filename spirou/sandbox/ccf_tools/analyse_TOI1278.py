@@ -20,7 +20,7 @@ tbl = get_object_rv(object,mask =mask,
                     method = 'template',force = True,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
-                    dvmax_per_order = 3.0, bandpass = 'HK',
+                    dvmax_per_order = 3.0, bandpass = 'YJHK',
                     doplot = True, do_blacklist = True)
 
 # period for the sinusoidal currve
@@ -50,9 +50,12 @@ model=  sinusoidal(phase,*fit)
 model_plot =  sinusoidal(phase_plot,*fit)
 
 print('Amplitude of the sinusoidal at {0} days: {1:.2f} m/s'.format(period, 1000*fit[1]))
-print('Mean/Median per-epoch STDDEV {0}/{1} m/s'.format(np.mean(tbl_bin["ERROR_RV"]),np.median(tbl_bin["ERROR_RV"])))
+print('Mean velocity: {1:.2f} m/s'.format(period, 1000*fit[2]))
 
-fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
+print('Mean/Median per-epoch STDDEV {0}/{1} m/s'.format(np.mean(tbl_bin["ERROR_RV"])
+                                                        ,np.median(tbl_bin["ERROR_RV"])))
+
+fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True, figsize = (14,8))
 
 for i in range(len(t2)):
     ax[0].plot_date(t2.plot_date,tbl_bin['RV'],'g.')
@@ -60,19 +63,28 @@ for i in range(len(t2)):
                                                        tbl_bin['RV'][i]+tbl_bin['ERROR_RV'][i]],'g')
 ax[0].plot_date(t3.plot_date,tbl['RV'],'r.',alpha = 0.5)
 ax[1].errorbar(t3.plot_date,tbl['RV'] - model,yerr=tbl['ERROR_RV'], linestyle="None",
-               fmt='o',color = 'green', alpha = 0.2)
+               fmt='o',color = 'green', alpha = 0.2, label = 'Individual measurements')
 
 ax[0].plot(Time(time_plot, format = 'mjd').plot_date,model_plot,'r:')
 ax[0].set(ylabel = 'Velocity [km/s]',title = object)
 
 
-ax[1].errorbar(t2.plot_date, tbl_bin['RV'] - model_bin, yerr=tbl_bin['ERROR_RV'], linestyle="None", fmt='o',
-               alpha = 0.5, capsize = 2, color = 'black')
+ax[1].errorbar(t2.plot_date, tbl_bin['RV'] - model_bin, yerr=tbl_bin['ERROR_RV'],
+               linestyle="None", fmt='o',
+               alpha = 0.5, capsize = 2, color = 'black',label = 'Epoch mean')
 
+ax[1].legend()
 ax[1].plot(Time(time_plot, format = 'mjd').plot_date,np.zeros(len(time_plot)),'r:')
-ax[1].set(xlabel = 'Date', ylabel = 'Residuals [km/s]')
+ax[1].set(xlabel = 'Date', ylabel = 'Residuals [km/s]',ylim = [-.15,0.15],
+          xlim = [np.min(Time(time_plot, format = 'mjd').plot_date), np.max(Time(time_plot, format = 'mjd').plot_date)]
+          )
+
+for label in ax[1].get_xticklabels():
+  label.set_rotation(25)
+  label.set_ha('right')
+
 plt.tight_layout()
-plt.savefig(object+'.png')
+plt.savefig(object+'.pdf')
 plt.show()
 
 

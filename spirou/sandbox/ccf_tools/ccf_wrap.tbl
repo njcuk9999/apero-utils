@@ -1,5 +1,10 @@
 OBJECT, MASK, SANITIZE
-OBJECT, MASK, SANITIZE
+K2-33, Gl846_neg.mas, True
+K2-33, Gl699_neg.mas, True
+K2-33, Gl846_neg.mas, False
+K2-33, Gl699_neg.mas, False
+K2-33, masque_sept18_andres_trans50.mas, True
+K2-33, masque_sept18_andres_trans50.mas, False
 TOI-1452, Gl846_neg.mas, True
 TOI-1452, Gl687_neg.mas, True
 TOI-1452, Gl725B_neg.mas, True
