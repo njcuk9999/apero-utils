@@ -19,7 +19,6 @@ import os as os
 # Provide a template file, needs to be a _s1d_v file
 template = 'Template_s1d_Gl687_sc1d_v_file_AB.fits'
 
-
 # Path where models are saved
 path_to_models = 'HiResFITS'
 

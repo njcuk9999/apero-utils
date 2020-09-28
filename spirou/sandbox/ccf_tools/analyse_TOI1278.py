@@ -13,10 +13,10 @@ def sinusoidal(phase,dphase,amp,zp):
 exclude_orders = [-1]
 
 object = 'TOI-1278'
+mask =  'gl846_neg'
 
 # number of median-absolute deviations within an epoch to consider a point discrepant
-
-tbl = get_object_rv(object,mask = 'gl846_neg',
+tbl = get_object_rv(object,mask =mask,
                     method = 'template',force = True,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
@@ -49,7 +49,7 @@ model_bin =  sinusoidal(phase_bin,*fit)
 model=  sinusoidal(phase,*fit)
 model_plot =  sinusoidal(phase_plot,*fit)
 
-print('Amplitude of the sinusoidal at {0} days: {1:.2} km/s'.format(period,fit[1]))
+print('Amplitude of the sinusoidal at {0} days: {1:.2f} m/s'.format(period, 1000*fit[1]))
 print('Mean/Median per-epoch STDDEV {0}/{1} m/s'.format(np.mean(tbl_bin["ERROR_RV"]),np.median(tbl_bin["ERROR_RV"])))
 
 fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)

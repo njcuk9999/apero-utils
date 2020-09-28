@@ -23,6 +23,13 @@ path = '/spirou/cfht_nights/cfht_july1/reduced/20??-??-??/*o_pp_e2dsff_tcorr_AB.
 input_table = ''
 
 
+if input_table == '':
+    # We will download the table of targets to be analysed at the end of the
+    # computation of each target. If a target is added, we'll know about it
+    download_each_step = True
+else:
+    download_each_step = False
+
 # Parameters to be changed to modify the properties of CCFs
 step = 0.1 # velocity step in km/s
 width = 60.0 # width (from -width/2 to +width/2) of scan around systemic velocity
@@ -62,6 +69,15 @@ all_done = False
 send_email = False # only send email if something has been reduced
 
 while all_done == False:
+
+    if download_each_step:
+        # fetch the latest table with the table of requests
+        os.system('rm ccf_wrap.tbl')
+        os.system(
+            'wget https://raw.githubusercontent.com/njcuk9999/apero-utils/master/spirou/sandbox/ccf_tools/ccf_wrap.tbl')
+        input_table = 'ccf_wrap.tbl'
+
+
     # that's batches to come
     tbl = Table.read(input_table,format = 'csv')
     objects = np.array(tbl['OBJECT'])
