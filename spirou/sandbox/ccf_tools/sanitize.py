@@ -5,9 +5,7 @@ import matplotlib.pyplot as plt
 from astropy.table import Table
 from fits2wave import fits2wave
 from scipy.interpolate import InterpolatedUnivariateSpline
-from tqdm import tqdm
 import os
-from tqdm import tqdm
 import warnings
 #from sigma import *
 from scipy.signal import medfilt
@@ -62,7 +60,7 @@ def running_sigma(v, w):
     return rms
 
 
-def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, force = False, doplot = -1):
+def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, force = False, doplot = -1, verbose = False):
     #
     # Program to create *sanitized* files, where outlying points are replaced with
     # the model
@@ -123,11 +121,13 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, force = False, 
         plt.close()
 
         # loop through files
-        print('Sanitizing file #{0} in {1} -> {2}'.format(i+1,len(files),files[i]))
+        if verbose:
+            print('Sanitizing file #{0} in {1} -> {2}'.format(i+1,len(files),files[i]))
         outname = 'sani'.join(files[i].split('tcorr'))
 
         if os.path.isfile(outname) and (force == False):
-            print(outname+' exisits, we skip')
+            if verbose:
+                print(outname+' exisits, we skip')
             continue
 
         data, hdr = fits.getdata(files[i], header = True)
@@ -144,7 +144,7 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, force = False, 
 
         # we project the template onto the wavelength grid and mask pixels for which we do not have a reliable
         # template
-        for iord in tqdm(range(0,49), leave = False):
+        for iord in range(0,49):
             mask = mask_template(wave[iord])
             tmp = template(wave[iord]) * blaze[iord]
             tmp[mask < 0.99] = np.nan
@@ -158,7 +158,7 @@ def sanitize(files, blaze_file, model_s1d_file, prob_bad = 1e-3, force = False, 
             data[iord]/=lowf
 
         # loop through orders and replace large sigma excursions by template
-        for iord in tqdm(range(0,49), leave = False):
+        for iord in range(0,49):
             data_tmp = np.array(data[iord])
 
             if np.max(np.isfinite(data[iord])) == False:
