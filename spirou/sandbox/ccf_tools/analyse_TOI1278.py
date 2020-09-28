@@ -58,7 +58,6 @@ for i in range(len(t2)):
     ax[0].plot_date(t2.plot_date,tbl_bin['RV'],'g.')
     ax[0].plot_date([t2[i].plot_date,t2[i].plot_date],[tbl_bin['RV'][i]-tbl_bin['ERROR_RV'][i],
                                                        tbl_bin['RV'][i]+tbl_bin['ERROR_RV'][i]],'g')
-
 ax[0].plot_date(t3.plot_date,tbl['RV'],'r.',alpha = 0.5)
 ax[1].errorbar(t3.plot_date,tbl['RV'] - model,yerr=tbl['ERROR_RV'], linestyle="None",
                fmt='o',color = 'green', alpha = 0.2)
@@ -81,5 +80,6 @@ sigma = np.std((tbl_bin['RV'] - model_bin))
 mean_error = np.mean(tbl_bin['ERROR_RV'])
 reduced_chi2 = np.std((tbl_bin['RV'] - model_bin)/tbl_bin['ERROR_RV'])
 
-print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, reduced chi2 {2:.2f} '.format(sigma*1e3, mean_error*1e3, reduced_chi2))
+print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, '
+      'reduced chi2 {2:.2f} '.format(sigma*1e3, mean_error*1e3, reduced_chi2))
 

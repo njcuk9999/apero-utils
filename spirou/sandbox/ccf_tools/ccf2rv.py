@@ -12,6 +12,7 @@ from fits2wave import *
 import warnings
 import sys
 from check_blacklist import *
+from astropy.time import Time
 
 #
 # we get the user name. as we are just a few people in the team, we could all
@@ -418,8 +419,6 @@ def get_object_rv(object,
         plt.savefig('{0}_CCFs.pdf'.format(batch_name))
         plt.show()
 
-    #if 'template' in method:
-    #print('')
 
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
 
@@ -476,6 +475,7 @@ def get_object_rv(object,
         ite+=1
 
     tbl['RV']+=ccf_RV[id_min]
+
 
     if doplot:
         fig,ax = plt.subplots(nrows = 2, ncols = 1)
@@ -548,8 +548,6 @@ def get_object_rv(object,
         plt.savefig('{0}_RV.pdf'.format(batch_name))
         plt.show()
 
-
-
     # we add a measurement of the STDDEV of each mean CCF relative to the median CCF after correcting for the measured
     # velocity. If you are going to add 'methods', add them before this line
     corr_ccf = np.array(mean_ccf)
@@ -563,12 +561,24 @@ def get_object_rv(object,
     if doplot:
         plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.4,label = 'median CCF', linewidth=2)
 
+    # We compute the projection of the CCF residuals onto the second and third derivatives
+    # of the CCF
+    d2 = np.gradient(np.gradient(med_corr_ccf) / np.gradient(ccf_RV))
+    d3 = np.gradient(np.gradient(np.gradient(med_corr_ccf) / np.gradient(ccf_RV)))
+    # second derivatives
+    tbl['D2_RESIDUAL_CCF'] = np.zeros_like(tbl,dtype = float)
+    # third derivatives
+    tbl['D3_RESIDUAL_CCF'] = np.zeros_like(tbl,dtype = float)
 
     # pix scale expressed in CCF pixels
     # SPIRou pixels are about 2.3 km/s
     pix_scale = 2.3/np.nanmedian( np.gradient(ccf_RV))
     for i in range(len(ccf_files)):
         residual = corr_ccf[:,i] - med_corr_ccf
+
+        tbl['D2_RESIDUAL_CCF'][i] = np.nansum(residual*d2)/np.nansum(d2)
+        tbl['D3_RESIDUAL_CCF'][i] = np.nansum(residual*d3)/np.nansum(d3)
+
         tbl['CCF_RESIDUAL_RMS'][i] = np.std(residual[g])
 
         # 1/dvrms -avoids division by zero
@@ -585,6 +595,16 @@ def get_object_rv(object,
         plt.ylabel('CCF depth')
         plt.legend()
         plt.savefig('{0}_residual_CCF.pdf'.format(batch_name))
+
+        plt.show()
+
+    if doplot:
+        t3 = Time(tbl['MJDATE'], format='mjd')
+        plt.plot_date(t3.plot_date, tbl['D2_RESIDUAL_CCF'], 'go')
+        plt.title('Second derivative \n activity indicator')
+        plt.xlabel('Date')
+        plt.ylabel('CCF residual projection on\nCCF 2nd derivative')
+        plt.savefig('{0}_d2_activity.pdf'.format(batch_name))
 
         plt.show()
 
