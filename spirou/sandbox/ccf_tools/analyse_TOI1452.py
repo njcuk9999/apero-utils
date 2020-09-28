@@ -39,4 +39,5 @@ plt.errorbar(tbl_bin1['MJDATE_MEAN'], tbl_bin1['RV'],yerr=tbl_bin1['ERROR_RV'], 
 plt.xlabel('MJD')
 plt.ylabel('Velocity [km/s]')
 plt.title('Object = {0}, sanitized = {1}'.format(object, True))
+plt.savefig('TOI-1452_velocity.pdf')
 plt.show()

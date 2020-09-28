@@ -83,3 +83,10 @@ reduced_chi2 = np.std((tbl_bin['RV'] - model_bin)/tbl_bin['ERROR_RV'])
 print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, '
       'reduced chi2 {2:.2f} '.format(sigma*1e3, mean_error*1e3, reduced_chi2))
 
+
+f = open('TOI1278_obslog.tex','w')
+# create an observation log in tex format
+# Nice when you want to write a paper in the end, hey, that's the point of all these observations!
+for i in range(len(tbl)):
+    f.write('{0:.4f} & ${1:.3f} \pm {2:.3f}$ & {3:.3f} \\\\ \n'.format(tbl['MJDATE'][i],tbl['RV'][i], tbl['ERROR_RV'][i],tbl['D2_RESIDUAL_CCF'][i]))
+f.close()

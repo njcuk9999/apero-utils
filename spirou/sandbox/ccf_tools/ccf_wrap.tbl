@@ -1,4 +1,13 @@
 OBJECT, MASK, SANITIZE
+OBJECT, MASK, SANITIZE
+TOI-1452, Gl846_neg.mas, True
+TOI-1452, Gl687_neg.mas, True
+TOI-1452, Gl725B_neg.mas, True
+TOI-1452, Gl876_neg.mas, True
+TOI-1452, Gl699_neg.mas, True
+TOI-1452, GJ1214_neg.mas, True
+TOI-1452, masque_sept18_andres_trans50.mas, True
+TOI-1452, TOI-1452_neg.mas, True
 GJ1002, GJ1002_neg.mas, True
 GJ1002, GJ1002_neg.mas, False
 TOI-1278, Gl846_neg.mas, False
