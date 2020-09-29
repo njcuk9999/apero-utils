@@ -208,7 +208,7 @@ def left_right(im, width = 15, doplot = False):
 
     medprofile_filtered = median_filter(medprofile,width)
     # correlated noise replicated onto the output image format
-    correlated_noise = np.repeat(medprofile, 4096).reshape(4096, 4096)
+    correlated_noise = np.repeat(medprofile_filtered, 4096).reshape(4096, 4096)
 
     if doplot:
         plt.plot(medprofile, label = 'median profile')
