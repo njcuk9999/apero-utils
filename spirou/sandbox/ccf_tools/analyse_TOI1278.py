@@ -21,7 +21,7 @@ tbl = get_object_rv(object,mask =mask,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
                     dvmax_per_order = 3.0, bandpass = 'YJHK',
-                    doplot = True, do_blacklist = True)
+                    doplot = True, do_blacklist = True,dvmax_per_order = 99.0)
 
 # period for the sinusoidal currve
 period = 14.4
