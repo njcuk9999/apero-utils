@@ -14,7 +14,7 @@ exclude_orders = [-1]
 
 object = 'TOI-1278'
 mask =  'gl846_neg'
-method = 'bisector_20_80'
+method = 'template'
 
 # number of median-absolute deviations within an epoch to consider a point discrepant
 tbl = get_object_rv(object,mask =mask,

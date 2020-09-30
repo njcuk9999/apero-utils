@@ -178,10 +178,10 @@ def get_object_rv(object,
     # add method-specific keywords
     if 'bisector' in method:
         tbl['BIS_SLOPE'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['BIS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['Vt'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['Vb'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['BIS'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
+        tbl['BIS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector width
+        tbl['Vt'] = np.zeros_like(ccf_files,dtype = float)  # bisector velocity 'top' in perryman
+        tbl['Vb'] = np.zeros_like(ccf_files,dtype = float)  # bisector velocity 'bottom' in perryman
+        tbl['BIS'] = np.zeros_like(ccf_files,dtype = float)  # bisector velocity width
 
     # add method-specific keywords
     if 'gaussian' in method:
@@ -416,15 +416,12 @@ def get_object_rv(object,
     mean_ccf = np.nansum(ccf_cube_norm,axis=0)
 
     if doplot:
-        fig,ax = plt.subplots(nrows = 2, ncols = 1)
+        fig,ax = plt.subplots(nrows = 1, ncols = 1)
         for i in range(len(ccf_files)):
             color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
-            ax[0].plot(ccf_RV,mean_ccf[:,i],color = color,alpha = 0.2)
-            ax[1].plot(ccf_RV, mean_ccf[:, i], color=color, alpha=0.2)
+            ax.plot(ccf_RV,mean_ccf[:,i],color = color,alpha = 0.2)
 
-        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
-        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
-                                                                                               ccf_RV[id_min]+10])
+        ax.set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
         plt.tight_layout()
         plt.savefig('{0}_CCFs.pdf'.format(batch_name))
         plt.show()
