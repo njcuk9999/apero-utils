@@ -31,7 +31,7 @@ def bisector(rv, ccf, doplot = False, low_high_cut = 0.1,figure_title = '',ccf_p
     ccf /= np.min( ccf[ [imin - width,imin + width] ])
 
     # interpolate each side of the ccf slope at a range of depths
-    depth = np.arange(low_high_cut,1-low_high_cut,0.01)
+    depth = np.arange(low_high_cut,1-low_high_cut,0.001)
 
     # blue and red side of line
     g1 = (ccf[imin:imin - width:-1]>low_high_cut) & (ccf[imin:imin - width:-1]<(1-low_high_cut))
@@ -62,4 +62,5 @@ def bisector(rv, ccf, doplot = False, low_high_cut = 0.1,figure_title = '',ccf_p
             plt.savefig(ccf_plot_file)
         plt.show()
 
-    return depth, bisector, width_ccf
+    # define depth in the same way as Perryman, 0 is top, 1 is bottom
+    return 1-depth, bisector, width_ccf

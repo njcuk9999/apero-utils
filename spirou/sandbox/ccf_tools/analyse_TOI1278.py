@@ -14,13 +14,14 @@ exclude_orders = [-1]
 
 object = 'TOI-1278'
 mask =  'gl846_neg'
+method = 'bisector_20_80'
 
 # number of median-absolute deviations within an epoch to consider a point discrepant
 tbl = get_object_rv(object,mask =mask,
-                    method = 'template',force = True,
+                    method = method,force = True,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
-                    dvmax_per_order = 3.0, bandpass = 'YJHK',
+                    dvmax_per_order = 3.0, bandpass = 'HK',
                     doplot = True, do_blacklist = True)
 
 # period for the sinusoidal currve

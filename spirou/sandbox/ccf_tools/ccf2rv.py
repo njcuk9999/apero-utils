@@ -179,6 +179,9 @@ def get_object_rv(object,
     if 'bisector' in method:
         tbl['BIS_SLOPE'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
         tbl['BIS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
+        tbl['Vt'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
+        tbl['Vb'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
+        tbl['BIS'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
 
     # add method-specific keywords
     if 'gaussian' in method:
@@ -490,7 +493,6 @@ def get_object_rv(object,
         rv_prev = np.array(tbl['RV'])
         ite+=1
 
-    if doplot:
     # we get the systemic velocity from the BISECTOR between 0.3 and 0.7 depth
     depth, bis, width = bisector(ccf_RV, med_corr_ccf, low_high_cut=0.3,doplot = True,
                                  figure_title = 'mean CCF\ndebug plot', ccf_plot_file = 'ccf_{0}.pdf'.format(object))
@@ -531,6 +533,12 @@ def get_object_rv(object,
                 tbl['RV'][i] =  fit[1]
                 tbl['BIS_SLOPE'][i] =  fit[0]
                 tbl['BIS_WIDTH'][i] = np.mean(width[(depth > bis_min) & (depth < bis_max)])
+
+                # mean 'top' CCF between 55 and 80% of depth
+                tbl['Vt'][i] = np.mean(bis[(depth>0.55)*(depth<0.80)])
+                # mean 'bottom' CCF between 20-40%
+                tbl['Vb'][i] =np.mean(bis[(depth>0.20)*(depth<0.40)])
+                tbl['BIS'][i] = tbl['Vt'][i] - tbl['Vb'][i]
             except:
                 print('We had an error with file {0} computing the bisector'.format(ccf_files[i]))
                 print('Values will be reported as NaN')
