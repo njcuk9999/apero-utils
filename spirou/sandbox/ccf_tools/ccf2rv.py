@@ -114,7 +114,7 @@ def get_object_rv(object,
         sp_type = 'tcorr'
 
 
-    ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}*.fits'.format(PATH,object,mask,sp_type)))
+    ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}_AB.fits'.format(PATH,object,mask,sp_type)))
 
     if do_blacklist:
         ccf_files = check_blacklist(ccf_files)
@@ -160,6 +160,12 @@ def get_object_rv(object,
 
     tbl = Table()# output table to be saved as CSV file with RV measurements
     tbl['FILES'] = ccf_files
+
+    # to keep track of the unique designation of the file
+    tbl['ODOMETER'] = np.zeros_like(tbl, dtype='U7')
+    for i in range(len(tbl)):
+        tbl['ODOMETER'][i] = tbl['FILES'][i].split('/')[-1].split('o')[0]
+
     tbl['RV'] = np.zeros_like(ccf_files,dtype = float) # measured RV
     tbl['ERROR_RV'] = np.zeros_like(ccf_files,dtype = float) # measured RV error
     tbl['CCF_RESIDUAL_RMS']= np.zeros_like(ccf_files,dtype = float) # RMS of CCF - median(CCF)
@@ -209,10 +215,6 @@ def get_object_rv(object,
 
             # we input the CCFs in the CCF cube
             for j in range(49):
-                # if we need to exlude orders, we do it here.
-                if j in exclude_orders:
-                    continue
-
                 tmp =  ccf_tbl['ORDER'+str(j).zfill(2)]
 
                 if False not in np.isfinite(tmp):
@@ -230,6 +232,11 @@ def get_object_rv(object,
         # we need to load the first file just to get the velocity grid
         ccf_tbl = fits.getdata(ccf_files[0])
         ccf_RV = ccf_tbl['RV']
+
+    for j in range(49):
+        # if we need to exlude orders, we do it here.
+        if j in exclude_orders:
+            ccf_cube[j,:,:] = np.nan
 
     print('We load values from headers, slower on first run, faster later')
     for i in (range(len(ccf_files))):
@@ -430,8 +437,15 @@ def get_object_rv(object,
     rms_rv_ite = np.inf
     # we iterate until we have an rms from iteration to iteration of <10 cm/s or we reached a max of 20 iterations
     print('\n')
+
+    per_ccf_rms = np.ones(len(ccf_files))
     while (rms_rv_ite>1e-4) and (ite<nite_max):
-        med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
+
+        w = 1/per_ccf_rms**2
+        w/=np.sum(w)
+        med_corr_ccf = np.zeros(len(ccf_RV))
+        for i in range(len(w)):
+            med_corr_ccf+=(corr_ccf[:,i]*w[i])
 
         # normalize continuum to 1
         continuum = np.abs(ccf_RV-ccf_RV[id_min])>velocity_window
@@ -465,7 +479,9 @@ def get_object_rv(object,
         deriv = deriv / np.nansum(deriv ** 2)
 
         for i in range(len(ccf_files)):
-            tbl['RV'][i]-=np.nansum( (corr_ccf[:,i] - med_corr_ccf)[g]*deriv)
+            residu = corr_ccf[:,i] - med_corr_ccf
+            per_ccf_rms[i] = np.nanstd(residu)
+            tbl['RV'][i]-=np.nansum( residu[g]*deriv)
 
         tbl['RV'] -= np.nanmean(tbl['RV'])
         #plt.plot( tbl['RV'],'.')
@@ -474,7 +490,11 @@ def get_object_rv(object,
         rv_prev = np.array(tbl['RV'])
         ite+=1
 
-    tbl['RV']+=ccf_RV[id_min]
+    if doplot:
+    # we get the systemic velocity from the BISECTOR between 0.3 and 0.7 depth
+    depth, bis, width = bisector(ccf_RV, med_corr_ccf, low_high_cut=0.3,doplot = True,
+                                 figure_title = 'mean CCF\ndebug plot', ccf_plot_file = 'ccf_{0}.pdf'.format(object))
+    tbl['RV']+= np.nanmedian(bis)
 
 
     if doplot:

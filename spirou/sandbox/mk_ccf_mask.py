@@ -17,7 +17,7 @@ import os as os
 #
 
 # Provide a template file, needs to be a _s1d_v file
-template = 'Template_s1d_Gl687_sc1d_v_file_AB.fits'
+template = 'Template_s1d_Gl846_sc1d_v_file_AB.fits'
 
 # Path where models are saved
 path_to_models = 'HiResFITS'
@@ -101,6 +101,14 @@ tbl['ll_mask_e'] = np.zeros_like(line, dtype=float)
 # the weight is the second derivative of the flux. The sharper the line,
 # the more weight we give it
 tbl['w_mask'] = ddf[line]
+tbl['value'] = f[line]
+
+tbl['depth'] = np.zeros_like(tbl['value'])
+
+tbl['depth'][1:-1] = 1-tbl['value'][1:-1]/((tbl['value'][0:-2]+tbl['value'][2:])/2)
+
+plt.plot(tbl['w_mask'],tbl['depth'],'g.')
+plt.show()
 
 for i in range(len(line)):
     # we perform a linear interpolation to find the exact wavelength
@@ -191,12 +199,22 @@ tbl.write(hdr['OBJECT'] + '_full.mas', format='ascii', overwrite=True)
 
 tbl2 = tbl[tbl['w_mask'] > 0]
 tbl2['w_mask'] /= np.nanmedian(tbl2['w_mask'])
+tbl2['depth'] /= np.nanmedian(tbl2['depth'])
+tbl2['depth'] = np.abs(tbl2['depth'])
 
 f = open(hdr['OBJECT'] + '_neg.mas', 'w')
 for i in range(len(tbl2)):
     f.write('      ' + '      '.join(
         [str(tbl2['ll_mask_s'][i])[0:14], str(tbl2['ll_mask_e'][i])[0:14], str(tbl2['w_mask'][i])[0:12]]) + '\n')
 f.close()
+
+f = open(hdr['OBJECT'] + '_neg_depth.mas', 'w')
+for i in range(len(tbl2)):
+    f.write('      ' + '      '.join(
+        [str(tbl2['ll_mask_s'][i])[0:14], str(tbl2['ll_mask_e'][i])[0:14], str(tbl2['depth'][i])[0:12]]) + '\n')
+f.close()
+
+
 
 tbl2 = tbl[tbl['w_mask'] < 0]
 tbl2['w_mask'] /= np.nanmedian(tbl2['w_mask'])
