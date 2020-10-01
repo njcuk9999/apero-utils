@@ -1,4 +1,5 @@
 OBJECT, MASK, SANITIZE
+TOI-1278, M2_weighted_RV_-30.mas, False
 K2-33, Gl846_neg.mas, True
 K2-33, Gl699_neg.mas, True
 K2-33, Gl846_neg.mas, False

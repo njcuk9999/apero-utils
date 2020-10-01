@@ -83,7 +83,9 @@ def get_object_rv(object,
                   velocity_window = 10,
                   dvmax_per_order = 1.0,
                   doplot = True,
-                  do_blacklist = False):
+                  do_blacklist = False,
+                  detailed_output = False
+                  ):
     #
     # parameters :
     #
@@ -108,11 +110,16 @@ def get_object_rv(object,
     # "WEIGHT" (all capitals) and be read as a proper numpy.table file
     #
 
+    if method == 'all':
+        method = 'gaussian_template_bisector_20_80'
+
     if sanitize:
         sp_type = 'sani'
     else:
         sp_type = 'tcorr'
 
+
+    dict_ccf = dict()
 
     ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}_AB.fits'.format(PATH,object,mask,sp_type)))
 
@@ -177,6 +184,7 @@ def get_object_rv(object,
 
     # add method-specific keywords
     if 'bisector' in method:
+        tbl['RV_BIS'] = np.zeros_like(ccf_files,dtype = float)  # bisector mid point
         tbl['BIS_SLOPE'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
         tbl['BIS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector width
         tbl['Vt'] = np.zeros_like(ccf_files,dtype = float)  # bisector velocity 'top' in perryman
@@ -185,9 +193,10 @@ def get_object_rv(object,
 
     # add method-specific keywords
     if 'gaussian' in method:
-        tbl['GAUSS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['GAUSS_AMP'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['GAUSS_ZP'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
+        tbl['RV_GAUSS'] = np.zeros_like(ccf_files,dtype = float) # mean gauss velocity
+        tbl['GAUSS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # gauss width
+        tbl['GAUSS_AMP'] = np.zeros_like(ccf_files,dtype = float)  # gauss depth
+        tbl['GAUSS_ZP'] = np.zeros_like(ccf_files,dtype = float)  # gauss zp
 
     #... feel free to add columns here
 
@@ -430,16 +439,103 @@ def get_object_rv(object,
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
 
     rv_prev = np.array(tbl['RV'])
-    corr_ccf = np.array(mean_ccf)
 
+
+
+    # we use the bisector method, the name should be something like
+    # method = 'bisector_30_70' to get the mean bisector between the 30th and 70th percentile
+    if 'bisector' in method:
+        # we find the min of CCF and will only compute bisector of +-50 km/s to avoid problems at ccf edges
+        imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
+
+        plt.plot(np.nanmedian(mean_ccf, axis=1))
+        plt.show()
+
+        # just get the parameters after bisector
+        params_bis = method.split('bisector_')[1]
+        bis_min, bis_max = np.array(params_bis.split('_')[0:2], dtype=float) / 100.
+
+        for i in range(len(ccf_files)):
+
+
+            #try:
+            depth, bis, width = bisector(ccf_RV, mean_ccf[:,i], low_high_cut=0.2)
+            fit = np.polyfit(depth[(depth > bis_min) & (depth < bis_max)] - (bis_min + bis_max) / 2,
+                       bis[(depth > bis_min) & (depth < bis_max)], 1)
+
+            tbl['RV'][i] =  fit[1]
+            # just in case you want to have both bisector and
+            # template, we keep a RV that is specific to this method
+            tbl['RV_BIS'][i] =  fit[1]
+            tbl['BIS_SLOPE'][i] =  fit[0]
+            tbl['BIS_WIDTH'][i] = np.mean(width[(depth > bis_min) & (depth < bis_max)])
+
+            # mean 'top' CCF between 55 and 80% of depth
+            tbl['Vt'][i] = np.mean(bis[(depth>0.55)*(depth<0.80)])
+            # mean 'bottom' CCF between 20-40%
+            tbl['Vb'][i] =np.mean(bis[(depth>0.20)*(depth<0.40)])
+            tbl['BIS'][i] = tbl['Vt'][i] - tbl['Vb'][i]
+
+            if False:
+                print('We had an error with file {0} computing the bisector'.format(ccf_files[i]))
+                print('Values will be reported as NaN')
+                tbl['RV'][i] =  np.nan
+                tbl['BIS_SLOPE'][i] =  np.nan
+                tbl['BIS_WIDTH'][i] = np.nan
+
+        fig,ax = plt.subplots(nrows = 2, ncols=1,sharex = True)
+        ax[0].plot(tbl['MJDATE'], tbl['RV'], 'g.')
+        ax[0].set(title='Velocity',xlabel = 'MJDATE',ylabel = 'RV [km/s]')
+        ax[1].plot(tbl['MJDATE'], tbl['BIS_SLOPE'], 'g.')
+        ax[1].set(title='Bisector slope',xlabel = 'MJDATE',ylabel = 'slope [km/s/fract. depth]')
+        plt.tight_layout()
+        plt.savefig('{0}_RV.pdf'.format(batch_name))
+        plt.show()
+
+    if 'gaussian' in method:
+        imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
+
+        for i in range(len(ccf_files)):
+            p0 = [ccf_RV[imin],1,1,-0.1]
+            fit, pcov = curve_fit(gauss,ccf_RV,mean_ccf[:,i],p0 = p0)
+
+            tbl['RV'][i] = fit[0]
+
+            # just in case you want to have gauss/bisector and
+            # template, we keep a RV that is specific to this method
+            tbl['RV_GAUSS'][i] = fit[0]
+
+            tbl['GAUSS_WIDTH'][i] = fit[1]
+            tbl['GAUSS_AMP'][i] = fit[3]
+            tbl['GAUSS_ZP'][i] = fit[2]
+
+        fig,ax = plt.subplots(nrows = 2, ncols=1,sharex = True)
+        ax[0].plot(tbl['MJDATE'], tbl['RV'], 'g.')
+        ax[0].set(title='Velocity',xlabel = 'MJDATE',ylabel = 'RV [km/s]')
+        ax[1].plot(tbl['MJDATE'], tbl['GAUSS_WIDTH']*2.354, 'g.')
+        ax[1].set(title='Gaussian width',xlabel = 'MJDATE',ylabel = 'Gaussian FWHM [km/s]')
+        plt.tight_layout()
+        plt.savefig('{0}_RV.pdf'.format(batch_name))
+        plt.show()
+
+
+
+    # fitting a 'Template' ... this is always done.
     nite_max = 20
     ite = 0
     rms_rv_ite = np.inf
     # we iterate until we have an rms from iteration to iteration of <10 cm/s or we reached a max of 20 iterations
     print('\n')
 
+    corr_ccf = np.array(mean_ccf)
+
+    plt.imshow(corr_ccf,aspect = 'auto',vmin = 0.6,vmax = 1.1)
+    plt.show()
+
     per_ccf_rms = np.ones(len(ccf_files))
     while (rms_rv_ite>1e-4) and (ite<nite_max):
+        if ite ==0:
+            tbl['RV'] = 0
 
         w = 1/per_ccf_rms**2
         w/=np.sum(w)
@@ -469,8 +565,17 @@ def get_object_rv(object,
             amp = np.nansum( (corr_ccf[:,i] - np.mean(corr_ccf[:,i]))*(med_corr_ccf - np.mean(med_corr_ccf)) )/np.nansum((med_corr_ccf - np.mean(med_corr_ccf))**2)
             mean_ccf[:, i] = (mean_ccf[:,i] - np.mean(mean_ccf[:,i]))/np.sqrt(amp)+np.mean(mean_ccf[:,i])
 
-            # correcting 2rd order polynomial structures in continuum
-            fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],2)
+
+            try:
+                # correcting 2rd order polynomial structures in continuum
+                fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],2)
+            except:
+                print(ccf_RV)
+                print(med_corr_ccf)
+                print(corr_ccf[:,i])
+                plt.plot(ccf_RV,med_corr_ccf)
+                plt.plot(ccf_RV,corr_ccf[:,i])
+                plt.show()
             corr = np.polyval(fit, ccf_RV)
             mean_ccf[:, i] += corr/2
 
@@ -489,6 +594,9 @@ def get_object_rv(object,
         print('Template CCF iteration number {0:3}, rms RV change {1:3.4f} km/s for this step'.format(ite+1,rms_rv_ite))
         rv_prev = np.array(tbl['RV'])
         ite+=1
+
+    tbl['RV_TEMPLATE'] = np.array(tbl['RV'])
+
 
     # we get the systemic velocity from the BISECTOR between 0.3 and 0.7 depth
     depth, bis, width = bisector(ccf_RV, med_corr_ccf, low_high_cut=0.3,doplot = True,
@@ -510,68 +618,7 @@ def get_object_rv(object,
         plt.savefig('{0}_template.pdf'.format(batch_name))
         plt.show()
 
-    # we use the bisector method, the name should be something like
-    # method = 'bisector_30_70' to get the mean bisector between the 30th and 70th percentile
-    if 'bisector' in method:
-        # we find the min of CCF and will only compute bisector of +-50 km/s to avoid problems at ccf edges
-        imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
-        good_RV = np.abs(ccf_RV - ccf_RV[imin]) < 50
 
-        bis_min, bis_max = np.array(method.split('_')[1:3], dtype=float) / 100.
-
-        for i in range(len(ccf_files)):
-
-
-            try:
-                depth, bis, width = bisector(ccf_RV[good_RV], mean_ccf[good_RV,i], low_high_cut=0.2)
-                fit = np.polyfit(depth[(depth > bis_min) & (depth < bis_max)] - (bis_min + bis_max) / 2,
-                           bis[(depth > bis_min) & (depth < bis_max)], 1)
-
-                tbl['RV'][i] =  fit[1]
-                tbl['BIS_SLOPE'][i] =  fit[0]
-                tbl['BIS_WIDTH'][i] = np.mean(width[(depth > bis_min) & (depth < bis_max)])
-
-                # mean 'top' CCF between 55 and 80% of depth
-                tbl['Vt'][i] = np.mean(bis[(depth>0.55)*(depth<0.80)])
-                # mean 'bottom' CCF between 20-40%
-                tbl['Vb'][i] =np.mean(bis[(depth>0.20)*(depth<0.40)])
-                tbl['BIS'][i] = tbl['Vt'][i] - tbl['Vb'][i]
-            except:
-                print('We had an error with file {0} computing the bisector'.format(ccf_files[i]))
-                print('Values will be reported as NaN')
-                tbl['RV'][i] =  np.nan
-                tbl['BIS_SLOPE'][i] =  np.nan
-                tbl['BIS_WIDTH'][i] = np.nan
-
-        fig,ax = plt.subplots(nrows = 2, ncols=1,sharex = True)
-        ax[0].plot(tbl['MJDATE'], tbl['RV'], 'g.')
-        ax[0].set(title='Velocity',xlabel = 'MJDATE',ylabel = 'RV [km/s]')
-        ax[1].plot(tbl['MJDATE'], tbl['BIS_SLOPE'], 'g.')
-        ax[1].set(title='Bisector slope',xlabel = 'MJDATE',ylabel = 'slope [km/s/fract. depth]')
-        plt.tight_layout()
-        plt.savefig('{0}_RV.pdf'.format(batch_name))
-        plt.show()
-
-    if 'gaussian' in method:
-        imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
-
-        for i in range(len(ccf_files)):
-            p0 = [ccf_RV[imin],1,1,-0.1]
-            fit, pcov = curve_fit(gauss,ccf_RV,mean_ccf[:,i],p0 = p0)
-
-            tbl['RV'][i] = fit[0]
-            tbl['GAUSS_WIDTH'][i] = fit[1]
-            tbl['GAUSS_AMP'][i] = fit[3]
-            tbl['GAUSS_ZP'][i] = fit[2]
-
-        fig,ax = plt.subplots(nrows = 2, ncols=1,sharex = True)
-        ax[0].plot(tbl['MJDATE'], tbl['RV'], 'g.')
-        ax[0].set(title='Velocity',xlabel = 'MJDATE',ylabel = 'RV [km/s]')
-        ax[1].plot(tbl['MJDATE'], tbl['GAUSS_WIDTH']*2.354, 'g.')
-        ax[1].set(title='Gaussian width',xlabel = 'MJDATE',ylabel = 'Gaussian FWHM [km/s]')
-        plt.tight_layout()
-        plt.savefig('{0}_RV.pdf'.format(batch_name))
-        plt.show()
 
     # we add a measurement of the STDDEV of each mean CCF relative to the median CCF after correcting for the measured
     # velocity. If you are going to add 'methods', add them before this line
@@ -636,4 +683,11 @@ def get_object_rv(object,
     # output to csv file
     tbl.write('{0}.csv'.format(batch_name),overwrite = True)
 
-    return tbl
+    if detailed_output == False:
+        return tbl
+    else:
+
+        dict_ccf['TABLE_CCF'] = tbl
+        dict_ccf['MEAN_CCF'] = mean_ccf
+
+        return dict_ccf
