@@ -344,7 +344,7 @@ def get_object_rv(object,
             rms[:,exclude_orders] = np.nan
 
             if doplot:
-                plt.imshow(rms)
+                plt.imshow(rms,aspect = 'auto')
                 plt.xlabel('Nth order')
                 plt.ylabel('Nth frame')
                 plt.title('RMS of CCF relative to median')
@@ -448,9 +448,6 @@ def get_object_rv(object,
         # we find the min of CCF and will only compute bisector of +-50 km/s to avoid problems at ccf edges
         imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
 
-        plt.plot(np.nanmedian(mean_ccf, axis=1))
-        plt.show()
-
         # just get the parameters after bisector
         params_bis = method.split('bisector_')[1]
         bis_min, bis_max = np.array(params_bis.split('_')[0:2], dtype=float) / 100.
@@ -529,8 +526,9 @@ def get_object_rv(object,
 
     corr_ccf = np.array(mean_ccf)
 
-    plt.imshow(corr_ccf,aspect = 'auto',vmin = 0.6,vmax = 1.1)
-    plt.show()
+    fig,ax = plt.subplots(nrows =1, ncols = 2)
+    ax[0].imshow(corr_ccf,aspect = 'auto',vmin = 0.6,vmax = 1.1,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
+    ax[0].set(xlabel='Nth observation',ylabel='Velocity [km/s]',title='Before CCF register')
 
     per_ccf_rms = np.ones(len(ccf_files))
     while (rms_rv_ite>1e-4) and (ite<nite_max):
@@ -566,16 +564,9 @@ def get_object_rv(object,
             mean_ccf[:, i] = (mean_ccf[:,i] - np.mean(mean_ccf[:,i]))/np.sqrt(amp)+np.mean(mean_ccf[:,i])
 
 
-            try:
-                # correcting 2rd order polynomial structures in continuum
-                fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],2)
-            except:
-                print(ccf_RV)
-                print(med_corr_ccf)
-                print(corr_ccf[:,i])
-                plt.plot(ccf_RV,med_corr_ccf)
-                plt.plot(ccf_RV,corr_ccf[:,i])
-                plt.show()
+            # correcting 2rd order polynomial structures in continuum
+            fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],2)
+
             corr = np.polyval(fit, ccf_RV)
             mean_ccf[:, i] += corr/2
 
@@ -596,6 +587,10 @@ def get_object_rv(object,
         ite+=1
 
     tbl['RV_TEMPLATE'] = np.array(tbl['RV'])
+
+    ax[1].imshow(corr_ccf,aspect = 'auto',vmin = 0.6,vmax = 1.1,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
+    ax[1].set(xlabel='Nth observation',ylabel='Velocity [km/s]',title='After CCF register')
+    plt.show()
 
 
     # we get the systemic velocity from the BISECTOR between 0.3 and 0.7 depth

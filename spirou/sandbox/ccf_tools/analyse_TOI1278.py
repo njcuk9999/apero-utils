@@ -12,7 +12,7 @@ def sinusoidal(phase,dphase,amp,zp):
 # do not *formally* exclude an order, but this is done later with the bandpass keyword
 exclude_orders = [-1]
 
-object = 'Gl846'
+object = 'TOI-1278'
 mask =  'gl846_neg'
 method = 'all'
 
@@ -53,7 +53,7 @@ model_plot =  sinusoidal(phase_plot,*fit)
 print('Amplitude of the sinusoidal at {0} days: {1:.2f} m/s'.format(period, 1000*fit[1]))
 print('Mean velocity: {1:.2f} m/s'.format(period, 1000*fit[2]))
 
-print('Mean/Median per-epoch STDDEV {0}/{1} m/s'.format(np.mean(tbl_bin["ERROR_RV"])
+print('Mean/Median per-epoch STDDEV {0}/{1} km/s'.format(np.mean(tbl_bin["ERROR_RV"])
                                                         ,np.median(tbl_bin["ERROR_RV"])))
 
 fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True, figsize = (14,8))
@@ -89,13 +89,18 @@ plt.tight_layout()
 plt.savefig(object+'.pdf')
 plt.show()
 
-
 sigma = np.std((tbl_bin['RV'] - model_bin))
 mean_error = np.mean(tbl_bin['ERROR_RV'])
+median_error = np.nanmedian(tbl_bin['ERROR_RV'])
 reduced_chi2 = np.std((tbl_bin['RV'] - model_bin)/tbl_bin['ERROR_RV'])
+print('\n--- values for the per-night weighted-mean points ---\n')
+print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, median ERROR_RV {2:.2f} m/s, '
+      'reduced chi2 {3:.2f} '.format(sigma*1e3, mean_error*1e3,median_error*1e3, reduced_chi2))
 
-print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, '
-      'reduced chi2 {2:.2f} '.format(sigma*1e3, mean_error*1e3, reduced_chi2))
+mean_error = np.mean(tbl['ERROR_RV'])
+median_error = np.nanmedian(tbl['ERROR_RV'])
+print('\n--- values for the individual points ---\n')
+print(' mean ERROR_RV {0:.2f} m/s, median ERROR_RV {1:.2f} m/s'.format( mean_error*1e3,median_error*1e3))
 
 
 f = open('TOI1278_obslog.tex','w')
