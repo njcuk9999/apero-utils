@@ -272,3 +272,7 @@ if hostname == 'maestria':
             os.system('cat email | mail -s "Automated links to compiled CCFs" {0}'.format(email))
     else:
         print('We will *not* send an email, nothing new to report.')
+
+    if download_each_step:
+        # we wait so this can be set into a perpetual loop
+        os.system('sleep 3600')
