@@ -2,7 +2,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline
 
-
 def bisector(rv, ccf, doplot = False, low_high_cut = 0.1,figure_title = '',ccf_plot_file = ''):
     # use the props from the CCF determination code
     # Could be per-order or with the mean
@@ -41,18 +40,16 @@ def bisector(rv, ccf, doplot = False, low_high_cut = 0.1,figure_title = '',ccf_p
     spline2 = InterpolatedUnivariateSpline(ccf[imin : imin + width][g2],rv[imin : imin + width][g2], k=2)
 
     # get midpoint
-    bisector = (spline2(depth)+spline1(depth))/2
+    bisector_position = (spline2(depth)+spline1(depth))/2
 
     # get bisector widht
     width_ccf = (spline2(depth)-spline1(depth))
 
-
-
     if doplot:
         # some nice plots
         plt.plot(rv[imin - width : imin+ width],ccf[imin - width : imin+ width],label = 'ccf')
-        plt.plot(bisector,depth,label = 'bisector')
-        plt.plot((bisector-np.mean(bisector))*100+np.mean(bisector),depth, label = 'bisector * 100',
+        plt.plot(bisector_position,depth,label = 'bisector')
+        plt.plot((bisector_position-np.mean(bisector_position))*100+np.mean(bisector_position),depth, label = 'bisector * 100',
                  )
         plt.legend()
         plt.title(figure_title)
@@ -63,4 +60,4 @@ def bisector(rv, ccf, doplot = False, low_high_cut = 0.1,figure_title = '',ccf_p
         plt.show()
 
     # define depth in the same way as Perryman, 0 is top, 1 is bottom
-    return 1-depth, bisector, width_ccf
+    return 1-depth, bisector_position, width_ccf

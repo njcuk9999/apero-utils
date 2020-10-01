@@ -344,7 +344,9 @@ def get_object_rv(object,
             rms[:,exclude_orders] = np.nan
 
             if doplot:
-                plt.imshow(rms,aspect = 'auto')
+                vmin = np.nanpercentile(rms,3)
+                vmax = np.nanpercentile(rms,97)
+                plt.imshow(rms,aspect = 'auto',vmin = vmin, vmax = vmax)
                 plt.xlabel('Nth order')
                 plt.ylabel('Nth frame')
                 plt.title('RMS of CCF relative to median')
@@ -515,8 +517,6 @@ def get_object_rv(object,
         plt.savefig('{0}_RV.pdf'.format(batch_name))
         plt.show()
 
-
-
     # fitting a 'Template' ... this is always done.
     nite_max = 20
     ite = 0
@@ -527,7 +527,11 @@ def get_object_rv(object,
     corr_ccf = np.array(mean_ccf)
 
     fig,ax = plt.subplots(nrows =1, ncols = 2)
-    ax[0].imshow(corr_ccf,aspect = 'auto',vmin = 0.6,vmax = 1.1,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
+
+    # funky scaling of imshow
+    vmin = np.nanpercentile(corr_ccf,3)
+    vmax = np.nanpercentile(corr_ccf,97)
+    ax[0].imshow(corr_ccf,aspect = 'auto',vmin = vmin,vmax = vmax,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
     ax[0].set(xlabel='Nth observation',ylabel='Velocity [km/s]',title='Before CCF register')
 
     per_ccf_rms = np.ones(len(ccf_files))
@@ -588,7 +592,9 @@ def get_object_rv(object,
 
     tbl['RV_TEMPLATE'] = np.array(tbl['RV'])
 
-    ax[1].imshow(corr_ccf,aspect = 'auto',vmin = 0.6,vmax = 1.1,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
+    vmin = np.nanpercentile(corr_ccf,3)
+    vmax = np.nanpercentile(corr_ccf,97)
+    ax[1].imshow(corr_ccf,aspect = 'auto',vmin = vmin,vmax = vmax,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
     ax[1].set(xlabel='Nth observation',ylabel='Velocity [km/s]',title='After CCF register')
     plt.show()
 
