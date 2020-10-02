@@ -94,8 +94,8 @@ mean_error = np.mean(tbl_bin['ERROR_RV'])
 median_error = np.nanmedian(tbl_bin['ERROR_RV'])
 reduced_chi2 = np.std((tbl_bin['RV'] - model_bin)/tbl_bin['ERROR_RV'])
 print('\n--- values for the per-night weighted-mean points ---\n')
-print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, median ERROR_RV {2:.2f} m/s, '
-      'reduced chi2 {3:.2f} '.format(sigma*1e3, mean_error*1e3,median_error*1e3, reduced_chi2))
+print(' mean ERROR_RV {0:.2f} m/s, median ERROR_RV {1:.2f} m/s, '
+      'reduced chi2 {2:.2f} '.format(mean_error*1e3, median_error*1e3, reduced_chi2))
 
 mean_error = np.mean(tbl['ERROR_RV'])
 median_error = np.nanmedian(tbl['ERROR_RV'])
