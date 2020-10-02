@@ -1,4 +1,12 @@
 OBJECT, MASK, SANITIZE
+TOI-1638, Gl846_neg.mas, True
+TOI-1638, Gl699_neg.mas, True
+TOI-1638, Gl846_neg.mas, False
+TOI-1638, Gl699_neg.mas, False
+TOI-1433, Gl846_neg.mas, True
+TOI-1433, Gl699_neg.mas, True
+TOI-1433, Gl846_neg.mas, False
+TOI-1433, Gl699_neg.mas, False
 TOI-1278,teff4500logg450_neg.mas, False
 TOI-1278,teff4000logg450_neg.mas, False
 TOI-1278,teff3500logg450_neg.mas, False
