@@ -1,6 +1,8 @@
 import numpy as np
 from astropy.io import fits
 
+# a test comment
+
 def fix_shift(im):
     # reading a file
 
