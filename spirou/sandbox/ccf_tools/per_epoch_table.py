@@ -27,6 +27,9 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
     tbl_bin['MJDATE_MIN'] = np.zeros(len(udates), dtype = float)
     tbl_bin['MJDATE_MAX'] = np.zeros(len(udates), dtype = float)
 
+    tbl_bin['RV_MED'] = np.zeros(len(udates), dtype = float)
+    tbl_bin['ERROR_RV_MED'] = np.zeros(len(udates), dtype = float)
+
     tbl['KEEP'] = np.ones_like(tbl,dtype = bool)
     # Table per night
     tbl2 = Table()
@@ -43,7 +46,15 @@ def per_epoch_table(tbl_input,nMAD_cut = np.inf):
         tbl['KEEP'][g] = nMAD<nMAD_cut
 
         tbl_bin['RV'][i] = np.sum(weights*tbl['RV'][g])
+
+        # formal sigma for a weighted mean
         tbl_bin['ERROR_RV'][i] = 1/np.sqrt(np.nansum(1/tbl[g]['ERROR_RV']**2))
+
+        # median RV for epoch
+        tbl_bin['RV_MED'][i] = np.nanmedian(tbl['RV'][g])
+
+        # median error for points at that epoch
+        tbl_bin['ERROR_RV_MED'][i] = np.nanmedian(tbl['ERROR_RV'][g])
 
         tbl_bin['RV_N'][i] = np.sum(g)
 

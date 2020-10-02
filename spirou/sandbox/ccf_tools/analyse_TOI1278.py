@@ -14,14 +14,15 @@ exclude_orders = [-1]
 
 object = 'TOI-1278'
 mask =  'gl846_neg'
+method = 'all'
 
 # number of median-absolute deviations within an epoch to consider a point discrepant
 tbl = get_object_rv(object,mask =mask,
-                    method = 'template',force = True,
+                    method = method,force = True,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
-                    dvmax_per_order = 3.0, bandpass = 'YJHK',
-                    doplot = True, do_blacklist = True,dvmax_per_order = 99.0)
+                    dvmax_per_order = 3.0, bandpass = 'HK',
+                    doplot = True, do_blacklist = True)
 
 # period for the sinusoidal currve
 period = 14.4
@@ -52,7 +53,7 @@ model_plot =  sinusoidal(phase_plot,*fit)
 print('Amplitude of the sinusoidal at {0} days: {1:.2f} m/s'.format(period, 1000*fit[1]))
 print('Mean velocity: {1:.2f} m/s'.format(period, 1000*fit[2]))
 
-print('Mean/Median per-epoch STDDEV {0}/{1} m/s'.format(np.mean(tbl_bin["ERROR_RV"])
+print('Mean/Median per-epoch STDDEV {0}/{1} km/s'.format(np.mean(tbl_bin["ERROR_RV"])
                                                         ,np.median(tbl_bin["ERROR_RV"])))
 
 fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True, figsize = (14,8))
@@ -76,7 +77,8 @@ ax[1].errorbar(t2.plot_date, tbl_bin['RV'] - model_bin, yerr=tbl_bin['ERROR_RV']
 ax[1].legend()
 ax[1].plot(Time(time_plot, format = 'mjd').plot_date,np.zeros(len(time_plot)),'r:')
 ax[1].set(xlabel = 'Date', ylabel = 'Residuals [km/s]',ylim = [-.15,0.15],
-          xlim = [np.min(Time(time_plot, format = 'mjd').plot_date), np.max(Time(time_plot, format = 'mjd').plot_date)]
+          xlim = [np.min(Time(time_plot, format = 'mjd').plot_date),
+          np.max(Time(time_plot, format = 'mjd').plot_date)]
           )
 
 for label in ax[1].get_xticklabels():
@@ -87,13 +89,18 @@ plt.tight_layout()
 plt.savefig(object+'.pdf')
 plt.show()
 
-
 sigma = np.std((tbl_bin['RV'] - model_bin))
 mean_error = np.mean(tbl_bin['ERROR_RV'])
+median_error = np.nanmedian(tbl_bin['ERROR_RV'])
 reduced_chi2 = np.std((tbl_bin['RV'] - model_bin)/tbl_bin['ERROR_RV'])
+print('\n--- values for the per-night weighted-mean points ---\n')
+print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, median ERROR_RV {2:.2f} m/s, '
+      'reduced chi2 {3:.2f} '.format(sigma*1e3, mean_error*1e3,median_error*1e3, reduced_chi2))
 
-print('stddev(obs-model) {0:.2f} m/s, mean ERROR_RV {1:.2f} m/s, '
-      'reduced chi2 {2:.2f} '.format(sigma*1e3, mean_error*1e3, reduced_chi2))
+mean_error = np.mean(tbl['ERROR_RV'])
+median_error = np.nanmedian(tbl['ERROR_RV'])
+print('\n--- values for the individual points ---\n')
+print(' mean ERROR_RV {0:.2f} m/s, median ERROR_RV {1:.2f} m/s'.format( mean_error*1e3,median_error*1e3))
 
 
 f = open('TOI1278_obslog.tex','w')

@@ -38,7 +38,6 @@ tbl1 = get_object_rv(object, mask='gl846_neg', method='template', force=True, ex
                      snr_min=20.0, sanitize=False, weight_type='ccf_depth', bandpass='YJHK', doplot=False)
 ref_rms = np.mean(tbl1['ERROR_RV'])
 
-
 ERROR_RV = np.zeros(49)
 
 for iord in range(0,49):

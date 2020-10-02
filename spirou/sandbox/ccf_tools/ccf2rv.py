@@ -83,7 +83,9 @@ def get_object_rv(object,
                   velocity_window = 10,
                   dvmax_per_order = 1.0,
                   doplot = True,
-                  do_blacklist = False):
+                  do_blacklist = False,
+                  detailed_output = False
+                  ):
     #
     # parameters :
     #
@@ -108,13 +110,18 @@ def get_object_rv(object,
     # "WEIGHT" (all capitals) and be read as a proper numpy.table file
     #
 
+    if method == 'all':
+        method = 'gaussian_template_bisector_20_80'
+
     if sanitize:
         sp_type = 'sani'
     else:
         sp_type = 'tcorr'
 
 
-    ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}*.fits'.format(PATH,object,mask,sp_type)))
+    dict_ccf = dict()
+
+    ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}_AB.fits'.format(PATH,object,mask,sp_type)))
 
     if do_blacklist:
         ccf_files = check_blacklist(ccf_files)
@@ -160,6 +167,12 @@ def get_object_rv(object,
 
     tbl = Table()# output table to be saved as CSV file with RV measurements
     tbl['FILES'] = ccf_files
+
+    # to keep track of the unique designation of the file
+    tbl['ODOMETER'] = np.zeros_like(tbl, dtype='U7')
+    for i in range(len(tbl)):
+        tbl['ODOMETER'][i] = tbl['FILES'][i].split('/')[-1].split('o')[0]
+
     tbl['RV'] = np.zeros_like(ccf_files,dtype = float) # measured RV
     tbl['ERROR_RV'] = np.zeros_like(ccf_files,dtype = float) # measured RV error
     tbl['CCF_RESIDUAL_RMS']= np.zeros_like(ccf_files,dtype = float) # RMS of CCF - median(CCF)
@@ -171,14 +184,19 @@ def get_object_rv(object,
 
     # add method-specific keywords
     if 'bisector' in method:
+        tbl['RV_BIS'] = np.zeros_like(ccf_files,dtype = float)  # bisector mid point
         tbl['BIS_SLOPE'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['BIS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
+        tbl['BIS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector width
+        tbl['Vt'] = np.zeros_like(ccf_files,dtype = float)  # bisector velocity 'top' in perryman
+        tbl['Vb'] = np.zeros_like(ccf_files,dtype = float)  # bisector velocity 'bottom' in perryman
+        tbl['BIS'] = np.zeros_like(ccf_files,dtype = float)  # bisector velocity width
 
     # add method-specific keywords
     if 'gaussian' in method:
-        tbl['GAUSS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['GAUSS_AMP'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
-        tbl['GAUSS_ZP'] = np.zeros_like(ccf_files,dtype = float)  # bisector slope
+        tbl['RV_GAUSS'] = np.zeros_like(ccf_files,dtype = float) # mean gauss velocity
+        tbl['GAUSS_WIDTH'] = np.zeros_like(ccf_files,dtype = float)  # gauss width
+        tbl['GAUSS_AMP'] = np.zeros_like(ccf_files,dtype = float)  # gauss depth
+        tbl['GAUSS_ZP'] = np.zeros_like(ccf_files,dtype = float)  # gauss zp
 
     #... feel free to add columns here
 
@@ -209,10 +227,6 @@ def get_object_rv(object,
 
             # we input the CCFs in the CCF cube
             for j in range(49):
-                # if we need to exlude orders, we do it here.
-                if j in exclude_orders:
-                    continue
-
                 tmp =  ccf_tbl['ORDER'+str(j).zfill(2)]
 
                 if False not in np.isfinite(tmp):
@@ -230,6 +244,11 @@ def get_object_rv(object,
         # we need to load the first file just to get the velocity grid
         ccf_tbl = fits.getdata(ccf_files[0])
         ccf_RV = ccf_tbl['RV']
+
+    for j in range(49):
+        # if we need to exlude orders, we do it here.
+        if j in exclude_orders:
+            ccf_cube[j,:,:] = np.nan
 
     print('We load values from headers, slower on first run, faster later')
     for i in (range(len(ccf_files))):
@@ -325,7 +344,9 @@ def get_object_rv(object,
             rms[:,exclude_orders] = np.nan
 
             if doplot:
-                plt.imshow(rms)
+                vmin = np.nanpercentile(rms,3)
+                vmax = np.nanpercentile(rms,97)
+                plt.imshow(rms,aspect = 'auto',vmin = vmin, vmax = vmax)
                 plt.xlabel('Nth order')
                 plt.ylabel('Nth frame')
                 plt.title('RMS of CCF relative to median')
@@ -406,15 +427,12 @@ def get_object_rv(object,
     mean_ccf = np.nansum(ccf_cube_norm,axis=0)
 
     if doplot:
-        fig,ax = plt.subplots(nrows = 2, ncols = 1)
+        fig,ax = plt.subplots(nrows = 1, ncols = 1)
         for i in range(len(ccf_files)):
             color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
-            ax[0].plot(ccf_RV,mean_ccf[:,i],color = color,alpha = 0.2)
-            ax[1].plot(ccf_RV, mean_ccf[:, i], color=color, alpha=0.2)
+            ax.plot(ccf_RV,mean_ccf[:,i],color = color,alpha = 0.2)
 
-        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
-        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
-                                                                                               ccf_RV[id_min]+10])
+        ax.set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
         plt.tight_layout()
         plt.savefig('{0}_CCFs.pdf'.format(batch_name))
         plt.show()
@@ -423,95 +441,41 @@ def get_object_rv(object,
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
 
     rv_prev = np.array(tbl['RV'])
-    corr_ccf = np.array(mean_ccf)
-
-    nite_max = 20
-    ite = 0
-    rms_rv_ite = np.inf
-    # we iterate until we have an rms from iteration to iteration of <10 cm/s or we reached a max of 20 iterations
-    print('\n')
-    while (rms_rv_ite>1e-4) and (ite<nite_max):
-        med_corr_ccf = np.nanmedian(corr_ccf,axis=1)
-
-        # normalize continuum to 1
-        continuum = np.abs(ccf_RV-ccf_RV[id_min])>velocity_window
-        med_corr_ccf/=np.nanmedian(med_corr_ccf[continuum])
-
-        fit = np.polyfit(ccf_RV[continuum], med_corr_ccf[continuum], 2)
-        corr = np.polyval(fit, ccf_RV)
-        corr -= np.mean(corr)
-        med_corr_ccf -= corr
 
 
-        for i in range(len(ccf_files)):
-            spline = ius(ccf_RV,mean_ccf[:,i],ext=3,k=5)
-            corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
-
-            # correcting median of CCF
-            med =  np.nanmedian(corr_ccf[:,i] - med_corr_ccf)
-            mean_ccf[:, i] -= med
-
-            # correcting depth of CCF
-            amp = np.nansum( (corr_ccf[:,i] - np.mean(corr_ccf[:,i]))*(med_corr_ccf - np.mean(med_corr_ccf)) )/np.nansum((med_corr_ccf - np.mean(med_corr_ccf))**2)
-            mean_ccf[:, i] = (mean_ccf[:,i] - np.mean(mean_ccf[:,i]))/np.sqrt(amp)+np.mean(mean_ccf[:,i])
-
-            # correcting 2rd order polynomial structures in continuum
-            fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],2)
-            corr = np.polyval(fit, ccf_RV)
-            mean_ccf[:, i] += corr/2
-
-        deriv = np.gradient(med_corr_ccf) / np.gradient(ccf_RV)
-        deriv = deriv[g]
-        deriv = deriv / np.nansum(deriv ** 2)
-
-        for i in range(len(ccf_files)):
-            tbl['RV'][i]-=np.nansum( (corr_ccf[:,i] - med_corr_ccf)[g]*deriv)
-
-        tbl['RV'] -= np.nanmean(tbl['RV'])
-        #plt.plot( tbl['RV'],'.')
-        rms_rv_ite = np.nanstd(rv_prev - tbl['RV'])
-        print('Template CCF iteration number {0:3}, rms RV change {1:3.4f} km/s for this step'.format(ite+1,rms_rv_ite))
-        rv_prev = np.array(tbl['RV'])
-        ite+=1
-
-    tbl['RV']+=ccf_RV[id_min]
-
-
-    if doplot:
-        fig,ax = plt.subplots(nrows = 2, ncols = 1)
-        for i in range(len(ccf_files)):
-            color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
-            ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
-            ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
-
-        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
-        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
-                                                                                               ccf_RV[id_min]+10])
-        plt.tight_layout()
-        plt.savefig('{0}_template.pdf'.format(batch_name))
-        plt.show()
 
     # we use the bisector method, the name should be something like
     # method = 'bisector_30_70' to get the mean bisector between the 30th and 70th percentile
     if 'bisector' in method:
         # we find the min of CCF and will only compute bisector of +-50 km/s to avoid problems at ccf edges
         imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
-        good_RV = np.abs(ccf_RV - ccf_RV[imin]) < 50
 
-        bis_min, bis_max = np.array(method.split('_')[1:3], dtype=float) / 100.
+        # just get the parameters after bisector
+        params_bis = method.split('bisector_')[1]
+        bis_min, bis_max = np.array(params_bis.split('_')[0:2], dtype=float) / 100.
 
         for i in range(len(ccf_files)):
 
 
-            try:
-                depth, bis, width = bisector(ccf_RV[good_RV], mean_ccf[good_RV,i], low_high_cut=0.2)
-                fit = np.polyfit(depth[(depth > bis_min) & (depth < bis_max)] - (bis_min + bis_max) / 2,
-                           bis[(depth > bis_min) & (depth < bis_max)], 1)
+            #try:
+            depth, bis, width = bisector(ccf_RV, mean_ccf[:,i], low_high_cut=0.2)
+            fit = np.polyfit(depth[(depth > bis_min) & (depth < bis_max)] - (bis_min + bis_max) / 2,
+                       bis[(depth > bis_min) & (depth < bis_max)], 1)
 
-                tbl['RV'][i] =  fit[1]
-                tbl['BIS_SLOPE'][i] =  fit[0]
-                tbl['BIS_WIDTH'][i] = np.mean(width[(depth > bis_min) & (depth < bis_max)])
-            except:
+            tbl['RV'][i] =  fit[1]
+            # just in case you want to have both bisector and
+            # template, we keep a RV that is specific to this method
+            tbl['RV_BIS'][i] =  fit[1]
+            tbl['BIS_SLOPE'][i] =  fit[0]
+            tbl['BIS_WIDTH'][i] = np.mean(width[(depth > bis_min) & (depth < bis_max)])
+
+            # mean 'top' CCF between 55 and 80% of depth
+            tbl['Vt'][i] = np.mean(bis[(depth>0.55)*(depth<0.80)])
+            # mean 'bottom' CCF between 20-40%
+            tbl['Vb'][i] =np.mean(bis[(depth>0.20)*(depth<0.40)])
+            tbl['BIS'][i] = tbl['Vt'][i] - tbl['Vb'][i]
+
+            if False:
                 print('We had an error with file {0} computing the bisector'.format(ccf_files[i]))
                 print('Values will be reported as NaN')
                 tbl['RV'][i] =  np.nan
@@ -535,6 +499,11 @@ def get_object_rv(object,
             fit, pcov = curve_fit(gauss,ccf_RV,mean_ccf[:,i],p0 = p0)
 
             tbl['RV'][i] = fit[0]
+
+            # just in case you want to have gauss/bisector and
+            # template, we keep a RV that is specific to this method
+            tbl['RV_GAUSS'][i] = fit[0]
+
             tbl['GAUSS_WIDTH'][i] = fit[1]
             tbl['GAUSS_AMP'][i] = fit[3]
             tbl['GAUSS_ZP'][i] = fit[2]
@@ -547,6 +516,110 @@ def get_object_rv(object,
         plt.tight_layout()
         plt.savefig('{0}_RV.pdf'.format(batch_name))
         plt.show()
+
+    # fitting a 'Template' ... this is always done.
+    nite_max = 20
+    ite = 0
+    rms_rv_ite = np.inf
+    # we iterate until we have an rms from iteration to iteration of <10 cm/s or we reached a max of 20 iterations
+    print('\n')
+
+    corr_ccf = np.array(mean_ccf)
+
+    fig,ax = plt.subplots(nrows =1, ncols = 2)
+
+    # funky scaling of imshow
+    vmin = np.nanpercentile(corr_ccf,3)
+    vmax = np.nanpercentile(corr_ccf,97)
+    ax[0].imshow(corr_ccf,aspect = 'auto',vmin = vmin,vmax = vmax,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
+    ax[0].set(xlabel='Nth observation',ylabel='Velocity [km/s]',title='Before CCF register')
+
+    per_ccf_rms = np.ones(len(ccf_files))
+    while (rms_rv_ite>1e-4) and (ite<nite_max):
+        if ite ==0:
+            tbl['RV'] = 0
+
+        w = 1/per_ccf_rms**2
+        w/=np.sum(w)
+        med_corr_ccf = np.zeros(len(ccf_RV))
+        for i in range(len(w)):
+            med_corr_ccf+=(corr_ccf[:,i]*w[i])
+
+        # normalize continuum to 1
+        continuum = np.abs(ccf_RV-ccf_RV[id_min])>velocity_window
+        med_corr_ccf/=np.nanmedian(med_corr_ccf[continuum])
+
+        fit = np.polyfit(ccf_RV[continuum], med_corr_ccf[continuum], 2)
+        corr = np.polyval(fit, ccf_RV)
+        corr -= np.mean(corr)
+        med_corr_ccf -= corr
+
+
+        for i in range(len(ccf_files)):
+            spline = ius(ccf_RV,mean_ccf[:,i],ext=3,k=5)
+            corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
+
+            # correcting median of CCF
+            med =  np.nanmedian(corr_ccf[:,i] - med_corr_ccf)
+            mean_ccf[:, i] -= med
+
+            # correcting depth of CCF
+            amp = np.nansum( (corr_ccf[:,i] - np.mean(corr_ccf[:,i]))*(med_corr_ccf - np.mean(med_corr_ccf)) )/np.nansum((med_corr_ccf - np.mean(med_corr_ccf))**2)
+            mean_ccf[:, i] = (mean_ccf[:,i] - np.mean(mean_ccf[:,i]))/np.sqrt(amp)+np.mean(mean_ccf[:,i])
+
+
+            # correcting 2rd order polynomial structures in continuum
+            fit = np.polyfit(ccf_RV,med_corr_ccf-corr_ccf[:,i],2)
+
+            corr = np.polyval(fit, ccf_RV)
+            mean_ccf[:, i] += corr/2
+
+        deriv = np.gradient(med_corr_ccf) / np.gradient(ccf_RV)
+        deriv = deriv[g]
+        deriv = deriv / np.nansum(deriv ** 2)
+
+        for i in range(len(ccf_files)):
+            residu = corr_ccf[:,i] - med_corr_ccf
+            per_ccf_rms[i] = np.nanstd(residu)
+            tbl['RV'][i]-=np.nansum( residu[g]*deriv)
+
+        tbl['RV'] -= np.nanmean(tbl['RV'])
+        #plt.plot( tbl['RV'],'.')
+        rms_rv_ite = np.nanstd(rv_prev - tbl['RV'])
+        print('Template CCF iteration number {0:3}, rms RV change {1:3.4f} km/s for this step'.format(ite+1,rms_rv_ite))
+        rv_prev = np.array(tbl['RV'])
+        ite+=1
+
+    tbl['RV_TEMPLATE'] = np.array(tbl['RV'])
+
+    vmin = np.nanpercentile(corr_ccf,3)
+    vmax = np.nanpercentile(corr_ccf,97)
+    ax[1].imshow(corr_ccf,aspect = 'auto',vmin = vmin,vmax = vmax,extent = [0,len(ccf_files),np.min(ccf_RV),np.max(ccf_RV)])
+    ax[1].set(xlabel='Nth observation',ylabel='Velocity [km/s]',title='After CCF register')
+    plt.show()
+
+
+    # we get the systemic velocity from the BISECTOR between 0.3 and 0.7 depth
+    depth, bis, width = bisector(ccf_RV, med_corr_ccf, low_high_cut=0.3,doplot = True,
+                                 figure_title = 'mean CCF\ndebug plot', ccf_plot_file = 'ccf_{0}.pdf'.format(object))
+    tbl['RV']+= np.nanmedian(bis)
+
+
+    if doplot:
+        fig,ax = plt.subplots(nrows = 2, ncols = 1)
+        for i in range(len(ccf_files)):
+            color = [i/len(ccf_files),1-i/len(ccf_files),1-i/len(ccf_files)]
+            ax[0].plot(ccf_RV,corr_ccf[:,i],color = color,alpha = 0.2)
+            ax[1].plot(ccf_RV, corr_ccf[:, i], color=color, alpha=0.2)
+
+        ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs')
+        ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'CCF depth', title = 'Mean CCFs',xlim = [ccf_RV[id_min]-10,
+                                                                                               ccf_RV[id_min]+10])
+        plt.tight_layout()
+        plt.savefig('{0}_template.pdf'.format(batch_name))
+        plt.show()
+
+
 
     # we add a measurement of the STDDEV of each mean CCF relative to the median CCF after correcting for the measured
     # velocity. If you are going to add 'methods', add them before this line
@@ -611,4 +684,11 @@ def get_object_rv(object,
     # output to csv file
     tbl.write('{0}.csv'.format(batch_name),overwrite = True)
 
-    return tbl
+    if detailed_output == False:
+        return tbl
+    else:
+
+        dict_ccf['TABLE_CCF'] = tbl
+        dict_ccf['MEAN_CCF'] = mean_ccf
+
+        return dict_ccf

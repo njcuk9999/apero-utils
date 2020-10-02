@@ -218,7 +218,12 @@ while all_done == False:
                 f.write('wget http://www.astro.umontreal.ca/~artigau/all_ccfs/{0}\n'.format(tar_files[i]))
 
             for i in range(len(tar_files)):
-                obj = tar_files[i].split('_mask_')[0]
+                obj = str(tar_files[i])
+
+                # we remove if it is either before mask or sanitize
+                obj = obj.split('_mask')[0]
+                obj = obj.split('_sanitize')[0]
+
                 f.write('mkdir {0}\n'.format(obj))
                 f.write('mv {0} {1}\n'.format(tar_files[i],obj))
                 f.write('cd {0}\n'.format(obj))
@@ -267,3 +272,7 @@ if hostname == 'maestria':
             os.system('cat email | mail -s "Automated links to compiled CCFs" {0}'.format(email))
     else:
         print('We will *not* send an email, nothing new to report.')
+
+    if download_each_step:
+        # we wait so this can be set into a perpetual loop
+        os.system('sleep 3600')
