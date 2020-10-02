@@ -1,8 +1,8 @@
 OBJECT, MASK, SANITIZE
-TOI-1278,teff4500logg4.50_neg.mas, False
-TOI-1278,teff4000logg4.50_neg.mas, False
-TOI-1278,teff3500logg4.50_neg.mas, False
-TOI-1278,teff3000logg4.50_neg.mas, False
+TOI-1278,teff4500logg450_neg.mas, False
+TOI-1278,teff4000logg450_neg.mas, False
+TOI-1278,teff3500logg450_neg.mas, False
+TOI-1278,teff3000logg450_neg.mas, False
 TOI-1278, M2_weighted_RV_-30.mas, False
 K2-33, Gl846_neg.mas, True
 K2-33, Gl699_neg.mas, True

@@ -41,7 +41,9 @@ for temperature in np.arange(3000, 6100, 100):
 
     print('We are downloading/checking presence of model file {0}'.format(outname))
 
+    # we need to remove the '.' in the outname_mask as it messes the name of the ccf file
     outname_mask = '{0}/teff{1:.0f}logg{2:.2f}'.format(path_to_models,temperature, logg)
+    outname_mask = ''.join(outname_mask.split('.'))
 
     if not os.path.isfile(outname):
         os.system(
