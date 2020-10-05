@@ -32,7 +32,7 @@ else:
 
 # Parameters to be changed to modify the properties of CCFs
 step = 0.1 # velocity step in km/s
-width = 60.0 # width (from -width/2 to +width/2) of scan around systemic velocity
+width = 120.0 # width (from -width/2 to +width/2) of scan around systemic velocity
 # parameter for sanitizing. Likelihood of having a bad pixel. Don't change if you
 # don't know that this is about.
 prob_bad = 1e-4
