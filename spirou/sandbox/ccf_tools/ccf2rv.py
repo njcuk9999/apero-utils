@@ -122,6 +122,7 @@ def get_object_rv(object,
     dict_ccf = dict()
 
     ccf_files = np.array(glob.glob('{0}/{1}/*{3}*{2}_AB.fits'.format(PATH,object,mask,sp_type)))
+    ccf_files.sort()
 
     if do_blacklist:
         ccf_files = check_blacklist(ccf_files)

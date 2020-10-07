@@ -7,6 +7,9 @@ from apero.recipes.spirou import cal_ccf_spirou
 import os
 from sanitize import *
 import sys
+from apero.core import constants
+
+
 
 """
 This code is only used at UdeM but could be used to replicate the batches of CCFs at other sites.
@@ -14,13 +17,17 @@ This code is only used at UdeM but could be used to replicate the batches of CCF
 You can get inspired by this code to construct a similar batch script.
 """
 
+params = constants.load('SPIROU')
+
+
 # you absolutely need to modify these paths
 path_to_masks = '/spirou/drs/apero-drs/apero/data/spirou/ccf/'
-path = '/spirou/cfht_nights/cfht_july1/reduced/20??-??-??/*o_pp_e2dsff_tcorr_AB.fits'
+path = params['DRS_DATA_REDUC'] +'20??-??-??/*o_pp_e2dsff_tcorr_AB.fits'
+drs_version = '131'
 
 # if you want to provide your own input table, then add a file name here. If you leave this
 # as '' will, then we'll download the table from the GitHub
-input_table = ''
+input_table = 'tbl131.csv'
 
 
 if input_table == '':
@@ -92,7 +99,7 @@ while all_done == False:
         else:
             suffix = ''
 
-        tar_name = 'all_ccfs/{0}_{1}mask_{2}_ccf.tar'.format(objects[i],suffix,masks[i].split('.')[0])
+        tar_name = 'all_ccfs/{0}_{1}mask_{2}_drs{3}_ccf.tar'.format(objects[i],suffix,masks[i].split('.')[0],drs_version)
         tar_names = np.append(tar_names,tar_name)
 
         if  os.path.isfile(tar_names[i]):
@@ -139,11 +146,11 @@ while all_done == False:
 
         for file in tqdm(sample_files):
             hdr = fits.getheader(file)
-            if hdr['OBJECT'] == object:
+            if hdr['DRSOBJN'] == object:
 
                 if do_sanitize:
-                    blaze_file = file.split('reduced')[0]+'calibDB/'+hdr['CDBBLAZE']
-                    model_s1d_file = file.split('reduced/')[0]+'reduced/other/Template_s1d_{0}_sc1d_v_file_AB.fits'.format(object)
+                    blaze_file = params['DRS_CALIB_DB']+'calibDB/'+hdr['CDBBLAZE']
+                    model_s1d_file = params['DRS_DATA_REDUC']+'other/Template_s1d_{0}_sc1d_v_file_AB.fits'.format(object)
                     #file = 'sani'.join(file.split('tcorr'))
                     sanitize([file], blaze_file, model_s1d_file, prob_bad = prob_bad, force = False,doplot = [-1])
                     file = 'sani'.join(file.split('tcorr'))
@@ -157,10 +164,15 @@ while all_done == False:
         for i in range(len(files)):
             print('\n\tFile {0}/{1}\n'.format(i,len(files)))
 
-            outname = file.split('reduced/')[0]+'reduced/'+nights[i]+'/'+files[i].split('.')[0]+'_ccf_'+mask.split('.')[0].lower()+'_AB.fits'
+            outname = params['DRS_DATA_REDUC']+nights[i]+'/'+files[i].split('.')[0]+'_ccf_'+mask.split('.')[0].lower()+'_AB.fits'
 
             if i ==0:
+                print('\nnight : {0}\tfile : {1}\n'.format(nights[i],files[i]))
                 tmp = cal_ccf_spirou.main(nights[i], files[i], mask=mask, rv=0.0, step=step, width=300.0)
+
+                if tmp['success'] == False:
+                    rep = input('We continue (yes/no) : ')
+
                 tbl = fits.getdata(outname)
                 ccf = np.array(tbl['COMBINED'])
                 # remove trend of CCF for large berv range
@@ -168,7 +180,7 @@ while all_done == False:
                 rv =  np.round(tbl['RV'][np.argmin(ccf)],1)
                 print('\tRV = {0}km/s'.format(rv))
 
-            tmp = cal_ccf_spirou.main(nights[i], files[i], mask=mask, rv=rv, step=step, width=30.0)
+            tmp = cal_ccf_spirou.main(nights[i], files[i], mask=mask, rv=rv, step=step, width=width)
 
             outnames = np.append(outnames,outname)
 

@@ -13,13 +13,11 @@ nMAD_cut = 5
 tbl = get_object_rv('Gl699',mask = 'gl699_neg',method = 'bisector_40_60',force = True,exclude_orders = exclude_orders,
                     snr_min = 120.0,weight_type = '')
 
-
 fig,ax = plt.subplots(nrows = 2, ncols=1)
 
 ax[0].plot(tbl['RV'],'g.')
 ax[1].plot(tbl['BIS_SLOPE'],'g.')
-In [23]: plt.show()
-
+plt.show()
 
 tbl['RV'] -= np.nanmedian(tbl['RV'])
 

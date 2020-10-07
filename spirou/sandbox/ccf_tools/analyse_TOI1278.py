@@ -13,7 +13,7 @@ def sinusoidal(phase,dphase,amp,zp):
 exclude_orders = [-1]
 
 object = 'TOI-1278'
-mask =  'gl846_neg'
+mask =  'gl699_neg'
 method = 'all'
 
 # number of median-absolute deviations within an epoch to consider a point discrepant
