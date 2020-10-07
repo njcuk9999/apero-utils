@@ -10,18 +10,18 @@ def sinusoidal(phase,dphase,amp,zp):
     return np.sin( (phase+dphase))*amp+zp
 
 # do not *formally* exclude an order, but this is done later with the bandpass keyword
-exclude_orders = [-1]
+exclude_orders = [37,47]
 
 object = 'TOI-1278'
-mask =  'gl699_neg'
+mask =  'gl846_neg'
 method = 'all'
-
+sanitize = False
 # number of median-absolute deviations within an epoch to consider a point discrepant
 tbl = get_object_rv(object,mask =mask,
                     method = method,force = True,
                     exclude_orders = exclude_orders,
-                    snr_min = 20.0, sanitize = False,
-                    dvmax_per_order = 3.0, bandpass = 'HK',
+                    snr_min = 20.0, sanitize = sanitize,
+                    dvmax_per_order = 3.0, bandpass = 'YJHK',
                     doplot = True, do_blacklist = True)
 
 # period for the sinusoidal currve

@@ -149,7 +149,7 @@ while all_done == False:
             if hdr['DRSOBJN'] == object:
 
                 if do_sanitize:
-                    blaze_file = params['DRS_CALIB_DB']+'calibDB/'+hdr['CDBBLAZE']
+                    blaze_file = params['DRS_CALIB_DB']+hdr['CDBBLAZE']
                     model_s1d_file = params['DRS_DATA_REDUC']+'other/Template_s1d_{0}_sc1d_v_file_AB.fits'.format(object)
                     #file = 'sani'.join(file.split('tcorr'))
                     sanitize([file], blaze_file, model_s1d_file, prob_bad = prob_bad, force = False,doplot = [-1])

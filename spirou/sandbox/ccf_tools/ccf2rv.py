@@ -21,7 +21,7 @@ from astropy.time import Time
 name = os.popen('whoami').read().split('\n')[0]
 
 if name == 'eartigau':
-    PATH = '/Users/eartigau/wrap_drs_rv'
+    PATH = '/Users/eartigau/wrap_drs_rv_131'
 
 elif name == 'clairemoutou':
     PATH = '/Users/clairemoutou/apero/data'
