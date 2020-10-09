@@ -689,7 +689,8 @@ def get_object_rv(object,
         return tbl
     else:
 
+        dict_ccf['ccf_RV'] = ccf_RV
         dict_ccf['TABLE_CCF'] = tbl
         dict_ccf['MEAN_CCF'] = mean_ccf
 
-        return dict_ccf
+        return tbl,dict_ccf
