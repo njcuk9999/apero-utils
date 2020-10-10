@@ -85,6 +85,13 @@ code expect a _tcorr_ in the name in place of the _sani_.
 Which photometric bandpasses will be looked at. You can set 'YK' if you just want to get a mean RV for these
 two bands (though that would be a weird pick). If you know that the target is red and has very weak Y and J features,
 using bandpass = 'HK' would make sense.
+
+Definition of photometric bandpasses (see [values here](http://svo2.cab.inta-csic.es/svo/theory/fps3/index.php?mode=browse&gname=CFHT&gname2=Wircam&asttype=)):
+* Y = 938.600	1113.400
+* J = 1153.586	1354.422
+* H = 1462.897	1808.544
+* K = 1957.792	2400 (modified to get to the edge of the SPIRou domain)
+
 ### velocity_window = 10
 Window (in km/s) used around the CCF minimum used to measure velocity. We go from -window to +window in km/s. 
 When adjusting the median CCF to the CCF of one observation (in CCF _template_), this is the width over 
