@@ -6,16 +6,16 @@ from per_epoch_table import per_epoch_table
 object = 'TOI-1452'
 exclude_orders = [11, 47, 48]  # pre-excluded orders
 method = 'template'
-mask = 'gl846_neg'
+mask = 'gl699_neg'
 # number of median-absolute devs within an epoch to consider a point discrepant
 nMAD_cut = 5
 
 # compare with and without sanitizing
-tbl1 = get_object_rv(object, mask='gl846_neg', method='template', force=True,
+tbl1 = get_object_rv(object, mask=mask, method=method, force=True,
                      exclude_orders=exclude_orders, snr_min=20.0,
                      sanitize=True, weight_type='ccf_depth', bandpass='YJHK')
 
-tbl2 = get_object_rv(object, mask='gl846_neg', method='template', force=True,
+tbl2 = get_object_rv(object, mask=mask, method=method, force=True,
                      exclude_orders=exclude_orders, snr_min=20.0,
                      sanitize=False, weight_type='ccf_depth', bandpass='YJHK')
 
