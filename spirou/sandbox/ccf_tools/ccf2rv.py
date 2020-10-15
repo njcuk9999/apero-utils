@@ -446,10 +446,19 @@ def timeseries_to_csv(
         tbl,
         rv_key='RV',
         rv_err_key='ERROR_RV',
+        t_units='BJD',
         rv_units='m/s',
         ):
     df = pd.DataFrame([])
-    df['BJD'] = tbl['BJD'] + (tbl['MJDMID'] - tbl['MJDATE'])
+    if t_units == 'BJD':
+        df['BJD'] = tbl['BJD'] + (tbl['MJDMID'] - tbl['MJDATE'])
+    elif t_units == 'MJD':
+        df['MJD'] = tbl['MJDMID']
+    elif t_units == 'JD':
+        df['JD'] = tbl['MJDMID'] + 2450000.5
+    else:
+        raise ValueError('t_units should be BJD, MJD or JD.')
+
     df['RV'] = tbl[rv_key]
     df['RV_ERR'] = tbl[rv_err_key]
 
