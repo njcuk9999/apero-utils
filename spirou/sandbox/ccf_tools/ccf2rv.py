@@ -352,8 +352,6 @@ def get_object_rv(obj=None,
                     showplots=showplots
                     )
 
-    print(tbl['RV_BIS'])
-
     if 'gaussian' in method:
         tbl = run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf)
 
@@ -364,8 +362,6 @@ def get_object_rv(obj=None,
                     saveplots=saveplots,
                     showplots=showplots
                     )
-
-    print(tbl['RV_BIS'])
 
     # if 'template' in method:
     # template is always computed and used as RV in tbl
@@ -1317,7 +1313,7 @@ def calculate_resid_ccf_projections(
 
     # pix scale expressed in CCF pixels
     # SPIRou pixels are about 2.3 km/s
-    pix_scale = 2.3/np.nanmedian(np.gradient(ccf_RV))
+    pix_scale = pixel_size_in_kps/np.nanmedian(np.gradient(ccf_RV))
     for i in range(len(ccf_files)):
         residual = corr_ccf[:, i] - med_corr_ccf
 
