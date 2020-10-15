@@ -400,26 +400,18 @@ def get_object_rv(obj=None,
             doplot=doplot,
             )
 
-    # we add a measurement of the STDDEV of each mean CCF relative to the
+    # We add a measurement of the STDDEV of each mean CCF relative to the
     # median CCF after correcting for the measured velocity.
     # If you are going to add 'methods', add them before this line
-    med_corr_ccf = add_stddev_to_ccf(
+    # We also calculate projection of CCF residuals on 2nd and 3rd derivatives
+    tbl, med_corr_ccf, corr_ccf = stddev_and_resid_projection(
             ccf_files,
             tbl,
             ccf_RV,
             mean_ccf,
             id_min,
-            )
-
-    tbl = calculate_resid_ccf_projections(
-            ccf_files,
-            tbl,
-            ccf_RV,
-            med_corr_ccf,
-            corr_ccf,
-            id_min,
             velocity_window,
-            pixel_size_in_kps=2.3
+            pixel_size_in_kps=2.3  # SPIRou pixels are about 2.3 km/s
             )
 
     if doplot:
@@ -1264,7 +1256,7 @@ def add_bisector_systemic_velocity(
     depth, bis, width = bisector(
             ccf_RV, med_corr_ccf,
             low_high_cut=low_high_cut,
-            doplot=True,
+            doplot=doplot,
             figure_title='mean CCF\ndebug plot',
             ccf_plot_file=bisector_ccf_plot_file,
             showplots=showplots,
@@ -1274,27 +1266,23 @@ def add_bisector_systemic_velocity(
     return tbl
 
 
-def add_stddev_to_ccf(ccf_files, tbl, ccf_RV, mean_ccf, id_min):
+def stddev_and_resid_projection(
+        ccf_files,
+        tbl,
+        ccf_RV,
+        mean_ccf,
+        id_min,
+        velocity_window,
+        pixel_size_in_kps=2.3,
+        ):
+
+    # Update med_corr_ccf
     corr_ccf = np.array(mean_ccf)
     for i in range(len(ccf_files)):
         spline = ius(ccf_RV, mean_ccf[:, i], ext=3)
         corr_ccf[:, i] = spline(ccf_RV+tbl['RV'][i]-np.mean(tbl['RV']))
 
     med_corr_ccf = np.nanmedian(corr_ccf, axis=1)
-
-    return med_corr_ccf
-
-
-def calculate_resid_ccf_projections(
-        ccf_files,
-        tbl,
-        ccf_RV,
-        med_corr_ccf,
-        corr_ccf,
-        id_min,
-        velocity_window,
-        pixel_size_in_kps=2.3,
-        ):
 
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
 
@@ -1312,7 +1300,6 @@ def calculate_resid_ccf_projections(
     tbl['CCF_RESIDUAL_RMS'] = np.zeros_like(ccf_files, dtype=float)
 
     # pix scale expressed in CCF pixels
-    # SPIRou pixels are about 2.3 km/s
     pix_scale = pixel_size_in_kps/np.nanmedian(np.gradient(ccf_RV))
     for i in range(len(ccf_files)):
         residual = corr_ccf[:, i] - med_corr_ccf
@@ -1327,7 +1314,7 @@ def calculate_resid_ccf_projections(
                      )
         tbl['ERROR_RV'][i] = 1 / np.sqrt(np.nansum(inv_dvrms ** 2))
 
-    return tbl
+    return tbl, med_corr_ccf, corr_ccf
 
 
 def plot_residual_ccf(
