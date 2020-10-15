@@ -45,7 +45,7 @@ def get_ccf_dict(ccf_files):
 
         # Get info from header
         obj = hdr['OBJECT']
-        mask = hdr['CCFMASK']
+        mask = hdr['CCFMASK'].split('.')[0]
         drs_version = hdr['VERSION']
 
         sani_sub = 'SANI'  # substring in some keys only if sanitized
@@ -126,15 +126,15 @@ parser.add_argument(
         help='Use sanitized (sani) or non-sanitized (tcorr) data, '
              'or all available options (all).'
         )
-parser.add_argument(
-        '-d',
-        '--drs-version',
-        dest='drs_version',
-        default='all',
-        help='DRS version (X.X.XX) used to reduced data. If all, any version '
-        'is accepted. Otherwise only files reduced with specified '
-        'version are processed.'
-        )
+# parser.add_argument(
+#       '-d',
+#       '--drs-version',
+#       dest='drs_version',
+#       default='all',
+#       help='DRS version (X.X.XX) used to reduced data. If all, any version '
+#       'is accepted. Otherwise only files reduced with specified '
+#       'version are processed.'
+#       )
 
 # Arguments passed to get_object_rv
 parser.add_argument(

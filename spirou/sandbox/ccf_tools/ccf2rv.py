@@ -214,6 +214,8 @@ def get_object_rv(obj=None,
     # form a unique batch name with mask, obj and method
     if outdir is None:
         outdir = os.path.dirname(ccf_files[0])
+    if not os.path.isdir(outdir):
+        os.makedirs(outdir)
     batch_name = '{0}_mask_{1}_{2}_{3}'.format(obj, mask, method, sp_type)
     batch_name = os.path.join(outdir, batch_name)
 
@@ -390,6 +392,7 @@ def get_object_rv(obj=None,
             tbl,
             ccf_RV,
             med_corr_ccf,
+            batch_name,
             low_high_cut=0.3,
             obj=obj,
             saveplots=saveplots,
@@ -802,6 +805,7 @@ def measure_ccf_weights(
             rms[:, exclude_orders] = np.nan
 
             if doplot:
+                fig = plt.figure()
                 vmin = np.nanpercentile(rms, 3)
                 vmax = np.nanpercentile(rms, 97)
                 plt.imshow(rms, aspect='auto', vmin=vmin, vmax=vmax)
@@ -810,6 +814,7 @@ def measure_ccf_weights(
                 plt.title('RMS of CCF relative to median')
                 if showplots:
                     plt.show()
+                plt.close(fig)
 
             with warnings.catch_warnings(record=True) as _:
                 # some slices in the sum are NaNs, that's OK
@@ -872,6 +877,7 @@ def plot_median_ccfs_and_residuals(
         showplots=True
         ):
 
+    fig = plt.figure()
     plt.imshow(med_ccf, aspect='auto', vmin=0.8, vmax=1.05,
                extent=[np.min(ccf_RV), np.max(ccf_RV), 49, 0])
     plt.xlabel('Velocity bin [km/s] ')
@@ -881,7 +887,9 @@ def plot_median_ccfs_and_residuals(
         plt.savefig('{0}_medianccf.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)
 
+    fig = plt.figure()
     plt.imshow(ccf_cube[:, :, 0]-med_ccf, aspect='auto', vmin=-0.1,
                vmax=0.1, extent=[np.min(ccf_RV), np.max(ccf_RV), 49, 0])
     plt.xlabel('Velocity bin [km/s]')
@@ -891,10 +899,12 @@ def plot_median_ccfs_and_residuals(
         plt.savefig('{0}_residualccf.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)
 
 
 def plot_snr(tbl, batch_name, saveplots=False, showplots=False):
 
+    fig = plt.figure()
     plt.plot(tbl['MJDATE'], tbl['EXTSN035'], 'g.')
     plt.xlabel('MJDATE')
     plt.ylabel('SNR for order 35\n(around 1.6 $\\mu$m)')
@@ -903,6 +913,7 @@ def plot_snr(tbl, batch_name, saveplots=False, showplots=False):
         plt.savefig('{0}_snr.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)
 
 
 def apply_weights_to_ccf(ccf_cube, weights):
@@ -1031,6 +1042,7 @@ def plot_bisector_method(tbl, batch_name, saveplots=False, showplots=False):
         plt.savefig('{0}_RV.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)
 
 
 def run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf, replace_rv=True):
@@ -1092,6 +1104,7 @@ def plot_gaussian_method(tbl, batch_name, saveplots=False, showplots=False):
         plt.savefig('{0}_RV.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)
 
 
 def run_template_method(
@@ -1204,6 +1217,7 @@ def run_template_method(
                   title='After CCF register')
         if showplots:
             plt.show()
+        plt.close(fig)
 
     return tbl, med_corr_ccf, corr_ccf
 
@@ -1233,12 +1247,14 @@ def plot_corr_ccf(
         plt.savefig('{0}_template.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)
 
 
 def add_bisector_systemic_velocity(
         tbl,
         ccf_RV,
         med_corr_ccf,
+        batch_name,
         low_high_cut=0.3,
         obj="",
         saveplots=False,
@@ -1247,7 +1263,9 @@ def add_bisector_systemic_velocity(
         ):
 
     if saveplots:
-        bisector_ccf_plot_file = 'systemic_bisector_ccf_{0}.pdf'.format(obj)
+        bisector_ccf_plot_file = ('{0}_systemic_bisector_ccf_{1}.pdf'
+                                  .format(batch_name, obj)
+                                  )
     else:
         bisector_ccf_plot_file = ''
 
@@ -1331,6 +1349,7 @@ def plot_residual_ccf(
         showplots=False
         ):
 
+    fig = plt.figure()
     plt.plot(ccf_RV, med_corr_ccf, color='black', alpha=0.4,
              label='median CCF', linewidth=2)
 
@@ -1347,6 +1366,7 @@ def plot_residual_ccf(
         plt.savefig('{0}_residual_CCF.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)
 
 
 def plot_residual_d2_activity(
@@ -1355,12 +1375,15 @@ def plot_residual_d2_activity(
         saveplots=False,
         showplots=False,
         ):
+    fig = plt.figure()
     t3 = Time(tbl['MJDATE'], format='mjd')
     plt.plot_date(t3.plot_date, tbl['D2_RESIDUAL_CCF'], 'go')
     plt.title('Second derivative \n activity indicator')
     plt.xlabel('Date')
     plt.ylabel('CCF residual projection on\nCCF 2nd derivative')
+    plt.tight_layout()
     if saveplots:
         plt.savefig('{0}_d2_activity.pdf'.format(batch_name))
     if showplots:
         plt.show()
+    plt.close(fig)

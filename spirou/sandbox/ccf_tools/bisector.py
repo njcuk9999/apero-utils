@@ -59,6 +59,7 @@ def bisector(
 
     if doplot:
         # some nice plots
+        fig = plt.figure()
         plt.plot(
                 rv[imin - width:imin + width],
                 ccf[imin - width:imin + width],
@@ -78,6 +79,7 @@ def bisector(
             plt.savefig(ccf_plot_file)
         if showplots:
             plt.show()
+        plt.close(fig)
 
     # define depth in the same way as Perryman, 0 is top, 1 is bottom
     return 1-depth, bisector_position, width_ccf
