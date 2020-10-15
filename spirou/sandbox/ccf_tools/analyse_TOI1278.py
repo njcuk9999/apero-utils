@@ -12,12 +12,14 @@ def sinusoidal(phase,dphase,amp,zp):
 # do not *formally* exclude an order, but this is done later with the bandpass keyword
 exclude_orders = [-1]
 
+path_to_ccfs = '/home/vandal'
 object = 'TOI-1278'
 mask =  'gl846_neg'
 method = 'all'
 
 # number of median-absolute deviations within an epoch to consider a point discrepant
 tbl = get_object_rv(object,mask =mask,
+                    ccf_parent=path_to_ccfs,
                     method = method,force = True,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, sanitize = False,
