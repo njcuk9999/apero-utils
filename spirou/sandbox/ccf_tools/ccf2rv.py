@@ -352,6 +352,8 @@ def get_object_rv(obj=None,
                     showplots=showplots
                     )
 
+    print(tbl['RV_BIS'])
+
     if 'gaussian' in method:
         tbl = run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf)
 
@@ -362,6 +364,8 @@ def get_object_rv(obj=None,
                     saveplots=saveplots,
                     showplots=showplots
                     )
+
+    print(tbl['RV_BIS'])
 
     # if 'template' in method:
     # template is always computed and used as RV in tbl
@@ -1058,15 +1062,6 @@ def run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf, replace_rv=True):
     Returns:
         Updated tbl
     """
-    # add method-specific keywords
-    # Vt and Vb from Perryman
-    tbl['RV_BIS'] = np.zeros_like(ccf_files, dtype=float)  # mid point
-    tbl['BIS_SLOPE'] = np.zeros_like(ccf_files, dtype=float)  # slope
-    tbl['BIS_WIDTH'] = np.zeros_like(ccf_files, dtype=float)  # width
-    tbl['Vt'] = np.zeros_like(ccf_files, dtype=float)  # velocity 'top'
-    tbl['Vb'] = np.zeros_like(ccf_files, dtype=float)  # velocity 'bottom'
-    tbl['BIS'] = np.zeros_like(ccf_files, dtype=float)  # velocity width
-
     # add method-specific keywords
     tbl['RV_GAUSS'] = np.zeros_like(ccf_files, dtype=float)  # mean velo.
     tbl['GAUSS_WIDTH'] = np.zeros_like(ccf_files, dtype=float)  # width
