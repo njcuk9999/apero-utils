@@ -81,9 +81,12 @@ def dispatch_object(
           )
 
 
-def get_object_rv(obj,
+def get_object_rv(obj=None,
+                  mask=None,
                   ccf_parent=None,
-                  mask='sept18_andres_trans50',
+                  outdir=None,
+                  ccf_files=None,
+                  run_id=None,
                   method='template',
                   exclude_orders=[-1],
                   weight_table='',
@@ -103,6 +106,7 @@ def get_object_rv(obj,
                   showplots=True,
                   do_blacklist=False,
                   detailed_output=False,
+                  verbose=False,
                   ):
     """ Get RV Timeseries for a given object
 
@@ -161,24 +165,40 @@ def get_object_rv(obj,
             Default: False
         do_blacklist (True): Check if the input files are blacklisted.
             Default: False (because this adds some overheads)
+        verbose (bool): Print debug information.
     """
 
     # Argument processing
     if method == 'all':
         method = 'gaussian_template_bisector_20_80'
 
-    if sanitize:
-        sp_type = 'sani'
-    else:
-        sp_type = 'tcorr'
-
     if ccf_parent is None:
         ccf_parent = os.getcwd()
 
-    fpattern = '*{0}*{1}_AB.fits'.format(sp_type, mask)
-    ccf_files = np.array(
-            glob.glob(os.path.join(ccf_parent, obj, fpattern))
-            )
+    if ccf_files is None and run_id is None:
+
+        if sanitize:
+            sp_type = 'sani'
+        else:
+            sp_type = 'tcorr'
+
+        fpattern = '*{0}*{1}_AB.fits'.format(sp_type, mask)
+        ccf_files = np.array(
+                glob.glob(os.path.join(ccf_parent, obj, fpattern))
+                )
+    elif ccf_files is not None and run_id is not None:
+        if obj is not None or mask is not None or sanitize:
+            print('WARNING: When ccf_files and run_id are provided, '
+                  'obj, mask and sanit are determined automatically.')
+        obj, mask, sanit, drs_version = run_id.split("__")
+        sp_type = sanit
+        if sanit == 'sani':
+            sanitize = True
+        else:
+            sanitize = False
+    else:
+        raise ValueError('When one of ccf_files or run_id is provided'
+                         ' both should be.')
 
     # Exclude bad spectra for various reasons
     if do_blacklist:
@@ -192,8 +212,10 @@ def get_object_rv(obj,
             )
 
     # form a unique batch name with mask, obj and method
+    if outdir is None:
+        outdir = os.path.dirname(ccf_files[0])
     batch_name = '{0}_mask_{1}_{2}_{3}'.format(obj, mask, method, sp_type)
-    batch_name = os.path.join(ccf_parent, batch_name)
+    batch_name = os.path.join(outdir, batch_name)
 
     if not force:
         if os.path.isfile('{0}.csv'.format(batch_name)):
@@ -384,8 +406,6 @@ def get_object_rv(obj,
             ccf_RV,
             mean_ccf,
             id_min,
-            doplot=False,
-            showplots=showplots,
             )
 
     tbl = calculate_resid_ccf_projections(
@@ -533,6 +553,8 @@ def load_values_from_headers(ccf_files, tbl, keywords):
         for key in keywords:
             if key in hdr:
                 tbl[key][i] = hdr[key]
+
+    return tbl
 
 
 def exclude_orders_by_bandpass(exclude_orders, reffile, bandpass):
