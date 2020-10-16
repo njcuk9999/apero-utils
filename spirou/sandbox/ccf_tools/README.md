@@ -46,6 +46,21 @@ _outdir_ is specified, everything is saved there. Otherwise, the parent
 directory of CCF files is used.
 
 
+# The getrv.py script
+The _getrv.py_ script allows users to calculate RV timeseries for several combinations of object, mask and sanitize method. There are two main ways to run the script. The first way is
+```
+python getrv.py -p PATH_TO_CCFs -o OBJECT1 OBJECT2 ... -m MASK1 MASK2 ... -s {sani,tcorr,all}
+```
+With this method, the script finds all possible combinations of object, mask and sanitize method, builds a list of files for each run, and passes it to _get_object_rv_ from _ccf2rv.py_. The path should be the parent directory of all object directories containing their respective CCF files. The second way to run the script is
+```
+python getrv.py -i PATTERN (e.g. TOI-1278/*.fits)
+```
+The script finds all files corresponding to PATTERN and groups them by run before passing them to _get_object_rv_. If a pattern is specified, it overrides the object, mask, and sanitize arguments.
+
+Other arguments are available, most of which are directly passed to _get_object_rv_. For a full list of arguments, use `python getrv.py -h`.
+
+This script is inspired from the [spirou-ccf-analysis tool](https://github.com/edermartioli/spirou-ccf-analysis) by @edermartioli.
+
 
 # All you ever wanted to know about get_object_rv but were too afraid to ask
 

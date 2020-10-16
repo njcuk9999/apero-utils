@@ -277,6 +277,8 @@ if clargs.pattern is None:
             ).read().split('\n')[:-1])
 
 else:
+    if clargs.verbose:
+        print('WARNING: pattern overrides mask, object, and sanitize')
     pattern = clargs.pattern
     ccf_files = sorted(glob.glob(pattern))
 
