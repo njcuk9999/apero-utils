@@ -7,7 +7,8 @@ def check_blacklist(file_list):
     # included in the blacklisted list available on GitHub
 
     # adress where the blacklist is kept
-    tbl_url = 'https://raw.githubusercontent.com/njcuk9999/apero-utils/master/spirou/sandbox/ccf_tools/blacklist_odo.tbl'
+    tbl_url = ('https://raw.githubusercontent.com/njcuk9999/apero-utils/'
+               'master/spirou/sandbox/ccf_tools/blacklist_odo.tbl')
 
     # if a previous version is on disk, then delete
     fname = tbl_url.split('/')[-1]
@@ -30,26 +31,26 @@ def check_blacklist(file_list):
 
     # reformat
     lines = np.array(lines.split('\n'))
-    keep = np.ones_like(lines,dtype = bool)
+    keep = np.ones_like(lines, dtype=bool)
 
     # remove lines that are comments or too short
     for i in range(len(lines)):
-        if len(lines[i])<7: # too short to be valid
+        if len(lines[i]) < 7:  # too short to be valid
             keep[i] = False
             continue
 
-        if '#' == lines[i][0]: # is a comment
+        if '#' == lines[i][0]:  # is a comment
             keep[i] = False
             continue
 
-        if ',' not in lines[i]: # does not have a comment
+        if ',' not in lines[i]:  # does not have a comment
             keep[i] = False
             continue
 
         tmp = lines[i].split(',')[0]
         tmp = ''.join(tmp.split(' '))
 
-        if len(tmp) !=7: # not the length of an odometer
+        if len(tmp) != 7:  # not the length of an odometer
             keep[i] = False
             continue
 
@@ -59,7 +60,7 @@ def check_blacklist(file_list):
     bad_odo = lines[keep]
 
     # find which files should be kept (they are not in the bad odo list)
-    good_file = np.ones_like(file_list,dtype = bool)
+    good_file = np.ones_like(file_list, dtype=bool)
 
     # check if odometer is in file name
     for i in range(len(file_list)):
