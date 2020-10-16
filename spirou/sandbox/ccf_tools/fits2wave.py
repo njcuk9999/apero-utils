@@ -7,22 +7,22 @@ def fits2wave(file_or_header):
         Provide a fits header or a fits file
         and get the corresponding wavelength
         grid from the header.
-        
+
         Usage :
           wave = fits2wave(hdr)
                   or
           wave = fits2wave('my_e2ds.fits')
-        
+
         Output has the same size as the input
-        grid. This is derived from NAXIS 
+        grid. This is derived from NAXIS
         values in the header
     """
 
-
     # check that we have either a fits file or an astropy header
-    if type(file_or_header) == str:
+    intype = type(file_or_header)
+    if intype == str:
         hdr = fits.getheader(file_or_header)
-    elif str(type(file_or_header)) == "<class 'astropy.io.fits.header.Header'>":
+    elif str(intype) == "<class 'astropy.io.fits.header.Header'>":
         hdr = file_or_header
     else:
         print()
@@ -47,7 +47,11 @@ def fits2wave(file_or_header):
     npix = hdr['NAXIS1']
 
     # project polynomial coefficiels
-    wavesol = [np.polyval(wave_poly[i][::-1],np.arange(npix)) for i in range(nord) ]
+    wavesol = [
+            np.polyval(
+                wave_poly[i][::-1], np.arange(npix)
+                ) for i in range(nord)
+            ]
 
     # return wave grid
     return np.array(wavesol)
