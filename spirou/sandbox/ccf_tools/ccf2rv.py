@@ -102,6 +102,7 @@ def get_object_rv(obj=None,
                   doplot=True,
                   save_result_table=True,
                   save_rv_timeseries=True,
+                  bin_rv_timeseries=False,
                   saveplots=True,
                   showplots=True,
                   do_blacklist=False,
@@ -437,14 +438,21 @@ def get_object_rv(obj=None,
         tbl.write('{0}.csv'.format(batch_name), overwrite=True)
 
     if save_rv_timeseries:
+        if bin_rv_timeseries:
+            bin_str = '_bin'
+        else:
+            bin_str = ''
         if 'bisector' in method:
-            bisector_rv_path = '{}_bis_rv.csv'.format(batch_name)
-            timeseries_to_csv(bisector_rv_path, tbl, rv_key='RV_BIS')
+            bisector_rv_path = '{}_bis_rv{}.csv'.format(batch_name, bin_str)
+            timeseries_to_csv(bisector_rv_path, tbl, rv_key='RV_BIS',
+                              bin_rv=bin_rv_timeseries)
         if 'gaussian' in method:
-            gaussian_rv_path = '{}_gauss_rv.csv'.format(batch_name)
-            timeseries_to_csv(gaussian_rv_path, tbl, rv_key='RV_GAUSS')
-        template_rv_path = '{}_template_rv.csv'.format(batch_name)
-        timeseries_to_csv(template_rv_path, tbl, rv_key='RV')
+            gaussian_rv_path = '{}_gauss_rv{}.csv'.format(batch_name, bin_str)
+            timeseries_to_csv(gaussian_rv_path, tbl, rv_key='RV_GAUSS',
+                              bin_rv=bin_rv_timeseries)
+        template_rv_path = '{}_template_rv{}.csv'.format(batch_name, bin_str)
+        timeseries_to_csv(template_rv_path, tbl, rv_key='RV',
+                          bin_rv=bin_rv_timeseries)
 
     if not detailed_output:
         return tbl
@@ -456,6 +464,96 @@ def get_object_rv(obj=None,
         return dict_ccf
 
 
+def bin_rv_epoch(
+        t,
+        rv,
+        rv_err,
+        epoch_size=1.0,
+        median=True,
+        nsig=0,
+        verbose=False
+        ):
+    """
+    Bin RV measurements per epoch
+    """
+    t0 = np.min(t)
+    tf = np.max(t)
+    epochs = []
+    time_tmp = t0 - 0.5 * epoch_size
+
+    # get get epoch times
+    while time_tmp <= tf + 0.5 * epoch_size:
+        epochs.append(time_tmp)
+        time_tmp += epoch_size
+    epochs = np.array(epochs)
+
+    # Get binned data
+    digitized = np.digitize(t, epochs)
+    out_t, out_rv, out_rverr = [], [], []
+    for i in range(len(epochs)):
+        if len(t[digitized == i]):
+            out_t.append(t[digitized == i].mean())
+            if median:
+                if verbose:
+                    print("Calculating the median of {0} RV measurements in "
+                          "epoch {1:.2f}+-{2:.2f}".
+                          format(len(rv[digitized == i]),
+                                 epochs[i],
+                                 epoch_size/2))
+
+                median_rv = np.median(rv[digitized == i])
+                rverror = (np.median(np.abs(rv[digitized == i] - median_rv))
+                           / 0.67499)
+                out_rv.append(median_rv)
+                out_rverr.append(rverror)
+            else:
+                if verbose:
+                    print("Calculating the weighted mean of {0} RV "
+                          "measurements in epoch {1:.2f}+-{2:.2f}"
+                          .format(len(rv[digitized == i]),
+                                  epochs[i],
+                                  epoch_size/2))
+
+                weights = (1.0
+                           / (rv_err[digitized == i] * rv_err[digitized == i])
+                           )
+                weighted_mean = np.average(rv[digitized == i], weights=weights)
+                rverror = np.sqrt(
+                        np.average((rv[digitized == i] - weighted_mean)**2,
+                                   weights=weights)
+                        )
+
+                if nsig:
+                    dmask = digitized == i
+                    sigclip = np.where(
+                            np.logical_and(
+                                rv[dmask] > weighted_mean - nsig*rverror,
+                                rv[dmask] < weighted_mean + nsig*rverror
+                                )
+                            )
+
+                    if len(rv_err[dmask][sigclip]):
+                        weighted_mean = np.average(
+                                rv[dmask][sigclip],
+                                weights=weights[sigclip]
+                                )
+                        rverror = np.sqrt(
+                                np.average(
+                                    (rv[dmask][sigclip] - weighted_mean)**2,
+                                    weights=weights[sigclip]
+                                    )
+                                )
+
+                out_rv.append(weighted_mean)
+                out_rverr.append(rverror)
+
+    out_t = np.array(out_t)
+    out_rv = np.array(out_rv)
+    out_rverr = np.array(out_rverr)
+
+    return out_t, out_rv, out_rverr
+
+
 def timeseries_to_csv(
         savepath,
         tbl,
@@ -463,19 +561,27 @@ def timeseries_to_csv(
         rv_err_key='ERROR_RV',
         t_units='BJD',
         rv_units='m/s',
+        bin_rv=False,
         ):
     df = pd.DataFrame([])
     if t_units == 'BJD':
-        df['BJD'] = tbl['BJD'] + (tbl['MJDMID'] - tbl['MJDATE'])
+        t = tbl['BJD'] + (tbl['MJDMID'] - tbl['MJDATE'])
     elif t_units == 'MJD':
-        df['MJD'] = tbl['MJDMID']
+        t = tbl['MJDMID']
     elif t_units == 'JD':
-        df['JD'] = tbl['MJDMID'] + 2450000.5
+        t = tbl['MJDMID'] + 2450000.5
     else:
         raise ValueError('t_units should be BJD, MJD or JD.')
 
-    df['RV'] = tbl[rv_key]
-    df['RV_ERR'] = tbl[rv_err_key]
+    rv = tbl[rv_key]
+    rv_err = tbl[rv_err_key]
+
+    if bin_rv:
+        t, rv, rv_err = bin_rv_epoch(t, rv, rv_err)
+
+    df[t_units] = t
+    df['RV'] = rv
+    df['RV_ERR'] = rv_err
 
     if rv_units == 'm/s':
         df['RV'] *= 1e3

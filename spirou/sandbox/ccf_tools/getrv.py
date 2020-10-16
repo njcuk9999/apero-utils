@@ -180,12 +180,26 @@ parser.add_argument(
         help='Velocity window to scan',
         )
 parser.add_argument(
+        '-x',
+        '--dvmax-per-order',
+        dest='dvmax_per_order',
+        type=float,
+        default=1.0,
+        help='Max dv per order',
+        )
+parser.add_argument(
         '-f',
         '--no-force',
         dest='force',
         action='store_false',
         default=True,
         help='Do not force new calculation.'
+        )
+parser.add_argument(
+        '--bin',
+        action='store_true',
+        default=False,
+        help='Bin RV output'
         )
 parser.add_argument(
         '--show-plots',
@@ -292,9 +306,11 @@ for run_id in ccf_dict.keys():
             snr_min=clargs.snr_min,
             bandpass=bandpass,
             velocity_window=clargs.velocity_window,
+            dvmax_per_order=clargs.dvmax_per_order,
             save_ccf_cube=clargs.save_cube,
             save_result_table=clargs.save_table,
             save_rv_timeseries=clargs.save_rv,
+            bin_rv_timeseries=bin,
             doplot=clargs.do_plots,
             showplots=clargs.show_plots,
             saveplots=clargs.save_plots,
