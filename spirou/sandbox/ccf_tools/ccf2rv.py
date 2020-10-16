@@ -83,6 +83,7 @@ def dispatch_object(
 
 def get_object_rv(obj=None,
                   mask=None,
+                  sanitize=False,
                   ccf_parent=None,
                   outdir=None,
                   ccf_files=None,
@@ -93,7 +94,6 @@ def get_object_rv(obj=None,
                   force=True,
                   snr_min=0.0,
                   weight_type='',
-                  sanitize=False,
                   bandpass='YJHK',
                   velocity_window=10,
                   dvmax_per_order=1.0,
@@ -107,7 +107,7 @@ def get_object_rv(obj=None,
                   showplots=True,
                   do_blacklist=False,
                   detailed_output=False,
-                  verbose=False,
+                  verbose=True,
                   ):
     """ Get RV Timeseries for a given object
 
@@ -164,6 +164,18 @@ def get_object_rv(obj=None,
             Default: True
         save_ccf_cube (bool): Save npy file for ccf cube if true.
             Default: False
+        save_weight_table (bool): Save weight table if true.
+            Default: True
+        save_result_table (bool): Save full result table if True.
+            Default: True
+        save_rv_timeseries (bool): Save RV timeseries in separate file if true.
+            Default: True
+        bin_rv_timeseries (bool): Bin RV timeseries per night.
+            Default: False
+        saveplots (bool): Save plots generated in analysis.
+            Default: True
+        showplots (bool): Show plots when code runs.
+            Default: True
         do_blacklist (True): Check if the input files are blacklisted.
             Default: False (because this adds some overheads)
         verbose (bool): Print debug information.
@@ -183,12 +195,14 @@ def get_object_rv(obj=None,
         else:
             sp_type = 'tcorr'
 
+        if mask is None:
+            mask = 'sept18_andres_trans50'
         fpattern = '*{0}*{1}_AB.fits'.format(sp_type, mask)
         ccf_files = np.array(
                 glob.glob(os.path.join(ccf_parent, obj, fpattern))
                 )
     elif ccf_files is not None and run_id is not None:
-        if obj is not None or mask is not None or sanitize:
+        if (obj is not None or mask is not None or sanitize) and verbose:
             print('WARNING: When ccf_files and run_id are provided, '
                   'obj, mask and sanit are determined automatically.')
         obj, mask, sanit, drs_version = run_id.split("__")
@@ -251,6 +265,7 @@ def get_object_rv(obj=None,
             batch_name,
             exclude_orders=exclude_orders,
             save_ccf_cube=save_ccf_cube,
+            verbose=verbose,
             )
 
     tbl, ccf_cube, ccf_files = apply_snr_threshold(
@@ -266,7 +281,8 @@ def get_object_rv(obj=None,
         # some slices in the sum are NaNs, that's OK
         med_ccf = np.nanmedian(ccf_cube, axis=2)
 
-    exclude_orders = exclude_orders_full_of_nans(exclude_orders, med_ccf)
+    exclude_orders = exclude_orders_full_of_nans(exclude_orders, med_ccf,
+                                                 verbose=verbose)
 
     # Find minimum for CCF. This is used to fit a gaussian to each order
     # and force velocity to zero
@@ -277,7 +293,8 @@ def get_object_rv(obj=None,
             med_ccf,
             id_min,
             ccf_RV,
-            dvmax_per_order
+            dvmax_per_order,
+            verbose=verbose,
             )
 
     # set updated excluded orders values in ccf_cube to NaN
@@ -300,6 +317,7 @@ def get_object_rv(obj=None,
             doplot=doplot,
             saveplots=saveplots,
             showplots=showplots,
+            verbose=verbose,
             )
 
     if doplot:
@@ -374,7 +392,8 @@ def get_object_rv(obj=None,
             id_min,
             velocity_window,
             doplot=doplot,
-            showplots=showplots
+            showplots=showplots,
+            verbose=verbose,
             )
 
     if doplot:
@@ -704,12 +723,14 @@ def exclude_orders_by_bandpass(exclude_orders, reffile, bandpass):
 def build_ccf_cube(ccf_files,
                    batch_name,
                    exclude_orders=[-1],
-                   save_ccf_cube=False):
+                   save_ccf_cube=False,
+                   verbose=False):
 
     npy_file = '{}_ccf_cube.npy'.format(batch_name)
 
     if not os.path.isfile(npy_file):
-        print('we load all CCFs into one big cube')
+        if verbose:
+            print('we load all CCFs into one big cube')
         ccf_RV_previous = None
         for i in (range(len(ccf_files))):
             # we loop through all files
@@ -732,9 +753,10 @@ def build_ccf_cube(ccf_files,
                     sys.exit()
             ccf_RV_previous = np.array(ccf_RV)
 
-            print('V[min/max] {0:.1f} / {1:.1f} km/s, file {2}'.format(
-                np.min(ccf_RV), np.max(ccf_RV), ccf_files[i]
-                ))
+            if verbose:
+                print('V[min/max] {0:.1f} / {1:.1f} km/s, file {2}'.format(
+                    np.min(ccf_RV), np.max(ccf_RV), ccf_files[i]
+                    ))
 
             # if this is the first file, we create a cube that contains all
             # CCFs for all orders for all files
@@ -751,12 +773,14 @@ def build_ccf_cube(ccf_files,
                     ccf_cube[j, :, i] = tmp
 
         if save_ccf_cube:
-            print('We save {0}, this will speed things up '
-                  'next time you run this code'.format(npy_file))
+            if verbose:
+                print('We save {0}, this will speed things up '
+                      'next time you run this code'.format(npy_file))
             np.save(npy_file, ccf_cube)
 
     else:
-        print('We load {0}, this is speedier'.format(npy_file))
+        if verbose:
+            print('We load {0}, this is speedier'.format(npy_file))
         ccf_cube = np.load(npy_file)
 
         # we need to load the first file just to get the velocity grid
@@ -796,7 +820,7 @@ def apply_snr_threshold(
     return tbl, ccf_cube, ccf_files
 
 
-def exclude_orders_full_of_nans(exclude_orders, med_ccf):
+def exclude_orders_full_of_nans(exclude_orders, med_ccf, verbose=False):
     """
     Exclude orders whose mean is not finite because of NaNs.
     Args:
@@ -808,8 +832,9 @@ def exclude_orders_full_of_nans(exclude_orders, med_ccf):
     for iord in range(49):
         if iord not in exclude_orders:
             if not np.isfinite(np.mean(med_ccf[iord, :])):
-                print('Order {0} has a CCF full of NaNs. '
-                      'Added to the rejected orders '.format(iord))
+                if verbose:
+                    print('Order {0} has a CCF full of NaNs. '
+                          'Added to the rejected orders '.format(iord))
                 exclude_orders = np.append(exclude_orders, iord)
 
     return exclude_orders
@@ -820,7 +845,9 @@ def exclude_orders_with_large_rv_offsets(
         med_ccf,
         id_min,
         ccf_RV,
-        dvmax_per_order):
+        dvmax_per_order,
+        verbose=False
+        ):
     """
     Exclude orders whose RV offset is larger than treshold.
     Args:
@@ -840,9 +867,10 @@ def exclude_orders_with_large_rv_offsets(
     for iord in range(49):
         if iord not in exclude_orders:
             if bad_orders[iord]:
-                print('The CCF of order {0} has its minima {1:.2f} km/s '
-                      'from median CCF, above threshold of +-{2:.2f} km/s'
-                      .format(iord, dv_CCF_min[iord], dvmax_per_order))
+                if verbose:
+                    print('The CCF of order {0} has its minima {1:.2f} km/s '
+                          'from median CCF, above threshold of +-{2:.2f} km/s'
+                          .format(iord, dv_CCF_min[iord], dvmax_per_order))
                 exclude_orders = np.append(exclude_orders, iord)
 
     return exclude_orders
@@ -865,6 +893,7 @@ def measure_ccf_weights(
         doplot=True,
         saveplots=True,
         showplots=True,
+        verbose=False,
         ):
     # Find valid pixels to measure CCF properties
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
@@ -957,8 +986,9 @@ def measure_ccf_weights(
                                   overwrite=True)
 
         else:
-            print('You provided a weight file, we load it and'
-                  'apply weights accordingly')
+            if verbose:
+                print('You provided a weight file, we load it and'
+                      'apply weights accordingly')
             tbl_weights = Table.read(weight_table)
             weights = np.array(tbl_weights['weights'], dtype=float)
             weights /= np.nansum(weights)
@@ -1206,6 +1236,7 @@ def run_template_method(
         tol=1e-4,
         doplot=False,
         showplots=False,
+        verbose=False,
         ):
 
     g = np.abs(ccf_RV - ccf_RV[id_min]) < velocity_window
@@ -1286,9 +1317,10 @@ def run_template_method(
         tbl['RV'] -= np.nanmean(tbl['RV'])
         # plt.plot( tbl['RV'],'.')
         rms_rv_ite = np.nanstd(rv_prev - tbl['RV'])
-        print('Template CCF iteration number {0:3}, '
-              'rms RV change {1:3.4f} km/s for this step'
-              .format(ite+1, rms_rv_ite))
+        if verbose:
+            print('Template CCF iteration number {0:3}, '
+                  'rms RV change {1:3.4f} km/s for this step'
+                  .format(ite+1, rms_rv_ite))
         rv_prev = np.array(tbl['RV'])
         ite += 1
 
