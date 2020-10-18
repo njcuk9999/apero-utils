@@ -45,7 +45,6 @@ This file contains tons of info about the data the velocity of your object. If
 _outdir_ is specified, everything is saved there. Otherwise, the parent
 directory of CCF files is used.
 
-
 # The getrv.py script
 The _getrv.py_ script allows users to calculate RV timeseries for several combinations of object, mask and sanitize method. There are two main ways to run the script. The first way is
 ```
