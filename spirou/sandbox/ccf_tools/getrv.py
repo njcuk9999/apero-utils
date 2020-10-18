@@ -216,6 +216,13 @@ parser.add_argument(
         help='Save plots'
         )
 parser.add_argument(
+        '--save-weights',
+        dest='save_weights',
+        action='store_true',
+        default=False,
+        help='Save weight table'
+        )
+parser.add_argument(
         '--save-table',
         dest='save_table',
         action='store_true',
@@ -312,7 +319,8 @@ for run_id in ccf_dict.keys():
             save_ccf_cube=clargs.save_cube,
             save_result_table=clargs.save_table,
             save_rv_timeseries=clargs.save_rv,
-            bin_rv_timeseries=bin,
+            save_weight_table=clargs.save_weights,
+            bin_rv_timeseries=clargs.bin,
             doplot=clargs.do_plots,
             showplots=clargs.show_plots,
             saveplots=clargs.save_plots,

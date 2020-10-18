@@ -43,7 +43,7 @@ def dispatch_object(
 
     # Handle output dir
     if out_parent is None:
-        os.path.abspath(os.path.join(in_dir, os.pardir))
+        out_parent = os.path.abspath(os.path.join(in_dir, os.pardir))
 
     if verbose:
         print(
