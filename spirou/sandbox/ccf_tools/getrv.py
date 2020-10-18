@@ -14,63 +14,9 @@ import glob
 from argparse import ArgumentParser
 
 import numpy as np
-from astropy.io import fits
 
 from ccf2rv import get_object_rv
-
-
-def process_list_clarg(argument):
-    if argument == ['all']:
-        newarg = '*'
-    elif len(argument) == 1:
-        newarg = argument[0]
-    else:
-        newarg = '{'+','.join(argument)+'}'
-
-    return newarg
-
-
-def get_ccf_dict(ccf_files):
-    """
-    Get dictionnary mapping timeseries ID to list of files.
-    Args:
-        ccf_files (list of str): list of all ccf files.
-    Return:
-        ccf_dict (dict): dictionnary with IDs as keys and lists as elements.
-    """
-    file_ids = []
-    file_paths = []
-    for i, ccf_file in enumerate(ccf_files):
-        hdr = fits.getheader(ccf_file, 1)
-
-        # Get info from header
-        obj = hdr['OBJECT']
-        mask = hdr['CCFMASK'].split('.')[0]
-        drs_version = hdr['VERSION']
-
-        sani_sub = 'SANI'  # substring in some keys only if sanitized
-        is_sanit = np.any([sani_sub in k for k in hdr.keys()])
-        if is_sanit:
-            sanit = 'sani'
-        else:
-            sanit = 'tcorr'
-        reduction_id = '{0}__{1}__{2}__{3}'.format(obj,
-                                                   mask,
-                                                   sanit,
-                                                   drs_version)
-        file_ids.append(reduction_id)
-        file_paths.append(ccf_file)
-
-    file_ids = np.array(file_ids)
-    file_paths = np.array(file_paths)
-    uids = np.unique(file_ids)
-
-    ccf_dict = {}
-    for uid in uids:
-        id_mask = file_ids == uid
-        ccf_dict[uid] = file_paths[id_mask]
-
-    return ccf_dict
+import getrv_utils as gu
 
 
 # CLI arguments
@@ -263,36 +209,25 @@ clargs = parser.parse_args()
 # If no pattern, build it from other information
 # In both cases, we load a list of CCF files
 if clargs.pattern is None:
-    # Process list clargs
-    mask = process_list_clarg(clargs.mask)
-    obj = process_list_clarg(clargs.object)
-    sanit = process_list_clarg(clargs.sanitize)
-    # Putting AB at the end, we avoid loading variations of masks,
-    # example, if some names have _depth, it won't be used.
-    filestr = '*_{0}_*_{1}_AB.fits'.format(sanit, mask)
-    pattern = os.path.join(clargs.path, obj, filestr)
-    # Glob cannot handle curly brace expansion. This is a bit hacky but
-    # seems to work on tested examples.
-    # ONLY POSIX VERSION HAS BEEN TESTED
-    if os.name == 'posix':
-        ccf_files = sorted(os.popen(
-            'ls {} 2> /dev/null '.format(pattern)
-            ).read().split('\n')[:-1])
-    else:
-        ccf_files = sorted(os.popen(
-            'dir {} 2> nul '.format(pattern)
-            ).read().split('\n')[:-1])
+    ccf_files = gu.get_ccf_files(
+            clargs.path,
+            clargs.object,
+            clargs.mask,
+            clargs.sanitize
+            )
 
 else:
     if clargs.verbose:
         print('WARNING: pattern overrides mask, object, and sanitize')
-    pattern = clargs.pattern
+    pattern = os.path.join(clargs.path, clargs.pattern)
     ccf_files = sorted(glob.glob(pattern))
 
+print(ccf_files)
+exit()
 # Get dictionnary where each key is the "ID" of a timeseries with given
 # object, mask, sanitize, DRS version. The keys have format
 # object__ mask__sani__version.
-ccf_dict = get_ccf_dict(ccf_files)
+ccf_dict = gu.get_ccf_dict(ccf_files)
 
 bandpass = ''.join(np.unique(clargs.bandpass))
 
