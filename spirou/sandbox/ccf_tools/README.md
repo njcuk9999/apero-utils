@@ -59,6 +59,12 @@ The script finds all files corresponding to PATTERN and groups them by run befor
 
 Other arguments are available, most of which are directly passed to _get_object_rv_. For a full list of arguments, use `python getrv.py -h`.
 
+An alternative way to run the script is to setup a YAML file giving information about how to run the script. The information passed is the same as with the CLI argument. This is particularly useful for tasks that must be performed more than once (e.g. re-computing the RV when new data is available). Example YAML files are provided in _getrv_examples_. To run the script with a config file, simply do
+```
+python getrv.py -c /path/to/config/file.yml
+```
+When both a YAML file and CLI arguments are given, the CLI arguments override the YAML configuration. for example, `python getrv.py -c /path/to/ccf_tools/getrv_examples/TOI1278.yml --bin` would output the RV timeseries binned per-epoch even if the file says `bin: False`.
+
 This script is inspired from the [spirou-ccf-analysis tool](https://github.com/edermartioli/spirou-ccf-analysis) by @edermartioli.
 
 

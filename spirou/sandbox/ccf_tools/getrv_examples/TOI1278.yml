@@ -1,0 +1,41 @@
+# Get RV for TOI-1278
+
+##########################################################
+### Combination of obj, mask, sanitization to consider ###
+##########################################################
+# pattern: TOI-1278/*_tcorr_*_gl846_neg_AB.fits
+outdir: /home/user/path/to/ccfs/per_object
+path: /home/user/path/to/ccfs/per_object
+object: TOI-1278
+mask: gl846_neg
+sanitize: tcorr  # sani, tcorr, or all
+
+####################################
+### Arguments for RV calculation ###
+####################################
+method: template
+exclude_orders: [-1]  # One way to pass a list
+bandpass:      # Another way to pass a lsit
+    - H
+    - K
+snr_min: 20.0
+velocity_window: 10.0
+dvmax_per_order: 3.0
+force: True
+bin: False
+
+####################
+### What to show ###
+####################
+do_plots: False
+show_plots: False
+verbose: False
+
+####################
+### What to save ###
+####################
+save_plots: False
+save_weights: False
+save_table: False
+save_cube: False
+save_rv: True

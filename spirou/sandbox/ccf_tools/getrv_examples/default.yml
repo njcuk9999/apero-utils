@@ -1,0 +1,46 @@
+# Example file with default value for all fields
+
+##########################################################
+### Combination of obj, mask, sanitization to consider ###
+##########################################################
+pattern: Null
+outdir: Null
+path: .
+object:
+    - all
+mask: 
+    - all
+sanitize:
+    - all
+
+####################################
+### Arguments for RV calculation ###
+####################################
+method: all
+exclude_orders: [-1]  # One way to pass a list
+bandpass:      # Another way to pass a lsit
+    - Y
+    - J
+    - H
+    - K
+snr_min: 0.0
+velocity_window: 10.0
+dvmax_per_order: 1.0
+force: True
+bin: False
+
+####################
+### What to show ###
+####################
+do_plots: True
+show_plots: False
+verbose: False
+
+####################
+### What to save ###
+####################
+save_plots: False
+save_weights: False
+save_table: False
+save_cube: False
+save_rv: True

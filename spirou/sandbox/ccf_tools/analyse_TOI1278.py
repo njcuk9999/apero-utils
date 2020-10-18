@@ -15,7 +15,7 @@ def sinusoidal(phase, dphase, amp, zp):
 exclude_orders = [-1]
 
 # Parameters
-path_to_ccfs = ''  # Assumen CCFs are in CWD
+path_to_ccfs = ''  # Assume CCFs are in CWD
 object = 'TOI-1278'
 mask = 'gl846_neg'
 method = 'all'
