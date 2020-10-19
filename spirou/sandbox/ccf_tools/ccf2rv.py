@@ -501,7 +501,7 @@ def bin_rv_epoch(
     time_tmp = t0 - 0.5 * epoch_size
 
     # get get epoch times
-    while time_tmp <= tf + 0.5 * epoch_size:
+    while time_tmp <= tf + epoch_size:
         epochs.append(time_tmp)
         time_tmp += epoch_size
     epochs = np.array(epochs)
