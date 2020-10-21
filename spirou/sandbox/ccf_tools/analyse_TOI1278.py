@@ -10,7 +10,7 @@ def sinusoidal(phase,dphase,amp,zp):
     return np.sin( (phase+dphase))*amp+zp
 
 # do not *formally* exclude an order, but this is done later with the bandpass keyword
-exclude_orders = [37,47]
+exclude_orders = [47,48]
 
 object = 'TOI-1278'
 mask =  'gl846_neg'
@@ -23,7 +23,8 @@ tbl,dico = get_object_rv(object,mask =mask,
                     snr_min = 20.0, sanitize = sanitize,
                     dvmax_per_order = 3.0, bandpass = 'YJHK',
                     doplot = True, do_blacklist = True,
-                    detailed_output = True)
+                    detailed_output = True,
+                    sed_match = False)
 
 
 rv = np.array(tbl['RV'])

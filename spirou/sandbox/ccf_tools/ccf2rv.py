@@ -84,7 +84,8 @@ def get_object_rv(object,
                   dvmax_per_order = 1.0,
                   doplot = True,
                   do_blacklist = False,
-                  detailed_output = False
+                  detailed_output = False,
+                  sed_match = False,
                   ):
     #
     # parameters :
@@ -117,6 +118,10 @@ def get_object_rv(object,
         sp_type = 'sani'
     else:
         sp_type = 'tcorr'
+
+    if sed_match:
+        sp_type = 'sed'
+
 
 
     dict_ccf = dict()

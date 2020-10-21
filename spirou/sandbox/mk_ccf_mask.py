@@ -56,7 +56,9 @@ def mk_ccf_mask(templates,doplot = False):
 
 
         # read template and header
-        tbl, hdr = fits.getdata(template, ext=1, header=True)
+        tbl_template, hdr = fits.getdata(template, ext=1, header=True)
+
+        Nfiles =  len(fits.getdata(template, ext=2))
 
         # round temperature in header to nearest 100 and get the right model
         if 'OBJTEMP' in hdr:
@@ -76,8 +78,8 @@ def mk_ccf_mask(templates,doplot = False):
         flux_phoenix = fits.getdata(outname)
 
         # get wave and flux vectors
-        w = np.array(tbl['wavelength'])
-        f = np.array(tbl['flux'])
+        w = np.array(tbl_template['wavelength'])
+        f = np.array(tbl_template['flux'])
         f[f<0] = np.nan
 
         f2 = np.array(f)
@@ -134,6 +136,7 @@ def mk_ccf_mask(templates,doplot = False):
 
         wavelines = (tbl['ll_mask_s'] + tbl['ll_mask_e']) / 2.0
         weight = tbl['w_mask']
+        neg_mask = tbl['w_mask']>0
 
         # create a spline of the model
         model = InterpolatedUnivariateSpline(wave_phoenix, flux_phoenix)
@@ -151,7 +154,7 @@ def mk_ccf_mask(templates,doplot = False):
             cc = np.zeros_like(dvs)
             for i in range(len(dvs)):
                 corrv = np.sqrt((1 + dvs[i] / c) / (1 - dvs[i] / c))
-                cc[i] = np.sum(model(wavelines / corrv))
+                cc[i] = np.sum(model(wavelines[neg_mask] / corrv))
 
             # just centering the cc around one and removing low-f trends
             mini = np.argmin(cc / medfilt(cc, 21))
@@ -169,11 +172,51 @@ def mk_ccf_mask(templates,doplot = False):
         fit = np.polyfit(dvs[minpos - 1:minpos + 2], cc[minpos - 1:minpos + 2], 2)
 
         systemic_velocity = -.5 * fit[1] / fit[0]
+        tbl_template = Table(tbl_template)
 
+        for key in tbl_template.keys():
+            if key == 'wavelength':
+                continue
+            print(key)
+            index = np.arange(len(tbl_template[key]))
+            g = np.isfinite(tbl_template[key])
+
+            spl = InterpolatedUnivariateSpline(index[g],tbl_template[key][g],k=3,ext=0)
+
+            tmp = spl(index+systemic_velocity)
+            tmp[np.roll(~g,-int(systemic_velocity))] = np.nan
+
+            tbl_template[key] = tmp
+
+        tbl_template['rms_scale_N_files'] = tbl_template['rms']/np.sqrt(Nfiles)
+        tbl_template['snr_raw'] = tbl_template['flux']/ tbl_template['rms']
+        tbl_template['snr_scale_N_files'] = tbl_template['flux']/ tbl_template['rms_scale_N_files']
+
+        Y = (w>938.600)*(w<1113.400)
+        J = (w>1153.586)*(w<1354.422)
+        H = (w>1462.897)*(w<1808.544)
+        K = (w>1957.792)*(w<2400) # modified to get to the edge of the SPIRou domain
+
+        hdr['Y_SNR'] = np.nanmedian(tbl_template['snr_raw'][Y]),'Mean per-file Y-band, per-pixel SNR'
+        hdr['Y_SNRALL'] = np.nanmedian(tbl_template['snr_scale_N_files'][Y]),'Mean final Y-band per-pixel SNR'
+        hdr['J_SNR'] = np.nanmedian(tbl_template['snr_raw'][J]),'Mean per-file J-band, per-pixel SNR'
+        hdr['J_SNRALL'] = np.nanmedian(tbl_template['snr_scale_N_files'][J]),'Mean final J-band per-pixel SNR'
+        hdr['H_SNR'] = np.nanmedian(tbl_template['snr_raw'][H]),'Mean per-file H-band, per-pixel SNR'
+        hdr['H_SNRALL'] = np.nanmedian(tbl_template['snr_scale_N_files'][H]),'Mean final H-band per-pixel SNR'
+        hdr['K_SNR'] = np.nanmedian(tbl_template['snr_raw'][K]),'Mean per-file K-band, per-pixel SNR'
+        hdr['K_SNRALL'] = np.nanmedian(tbl_template['snr_scale_N_files'][K]),'Mean final K-band per-pixel SNR'
+
+        hdr['NFILES'] = Nfiles, 'Numb. of files used for template'
         hdr['SYSVELO'] = systemic_velocity, 'meas. systemic velocity (km/s)'
         hdr['VELOFILE'] = outname, 'model used for SYSVEL cc'
 
-        print('\n\tsystemic velocity : {0:.2f}km/s\n'.format(systemic_velocity))
+        #
+        # construction of zero-velocity template and estimate of SNR for template
+        #
+        fits.writeto('Template_s1d_GL411_sc1d_v_file_NOSYS.fits',tbl_template,hdr,overwrite=True)
+
+
+        print('\n\tsystemic velocity : {0:.4f}km/s\n'.format(systemic_velocity))
 
         if doplot:
             plt.plot(w,f, 'g-',label = 'input spectrum')
@@ -231,3 +274,8 @@ def mk_ccf_mask(templates,doplot = False):
             f.write('      ' + '      '.join(
                 [str(tbl2['ll_mask_s'][i])[0:14], str(tbl2['ll_mask_e'][i])[0:14], str(tbl2['w_mask'][i])[0:12]]) + '\n')
         f.close()
+
+
+
+templates = ['Template_s1d_GL411_sc1d_v_file_AB.fits']
+mk_ccf_mask(templates,doplot = True)
