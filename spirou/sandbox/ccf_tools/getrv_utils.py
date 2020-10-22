@@ -25,6 +25,7 @@ DEFAULT_CFG = {
         'dvmax_per_order': 1.0,
         'force': True,
         'bin': False,
+        'median': False,
         'do_plots': True,
         'show_plots': False,
         'verbose': False,
@@ -177,6 +178,12 @@ def parse_clargs():
             action='store_true',
             default=argparse.SUPPRESS,
             help='Bin RV output'
+            )
+    parser.add_argument(
+            '--median',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help='Use median and error from MAD for binned RV timeseries.'
             )
     parser.add_argument(
             '--show-plots',

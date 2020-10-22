@@ -28,6 +28,7 @@ velocity_window: 10.0
 dvmax_per_order: 1.0
 force: True
 bin: False
+median: False
 
 ####################
 ### What to show ###

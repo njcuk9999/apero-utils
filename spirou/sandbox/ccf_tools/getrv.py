@@ -71,6 +71,7 @@ for run_id in ccf_dict.keys():
             save_rv_timeseries=cfg['save_rv'],
             save_weight_table=cfg['save_weights'],
             bin_rv_timeseries=cfg['bin'],
+            median_bin=cfg['median'],
             doplot=cfg['do_plots'],
             showplots=cfg['show_plots'],
             saveplots=cfg['save_plots'],
