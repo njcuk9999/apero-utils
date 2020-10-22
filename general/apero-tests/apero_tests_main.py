@@ -66,7 +66,7 @@ th, td {{
 
 <body>
 
-<img src='images/apero_logo.png' alt='APERO'>
+<img src='apero_logo.png' alt='APERO'>
 
 <p>A PipelinE to Reduce Observations</p>
 
