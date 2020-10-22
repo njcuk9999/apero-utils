@@ -1,8 +1,7 @@
 import os
-import glob
 from apero.core import constants
 from datetime import datetime
-from astropy.io import fits
+from apero_tests_func import *
 
 #test1: how many raw files are there on disk
 #test2: how many pp files are there on disk (compared to raw files)
@@ -21,18 +20,16 @@ params = constants.load('SPIROU')
 setup = os.environ['DRS_UCONFIG'] #setup
 instrument = params['INSTRUMENT'] #instrument
 date = datetime.now()
-date = date.strftime("%Y-%m-%d %H:%M:%S")
+date = date.strftime("%Y-%m-%d %H:%M:%S") #date
 
 raw_path = params['DRS_DATA_RAW']
-raw_nights = [x for x in os.listdir(raw_path) if os.path.isdir(os.path.join(raw_path, x))]
-raw_nights.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
+raw_nights = list_nights(raw_path)
 
 pp_path = params['DRS_DATA_WORKING']
-pp_nights = [x for x in os.listdir(pp_path) if os.path.isdir(os.path.join(pp_path, x))]
-pp_nights.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
+pp_nights = list_nights(pp_path)
 
-raw_num = len(glob.glob('{0}/*/*.fits'.format(raw_path))) #test1
-pp_num = len(glob.glob('{0}/*/*.fits'.format(pp_path))) #test2
+raw_num = count_files_subdir(raw_path, subdir = 'all', files = '*.fits')  #test1
+pp_num = count_files_subdir(pp_path, subdir = 'all', files = '*.fits')    #test2
 
 pp_indexfits_num = 0
 pp_logfits_QCpassed_num = 0
@@ -46,37 +43,28 @@ odometer_endedfailed = []
 NIGHTNAME_endedfailed = []
 ERRORS = []
 LOGFILE = []
+
 for i in range(len(pp_nights)):
-    indexfits = fits.getdata('{0}/{1}/index.fits'.format(pp_path, pp_nights[i]))
-    pp_indexfits_num += len(indexfits) #test3
-    
-    logfits = fits.getdata('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
 
-    pp_logfits_QCpassed_num += sum(logfits['PASSED_ALL_QC']) #test4
+    indexfits = index_fits('{0}/{1}/index.fits'.format(pp_path, pp_nights[i]))
+    pp_indexfits_num += indexfits.len #test3
     
-    args = logfits['ARGS'][logfits['PASSED_ALL_QC'] == False]
-    nightname = logfits['DIRECTORY'][logfits['PASSED_ALL_QC'] == False]
-    qcstr = logfits['QC_STRING'][logfits['PASSED_ALL_QC'] == False]
-    pp_logfits_QCfailed_num += len(args) #test5
-    
-    for i in range(len(args)):
-        index = args[i].index('.fits')
-        odometer_QC.append(args[i][112:120]) #test6
-        NIGHTNAME_QC.append(nightname[i])
-        QCstr.append(qcstr[i]) #test7
+    logfits = log_fits('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
 
-    args = logfits['ARGS'][logfits['ENDED'] == False]
-    nightname = logfits['DIRECTORY'][logfits['ENDED'] == False]
-    errors = logfits['ERRORS'][logfits['ENDED'] == False]
-    logfile = logfits['LOGFILE'][logfits['ENDED'] == False]
-    pp_logfits_endedfailed_num += len(args) #test8
+    pp_logfits_QCpassed_num += logfits.lenQCpass #test4
+    pp_logfits_QCfailed_num += logfits.lenQCfail #test5
 
-    for i in range(len(args)):
-        index = args[i].index('.fits')
-        odometer_endedfailed.append(args[i][112:120]) #test9
-        NIGHTNAME_endedfailed.append(nightname[i])
-        ERRORS.append(errors[i]) #test10
-        LOGFILE.append(logfile[i]) #test11
+    odometer_QC.extend(logfits.odometerQCfail) #test6
+    NIGHTNAME_QC.extend(logfits.nightQCfail)
+    QCstr.extend(logfits.QCstrfail) #test7
+
+    pp_logfits_endedfailed_num += logfits.lenEndfail #test8
+    odometer_endedfailed.extend(logfits.odometerEndfail) #test9
+    NIGHTNAME_endedfailed.extend(logfits.nightEndfail)
+    ERRORS.extend(logfits.errorEndfail) #test10
+    LOGFILE.extend(logfits.logfileEndfail) #test11
+
+
 
 html_hover_QC = []
 for i in range(len(odometer_QC)):
@@ -125,7 +113,7 @@ th, td {{
 
 <body>
 
-<h2>APERO Tests</h2>
+<h3>Preprocessing Test #1</h3>
 <p><b>Setup: {setup}</b></p>
 <p><b>Instrument: {instrument}</b></p>
 <p><b>Date: {date}</b></p>
@@ -138,7 +126,7 @@ th, td {{
      <col span="1" style="width: 50%;">
   </colgroup>
   <tr>
-    <th>Preprocessing Recipe Tests</th>
+    <th>Test</th>
     <th>Result</th> 
   </tr>
   <tr>
@@ -181,5 +169,5 @@ th, td {{
 """
 
 
-with open('apero_preprocessing_test1.html', 'w') as f:
+with open('preprocessing_test1/preprocessing_test1.html', 'w') as f:
     f.write(html_text)
