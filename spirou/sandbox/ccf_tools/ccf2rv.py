@@ -456,6 +456,13 @@ def get_object_rv(obj=None,
                 showplots=showplots,
                 )
 
+        plot_rv_timeseries(
+                tbl,
+                batch_name,
+                saveplots=saveplots,
+                showplots=showplots,
+                )
+
     # output to csv file
     if save_result_table:
         tbl.write('{0}.csv'.format(batch_name), overwrite=True)
@@ -616,6 +623,20 @@ def timeseries_to_csv(
         raise ValueError('rv_units should be m/s or km/s')
 
     df.to_csv(savepath, index=False)
+
+
+def plot_rv_timeseries(tbl, batch_name, saveplots=False, showplots=False):
+    fig = plt.figure()
+    plt.errorbar(tbl['MJDATE'], tbl['RV'], tbl['ERROR_RV'],
+                 fmt='ko', capsize=2)
+    plt.title('RV Timeseries')
+    plt.xlabel('MJDATE')
+    plt.ylabel('RV [km/s]')
+    if saveplots:
+        plt.savefig('{0}_RV.pdf'.format(batch_name))
+    if showplots:
+        plt.show()
+    plt.close(fig)
 
 
 def gauss(v, v0, ew, zp, amp):
@@ -1174,7 +1195,7 @@ def plot_bisector_method(tbl, batch_name, saveplots=False, showplots=False):
               ylabel='slope [km/s/fract. depth]')
     plt.tight_layout()
     if saveplots:
-        plt.savefig('{0}_RV.pdf'.format(batch_name))
+        plt.savefig('{0}_bis_RV.pdf'.format(batch_name))
     if showplots:
         plt.show()
     plt.close(fig)
@@ -1234,7 +1255,7 @@ def plot_gaussian_method(tbl, batch_name, saveplots=False, showplots=False):
               ylabel='Gaussian FWHM [km/s]')
     plt.tight_layout()
     if saveplots:
-        plt.savefig('{0}_RV.pdf'.format(batch_name))
+        plt.savefig('{0}_gauss_RV.pdf'.format(batch_name))
     if showplots:
         plt.show()
     plt.close(fig)
