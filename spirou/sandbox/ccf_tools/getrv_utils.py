@@ -183,7 +183,8 @@ def parse_clargs():
             '--median',
             action='store_true',
             default=argparse.SUPPRESS,
-            help='Use median and error from MAD for binned RV timeseries.'
+            help='Use median and error from MAD for binned RV timeseries. '
+                 'By default, the weighted averge is used.'
             )
     parser.add_argument(
             '--show-plots',
