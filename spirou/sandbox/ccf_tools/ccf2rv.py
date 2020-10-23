@@ -1194,8 +1194,15 @@ def run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf, replace_rv=True):
     imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
 
     for i in range(len(ccf_files)):
+        # initial guess
         p0 = [ccf_RV[imin], 1, 1, -0.1]
-        fit, pcov = curve_fit(gauss, ccf_RV, mean_ccf[:, i], p0=p0)
+
+        fit, pcov = curve_fit(
+                gauss,
+                ccf_RV,
+                mean_ccf[:, i],
+                p0=p0,
+                )
 
         if replace_rv:
             tbl['RV'][i] = fit[0]
@@ -1204,7 +1211,7 @@ def run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf, replace_rv=True):
         # template, we keep a RV that is specific to this method
         tbl['RV_GAUSS'][i] = fit[0]
 
-        tbl['GAUSS_WIDTH'][i] = fit[1]
+        tbl['GAUSS_WIDTH'][i] = np.abs(fit[1])  # Make sure positive width
         tbl['GAUSS_AMP'][i] = fit[3]
         tbl['GAUSS_ZP'][i] = fit[2]
 
