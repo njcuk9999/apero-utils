@@ -7,41 +7,75 @@ Created on 2020-10-2020-10-22 11:49
 
 @author: cook
 """
+from astropy.time import Time
 from astropy.table import Table
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance
 import numpy as np
-from typing import Union
+from typing import List, Union
 import warnings
 
-from apero.base import base
-from apero.base import drs_text
-from apero.core import constants
-from apero.core.core import drs_database
-from apero.core.core import drs_log
-from apero import lang
 
 # =============================================================================
 # Define variables
 # =============================================================================
-__NAME__ = 'science.extract.crossmatch.py'
-__INSTRUMENT__ = 'None'
-__PACKAGE__ = base.__PACKAGE__
-__version__ = base.__version__
-__author__ = base.__author__
-__date__ = base.__date__
-__release__ = base.__release__
-# Get Astropy Time and Time Delta
-Time, TimeDelta = base.AstropyTime, base.AstropyTimeDelta
-# get param dict
-ParamDict = constants.ParamDict
-# Get Logging function
-WLOG = drs_log.wlog
-# Get the text types
-TextEntry = lang.core.drs_lang_text.TextEntry
-TextDict = lang.core.drs_lang_text.TextDict
+__NAME__ = 'berv_crossmatch.py'
+
+# Fake Logging function
+def WLOG(params, level, message, *args, **kwargs):
+    print(message)
+    if level == 'error':
+        raise Exception(message)
 
 
+# Fake TextEntry
+def TextEntry(code, args, **kwargs):
+    return code
+
+
+# Fake drs_text
+class drstext:
+    def null_text(self, value, nulls):
+        if value is None:
+            return True
+        if value in nulls:
+            return True
+        return False
+
+
+drs_text = drstext()
+
+
+class Pconst:
+    def DRS_OBJ_NAME(self, objname: str) -> str:
+        """
+        Clean and standardize an object name
+
+        Default action: make upper case and remove white spaces
+
+        :param objname: str, input object name
+        :return:
+        """
+        # set function name
+        _ = __NAME__ + '.DRS_OBJ_NAME()'
+        # clean object name
+        rawobjname = str(objname)
+        objectname = rawobjname.strip()
+        objectname = objectname.replace(' ', '_')
+        objectname = objectname.upper()
+        # return object name
+        return objectname
+
+pconst = Pconst()
+
+# Fake params
+params = dict()
+params['OBJ_LIST_GAIA_URL'] = 'https://gea.esac.esa.int/tap-server/tap'
+params['OBJ_LIST_CROSS_MATCH_RADIUS'] = 180
+params['OBJ_LIST_GAIA_MAG_CUT'] = 15.0
+params['OBJ_LIST_GAIA_PLX_LIM'] = 0.5
+
+USE_DATABASE = False
 
 OBJECT_FILE = 'unique_objs.csv'
 CMRADIUS = 3 * 60
@@ -56,15 +90,10 @@ QSOURCE = 'gaiadr2.gaia_source'
 QCIRCLE = ('(1=CONTAINS(POINT(\'ICRS\', ra, dec), CIRCLE(\'ICRS\', {ra}, '
            '{dec}, {radius})))')
 
-# get object database
-ObjectDatabase = drs_database.ObjectDatabase
 
 # =============================================================================
 # Define functions
 # =============================================================================
-
-
-
 class AstroObject(object):
     objname: Union[str, None]
     gaia_id: Union[str, None]
@@ -78,15 +107,15 @@ class AstroObject(object):
     bpmag: Union[float, None]
     rpmag: Union[float, None]
     teff: Union[float, None]
-    aliases: Union[str, None]
+    aliases: List[str]
     used: int
 
     def __init__(self, params, pconst, gaia_id: Union[str, None],
                  ra: Union[str, float], dec: Union[str, float],
-                 database: ObjectDatabase,
+                 database,
                  objname: Union[str, None], pmra: Union[float, None],
                  pmde: Union[float, None], plx: Union[float, None],
-                 rv: Union[float, None]):
+                 rv: Union[float, None], teff: Union[float, None]):
         """
         Construct an astrophysical object instance
 
@@ -108,11 +137,13 @@ class AstroObject(object):
         self.input_pmde = pmde
         self.input_plx = plx
         self.input_rv = rv
+        self.input_teff = teff
         # other information
         self.pconst = pconst
         self.url = params['OBJ_LIST_GAIA_URL']
         self.radius = params['OBJ_LIST_CROSS_MATCH_RADIUS']
         self.maglimit = params['OBJ_LIST_GAIA_MAG_CUT']
+        self.plxlimit = params['OBJ_LIST_GAIA_PLX_LIM']
         # properties we need to find
         self.objname = None
         self.gaia_id = None
@@ -127,21 +158,35 @@ class AstroObject(object):
         self.rpmag = None
         self.epoch = None
         self.teff = None
-        self.aliases = None
+        self.aliases = []
+        self.source = None
         self.used = 0
+
+    def __str__(self):
+        return self.__repr__()
+
+    def __repr__(self):
+        if self.input_objname is not None:
+            return 'AstroObject[{0}]'.format(self.input_objname)
+        elif self.input_gaiaid is not None:
+            return 'AstroObject[Gaia DR2 {0}]'.format(self.input_gaiaid)
+        else:
+            return 'AstroObject[ra={0},dec={1}]'.format(self.input_ra,
+                                                        self.input_dec)
 
     def resolve_target(self, mjd=None):
         # deal with database not loaded
-        self.database.load_db()
+        if USE_DATABASE:
+            self.database.load_db()
         # ---------------------------------------------------------------------
         # 1. try gaia id and objname against database
         # ---------------------------------------------------------------------
-        # self._resolve_from_database()
+        self._resolve_from_database()
         # ---------------------------------------------------------------------
         # 2. try gaia id against gaia query (only if gaia_id is still None)
         # ---------------------------------------------------------------------
-        #if self.gaia_id is None:
-        #    self._resolve_from_gaia_id()
+        if self.gaia_id is None:
+           self._resolve_from_gaia_id()
         # ---------------------------------------------------------------------
         # 3. use ra + dec to get gaia id (only if gaia_id is still None)
         # ---------------------------------------------------------------------
@@ -153,6 +198,34 @@ class AstroObject(object):
         if self.gaia_id is None:
             self._use_inputs()
 
+    def get_simbad_aliases(self):
+        # deal with aliases already set
+        if len(self.aliases) > 0:
+            return
+        # storage aliases
+        self.aliases = []
+        # set aliases to objname and input objname if different
+        if self.objname is not None:
+            self.aliases += [self.objname]
+        if self.input_objname is not None:
+            if self.objname != self.input_objname:
+                self.aliases += [self.input_objname]
+        # only do this is we have a gaia-id
+        if self.gaia_id is None:
+            return
+        obj_id = 'Gaia DR2 {0}'.format(self.gaia_id)
+        # get entries for this gaia id
+        entries = query_simbad_id(obj_id)
+        # deal with no entries
+        if entries is None:
+            return
+        if len(entries) == 0:
+            return
+        # get the aliases
+        raw_aliases = entries['IDS'][0].decode('utf-8')
+        # slit via the pipe (|)
+        self.aliases += raw_aliases.split('|')
+
     def _resolve_from_database(self):
         """
         Use gaia id (from input) to check if this object is already in database
@@ -160,6 +233,8 @@ class AstroObject(object):
         - if it isn't (or isn't set) check against known names in the database
         - if names aren't found and gaia id not found do not update parameters
         """
+        if not USE_DATABASE:
+            return
         # ---------------------------------------------------------------------
         # deal with no input_gaiaid
         if self.input_gaiaid is not None:
@@ -167,6 +242,8 @@ class AstroObject(object):
             condition = 'GAIAID=="{0}"'.format(self.input_gaiaid)
             # get the entries for this condition
             entries = self.database.get_entries('*', condition=condition)
+            # set source
+            self.source = 'database-gaia-id'
         else:
             entries = None
         # ---------------------------------------------------------------------
@@ -210,7 +287,7 @@ class AstroObject(object):
             self.teff = entries['TEFF']
         # assign aliases
         if not drs_text.null_text(entries['ALIASES'], ['None']):
-            self.teff = entries['ALIASES'].split(',')
+            self.aliases = entries['ALIASES'].split('|')
         # set used
         self.used = 1
 
@@ -220,6 +297,8 @@ class AstroObject(object):
 
         :return:
         """
+        if not USE_DATABASE:
+            return
         # deal with no object name (shouldn't be possible)
         if self.input_objname is None:
             return None
@@ -240,6 +319,8 @@ class AstroObject(object):
             if cobjname == self.input_objname:
                 # condition condition
                 condition = 'GAIAID=="{0}"'.format(gaia_id[row])
+                # set source
+                self.source = 'database-objname'
                 # return the entries for this gaia id
                 return self.database.get_entries('*', condition=condition)
 
@@ -249,7 +330,7 @@ class AstroObject(object):
         # loop around each set of aliases and see if
         for row, alias_set in enumerate(alias_sets):
             # split the names by a comma
-            aliases = alias_set.split(',')
+            aliases = alias_set.split('|')
             # loop around aliases - if alias found return gaia id for this
             for alias in aliases:
                 # ignore None
@@ -261,6 +342,8 @@ class AstroObject(object):
                 if calias == self.input_objname:
                     # condition condition
                     condition = 'GAIAID=="{0}"'.format(gaia_id[row])
+                    # set source
+                    self.source = 'database-aliases'
                     # return the entries for this gaia id
                     return self.database.get_entries('*', condition=condition)
         # if we have reached this point we cannot match to name
@@ -297,28 +380,37 @@ class AstroObject(object):
             self.pmra = entries['pmra'][0]
         # assign pmde
         if not entries['pmde'].mask[0]:
-            self.pmra = entries['pmde'][0]
+            self.pmde = entries['pmde'][0]
         # assign plx
         if not entries['plx'].mask[0]:
             self.plx = entries['plx'][0]
         # assign rv
         if not entries['rv'].mask[0]:
-            self.plx = entries['rv'][0]
+            self.rv = entries['rv'][0]
         # assign gmag
         if not entries['gmag'].mask[0]:
-            self.plx = entries['gmag'][0]
+            self.gmag = entries['gmag'][0]
         # assign bpmag
         if not entries['bpmag'].mask[0]:
-            self.plx = entries['bpmag'][0]
+            self.bpmag = entries['bpmag'][0]
         # assign rpmag
         if not entries['rpmag'].mask[0]:
-            self.plx = entries['rpmag'][0]
+            self.rpmag = entries['rpmag'][0]
         # assign epoch
         self.epoch = 2015.5
         # set used
         self.used = 1
+        # set source
+        self.source = 'gaia-query-id'
 
     def _resolve_from_coords(self, mjd=None):
+        """
+        Resolve from Gaia using coordinates (and the current date)
+
+        :param mjd: observation modified julien date
+
+        :return:
+        """
         # deal with ra and dec (want it in degrees)
         ra, dec = parse_coords(self.input_ra, self.input_dec)
         # get radius in degrees
@@ -327,6 +419,8 @@ class AstroObject(object):
         condition = QCIRCLE.format(ra=ra, dec=dec, radius=radius)
         # add additional criteria (to narrow search)
         condition += r' AND (phot_rp_mean_mag < {0})'.format(self.maglimit)
+        # add a parallax condition
+        condition += r' AND (parallax > {0})'.format(self.plxlimit)
         # construct sql query
         query = QUERY_GAIA.format(QCOLS, QSOURCE, condition)
         # return results of query
@@ -339,7 +433,8 @@ class AstroObject(object):
         # get closest to ra and dec (propagated)
         position = best_gaia_entry(ra, dec, mjd, entries)
         # fill out required information if available
-        self.gaia_id = entries['gaiaid']
+        self.gaia_id = entries['gaiaid'][position]
+        self.objname = self.input_objname
         self.ra = entries['ra'][position]
         self.dec = entries['dec'][position]
         # assign pmra
@@ -347,30 +442,97 @@ class AstroObject(object):
             self.pmra = entries['pmra'][position]
         # assign pmde
         if not entries['pmde'].mask[position]:
-            self.pmra = entries['pmde'][position]
+            self.pmde = entries['pmde'][position]
         # assign plx
         if not entries['plx'].mask[position]:
             self.plx = entries['plx'][position]
         # assign rv
         if not entries['rv'].mask[position]:
-            self.plx = entries['rv'][position]
+            self.rv = entries['rv'][position]
         # assign gmag
         if not entries['gmag'].mask[position]:
-            self.plx = entries['gmag'][position]
+            self.gmag = entries['gmag'][position]
         # assign bpmag
         if not entries['bpmag'].mask[position]:
-            self.plx = entries['bpmag'][position]
+            self.bpmag = entries['bpmag'][position]
         # assign rpmag
         if not entries['rpmag'].mask[position]:
-            self.plx = entries['rpmag'][position]
+            self.rpmag = entries['rpmag'][position]
         # assign epoch
         self.epoch = 2015.5
         # set used
         self.used = 1
+        # set source
+        self.source = 'gaia-query-coords'
 
     def _use_inputs(self):
-        pass
+        """
+        If all else fails use the input values
 
+        :return:
+        """
+        # fill out required information if available
+        self.gaia_id = None
+        self.objname = self.input_objname
+        self.ra = self.input_ra
+        self.dec = self.input_dec
+        self.pmra = self.input_pmra
+        self.pmde = self.input_pmde
+        self.plx = self.input_plx
+        self.rv = self.input_rv
+        self.gmag = None
+        self.bpmag = None
+        self.rpmag = None
+        self.epoch = None
+        self.teff = None
+        self.aliases = []
+        self.source = None
+        self.used = 1
+        # set source
+        self.source = 'default'
+
+    def write_obj(self, database, commit: bool = True):
+        # write to database
+        database.add_entry(objname=self.objname, gaia_id=self.gaia_id,
+                           ra=self.ra, dec=self.dec,
+                           pmra=self.pmra, pmde=self.pmde,
+                           plx=self.plx, rv=self.rv,
+                           gmag=self.gmag, bpmag=self.bpmag,
+                           rpmag=self.rpmag, epoch=self.epoch,
+                           teff=self.input_teff, aliases=self.aliases,
+                           commit=commit)
+
+
+    def write_table(self, outdict):
+        """
+        Proxy write function (used to write to dictionary --> Table)
+        :param outdict:
+        :return:
+        """
+
+        columns = ['OBJNAME', 'GAIAID', 'RA', 'DEC', 'PMRA', 'PMDE', 'PLX',
+                   'RV', 'GMAG', 'BPMAG', 'RPMAG', 'EPOCH', 'TEFF', 'ALIASES',
+                   'USED']
+        values = [self.objname, self.gaia_id, self.ra, self.dec, self.pmra,
+                  self.pmde, self.plx, self.rv, self.gmag,
+                  self.bpmag, self.rpmag, self.epoch, self.teff]
+        # deal with aliases
+        if isinstance(self.aliases, str):
+            values.append(self.aliases)
+        elif isinstance(self.aliases, list):
+            values.append('|'.join(self.aliases))
+        else:
+            values.append('None')
+        # add used
+        values.append(self.used)
+        # loop around and add to outdict
+        for row in range(len(values)):
+            if columns[row] in outdict:
+                outdict[columns[row]].append(values[row])
+            else:
+                outdict[columns[row]] = [values[row]]
+        # return outdict
+        return outdict
 
 
 def query_gaia(url, query) -> Union[Table, None]:
@@ -416,6 +578,28 @@ def query_gaia(url, query) -> Union[Table, None]:
     return table
 
 
+def query_simbad_id(obj_id: str) -> Union[Table, None]:
+    # set fucntion name
+    _ = __NAME__ + '.query_simbad()'
+    # check for astroquery and return a fail and warning if not installed
+    try:
+        # import astroquery
+        from astroquery.simbad import Simbad
+        # get results
+        with warnings.catch_warnings(record=True) as _:
+            # add ids column
+            Simbad.add_votable_fields('ids')
+            # query simbad
+            return Simbad.query_object(obj_id)
+    # deal with all exceptions here
+    except Exception as e:
+        # log that there was an error with astroquery
+        wargs = [obj_id, type(e), str(e)]
+        WLOG(params, 'warning', TextEntry('10-016-00020', args=wargs))
+        # return unset ra/dec
+        return None
+
+
 def parse_coords(ra: float, dec: float, ra_unit='deg', dec_unit='deg'):
     """
     Convert coordinates into degrees via SkyCoord
@@ -445,20 +629,17 @@ def best_gaia_entry(ra: float, dec: float, mjd: float, entries: Table):
     :param entries:
     :return:
     """
-
-    print(ra, dec)
-
+    # get the original coords in SkyCoord
+    ocoord = SkyCoord(ra, dec, unit='deg')
     # get gaia time and observation time
     gaia_time = Time('2015.5', format='decimalyear')
     obs_time = Time(mjd, format='mjd')
-
+    # get entries as numpy arrays (with units)
     ra_arr = np.array(entries['ra']) * uu.deg
     dec_arr = np.array(entries['dec']) * uu.deg
     pmra_arr = np.array(entries['pmra']) * uu.mas/uu.yr
     pmde_arr = np.array(entries['pmde']) * uu.mas/uu.yr
     plx_arr = np.array(entries['plx']) * uu.mas
-
-
     # propagate all entries ra and dec to mjd
     coords0 = SkyCoord(ra_arr, dec_arr,
                        pm_ra_cosdec=pmra_arr, pm_dec=pmde_arr,
@@ -466,11 +647,12 @@ def best_gaia_entry(ra: float, dec: float, mjd: float, entries: Table):
                        obstime=gaia_time)
     # apply space motion
     coords1 = coords0.apply_space_motion(obs_time)
-
     # crossmatch with ra and dec and keep closest
-
-    # TODO: Got to here
-
+    separation = coords1.separation(ocoord)
+    # find the position of the minimum separated value
+    position = np.argmin(separation.value)
+    # return the position
+    return position
 
 
 # =============================================================================
@@ -480,36 +662,76 @@ if __name__ == "__main__":
     # load table
     table = Table.read(OBJECT_FILE, format='csv')
 
-    # load params
-    params = constants.load('SPIROU')
-    pconst = constants.pload('SPIROU')
-    # for tests lets set the cross match radius
-    params.set('OBJ_LIST_CROSS_MATCH_RADIUS', CMRADIUS)
-    # load database
-    objdbm = ObjectDatabase(params)
-    objdbm.load_db()
+    if USE_DATABASE:
+
+        from apero.core import constants
+        from apero.core.core import drs_database
+
+        # get object database
+        ObjectDatabase = drs_database.ObjectDatabase
+
+        params = constants.load('SPIROU')
+        pconst = constants.pload('SPIROU')
+
+        params['OBJ_LIST_CROSS_MATCH_RADIUS'] = CMRADIUS
+        params['OBJ_LIST_GAIA_PLX_LIM'] = 0.5
+
+        # load database
+        objdbm = ObjectDatabase(params)
+        objdbm.load_db()
+
+        # for now delete database
+        columns, ctypes = pconst.OBJECT_DB_COLUMNS()
+        objdbm.database.delete_table('MAIN')
+        objdbm.database.add_table('MAIN', columns, ctypes)
+        objdbm.load_db()
+        outdict = dict()
+    else:
+        objdbm = None
+        outdict = dict()
 
     # loop around objects (later)
-    row = 0
-    # get properties
-    gaia_id = '4472832130942575872'
-    ra = table['RA_DEG'][row]
-    dec = table['DEC_DEG'][row]
-    objname = table['OBJECT'][row]
-    # mjdmid
-    exptime_days = (table['EXPTIME'][row] / 2.0) / (3600 * 24.0)
-    mjdmid = table['MJDEND'][row] - exptime_days
+    for row in range(len(table)):
+        print('='*50)
+        print('Accessing row {0} / {1}'.format(row + 1, len(table)))
+        print('='*50)
+        # get properties
+        gaia_id = None
+        ra = table['RA_DEG'][row]
+        dec = table['DEC_DEG'][row]
+        objname = table['OBJECT'][row]
+        # mjdmid
+        exptime_days = (table['EXPTIME'][row] / 2.0) / (3600 * 24.0)
+        mjdmid = table['MJDEND'][row] - exptime_days
+        # set up an object instance for this target
+        astro_obj = AstroObject(params, pconst, gaia_id, ra, dec, objdbm,
+                                objname, 0.0, 0.0, 0.0, 0.0, None)
+        # resolve target (from gaia id or ra/dec)
+        astro_obj.resolve_target(mjdmid)
 
-    # set up an object instance for this target
-    astro_obj = AstroObject(params, pconst, gaia_id, ra, dec, objdbm, objname,
-                            0.0, 0.0, 0.0, 0.0)
+        # get simbad aliases for this object
+        astro_obj.get_simbad_aliases()
 
-    # resolve target (from gaia id or ra/dec)
-    astro_obj.resolve_target(mjdmid)
+        # write to database
+        if USE_DATABASE:
+            astro_obj.write_obj(objdbm)
+        else:
+            astro_obj.write_table(outdict)
 
+        print(astro_obj)
 
-
-
+    # need to write table
+    if not USE_DATABASE:
+        # make table
+        outtable = Table()
+        # add columns
+        for key in outdict:
+            outtable[key] = outdict[key]
+        # sort by plx
+        sortmask = np.argsort(outtable['PLX'])
+        outtable = outtable[sortmask]
+        # write to file
+        outtable.write('test_obj_database.csv', format='csv', overwrite=True)
 
 
 # =============================================================================
