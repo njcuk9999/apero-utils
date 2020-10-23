@@ -43,7 +43,7 @@ def dispatch_object(
 
     # Handle output dir
     if out_parent is None:
-        os.path.abspath(os.path.join(in_dir, os.pardir))
+        out_parent = os.path.abspath(os.path.join(in_dir, os.pardir))
 
     if verbose:
         print(
@@ -103,6 +103,7 @@ def get_object_rv(obj=None,
                   save_result_table=True,
                   save_rv_timeseries=True,
                   bin_rv_timeseries=False,
+                  median_bin=False,
                   saveplots=True,
                   showplots=True,
                   do_blacklist=False,
@@ -171,6 +172,9 @@ def get_object_rv(obj=None,
         save_rv_timeseries (bool): Save RV timeseries in separate file if true.
             Default: True
         bin_rv_timeseries (bool): Bin RV timeseries per night.
+            Default: False
+        median_bin (bool): Take the median and the error derived from the MAD
+            when returning the binned RV timeseries.
             Default: False
         saveplots (bool): Save plots generated in analysis.
             Default: True
@@ -459,19 +463,21 @@ def get_object_rv(obj=None,
     if save_rv_timeseries:
         if bin_rv_timeseries:
             bin_str = '_bin'
+            if median_bin:
+                bin_str += '_median'
         else:
             bin_str = ''
         if 'bisector' in method:
             bisector_rv_path = '{}_bis_rv{}.csv'.format(batch_name, bin_str)
             timeseries_to_csv(bisector_rv_path, tbl, rv_key='RV_BIS',
-                              bin_rv=bin_rv_timeseries)
+                              bin_rv=bin_rv_timeseries, median_bin=median_bin)
         if 'gaussian' in method:
             gaussian_rv_path = '{}_gauss_rv{}.csv'.format(batch_name, bin_str)
             timeseries_to_csv(gaussian_rv_path, tbl, rv_key='RV_GAUSS',
-                              bin_rv=bin_rv_timeseries)
+                              bin_rv=bin_rv_timeseries, median_bin=median_bin)
         template_rv_path = '{}_template_rv{}.csv'.format(batch_name, bin_str)
         timeseries_to_csv(template_rv_path, tbl, rv_key='RV',
-                          bin_rv=bin_rv_timeseries)
+                          bin_rv=bin_rv_timeseries, median_bin=median_bin)
 
     if not detailed_output:
         return tbl
@@ -488,7 +494,7 @@ def bin_rv_epoch(
         rv,
         rv_err,
         epoch_size=1.0,
-        median=True,
+        median=False,
         nsig=0,
         verbose=False
         ):
@@ -501,7 +507,7 @@ def bin_rv_epoch(
     time_tmp = t0 - 0.5 * epoch_size
 
     # get get epoch times
-    while time_tmp <= tf + 0.5 * epoch_size:
+    while time_tmp <= tf + epoch_size:
         epochs.append(time_tmp)
         time_tmp += epoch_size
     epochs = np.array(epochs)
@@ -581,6 +587,7 @@ def timeseries_to_csv(
         t_units='BJD',
         rv_units='m/s',
         bin_rv=False,
+        median_bin=False,
         ):
     df = pd.DataFrame([])
     if t_units == 'BJD':
@@ -596,7 +603,7 @@ def timeseries_to_csv(
     rv_err = tbl[rv_err_key]
 
     if bin_rv:
-        t, rv, rv_err = bin_rv_epoch(t, rv, rv_err)
+        t, rv, rv_err = bin_rv_epoch(t, rv, rv_err, median=median_bin)
 
     df[t_units] = t
     df['RV'] = rv
@@ -1194,8 +1201,15 @@ def run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf, replace_rv=True):
     imin = np.argmin(np.nanmedian(mean_ccf, axis=1))
 
     for i in range(len(ccf_files)):
+        # initial guess
         p0 = [ccf_RV[imin], 1, 1, -0.1]
-        fit, pcov = curve_fit(gauss, ccf_RV, mean_ccf[:, i], p0=p0)
+
+        fit, pcov = curve_fit(
+                gauss,
+                ccf_RV,
+                mean_ccf[:, i],
+                p0=p0,
+                )
 
         if replace_rv:
             tbl['RV'][i] = fit[0]
@@ -1204,7 +1218,7 @@ def run_gaussian_method(tbl, ccf_files, ccf_RV, mean_ccf, replace_rv=True):
         # template, we keep a RV that is specific to this method
         tbl['RV_GAUSS'][i] = fit[0]
 
-        tbl['GAUSS_WIDTH'][i] = fit[1]
+        tbl['GAUSS_WIDTH'][i] = np.abs(fit[1])  # Make sure positive width
         tbl['GAUSS_AMP'][i] = fit[3]
         tbl['GAUSS_ZP'][i] = fit[2]
 
