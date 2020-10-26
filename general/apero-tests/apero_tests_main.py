@@ -1,11 +1,30 @@
 import os
 
 
-test_list_short = ['preprocessing_test1', 'darkmaster_test1', 'badpixel_test1', 'localisation_test1', 'shapemaster_test1', 'shape_test1', 'flat_test1', 'thermal_test1', 'masterleak_test1', 'leak_test1', 'masterwavelength_test1', 'wavelength_test1', 'extraction_test1', 'extraction_test2', 'extraction_test3', 'maketellu_test1', 'fittellu_test1', 'maketemplate_test1', 'ccf_test1']
+test_list_short = ['preprocessing_test1', 'darkmaster_test1', 'badpixel_test1',
+                   'localisation_test1', 'shapemaster_test1', 'shape_test1',
+                   'flat_test1', 'thermal_test1', 'masterleak_test1',
+                   'leak_test1', 'masterwavelength_test1', 'wavelength_test1',
+                   'extraction_test1', 'extraction_test2', 'extraction_test3',
+                   'maketellu_test1', 'fittellu_test1', 'maketemplate_test1',
+                   'ccf_test1']
 
-test_list_long = ['Preprocessing Recipe Test #1', 'Dark Master Recipe Test #1', 'Bad Pixel Correction Recipe Test #1', 'Localisation Recipe Test #1', 'Shape Master Recipe Test #1', 'Shape (per night) Recipe Test #1', 'Flat/Blaze Correction Recipe Test #1', 'Thermal Correction Test #1', 'Master Leak Correction Recipe Test #1', 'Leak (per night) Correction Test #1', 'Master Wavelength Solution Recipe Test #1', 'Wavelength Solution (per night) Test #1', 'Extraction Recipe Test #1', 'Extraction Recipe Test #2', 'Extraction Recipe Test #3', 'Make Telluric Recipe Test #1', 'Fit Telluric Recipe Test #1', 'Make Template Recipe Test #1', 'CCF Recipe Test #1']
+test_list_long = ['Preprocessing Recipe Test #1', 'Dark Master Recipe Test #1',
+                  'Bad Pixel Correction Recipe Test #1',
+                  'Localisation Recipe Test #1', 'Shape Master Recipe Test #1',
+                  'Shape (per night) Recipe Test #1',
+                  'Flat/Blaze Correction Recipe Test #1',
+                  'Thermal Correction Test #1',
+                  'Master Leak Correction Recipe Test #1',
+                  'Leak (per night) Correction Test #1',
+                  'Master Wavelength Solution Recipe Test #1',
+                  'Wavelength Solution (per night) Test #1',
+                  'Extraction Recipe Test #1', 'Extraction Recipe Test #2',
+                  'Extraction Recipe Test #3', 'Make Telluric Recipe Test #1',
+                  'Fit Telluric Recipe Test #1',
+                  'Make Template Recipe Test #1', 'CCF Recipe Test #1']
 
-n = len(test_list_short) #number of tests
+n = len(test_list_short)  # number of tests
 #n = 1
 for i in range(n):
 
@@ -20,7 +39,7 @@ for i in range(n):
 print('all tests done')   
 
 
-#build table element
+# build table element
 
 html_table = []
 for i in range(n):
@@ -32,7 +51,7 @@ for i in range(n):
 html_table = "".join(html_table)
 
 
-#build main .html doc
+# build main .html doc
 
 html_text = f"""
 <html>
