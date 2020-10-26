@@ -12,6 +12,7 @@ from astropy.table import Table
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance
 import numpy as np
+import requests
 from typing import List, Union
 import warnings
 
@@ -74,6 +75,9 @@ params['OBJ_LIST_GAIA_URL'] = 'https://gea.esac.esa.int/tap-server/tap'
 params['OBJ_LIST_CROSS_MATCH_RADIUS'] = 180
 params['OBJ_LIST_GAIA_MAG_CUT'] = 15.0
 params['OBJ_LIST_GAIA_PLX_LIM'] = 0.5
+params['OBJ_LIST_GOOGLE_SHEET_URL'] = ('1jwlux8AJjBMMVrbg6LszJIpFJ'
+                                       'rk6alhbT5HA7BiAHD8')
+params['OBJ_LIST_GOOGLE_SHEET_WNUM'] = 0
 
 USE_DATABASE = False
 
@@ -90,32 +94,25 @@ QSOURCE = 'gaiadr2.gaia_source'
 QCIRCLE = ('(1=CONTAINS(POINT(\'ICRS\', ra, dec), CIRCLE(\'ICRS\', {ra}, '
            '{dec}, {radius})))')
 
+# cache for google sheet
+GOOGLE_TABLES = dict()
+# define standard google base url
+GOOGLE_BASE_URL = ('https://docs.google.com/spreadsheets/d/{}/gviz/'
+                   'tq?tqx=out:csv&sheet={}')
+
 
 # =============================================================================
 # Define functions
 # =============================================================================
 class AstroObject(object):
-    objname: Union[str, None]
-    gaia_id: Union[str, None]
-    ra: Union[float, None]
-    dec: Union[float, None]
-    pmra: Union[float, None]
-    pmde: Union[float, None]
-    plx: Union[float, None]
-    rv: Union[float, None]
-    gmag: Union[float, None]
-    bpmag: Union[float, None]
-    rpmag: Union[float, None]
-    teff: Union[float, None]
     aliases: List[str]
     used: int
 
     def __init__(self, params, pconst, gaia_id: Union[str, None],
                  ra: Union[str, float], dec: Union[str, float],
-                 database,
-                 objname: Union[str, None], pmra: Union[float, None],
-                 pmde: Union[float, None], plx: Union[float, None],
-                 rv: Union[float, None], teff: Union[float, None]):
+                 database, objname: Union[str, None], pmra: float = np.nan,
+                 pmde: float = np.nan, plx: float = np.nan,
+                 rv: float = np.nan, teff: float = np.nan):
         """
         Construct an astrophysical object instance
 
@@ -140,24 +137,26 @@ class AstroObject(object):
         self.input_teff = teff
         # other information
         self.pconst = pconst
-        self.url = params['OBJ_LIST_GAIA_URL']
+        self.gaia_url = params['OBJ_LIST_GAIA_URL']
         self.radius = params['OBJ_LIST_CROSS_MATCH_RADIUS']
         self.maglimit = params['OBJ_LIST_GAIA_MAG_CUT']
         self.plxlimit = params['OBJ_LIST_GAIA_PLX_LIM']
+        self.gsheet_url = params['OBJ_LIST_GOOGLE_SHEET_URL']
+        self.gsheet_wnum = params['OBJ_LIST_GOOGLE_SHEET_WNUM']
         # properties we need to find
         self.objname = None
         self.gaia_id = None
-        self.ra = None
-        self.dec = None
-        self.pmra = None
-        self.pmde = None
-        self.plx = None
-        self.rv = None
-        self.gmag = None
-        self.bpmag = None
-        self.rpmag = None
-        self.epoch = None
-        self.teff = None
+        self.ra = np.nan
+        self.dec = np.nan
+        self.pmra = np.nan
+        self.pmde = np.nan
+        self.plx = np.nan
+        self.rv = np.nan
+        self.gmag = np.nan
+        self.bpmag = np.nan
+        self.rpmag = np.nan
+        self.epoch = np.nan
+        self.teff = np.nan
         self.aliases = []
         self.source = None
         self.used = 0
@@ -188,12 +187,17 @@ class AstroObject(object):
         if self.gaia_id is None:
            self._resolve_from_gaia_id()
         # ---------------------------------------------------------------------
-        # 3. use ra + dec to get gaia id (only if gaia_id is still None)
+        # 3. try to get gaia id from google sheet of gaia id (with object name)
         # ---------------------------------------------------------------------
         if self.gaia_id is None:
-            self._resolve_from_coords(mjd)
+            self._resolve_from_glist()
         # ---------------------------------------------------------------------
-        # 4. if we still cannot find gaia id use input + default parameters
+        # 4. use ra + dec to get gaia id (only if gaia_id is still None)
+        # ---------------------------------------------------------------------
+        # if self.gaia_id is None:
+        #     self._resolve_from_coords(mjd)
+        # ---------------------------------------------------------------------
+        # 5. if we still cannot find gaia id use input + default parameters
         # ---------------------------------------------------------------------
         if self.gaia_id is None:
             self._use_inputs()
@@ -365,43 +369,61 @@ class AstroObject(object):
         # construct sql query
         query = QUERY_GAIA.format(QCOLS, QSOURCE, condition)
         # return results
-        entries = query_gaia(self.url, query)
+        entries = query_gaia(self.gaia_url, query)
         # deal with no entries
         if entries is None:
             return
         if len(entries) == 0:
             return
         # fill out required information if available
-        self.gaia_id = entries['gaiaid'][0]
-        self.ra = entries['ra'][0]
-        self.dec = entries['dec'][0]
+        self.objname = str(self.input_objname)
+        self.gaia_id = str(entries['gaiaid'][0])
+        self.ra = float(entries['ra'][0])
+        self.dec = float(entries['dec'][0])
         # assign pmra
         if not entries['pmra'].mask[0]:
-            self.pmra = entries['pmra'][0]
+            self.pmra = float(entries['pmra'][0])
         # assign pmde
         if not entries['pmde'].mask[0]:
-            self.pmde = entries['pmde'][0]
+            self.pmde = float(entries['pmde'][0])
         # assign plx
         if not entries['plx'].mask[0]:
-            self.plx = entries['plx'][0]
+            self.plx = float(entries['plx'][0])
         # assign rv
         if not entries['rv'].mask[0]:
-            self.rv = entries['rv'][0]
+            self.rv = float(entries['rv'][0])
         # assign gmag
         if not entries['gmag'].mask[0]:
-            self.gmag = entries['gmag'][0]
+            self.gmag = float(entries['gmag'][0])
         # assign bpmag
         if not entries['bpmag'].mask[0]:
-            self.bpmag = entries['bpmag'][0]
+            self.bpmag = float(entries['bpmag'][0])
         # assign rpmag
         if not entries['rpmag'].mask[0]:
-            self.rpmag = entries['rpmag'][0]
+            self.rpmag = float(entries['rpmag'][0])
         # assign epoch
         self.epoch = 2015.5
         # set used
         self.used = 1
         # set source
-        self.source = 'gaia-query-id'
+        self.source = 'gaia-query-id-input'
+
+    def _resolve_from_glist(self):
+        """
+        Resolve gaia id from google sheets (using object name) and then
+        retry the gaia id against the gaia database
+
+        :return:
+        """
+        # try to get gaia id from google sheets
+        self.input_gaiaid = query_glist(self.input_objname, self.gsheet_url,
+                                        self.gsheet_wnum)
+        #  try (again) gaia id against gaia query (only if gaia_id is still
+        #  None)
+        if self.input_gaiaid is not None:
+           self._resolve_from_gaia_id()
+        # set source
+        self.source = 'gaia-query-id-gsheet'
 
     def _resolve_from_coords(self, mjd=None):
         """
@@ -424,7 +446,7 @@ class AstroObject(object):
         # construct sql query
         query = QUERY_GAIA.format(QCOLS, QSOURCE, condition)
         # return results of query
-        entries = query_gaia(self.url, query)
+        entries = query_gaia(self.gaia_url, query)
         # deal with no entries
         if entries is None:
             return
@@ -433,31 +455,31 @@ class AstroObject(object):
         # get closest to ra and dec (propagated)
         position = best_gaia_entry(ra, dec, mjd, entries)
         # fill out required information if available
-        self.gaia_id = entries['gaiaid'][position]
-        self.objname = self.input_objname
-        self.ra = entries['ra'][position]
-        self.dec = entries['dec'][position]
+        self.objname = str(self.input_objname)
+        self.gaia_id = str(entries['gaiaid'][position])
+        self.ra = float(entries['ra'][position])
+        self.dec = float(entries['dec'][position])
         # assign pmra
         if not entries['pmra'].mask[position]:
-            self.pmra = entries['pmra'][position]
+            self.pmra = float(entries['pmra'][position])
         # assign pmde
         if not entries['pmde'].mask[position]:
-            self.pmde = entries['pmde'][position]
+            self.pmde = float(entries['pmde'][position])
         # assign plx
         if not entries['plx'].mask[position]:
-            self.plx = entries['plx'][position]
+            self.plx = float(entries['plx'][position])
         # assign rv
         if not entries['rv'].mask[position]:
-            self.rv = entries['rv'][position]
+            self.rv = float(entries['rv'][position])
         # assign gmag
         if not entries['gmag'].mask[position]:
-            self.gmag = entries['gmag'][position]
+            self.gmag = float(entries['gmag'][position])
         # assign bpmag
         if not entries['bpmag'].mask[position]:
-            self.bpmag = entries['bpmag'][position]
+            self.bpmag = float(entries['bpmag'][position])
         # assign rpmag
         if not entries['rpmag'].mask[position]:
-            self.rpmag = entries['rpmag'][position]
+            self.rpmag = float(entries['rpmag'][position])
         # assign epoch
         self.epoch = 2015.5
         # set used
@@ -480,16 +502,16 @@ class AstroObject(object):
         self.pmde = self.input_pmde
         self.plx = self.input_plx
         self.rv = self.input_rv
-        self.gmag = None
-        self.bpmag = None
-        self.rpmag = None
-        self.epoch = None
-        self.teff = None
+        self.gmag = np.nan
+        self.bpmag = np.nan
+        self.rpmag = np.nan
+        self.epoch = np.nan
+        self.teff = np.nan
         self.aliases = []
         self.source = None
         self.used = 1
         # set source
-        self.source = 'default'
+        self.source = 'input'
 
     def write_obj(self, database, commit: bool = True):
         # write to database
@@ -502,7 +524,6 @@ class AstroObject(object):
                            teff=self.input_teff, aliases=self.aliases,
                            commit=commit)
 
-
     def write_table(self, outdict):
         """
         Proxy write function (used to write to dictionary --> Table)
@@ -512,7 +533,7 @@ class AstroObject(object):
 
         columns = ['OBJNAME', 'GAIAID', 'RA', 'DEC', 'PMRA', 'PMDE', 'PLX',
                    'RV', 'GMAG', 'BPMAG', 'RPMAG', 'EPOCH', 'TEFF', 'ALIASES',
-                   'USED']
+                   'USED', 'SOURCE']
         values = [self.objname, self.gaia_id, self.ra, self.dec, self.pmra,
                   self.pmde, self.plx, self.rv, self.gmag,
                   self.bpmag, self.rpmag, self.epoch, self.teff]
@@ -525,6 +546,8 @@ class AstroObject(object):
             values.append('None')
         # add used
         values.append(self.used)
+        # add source
+        values.append(self.source)
         # loop around and add to outdict
         for row in range(len(values)):
             if columns[row] in outdict:
@@ -600,6 +623,90 @@ def query_simbad_id(obj_id: str) -> Union[Table, None]:
         return None
 
 
+def query_glist(objname: str, sheet_id: str, worksheet: int = 0):
+
+    # get the google sheet
+    gtable = get_google_sheet(sheet_id, worksheet)
+
+    # deal with empty table
+    if gtable is None:
+        return None
+    if len(gtable) == 0:
+        return None
+    # set initial position to None
+    position = None
+    row = np.nan
+    # loop around rows and look for aliases
+    for row in range(len(gtable)):
+        # set aliases as the objname
+        aliases = [gtable['OBJECT'][row]]
+        # get the aliases for this row
+        aliases += gtable['ALIASES'][row].split('|')
+        # search for object name
+        position = crossmatch_name(objname, aliases)
+        # break if we have found a match
+        if position is not None:
+            break
+    # if position is still None return None
+    if position is None:
+        return None
+    # else we have our Gaia id so return it
+    return gtable['GAIA'][row]
+
+
+def get_google_sheet(sheet_id: str, worksheet: int = 0,
+                     cached: bool = True) -> Table:
+    """
+    Load a google sheet from url using a sheet id (if cached = True and
+    previous loaded - just loads from memory)
+
+    :param sheet_id: str, the google sheet id
+    :param worksheet: int, the worksheet id (defaults to 0)
+    :param cached: bool, if True and previous loaded, loads from memory
+
+    :return: Table, astropy table representation of google sheet
+    """
+    # set google cache table as global
+    global GOOGLE_TABLES
+    # construct url for worksheet
+    url = GOOGLE_BASE_URL.format(sheet_id, worksheet)
+    # deal with table existing
+    if url in GOOGLE_TABLES and cached:
+        return GOOGLE_TABLES[url]
+    # get data using a request
+    rawdata = requests.get(url)
+    # convert rawdata input table
+    table = Table.read(rawdata.text, format='ascii')
+    # add to cached storage
+    GOOGLE_TABLES[url] = table
+    # return table
+    return table
+
+
+def crossmatch_name(name: str, namelist: List[str]) -> Union[int, None]:
+    """
+    Crossmatch a name with a list of names (returning position in the list of
+    names)
+
+    :param name: str, the name to search for
+    :param namelist: list of strings, the list of names to search
+    :return: int, the position of the name in the namelist (if found) else
+             None
+    """
+
+    # clean name
+    name = name.strip().upper()
+    # strip namelist as char array
+    namelist = np.char.array(namelist).strip().upper()
+    # search for name in list
+    if name in namelist:
+        position = np.where(name == namelist)[0][0]
+        # return position
+        return position
+    # if not found return None
+    return None
+
+
 def parse_coords(ra: float, dec: float, ra_unit='deg', dec_unit='deg'):
     """
     Convert coordinates into degrees via SkyCoord
@@ -614,7 +721,6 @@ def parse_coords(ra: float, dec: float, ra_unit='deg', dec_unit='deg'):
     coord = SkyCoord(ra, dec, unit=[ra_unit, dec_unit])
 
     return coord.ra.value, coord.dec.value
-
 
 
 def best_gaia_entry(ra: float, dec: float, mjd: float, entries: Table):
@@ -673,8 +779,11 @@ if __name__ == "__main__":
         params = constants.load('SPIROU')
         pconst = constants.pload('SPIROU')
 
-        params['OBJ_LIST_CROSS_MATCH_RADIUS'] = CMRADIUS
-        params['OBJ_LIST_GAIA_PLX_LIM'] = 0.5
+        params.set('OBJ_LIST_CROSS_MATCH_RADIUS', value=CMRADIUS)
+        params.set('OBJ_LIST_GAIA_PLX_LIM', value=0.5)
+        params.set('OBJ_LIST_GOOGLE_SHEET_URL',
+                   value='1jwlux8AJjBMMVrbg6LszJIpFJrk6alhbT5HA7BiAHD8')
+        params.set('OBJ_LIST_GOOGLE_SHEET_WNUM', value=0)
 
         # load database
         objdbm = ObjectDatabase(params)
@@ -727,8 +836,9 @@ if __name__ == "__main__":
         # add columns
         for key in outdict:
             outtable[key] = outdict[key]
-        # sort by plx
-        sortmask = np.argsort(outtable['PLX'])
+        # sort by parallax
+        with warnings.catch_warnings(record=True) as _:
+            sortmask = np.argsort(outtable['PLX'])
         outtable = outtable[sortmask]
         # write to file
         outtable.write('test_obj_database.csv', format='csv', overwrite=True)
