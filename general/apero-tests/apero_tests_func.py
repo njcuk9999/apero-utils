@@ -3,11 +3,17 @@ import glob
 from datetime import datetime
 from astropy.io import fits
 
+def intersection(lst1, lst2): 
+
+    lst3 = [value for value in lst1 if value in lst2] 
+    return lst3 
+
 
 def list_nights(path):
 
     list = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
     list.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
+
     return list
 
 
@@ -36,12 +42,51 @@ def count_files_subdir(path, subdir='all', files='all'):
     return len(glob.glob('{0}/{1}/{2}'.format(path, s, f)))
 
 
+def list_odometer(path, files = 'all'):
+
+    if files == 'all':
+        f = '*'
+    else:
+        f = files
+
+    file_list = os.listdir('{0}/{1}'.format(path, f))
+    
+    odometer = []
+
+    for i in range(len(tbl)):
+        if 'a' in filename[i]: index = filename[i].index('a')
+        elif 'c' in filename[i]: index = filename[i].index('c')
+        elif 'd' in filename[i]: index = filename[i].index('d')
+        elif 'f' in filename[i]: index = filename[i].index('f')
+        elif 'o' in filename[i]: index = filename[i].index('o')
+        else : return
+
+
+        index = filename[i].index('')
+        odometer.append(filename[i][:index])
+
+    return odometer
+
+
 class index_fits:
 
     def __init__(self, path):
+        
+        tbl = fits.getdata(path)
+        self.tbl = tbl
+        self.len = len(tbl)
 
-        self.tbl = fits.getdata(path)
-        self.len = len(fits.getdata(path))
+        filename = tbl['FILENAME']
+        self.filename= filename
+        self.night = tbl['NIGHTNAME']
+
+        odometer = []
+
+        for i in range(len(tbl)):
+            index = filename[i].index('_pp.fits')
+            odometer.append(filename[i][:index])
+
+        self.odometer = odometer
 
 
 class log_fits:

@@ -1,0 +1,272 @@
+
+<html>
+
+
+<head>
+<title>APERO Tests</title>
+<style>
+table {
+  width:70%;
+}
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 15px;
+  text-align: left;
+}
+#t01 tr:nth-child(even) {
+  background-color: #eee;
+}
+#t01 tr:nth-child(odd) {
+ background-color: #fff;
+}
+#t01 th {
+  background-color: white;
+  color: black;
+}
+</style>
+</head>
+
+<body>
+
+<h3>Preprocessing Test #1</h3>
+<p><b>Setup: /spirou/apero-drs-student/apero-setup/setup_charles</b></p>
+<p><b>Instrument: SPIROU</b></p>
+<p><b>Date: 2020-10-28 15:41:57</b></p>
+<p>   </p>
+
+<table id="t01">
+
+  <colgroup>
+     <col span="1" style="width: 5%;">
+     <col span="1" style="width: 60%;">
+     <col span="1" style="width: 5%;">
+     <col span="1" style="width: 30%;">
+  </colgroup>
+  <tr>
+    <th>Check</th>
+    <th>Description</th>
+    <th>Result</th>
+    <th>Comment</th>  
+  </tr>
+  <tr>
+    <td>1</td>
+    <td># of raw files in /spirou/cfht_nights/common/rawsym_sept30</td>
+    <td>42927</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>2</td>
+    <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp</td>
+    <td>35510</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td> </td>
+    <td>Check 2 == Check 1?</td>
+    <td bgcolor=Yellow>No</td>
+    <td>Not all available raw files were reduced</td>
+  </tr>
+  <tr>
+    <td>3</td>
+    <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp index.fits </td>
+    <td>35510</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td> </td>
+    <td>Check 3 == Check 2?</td>
+    <td bgcolor=Lime>Yes</td>
+    <td><a href="www.google.ca" target="popup" onclick="window.open('www.google.ca','name','width=600,height=400')">Inspect</a></td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp/*/log.fits that passed all QC</td>
+    <td>38698</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>5</td>
+    <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp/*/log.fits that failed one or more QC</td>
+    <td>80</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td>pp files that failed one or more QC, and which QC?</td>
+    <td><small><a href=" " title="NIGHTNAME: 2018-04-25
+QC_STRING: None" style="color:#000000;text-decoration:none">2401732c</a>, <a href=" " title="NIGHTNAME: 2018-04-26
+QC_STRING: None" style="color:#000000;text-decoration:none">2401892c</a>, <a href=" " title="NIGHTNAME: 2018-04-27
+QC_STRING: None" style="color:#000000;text-decoration:none">2402073c</a>, <a href=" " title="NIGHTNAME: 2018-04-27
+QC_STRING: snr_hotpix=inf [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.25126171112060547 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2402128o</a>, <a href=" " title="NIGHTNAME: 2018-04-28
+QC_STRING: None" style="color:#000000;text-decoration:none">2402249c</a>, <a href=" " title="NIGHTNAME: 2018-04-28
+QC_STRING: snr_hotpix=inf [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.25126171112060547 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2402274o</a>, <a href=" " title="NIGHTNAME: 2018-04-29
+QC_STRING: None" style="color:#000000;text-decoration:none">2402301c</a>, <a href=" " title="NIGHTNAME: 2018-07-25
+QC_STRING: None" style="color:#000000;text-decoration:none">2294120c</a>, <a href=" " title="NIGHTNAME: 2018-07-28
+QC_STRING: snr_hotpix=167.98886387737528 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.24861359596252441 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2294406o</a>, <a href=" " title="NIGHTNAME: 2018-07-29
+QC_STRING: snr_hotpix=128.37732019614543 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2472761631011963 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2294498o</a>, <a href=" " title="NIGHTNAME: 2018-07-29
+QC_STRING: snr_hotpix=197.53146339109853 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.24845504760742188 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2294573o</a>, <a href=" " title="NIGHTNAME: 2018-07-29
+QC_STRING: snr_hotpix=270.35771013714105 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2492175817489624 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2294574o</a>, <a href=" " title="NIGHTNAME: 2018-07-29
+QC_STRING: snr_hotpix=216.35223643620202 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.24686205387115479 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2294598o</a>, <a href=" " title="NIGHTNAME: 2018-07-30
+QC_STRING: snr_hotpix=2.172324196643866 [snr_hotpix < 1.00000e+01] FAILED ||max(rms_list)=0.03889914940320841 [max(rms_list) > 1.5000e-01] PASSED" style="color:#000000;text-decoration:none">2294652a</a>, <a href=" " title="NIGHTNAME: 2018-08-02
+QC_STRING: snr_hotpix=3.8264988622114893 [snr_hotpix < 1.00000e+01] FAILED ||max(rms_list)=0.43891750314943656 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2295060f</a>, <a href=" " title="NIGHTNAME: 2018-08-02
+QC_STRING: snr_hotpix=2.909970098248612 [snr_hotpix < 1.00000e+01] FAILED ||max(rms_list)=0.09831628622456738 [max(rms_list) > 1.5000e-01] PASSED" style="color:#000000;text-decoration:none">2295076c</a>, <a href=" " title="NIGHTNAME: 2018-08-03
+QC_STRING: snr_hotpix=352.29878854922697 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.25061423778533937 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2295242o</a>, <a href=" " title="NIGHTNAME: 2018-08-03
+QC_STRING: snr_hotpix=151.12632636696068 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.24906444549560547 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2295241o</a>, <a href=" " title="NIGHTNAME: 2018-09-22
+QC_STRING: snr_hotpix=230.8321258702128 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.264350962638855 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2305082o</a>, <a href=" " title="NIGHTNAME: 2018-09-22
+QC_STRING: snr_hotpix=287.0408108773379 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2622959613800049 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2305081o</a>, <a href=" " title="NIGHTNAME: 2018-09-22
+QC_STRING: snr_hotpix=204.88734689323923 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2646432399749756 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2305083o</a>, <a href=" " title="NIGHTNAME: 2018-09-22
+QC_STRING: snr_hotpix=239.03855589523997 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2654773235321045 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2305080o</a>, <a href=" " title="NIGHTNAME: 2018-09-22
+QC_STRING: snr_hotpix=214.90015237865939 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.26389164924621583 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2305078o</a>, <a href=" " title="NIGHTNAME: 2018-09-22
+QC_STRING: snr_hotpix=290.0213820232307 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2641134738922119 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2305079o</a>, <a href=" " title="NIGHTNAME: 2018-09-24
+QC_STRING: snr_hotpix=0.40737430167597766 [snr_hotpix < 1.00000e+01] FAILED ||max(rms_list)=0.0015099547803401948 [max(rms_list) > 1.5000e-01] PASSED" style="color:#000000;text-decoration:none">2305475d</a>, <a href=" " title="NIGHTNAME: 2018-09-24
+QC_STRING: snr_hotpix=0.23210685049547608 [snr_hotpix < 1.00000e+01] FAILED ||max(rms_list)=0.0020238380879163743 [max(rms_list) > 1.5000e-01] PASSED" style="color:#000000;text-decoration:none">2305474d</a>, <a href=" " title="NIGHTNAME: 2018-09-24
+QC_STRING: snr_hotpix=0.7656086840379805 [snr_hotpix < 1.00000e+01] FAILED ||max(rms_list)=0.0005296496674418449 [max(rms_list) > 1.5000e-01] PASSED" style="color:#000000;text-decoration:none">2305473d</a>, <a href=" " title="NIGHTNAME: 2018-09-24
+QC_STRING: snr_hotpix=179.08492466394947 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.27557549476623533 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2305516o</a>, <a href=" " title="NIGHTNAME: 2018-12-18
+QC_STRING: snr_hotpix=196.21033127099093 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3549779176712036 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2362454o</a>, <a href=" " title="NIGHTNAME: 2018-12-20
+QC_STRING: snr_hotpix=239.6750713338424 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.28744663462452963 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2362917o</a>, <a href=" " title="NIGHTNAME: 2019-01-11
+QC_STRING: snr_hotpix=238.82047681722224 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3049424171447754 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2367382o</a>, <a href=" " title="NIGHTNAME: 2019-01-11
+QC_STRING: snr_hotpix=336.10262980635616 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3051378488540649 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2367381o</a>, <a href=" " title="NIGHTNAME: 2019-01-11
+QC_STRING: snr_hotpix=239.55772185549824 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3993453043751961 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2367384o</a>, <a href=" " title="NIGHTNAME: 2019-01-11
+QC_STRING: snr_hotpix=274.02984892547806 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3053082227706909 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2367383o</a>, <a href=" " title="NIGHTNAME: 2019-01-17
+QC_STRING: snr_hotpix=379.092677685387 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.18467485904693604 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2368776o</a>, <a href=" " title="NIGHTNAME: 2019-01-18
+QC_STRING: snr_hotpix=182.12070501116 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.19072246551513672 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2369048o</a>, <a href=" " title="NIGHTNAME: 2019-02-14
+QC_STRING: snr_hotpix=210.38619395920472 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4831862467689888 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2374846o</a>, <a href=" " title="NIGHTNAME: 2019-02-17
+QC_STRING: snr_hotpix=420.92353556410933 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.1817363977432251 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2375318o</a>, <a href=" " title="NIGHTNAME: 2019-02-17
+QC_STRING: snr_hotpix=250.4759034679797 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.1744020746345138 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2375431o</a>, <a href=" " title="NIGHTNAME: 2019-02-19
+QC_STRING: snr_hotpix=300.1743786788751 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.27453949451446535 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2375663o</a>, <a href=" " title="NIGHTNAME: 2019-02-19
+QC_STRING: snr_hotpix=293.99253237497965 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.17422060966491698 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2375662o</a>, <a href=" " title="NIGHTNAME: 2019-04-15
+QC_STRING: snr_hotpix=194.2033998893798 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.45314559575297564 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2399672o</a>, <a href=" " title="NIGHTNAME: 2019-04-16
+QC_STRING: snr_hotpix=141.0509121861637 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.44771907614042333 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2399761o</a>, <a href=" " title="NIGHTNAME: 2019-04-17
+QC_STRING: snr_hotpix=300.9704130087686 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.23865234073823985 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2399942o</a>, <a href=" " title="NIGHTNAME: 2019-06-13
+QC_STRING: snr_hotpix=266.58969416105566 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.47030340913631064 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2425366o</a>, <a href=" " title="NIGHTNAME: 2019-06-17
+QC_STRING: snr_hotpix=207.18153686763796 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.15705597400665283 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2426094o</a>, <a href=" " title="NIGHTNAME: 2019-09-11
+QC_STRING: snr_hotpix=270.62881015842595 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.37847666269915625 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2434895o</a>, <a href=" " title="NIGHTNAME: 2019-09-24
+QC_STRING: snr_hotpix=186.10892865028313 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3999792949290819 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2438086o</a>, <a href=" " title="NIGHTNAME: 2019-09-25
+QC_STRING: snr_hotpix=183.7391536496345 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.15120463371276854 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2438336o</a>, <a href=" " title="NIGHTNAME: 2019-10-05
+QC_STRING: snr_hotpix=305.35877904878987 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4193615988529746 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2446378o</a>, <a href=" " title="NIGHTNAME: 2019-10-31
+QC_STRING: snr_hotpix=283.7270677666823 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.1625739097595215 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2454200o</a>, <a href=" " title="NIGHTNAME: 2019-11-03
+QC_STRING: snr_hotpix=234.92635211156937 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.25983855724334715 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2454717o</a>, <a href=" " title="NIGHTNAME: 2019-11-06
+QC_STRING: snr_hotpix=305.7730617784444 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.27518813610076903 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2455307o</a>, <a href=" " title="NIGHTNAME: 2019-11-09
+QC_STRING: snr_hotpix=245.4745122465792 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3311977160939052 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2455859o</a>, <a href=" " title="NIGHTNAME: 2019-11-10
+QC_STRING: snr_hotpix=238.5736439171293 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4138850618256883 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2456122o</a>, <a href=" " title="NIGHTNAME: 2019-11-11
+QC_STRING: snr_hotpix=211.25927084409503 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4879899024963379 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2456287o</a>, <a href=" " title="NIGHTNAME: 2019-12-05
+QC_STRING: snr_hotpix=245.1068155179739 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2231140375137329 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2463893o</a>, <a href=" " title="NIGHTNAME: 2019-12-13
+QC_STRING: snr_hotpix=330.10380963357653 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3904296085020239 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2465269o</a>, <a href=" " title="NIGHTNAME: 2020-06-02
+QC_STRING: snr_hotpix=201.19224226700868 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4001078355691575 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2491837o</a>, <a href=" " title="NIGHTNAME: 2020-06-05
+QC_STRING: snr_hotpix=268.53877318048364 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4440797679369914 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2492277o</a>, <a href=" " title="NIGHTNAME: 2020-06-06
+QC_STRING: snr_hotpix=180.6997286722295 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.43759204674690183 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2492542o</a>, <a href=" " title="NIGHTNAME: 2020-06-06
+QC_STRING: snr_hotpix=206.68697176059243 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3902061434199231 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2492537o</a>, <a href=" " title="NIGHTNAME: 2020-06-08
+QC_STRING: None" style="color:#000000;text-decoration:none">2492937o</a>, <a href=" " title="NIGHTNAME: 2020-06-08
+QC_STRING: snr_hotpix=214.56431923489873 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.42027468448532906 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2492979o</a>, <a href=" " title="NIGHTNAME: 2020-06-09
+QC_STRING: snr_hotpix=197.07213625760824 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4450387648188409 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2493320o</a>, <a href=" " title="NIGHTNAME: 2020-06-09
+QC_STRING: snr_hotpix=182.793490671532 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.3998536607149018 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2493341o</a>, <a href=" " title="NIGHTNAME: 2020-06-09
+QC_STRING: snr_hotpix=143.05520969754147 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.41740518476030397 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2493351o</a>, <a href=" " title="NIGHTNAME: 2020-06-09
+QC_STRING: snr_hotpix=193.3611750546279 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2912369592993626 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2493418o</a>, <a href=" " title="NIGHTNAME: 2020-06-30
+QC_STRING: snr_hotpix=188.1150769253058 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4504640999844315 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2497577o</a>, <a href=" " title="NIGHTNAME: 2020-07-05
+QC_STRING: snr_hotpix=157.1583230170937 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4120282116929708 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2498646o</a>, <a href=" " title="NIGHTNAME: 2020-07-05
+QC_STRING: snr_hotpix=157.1583230170937 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4120282116929708 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2498646o</a>, <a href=" " title="NIGHTNAME: 2020-07-06
+QC_STRING: snr_hotpix=220.38484818671023 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.44101261282973864 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2498852o</a>, <a href=" " title="NIGHTNAME: 2020-08-01
+QC_STRING: snr_hotpix=219.38016506297427 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.1530142068862915 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2503585o</a>, <a href=" " title="NIGHTNAME: 2020-08-02
+QC_STRING: snr_hotpix=305.8405303450833 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.24031167030334472 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2503775o</a>, <a href=" " title="NIGHTNAME: 2020-08-02
+QC_STRING: snr_hotpix=240.56971230047256 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.2470766544342041 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2503787o</a>, <a href=" " title="NIGHTNAME: 2020-08-02
+QC_STRING: snr_hotpix=334.9135942923255 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.24802236557006835 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2503844o</a>, <a href=" " title="NIGHTNAME: 2020-08-08
+QC_STRING: snr_hotpix=164.828874354512 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.414625972781651 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2504678o</a>, <a href=" " title="NIGHTNAME: 2020-08-08
+QC_STRING: snr_hotpix=175.2792500222594 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.35439163312935523 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2504714o</a>, <a href=" " title="NIGHTNAME: 2020-09-03
+QC_STRING: snr_hotpix=492.36722091594714 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.1592545747756958 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2512442o</a>, <a href=" " title="NIGHTNAME: 2020-09-08
+QC_STRING: snr_hotpix=312.0128945382688 [snr_hotpix < 1.00000e+01] PASSED ||max(rms_list)=0.4564605947667805 [max(rms_list) > 1.5000e-01] FAILED" style="color:#000000;text-decoration:none">2513275o</a></small></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>7</td>
+    <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp/*/log.fits that failed to finish</td>
+    <td>37</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>8</td>
+    <td>pp files that failed to finish, and why?</td>
+    <td><small><a href=" " title="NIGHTNAME: 2018-04-25
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00015960506774099810-CW1A_apero_processing_group/APEROL-PID-00015960587463029650-CPDX_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2401732c</a>, <a href=" " title="NIGHTNAME: 2018-04-26
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00015960506774099810-CW1A_apero_processing_group/APEROL-PID-00015960591560669840-M7M2_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2401892c</a>, <a href=" " title="NIGHTNAME: 2018-04-27
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00015960506774099810-CW1A_apero_processing_group/APEROL-PID-00015960596325857520-0I1Y_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2402073c</a>, <a href=" " title="NIGHTNAME: 2018-04-28
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00015960506774099810-CW1A_apero_processing_group/APEROL-PID-00015960601135700080-AJWA_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2402249c</a>, <a href=" " title="NIGHTNAME: 2018-04-29
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00015960506774099810-CW1A_apero_processing_group/APEROL-PID-00015960602293586450-TJSW_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2402301c</a>, <a href=" " title="NIGHTNAME: 2018-07-25
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00015960506774099810-CW1A_apero_processing_group/APEROL-PID-00015960627838681510-0RGW_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2294120c</a>, <a href=" " title="NIGHTNAME: 2020-06-08
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00015960506774099810-CW1A_apero_processing_group/APEROL-PID-00015961289128683040-JHIO_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2492937o</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246733930-QN5K_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510721a</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245580960-OZNM_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510705f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245890310-LAMN_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510711f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245915590-67VQ_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510701d</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246491000-DICH_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510714f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952247212940-MGNY_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510726c</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245917570-06L9_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510699d</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952247500250-UUCW_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510727c</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246802960-WPQ3_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510722a</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246009390-8YFJ_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510704f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245882050-6U67_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510707f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245887200-LHYN_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510710f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245915530-4IHR_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510703f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245917460-LVU1_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510698d</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245962750-5QK1_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510709f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246445438-9692_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510719a</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246527660-K1ZL_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510718a</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246710570-09RH_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510716f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246728820-OM36_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510723a</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246917140-AE8V_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510725c</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245485210-H742_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510702f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246496580-REN1_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510712f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952247120420-PCVM_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510720a</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952245919920-TBUZ_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510700d</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246230878-OYCN_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510715f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246587470-NA7B_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510713f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246801110-JZGC_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510717a</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246143670-9SFS_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510706f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952246233662-HDM3_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510708f</a>, <a href=" " title="NIGHTNAME: 2020-09-01
+ERRORS: None
+LOGFILE: /spirou/cfht_nights/cfht_july1/msg/processing/APEROG-PID-00016003737789865620-5ODC_apero_processing_group/APEROL-PID-00016003952247121970-CWTF_cal_preprocess_spirou.log" style="color:#000000;text-decoration:none">2510724c</a></small></td>
+    <td></td>
+  </tr>
+</table>
+
+
+</body>
+</html>
