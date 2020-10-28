@@ -639,7 +639,7 @@ def query_glist(objname: str, sheet_id: str, worksheet: int = 0):
     # loop around rows and look for aliases
     for row in range(len(gtable)):
         # set aliases as the objname
-        aliases = [gtable['OBJECT'][row]]
+        aliases = [gtable['OBJNAME'][row]]
         # get the aliases for this row
         aliases += gtable['ALIASES'][row].split('|')
         # search for object name
@@ -651,7 +651,7 @@ def query_glist(objname: str, sheet_id: str, worksheet: int = 0):
     if position is None:
         return None
     # else we have our Gaia id so return it
-    return gtable['GAIA'][row]
+    return gtable['GAIAID'][row]
 
 
 def get_google_sheet(sheet_id: str, worksheet: int = 0,
