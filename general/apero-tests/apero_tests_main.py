@@ -25,7 +25,7 @@ test_list_long = ['Preprocessing Recipe Test #1', 'Dark Master Recipe Test #1',
                   'Make Template Recipe Test #1', 'CCF Recipe Test #1']
 
 n = len(test_list_short)  # number of tests
-#n = 1
+n = 1
 for i in range(n):
 
     if not os.path.isdir(test_list_short[i]):
@@ -33,7 +33,7 @@ for i in range(n):
 
     print('test {0}/{1}'.format(i+1,n))   
     print('running {0}\n'.format(test_list_short[i]))    
-    #os.system('python {0}.py'.format(test_list_short[i]))
+    os.system('python {0}.py'.format(test_list_short[i]))
 
 
 print('all tests done')   
@@ -85,7 +85,7 @@ th, td {{
 
 <body>
 
-<img src='apero_logo.png' alt='APERO'>
+<img src='images/apero_logo.png' alt='APERO'>
 
 <p>A PipelinE to Reduce Observations</p>
 
