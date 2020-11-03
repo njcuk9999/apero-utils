@@ -26,6 +26,8 @@ def fix_shift(im):
     # If all is fine, we have 4 ref pixels and the 3rd difference shows a glitch
     imax = np.argmax(np.abs(gap))
 
+    status = 0
+
     # When images are bad, we have a value of 2 and know we need to offset odd/even amplifier
     if imax == 2:
         print('we have a shift')
@@ -38,8 +40,6 @@ def fix_shift(im):
 
     if imax == 3:
         print('all good, no shift')
-
-        status = 0
 
     if imax == 4:
         print('we have a shift, but in the direction opposite to what we saw in 20200909 dataset')
