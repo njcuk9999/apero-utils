@@ -3,7 +3,8 @@ import glob
 import numpy as np
 import os
 import sys
-
+from scipy.signal import convolve2d
+from astropy.table import Table
 
 def fix_shift(image):
     """
@@ -77,6 +78,101 @@ def fix_shift(image):
         status = -2
 
     return image, status
+
+def mk_isolated_nans(image):
+    # input image is known to have its pixels in the right position
+    # without shifts
+
+    nans = np.isfinite(image) == 0
+    ker = np.ones([3,3],dtype = float)
+    neighbours = convolve2d(nans,ker,mode='same')
+
+    isolated = nans*(neighbours==1)
+
+    y,x = np.where(isolated)
+
+    tbl = Table()
+    tbl['x'] = x
+    tbl['y'] = y
+    tbl.write('isolated_nans.csv',overwrite = True)
+
+
+def fix_shift2(image,threshold_valid = 0.9):
+    """
+    Read an image and fix a row of NaNS if required
+
+    Status:
+     status = 0 -> all good, no shit
+     status = 1 -> normal shift in expected direction when we have a
+                   controler issue, we apply correction
+     status = -1 -> opposite direction of known shift pattern, we
+                    apply correction
+     status = -2 -> unknown shift, we need to look at the image
+
+    threshold_valid
+        is the fraction of NaNs that are in the expected position
+        should be close to but not equal to 1. 0.9 seems OK, but this may require a
+        confirmation with a large number of files
+
+    :param image:
+
+    :return:
+    """
+
+    tbl = Table.read('isolated_nans.csv')
+    ref_nans = tbl['y'],tbl['x']
+
+    #ref_nans = np.array(fits.getdata('isolated_nans.fits'), dtype = bool)
+
+    # getting image size
+    number_amps = 32
+    width_image = image.shape[0]
+    # get width of amplifier ribbon
+    width_amp = int(width_image / number_amps)
+    # look for a discontinuity between consecutive columns, this traces
+    # reference vs science pixels
+
+    frac_nans = np.nanmean(~np.isfinite(image[ref_nans]))
+
+    print('no shift, frac of NaNs in right place: ',frac_nans)
+    if frac_nans>threshold_valid:
+        return image,0
+
+
+    # try +1 and -1 roll
+    image2 = np.array(image)
+
+    # the usual correction
+    for i in range(number_amps):
+        offset = 1 - (i % 2) * 2
+
+        start = i * width_amp
+        end = i * width_amp + width_amp
+
+        image2[:, start:end] = np.roll(image2[:, start:end], offset, axis=1)
+
+    frac_nans = np.nanmean(~np.isfinite(image2[ref_nans]))
+
+    print('usual shift, frac of NaNs in right place: ',frac_nans)
+    if frac_nans>threshold_valid
+        return image2,1
+
+    image2 = np.array(image)
+    for i in range(number_amps):
+        offset = (i % 2) * 2 - 1
+
+        start = i * width_amp
+        end = i * width_amp + width_amp
+
+        image[:, start:end] = np.roll(image[:, start:end], offset, axis=1)
+
+    frac_nans = np.nanmean(~np.isfinite(image2[ref_nans]))
+    print('opposite of usual shift, frac of NaNs in right place: ',frac_nans)
+    if frac_nans>threshold_valid:
+        return image2,-1
+
+    return image, -2
+
 
 
 if __name__ == '__main__':
