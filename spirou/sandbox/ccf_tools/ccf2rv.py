@@ -240,6 +240,14 @@ def get_object_rv(object,
                     tmp /= np.polyval(np.polyfit(ccf_RV, tmp, 1), ccf_RV)
                     ccf_cube[j,:,i] = tmp
 
+
+
+
+            #plt.plot(med,color = 'black',alpha = 0.5)
+            #plt.show()
+        #stop
+
+
         print('We save {0}, this will speed things up next time you run this code'.format(npy_file))
         np.save(npy_file,ccf_cube)
 
@@ -251,10 +259,33 @@ def get_object_rv(object,
         ccf_tbl = fits.getdata(ccf_files[0])
         ccf_RV = ccf_tbl['RV']
 
+
+
+
     for j in range(49):
         # if we need to exlude orders, we do it here.
         if j in exclude_orders:
             ccf_cube[j,:,:] = np.nan
+
+
+    if False:
+        for iord in range(49):
+            print('correcting ord #{0}'.format(iord))
+            med = np.nanmedian(ccf_cube[iord,:,:],axis=1)
+            for i in range(len(ccf_files)):
+                tmp = ccf_cube[iord,:,i]
+
+                med1 = med-1
+                tmp1 = tmp-1
+                amp = np.nansum(med1*tmp1)/np.nansum(med1**2)
+
+                tmp = (tmp-1)/amp+1
+
+                #plt.plot(tmp,alpha = 0.2)
+
+                ccf_cube[iord, :, i] = tmp
+
+
 
     print('We load values from headers, slower on first run, faster later')
     for i in (range(len(ccf_files))):
@@ -566,7 +597,7 @@ def get_object_rv(object,
             corr_ccf[:,i] = spline(ccf_RV+tbl['RV'][i])
 
             # correcting median of CCF
-            med =  np.nanmedian(corr_ccf[:,i] - med_corr_ccf)
+            med =  np.nanmean(corr_ccf[:,i] - med_corr_ccf)
             mean_ccf[:, i] -= med
 
             # correcting depth of CCF

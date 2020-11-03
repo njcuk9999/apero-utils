@@ -5,6 +5,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 import matplotlib.pyplot as plt
 from scipy.signal import medfilt
 import os as os
+import glob
 
 #
 # Code to generate a mask that can be used with the DRS. You need to provide a template file name
@@ -58,7 +59,16 @@ def mk_ccf_mask(templates,doplot = False):
         # read template and header
         tbl_template, hdr = fits.getdata(template, ext=1, header=True)
 
-        Nfiles =  len(fits.getdata(template, ext=2))
+        tbl_files = fits.getdata(template, ext=2)
+        Nfiles =  len(tbl_files)
+
+
+
+        covered = np.ones(600,dtype = float)
+        for berv in tbl_files['BERV']:
+            covered[int(berv)-2+300:int(berv)+2+300]*=0.9 # we count 10% covered per file over a 4 km/s window
+
+        hdr['BERV_COV'] = np.sum(1-covered),'Effective BERV coverage in km/s'
 
         # round temperature in header to nearest 100 and get the right model
         if 'OBJTEMP' in hdr:
@@ -174,6 +184,10 @@ def mk_ccf_mask(templates,doplot = False):
         systemic_velocity = -.5 * fit[1] / fit[0]
         tbl_template = Table(tbl_template)
 
+        if doplot:
+            plt.plot(tbl_template['wavelength'],
+                     tbl_template['flux'],label = 'before sys',color = 'green')
+
         for key in tbl_template.keys():
             if key == 'wavelength':
                 continue
@@ -187,6 +201,10 @@ def mk_ccf_mask(templates,doplot = False):
             tmp[np.roll(~g,-int(systemic_velocity))] = np.nan
 
             tbl_template[key] = tmp
+
+        bad = tbl_template['flux']<0
+
+        tbl_template['flux'][bad] = np.nan
 
         tbl_template['rms_scale_N_files'] = tbl_template['rms']/np.sqrt(Nfiles)
         tbl_template['snr_raw'] = tbl_template['flux']/ tbl_template['rms']
@@ -213,7 +231,12 @@ def mk_ccf_mask(templates,doplot = False):
         #
         # construction of zero-velocity template and estimate of SNR for template
         #
-        fits.writeto('Template_s1d_GL411_sc1d_v_file_NOSYS.fits',tbl_template,hdr,overwrite=True)
+        fits.writeto('NOSYS.'.join(template.split('AB.')),tbl_template,hdr,overwrite=True)
+        if doplot:
+            plt.plot(tbl_template['wavelength'],tbl_template['flux']
+                     ,label = 'after sys',color = 'red', alpha = 0.5)
+            plt.legend()
+            plt.show()
 
 
         print('\n\tsystemic velocity : {0:.4f}km/s\n'.format(systemic_velocity))
@@ -244,7 +267,17 @@ def mk_ccf_mask(templates,doplot = False):
 
         tbl[pos_mask].write(hdr['DRSOBJN'] + '_pos.csv', format='ascii', overwrite=True)
         tbl[neg_mask].write(hdr['DRSOBJN'] + '_neg.csv', format='ascii', overwrite=True)
-        tbl.write(hdr['DRSOBJN'] + '_full.mas', format='ascii', overwrite=True)
+
+
+        tbl2 = Table(tbl)
+        tbl2['w_mask'] /= np.nanmedian(np.abs(tbl2['w_mask']))
+
+        f = open(hdr['DRSOBJN'] + '_full.mas', 'w')
+        for i in range(len(tbl2)):
+            f.write('      ' + '      '.join(
+                [str(tbl2['ll_mask_s'][i])[0:14], str(tbl2['ll_mask_e'][i])[0:14], str(tbl2['w_mask'][i])[0:12]]) + '\n')
+        f.close()
+
 
 
         tbl2 = tbl[tbl['w_mask'] > 0]
@@ -277,5 +310,5 @@ def mk_ccf_mask(templates,doplot = False):
 
 
 
-templates = ['Template_s1d_GL411_sc1d_v_file_AB.fits']
-mk_ccf_mask(templates,doplot = True)
+templates = glob.glob('Template_s1d_GL*_sc1d_v_file_AB.fits')
+mk_ccf_mask(templates,doplot = False)

@@ -10,17 +10,17 @@ def sinusoidal(phase,dphase,amp,zp):
     return np.sin( (phase+dphase))*amp+zp
 
 # do not *formally* exclude an order, but this is done later with the bandpass keyword
-exclude_orders = [47,48]
+exclude_orders = [28,47,48]
 
 object = 'TOI-1278'
-mask =  'gl846_neg'
+mask =  'gl846_full'
 method = 'all'
 sanitize = False
 # number of median-absolute deviations within an epoch to consider a point discrepant
 tbl,dico = get_object_rv(object,mask =mask,
                     method = method,force = True,
                     exclude_orders = exclude_orders,
-                    snr_min = 20.0, sanitize = sanitize,
+                    snr_min = 20.0, velocity_window = 20, sanitize = sanitize,
                     dvmax_per_order = 3.0, bandpass = 'YJHK',
                     doplot = True, do_blacklist = True,
                     detailed_output = True,
@@ -33,38 +33,54 @@ rv -= np.mean(rv)
 ccf = np.array(dico['MEAN_CCF'])
 
 ccf2 = np.array(ccf)
-for i in range(34):
+for i in range(len(tbl)):
     ccf2[:,i] = np.roll(ccf2[:,i],int(-rv[i]*10))
 
+moy = np.median(ccf2,axis=1)
+for i in range(len(tbl)):
+    ccf2[:,i]-=moy
 
-
-moy = np.mean(ccf2,axis=1)
-for i in range(34):
-    ccf2[:,i] -= moy*.9
-
-for i in range(34):
+for i in range(len(tbl)):
     ccf2[:,i] = np.roll(ccf2[:,i],int(rv[i]*10))
 
-damps = np.arange(10,55,0.1)
+for i in range(len(tbl)):
+        ccf2[:,i]+=np.roll(moy*0.03,int(-30*rv[i]*10))
+        ccf2[:, i] -= np.nanmedian( ccf2[:,i])
+
+damps = np.arange(20,35,0.1)
 
 all_ccs = np.zeros([ccf2.shape[0],len(damps)])
+
+step =-1
 
 for ite in range(len(damps)):
     print(ite)
     ccf3 = np.zeros_like(ccf2)
-    for i in range(34):
+    for i in range(len(tbl)):
         ccf3[:,i] = np.roll(ccf2[:,i],int(damps[ite]*rv[i]*10))
 
-    all_ccs[:,ite] = np.nanmean(ccf3,axis=1)
+    if step == (-1):
+        all_ccs[:,ite] = np.nanmean(ccf3,axis=1)
 
-plt.plot(dico['ccf_RV'],moy)
-plt.show()
+    if step == (1):
+        all_ccs[:,ite] = np.nanmean(ccf3[:,::2],axis=1)
+    if step == (2):
+        all_ccs[:,ite] = np.nanmean(ccf3[:,1::2],axis=1)
 
-plt.plot(damps,all_ccs[np.argmin(moy),:])
-plt.show()
+    if step == (3):
+        all_ccs[:,ite] = np.nanmean(ccf3[:,0:16],axis=1)
+    if step == (4):
+        all_ccs[:,ite] = np.nanmean(ccf3[:,16:],axis=1)
 
 
-plt.imshow(all_ccs/np.std(all_ccs),aspect = 'auto',extent = [np.min(damps),np.max(damps),np.min(dico['ccf_RV']),np.max(dico['ccf_RV'])])
+print(  dico['ccf_RV'][np.argmin(moy)] )
+
+
+plt.imshow(-all_ccs/np.nanstd(all_ccs),aspect = 'auto',extent = [np.min(damps),np.max(damps),np.min(dico['ccf_RV']),np.max(dico['ccf_RV'])])
+plt.plot([np.min(damps),np.max(damps)],[-29.4,-29.4],linestyle = '--',alpha = 0.5,color ='white')
+plt.ylim([-29.5-30,-29.5+30])
+plt.xlabel('Mass ratio')
+plt.ylabel('RV [km/s]')
 plt.show()
 
 # period for the sinusoidal currve
