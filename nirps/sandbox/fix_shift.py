@@ -1,58 +1,104 @@
-import numpy as np
 from astropy.io import fits
+import glob
+import numpy as np
+import os
+import sys
 
-def fix_shift(im):
-    # reading a file
-    #
-    # Status:
-    #  status = 0 -> all good, no shit
-    #  status = 1 -> normal shift in expected direction when we have a controler issue,
-    #                  we apply correction
-    #  status = -1 -> opposite direction of known shift pattern, we apply correction
-    #  status = -2 -> unknown shift, we need to look at the image
+
+def fix_shift(image):
+    """
+    Read an image and fix a row of NaNS if required
+
+    Status:
+     status = 0 -> all good, no shit
+     status = 1 -> normal shift in expected direction when we have a
+                   controler issue, we apply correction
+     status = -1 -> opposite direction of known shift pattern, we
+                    apply correction
+     status = -2 -> unknown shift, we need to look at the image
+
+    :param image:
+    :return:
+    """
 
     # getting image size
     number_amps = 32
     width_image = image.shape[0]
-
     # get width of amplifier ribbon
-    width_amp = width_image/number_amps
-
-    # look for a discontinuity between consecutive columns, this traces reference vs science pixels
+    width_amp = int(width_image / number_amps)
+    # look for a discontinuity between consecutive columns, this traces
+    # reference vs science pixels
     gap = np.zeros(15)
     for i in range(15):
-        gap[i] = np.nanmedian(im[:, i] - im[:, i + 1])
-
+        gap[i] = np.nanmedian(image[:, i] - image[:, i + 1])
     # If all is fine, we have 4 ref pixels and the 3rd difference shows a glitch
     imax = np.argmax(np.abs(gap))
-
+    # assume no fix required by default
     status = 0
-
-    # When images are bad, we have a value of 2 and know we need to offset odd/even amplifier
+    # When images are bad, we have a value of 2 and know we need to
+    # offset odd/even amplifier
     if imax == 2:
-        print('we have a shift')
+        print('\twe have a shift')
 
         for i in range(number_amps):
-            offset = 1-(i % 2)*2
-            im[:,i*width_amp:i*width_amp+width_amp] = np.roll(im[:,i*width_amp:i*width_amp+width_amp],offset,axis = 1)
+            offset = 1 - (i % 2) * 2
+
+            start = i * width_amp
+            end = i * width_amp + width_amp
+
+            image[:, start:end] = np.roll(image[:, start:end], offset, axis=1)
 
         status = 1
 
     if imax == 3:
-        print('all good, no shift')
+        print('\tall good, no shift')
 
     if imax == 4:
-        print('we have a shift, but in the direction opposite to what we saw in 20200909 dataset')
+        print('\twe have a shift, but in the direction opposite to what '
+              'we saw in 20200909 dataset')
 
         for i in range(number_amps):
-            offset = (i % 2)*2-1
-            im[:,i*width_amp:i*width_amp+width_amp] = np.roll(im[:,i*width_amp:i*width_amp+width_amp],offset,axis = 1)
+            offset = (i % 2) * 2 - 1
+
+            start = i * width_amp
+            end = i * width_amp + width_amp
+
+            image[:, start:end] = np.roll(image[:, start:end], offset, axis=1)
 
         status = -1
 
-    if (imax !=2)*(imax!=3)*(image!=4):
-        print('really bad, rips the fabric of the Universe!')
+    if (imax != 2) * (imax != 3) * (imax != 4):
+        print('\treally bad, rips the fabric of the Universe!')
 
         status = -2
 
-    return im, status
+    return image, status
+
+
+if __name__ == '__main__':
+    # get nightname from arguments
+    args = sys.argv
+    # if we have two arguments assume second argument is a night name
+    if len(args) == 2:
+        # get all files
+        files = glob.glob(os.path.join('.', args[1], '*.fits'))
+        # loop around files and see if we need to fix them
+        for it, filename in enumerate(files):
+            # print progress
+            pargs = [os.path.basename(filename), it + 1, len(files)]
+            print('Processing file {0} ({1}/{2})'.format(*pargs))
+            # load data HDU
+            hdu = fits.open(filename)
+            # load the data into image 1
+            image1 = np.array(hdu[1].data)
+            # see / fix data
+            image2, status = fix_shift(image1)
+            # only save if status is not 0
+            if status != 0:
+                # push data back into hdu
+                hdu[0].data = image2
+                # write hdu to file
+                hdu.writeto(filename, overwrite=True)
+            # close hdu
+            hdu.close()
+
