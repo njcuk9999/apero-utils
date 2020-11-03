@@ -29,7 +29,11 @@ def fix_shift(image):
     # look for a discontinuity between consecutive columns, this traces
     # reference vs science pixels
     gap = np.zeros(15)
-    for i in range(15):
+
+    # we skip the first pixel as it is sometimes offset from the rest of
+    # columns. To get imax = 0, we would need a shift of 3 pixels, which would
+    # be very strange.
+    for i in range(1,15):
         gap[i] = np.nanmedian(image[:, i] - image[:, i + 1])
     # If all is fine, we have 4 ref pixels and the 3rd difference shows a glitch
     imax = np.argmax(np.abs(gap))
