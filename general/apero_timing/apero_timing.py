@@ -51,7 +51,8 @@ def sort_log_rows(lines: List[str]) -> Tuple[List[str], List[float]]:
 
 
 def get_timings(valid_recipes: List[str], valid_times: List[float]
-                ) -> Tuple[Dict[str, List[float]], Dict[str, float]]:
+                ) -> Tuple[Dict[str, List[float]], Dict[str, float],
+                           Dict[str, float]]:
     """
     Sort the valid recipes into groups (grouped by recipe name) and
     provide the average time for each recipe
@@ -69,6 +70,9 @@ def get_timings(valid_recipes: List[str], valid_times: List[float]
         # get this iterations values
         recipe = valid_recipes[row]
         time = valid_times[row]
+        # don't count ones where time is less than 5 seconds
+        if time < 5:
+            continue
         # add to timings
         if recipe in timings:
             timings[recipe] += [time]
@@ -76,10 +80,12 @@ def get_timings(valid_recipes: List[str], valid_times: List[float]
             timings[recipe] = [time]
     # get average times
     mean_timings = dict()
+    med_timings = dict()
     for recipe in timings:
         mean_timings[recipe] = float(np.mean(timings[recipe]))
+        med_timings[recipe] = float(np.median(timings[recipe]))
     # return timings and mean timings
-    return timings, mean_timings
+    return timings, mean_timings, med_timings
 
 
 # =============================================================================
@@ -98,14 +104,27 @@ if __name__ == "__main__":
     # get valid recipes and times from log file
     vrecipes, vtimes = sort_log_rows(_lines)
     # get timing stats
-    times, mtimes = get_timings(vrecipes, vtimes)
+    times, meantimes, medtimes = get_timings(vrecipes, vtimes)
     # print out average timings (in minutes)
     print('=' * 70)
     print('Average timings')
     print('=' * 70)
-    for _recipe in mtimes:
-        pargs = [_recipe, mtimes[_recipe], mtimes[_recipe] / 60.0]
-        print('{0:30s}: {1:7.2f} seconds   ({2:5.2f} minutes)'.format(*pargs))
+    for _recipe in meantimes:
+        pargs = [_recipe, meantimes[_recipe], meantimes[_recipe] / 60.0,
+                 len(times[_recipe])]
+        msg = '{0:30s}: {1:7.2f} seconds   ({2:5.2f} minutes)       N = {3}'
+
+        print(msg.format(*pargs))
+    # print out median timings (in minutes)
+    print('=' * 70)
+    print('Median timings')
+    print('=' * 70)
+    for _recipe in medtimes:
+        pargs = [_recipe, medtimes[_recipe], medtimes[_recipe] / 60.0,
+                 len(times[_recipe])]
+        msg = '{0:30s}: {1:7.2f} seconds   ({2:5.2f} minutes)       N = {3}'
+        print(msg.format(*pargs))
+
 
 # =============================================================================
 # End of code
