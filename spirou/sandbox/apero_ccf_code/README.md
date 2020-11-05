@@ -1,0 +1,245 @@
+# Apero CCF code
+
+This is the APERO CCF code
+
+Please do not change this code - but feel free to make copies of it and edit
+those to test code changes.
+
+
+### Things you will need
+
+1. A telluric corrected file (INFILE_AB) 
+    - `{odocode}o_pp_e2dsff_tcorr_AB.fits`
+2. A extracted C file (INFILE_C)
+    - `{odocode}o_pp_e2dsff_C.fits`
+3. A wave solution for AB and C (WAVEFILE_AB and WAVEFILE_C)
+    - check `hdr[CDBWAVE]` of `{odocode}o_pp_e2dsff_tcorr_AB.fits`
+4. A blaze solution (BLAZEFILE)
+    - check `hdr[CDBBLAZE]` of `{odocode}o_pp_e2dsff_tcorr_AB.fits`
+5. A recon file (RECONFILE)
+    - `{odocode}o_pp_e2dsff_recon_AB.fits`
+
+
+### How to use
+
+Run with the following command:
+
+`>> python cal_ccf_apero.py --config={CONFIG_FILE.yaml}`
+
+
+`cal_ccf_apero.py` is supposed to simulate the `cal_ccf` recipe in APERO.
+
+All other functions are in `ccf_functions.py` (denoted by the `cf.FUNC_NAME` 
+call in cal_ccf_apero).
+
+All changable parameters can be found in `CONFIG_FILE.yaml` note you can and 
+should change these parameters to quickly change what you can do in the code.
+
+
+You can also import it from python and add any of the config parameters
+required (they will take precedence over the config file).
+i.e.:
+
+```python
+from cal_ccf_apero import main
+
+
+ll = main(config='ccf.yaml',
+          INFILE_AB='1234568o_pp_e2dsff_tcorr_AB.fits',
+          INFILE_C='1234568o_pp_e2dsff_C.fits',
+          )
+
+```
+
+### Example config files
+
+There are currently two yaml files provided (`ccf.yaml` and `ccf_test.yaml`).
+Please do not edit the `ccf.yaml` and create copies of it to change parameters.
+In theory `ccf.yaml` should emulate the drs results exactly.
+
+The only current difference is that `PLOT` is set to False in `ccf_test.yaml`.
+
+Below is a copy of `ccf.yaml` for reference
+
+```yaml
+# -------------------------------------------------------------------------
+# GENERAL PARAMETERS
+# -------------------------------------------------------------------------
+# Define the working directory
+WORKING_DIR: /data/spirou/test_data/reduced/2019-04-20/
+
+# Define CCF directory
+MASK_DIR: ./test_mask/
+
+# whether to plot
+PLOT: true
+
+# whether to plot all orders
+PLOT_ALL: false
+
+# define which fibers should be used for science and reference
+FIBER_CCF:
+  - AB
+  - C
+
+# Define the blaze file to use (header: CDBBLAZ INFILE_AB)
+BLAZEFILE: 240056F0T4f_pp_blaze_AB.fits
+
+# Minimum blaze threshold to keep peaks (note in DRS= WAVE_FP_THRES)
+BLAZE_THRES: 0.3
+
+# pyasl BERV precision
+EXT_BERV_EST_ACC: 10.0
+
+# Allowed input DPRTYPES for input  for CCF recipe
+CCF_ALLOWED_DPRTYPES:
+- OBJ_FP
+- OBJ_DARK
+
+# Define the KW_OUTPUT types that are valid telluric corrected spectra
+CCF_CORRECT_TELLU_TYPES:
+- TELLU_OBJ
+
+
+# -------------------------------------------------------------------------
+# Switches (not in the DRS)
+# -------------------------------------------------------------------------
+# Define whether we want mask weight normalization, options are
+#    'order' - per order normalization
+#    'all'   - normalized across all weights
+#    'None'  - no normalization
+MASK_NORM: order
+
+
+# -------------------------------------------------------------------------
+# FIBER AB PARAMETERS
+# -------------------------------------------------------------------------
+# Define the input AB file (telluric corrected e2dsff file)
+INFILE_AB: 2400512o_pp_e2dsff_tcorr_AB.fits
+
+# Define the telluric reconstructed absorption file (recon file e2dsff)
+RECONFILE: 2400512o_pp_e2dsff_recon_AB.fits
+
+# Define the wave solution for the AB file (header: CDBWAVE INFILE_AB)
+WAVEFILE_AB: 240041F6T7c_pp_e2dsff_AB_wavem_fp_AB.fits
+
+# Define the CCF Mask to use for AB fiber (within MASK_DIR)
+CCF_MASK_AB: masque_sept18_andres_trans50.mas
+
+# Define the computations steps of the CCF [km/s]
+CCF_STEP: 0.5
+
+# Define the width of the CCF range [km/s]
+CCF_WIDTH: 300.0
+
+# Define the target radial velocity [km/s]
+CCF_RV: 0.0
+
+# The transmission threshold for removing telluric domain (if and only if
+#     we have a telluric corrected input file
+CCF_TELLU_THRES: 0.5
+
+#   The value of the noise for wave dv rms calculation
+#       snr = flux/sqrt(flux + noise^2)
+CCF_NOISE_SIGDET: 8.0
+
+#   The size around a saturated pixel to flag as unusable for wave dv rms
+#      calculation
+CCF_NOISE_BOXSIZE: 12
+
+#   The maximum flux for a good (unsaturated) pixel for wave dv rms
+#       calculation
+CCF_NOISE_THRES: 1000000000
+
+# Define the CCF mask format (must be an astropy.table format)
+CCF_MASK_FMT: ascii
+
+#  Define the weight of the CCF mask (if 1 force all weights equal)
+CCF_MASK_MIN_WEIGHT: 0.0
+
+#  Define the width of the template line (if 0 use natural)
+CCF_MASK_WIDTH: 1.7
+
+# Define the wavelength units for the mask
+CCF_MASK_UNITS: nm
+
+# Define the fit type for the CCF fit
+#     if 0 then we have an absorption line
+#     if 1 then we have an emission line
+CCF_FIT_TYPE: 0
+
+#  Define the number of orders (from zero to ccf_num_orders_max) to use
+#      to calculate the FP CCF
+CCF_N_ORD_MAX: 48
+
+# Define target rv header null value
+#     (values greater than absolute value are set to zero)
+CCF_OBJRV_NULL_VAL: 1000
+
+#  Define the maximum allowed ratio between input CCF STEP and CCF WIDTH
+#     i.e. error will be generated if CCF_STEP > (CCF_WIDTH / RATIO)
+CCF_MAX_CCF_WID_STEP_RATIO: 10.0
+
+# Define the percentile the blaze is normalised by before using in CCF calc
+CCF_BLAZE_NORM_PERCENTILE: 90
+
+# -------------------------------------------------------------------------
+# FIBER C PARAMETERS
+# -------------------------------------------------------------------------
+# Define the input C file (e2dsff file)
+INFILE_C: 2400512o_pp_e2dsff_C.fits
+
+# Define the wave solution for the C file (header: CDBWAVE INFILE_C)
+WAVEFILE_C: 240041F6T7c_pp_e2dsff_C_wavem_fp_C.fits
+
+# Define the CCF Mask to use for the C fiber (within MASK_DIR)
+CCF_MASK_C: smart_fp_mask.mas
+
+#   The value of the noise for wave dv rms calculation
+#       snr = flux/sqrt(flux + noise^2)
+WAVE_CCF_NOISE_SIGDET: 8.0
+
+#   The size around a saturated pixel to flag as unusable for wave dv rms
+#      calculation
+WAVE_CCF_NOISE_BOXSIZE: 12
+
+#   The maximum flux for a good (unsaturated) pixel for wave dv rms
+#      calculation
+WAVE_CCF_NOISE_THRES: 1000000000
+
+#   The CCF step size to use for the FP CCF
+WAVE_CCF_STEP: 0.5
+
+#   The CCF width size to use for the FP CCF
+WAVE_CCF_WIDTH: 7.5
+
+#   The target RV (CCF center) to use for the FP CCF
+WAVE_CCF_TARGET_RV: 0.0
+
+#  Define the number of orders (from zero to ccf_num_orders_max) to use
+#      to calculate the FP CCF
+WAVE_CCF_N_ORD_MAX: 48
+
+#  Define the weight of the CCF mask (if 1 force all weights equal)
+WAVE_CCF_MASK_MIN_WEIGHT: 0.0
+
+#  Define the width of the template line (if 0 use natural)
+WAVE_CCF_MASK_WIDTH: 1.7
+
+# Define the wavelength units for the mask for the FP CCF
+WAVE_CCF_MASK_UNITS: nm
+
+# -------------------------------------------------------------------------
+# MISC
+# -------------------------------------------------------------------------
+# colours (set all to '' to disable colours - otherwise do not touch
+COLORS.BLUE: "\e[94;1m"
+COLORS.ENDC: "\e[0;0m"
+COLORS.GREEN: "\e[92;1m"
+COLORS.RED: "\e[1;91;1m"
+COLORS.YELLOW: "\e[1;93;1m"
+
+
+```
+
+
