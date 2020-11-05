@@ -5,6 +5,9 @@ This is the APERO CCF code
 Please do not change this code - but feel free to make copies of it and edit
 those to test code changes.
 
+Note currently this will only work for OBJ_FP, OBJ_DARK of type TELLU_OBJ but
+we could add others if required (by this diverges from cal_ccf_spirou.py)
+
 
 ### Things you will need
 

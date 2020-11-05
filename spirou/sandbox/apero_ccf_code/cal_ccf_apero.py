@@ -21,7 +21,7 @@ import ccf_functions as cf
 __NAME__ = 'cal_ccf_apero.py'
 __INSTRUMENT__ = 'SPIROU'
 # Get version and author
-__version__ = '0.6.132'
+__version__ = '0.6.132-ccf1'
 __author__ = 'Neil Cook'
 __date__ = '2020-11-05'
 
