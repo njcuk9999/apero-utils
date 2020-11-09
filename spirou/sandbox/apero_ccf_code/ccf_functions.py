@@ -30,6 +30,10 @@ import yaml
 # Define variables
 # =============================================================================
 __NAME__ = 'ccf_functions.py'
+# Get version and author
+__version__ = '0.6.132-ccf2'
+__author__ = 'Neil Cook'
+__date__ = '2020-11-09'
 # Speed of light
 # noinspection PyUnresolvedReferences
 speed_of_light_ms = cc.c.to(uu.m / uu.s).value
@@ -78,15 +82,15 @@ def get_berv(params, header):
     estimate = params['EXT_BERV_EST_ACC']
     bprops = dict()
     try:
-        bprops['BERV'] = header['BERV']
-        bprops['BJD'] = header['BJD']
-        bprops['BERV_MAX'] = header['BERVMAX']
-        bprops['DBERV'] = header['DBERV']
+        bprops['BERV'] = float(header['BERV'])
+        bprops['BJD'] = float(header['BJD'])
+        bprops['BERV_MAX'] = float(header['BERVMAX'])
+        bprops['DBERV'] = float(header['DBERV'])
         bprops['BERV_SOURCE'] = header['BERVSRCE']
-        bprops['BERV_EST'] = header['BERV_EST']
-        bprops['BJD_EST'] = header['BJD_EST']
-        bprops['BERV_MAX_EST'] = header['BERVMAXE']
-        bprops['DBERV_EST'] = header['DBERVE']
+        bprops['BERV_EST'] = float(header['BERV_EST'])
+        bprops['BJD_EST'] = float(header['BJD_EST'])
+        bprops['BERV_MAX_EST'] = float(header['BERVMAXE'])
+        bprops['DBERV_EST'] = float(header['DBERVE'])
         bprops['OBS_TIME'] = header['BERVOBST']
         bprops['OBS_TIME_METHOD'] = header['BERVOBSM']
     except Exception as e:
@@ -149,13 +153,13 @@ def get_wavesolution(params, header, fiber='AB'):
     wprops['WAVEFILE'] = wavebasefile
     wprops['WAVEINIT'] = wavebasefile
     wprops['WAVESOURCE'] = wavesource
-    wprops['WFP_DRIFT'] = wheader['WFPDRIFT']
+    wprops['WFP_DRIFT'] = float(wheader['WFPDRIFT'])
     wprops['NBO'] = nbo
-    wprops['DEG'] = wheader['WAVEDEGN']
+    wprops['DEG'] = int(wheader['WAVEDEGN'])
     wprops['COEFFS'] = None
     wprops['WAVEMAP'] = wavemap
     wprops['WAVEINST'] = None
-    wprops['WAVETIME'] = wheader['MJDMID']
+    wprops['WAVETIME'] = float(wheader['MJDMID'])
     # return wprops
     return wprops
 
@@ -641,6 +645,9 @@ def compute_ccf_science(params, infile, image, header, blaze, wavemap,
     # need to deal with no target rv step
     if np.isnan(targetrv):
         targetrv = header.get('OBJRV', None)
+        # targetrv must be a float (could be a "NaN")
+        if targetrv is not None:
+            targetrv = float(targetrv)
         # set target rv to zero if we don't have a value
         if targetrv is None:
             wargs = [params['KW_INPUTRV'][0], infile]
