@@ -314,12 +314,12 @@ def __main__(recipe, params):
 # =============================================================================
 if __name__ == "__main__":
     # run main with no arguments (get from command line - sys.argv)
-    # ll = main()
+    ll = main()
 
-    ll = main(config='ccf.yaml',
-              INFILE_AB='1234568o_pp_e2dsff_tcorr_AB.fits',
-              INFILE_C='1234568o_pp_e2dsff_C.fits',
-              )
+    # ll = main(config='ccf.yaml',
+    #           INFILE_AB='1234568o_pp_e2dsff_tcorr_AB.fits',
+    #           INFILE_C='1234568o_pp_e2dsff_C.fits',
+    #           )
 
 # =============================================================================
 # End of code
