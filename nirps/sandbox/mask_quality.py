@@ -20,11 +20,12 @@ file = 'Template_s1d_GL699_sc1d_v_file_AB.fits'
 
 # provide a list of masks
 masks = np.array(glob.glob('GL*neg.mas'))
+masks = np.append(masks, np.array(glob.glob('masque*.mas')))
 
 # which photometric bandpass is used for the comparison.
 # We *strongly* suggest to perform this analysis one bandpass at a time. This will
 # avoid differences in masks in terms of number of lines
-bandpass = 'H'
+bandpass = 'K'
 
 # parameters for the comparison that you probably don't need to change
 c = 299792.458 # speed of light
@@ -135,17 +136,17 @@ for it,mask_file in enumerate(masks):
     sigma = np.sqrt(flux)
 
     # point-to-point uncertainfy in the CCF from photon noise in the weighted sum
-    err_ccf =1/np.nansum(np.abs(weight_mask))*np.sqrt( np.nansum( (weight_mask*sigma)**2 )  )
+    ccf_noise =1/np.nansum(np.abs(weight_mask))*np.sqrt( np.nansum( (weight_mask*sigma)**2 )  )
 
     # update table
-    tbl['CCF_SNR'][it] = np.nanmedian(ccf)/err_ccf
-    tbl['CCF_SNR_BOOST'][it] = 100/err_ccf/np.sqrt(sampling_ratio)
+    tbl['CCF_SNR'][it] = np.nanmedian(ccf)/ccf_noise
+    tbl['CCF_SNR_BOOST'][it] = 100/ccf_noise/np.sqrt(sampling_ratio)
 
     # expressed in m/s, we find the Q value
     Q = np.sqrt(np.nansum((np.gradient(ccf)/step)**2))
 
     # we find the RV accuracy in m/s
-    tbl['DVRMS'][it] =  err_ccf/Q
+    tbl['DVRMS'][it] =  ccf_noise/Q
 
     # fit a gaussian to the CCF
     p0 = [dv0,1,np.nanmedian(ccf),np.min(ccf)-np.nanmedian(ccf)]
