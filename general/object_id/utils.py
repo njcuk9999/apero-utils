@@ -14,7 +14,7 @@ TOI_URL = EXOFOP_URL+'tess/download_toi.php?sort=toi&output=csv'
 
 GAIA_2MASS_URL = 'https://gea.esac.esa.int/tap-server/tap'
 
-COLNAMES = ['OBJNAME',
+COLNAMES = ['OBJECT',
             'GAIADR2ID',
             '2MASSID',
             'RV',
@@ -24,7 +24,7 @@ COLNAMES = ['OBJNAME',
             'ALIASES',
             'CHECKED',
             'FOUND',
-            'FOUND_MANUAL',
+            'MANUAL_EDIT',
             'COMMENTS']
 
 
