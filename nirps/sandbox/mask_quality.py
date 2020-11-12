@@ -20,7 +20,6 @@ file = 'Template_s1d_GL699_sc1d_v_file_AB.fits'
 
 # provide a list of masks
 masks = np.array(glob.glob('GL*neg.mas'))
-masks = np.append(masks, np.array(glob.glob('masque*.mas')))
 
 # which photometric bandpass is used for the comparison.
 # We *strongly* suggest to perform this analysis one bandpass at a time. This will
@@ -72,7 +71,7 @@ tbl = dict()
 tbl['MASKS'] = np.array(masks)
 
 # trim extensions if .mass
-for i in range(len(masks)):
+for i in np.arange(len(masks)):
     tbl['MASKS'][i] = np.array(tbl['MASKS'][i].split('.mas')[0])
 
 # object's systemic velocity for that mask
@@ -195,11 +194,15 @@ tbl = Table(tbl)
 # sort from best to worst masks
 tbl = tbl[np.argsort(-tbl['DVRMS'])]
 
-plt.clf()
 # some plots just for fun
 fig, ax = plt.subplots(nrows = 1,ncols=2,sharey = True)
 
 ax[0].barh(np.arange(len(tbl)),tbl['DVRMS'],height = 0.8,label = 'DVRMS',alpha = 0.7)
+
+xrange = np.array(tbl['DVRMS'])
+range = np.max(xrange)-np.min(xrange)
+ax[0].set(xlim = [np.min(xrange)-.1*range,np.max(xrange)+.1*range])
+
 ax[0].set_yticks(np.arange(len(tbl)))
 ax[0].set_yticklabels(tbl['MASKS'])#,step=1)
 ax[0].set_xlabel('DVRMS [m/s] for median(SNR) ~ 100')
@@ -211,10 +214,14 @@ ax[1].set_yticklabels(tbl['MASKS'])#,step=1)
 ax[1].set_xlabel('CCF_SNR_BOOST')
 ax[1].set_ylabel('Mask')
 
+xrange = np.array(tbl['CCF_SNR_BOOST'])
+range = np.max(xrange)-np.min(xrange)
+ax[1].set(xlim = [np.min(xrange)-.1*range,np.max(xrange)+.1*range])
+
+
 plt.tight_layout()
 plt.savefig( file.split('.fits')[0]+'_dvrms.png')
 plt.show()
-plt.clf()
 
 fig, ax = plt.subplots(nrows = 1,ncols=2,sharey = True)
 ax[0].barh(np.arange(len(tbl)),tbl['GAUSSIAN_FWHM'],height = 0.8,label = 'GAUSSIAN_FWHM',alpha = 0.7)
@@ -224,27 +231,30 @@ ax[0].set_xlabel('GAUSSIAN_FWHM')
 ax[0].set_ylabel('Mask')
 
 
+
+xrange = np.array(tbl['GAUSSIAN_FWHM'])
+range = np.max(xrange)-np.min(xrange)
+ax[0].set(xlim = [np.min(xrange)-.1*range,np.max(xrange)+.1*range])
+
+
+
 ax[1].barh(np.arange(len(tbl)),tbl['CCF_DEPTH'],height = 0.8,label = 'CCF_DEPTH',alpha = 0.7)
 ax[1].set_yticks(np.arange(len(tbl)))
 ax[1].set_yticklabels(tbl['MASKS'])#,step=1)
 ax[1].set_xlabel('CCF_DEPTH')
 ax[1].set_ylabel('Mask')
 
+
+xrange = np.array(tbl['CCF_DEPTH'])
+range = np.max(xrange)-np.min(xrange)
+ax[1].set(xlim = [np.min(xrange)-.1*range,np.max(xrange)+.1*range])
+
+
 plt.tight_layout()
 plt.savefig( file.split('.fits')[0]+'_gaussian.png')
 plt.show()
-plt.clf()
 
 
-syms = ['o','*','x','+']
-for i in range(len(tbl)):
-    plt.plot(tbl['GAUSSIAN_FWHM'][i],tbl['FWHM_RAW'][i],syms[(i % len(syms))],label = tbl['MASKS'][i])
-plt.xlabel('GAUSSIAN FWHM [pix]')
-plt.ylabel('FWHM RAW')
-plt.legend()
-plt.tight_layout()
-plt.savefig( file.split('.fits')[0]+'_gaussian2.png')
-plt.show()
 
 
 tbl.write(file.split('.fits')[0]+'_compare.csv',overwrite = True)
