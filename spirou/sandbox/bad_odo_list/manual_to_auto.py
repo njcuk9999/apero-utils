@@ -17,7 +17,7 @@ sh_man = gspd.spread.Spread(MAN_SHEET_ID)
 
 ws_names = [ws.title for ws in sh_man.sheets if ws.title not in skip_tabs]
 
-colnames = ['ODOMETER', 'COMMENTS']
+colnames = ['ODOMETER', 'PP', 'RV', 'COMMENTS']
 df_all = pd.DataFrame([], columns=colnames)
 
 for ws_name in ws_names:
@@ -38,7 +38,8 @@ for ws_name in ws_names:
                      df_man['odometers'].astype(int),
                      df_man['to'].astype(int))
     df_auto = pd.DataFrame(
-            [(o, c) for c, s, e in zipped_odo for o in range(s, e+1)],
+            [(o, False, True, c)
+                for c, s, e in zipped_odo for o in range(s, e+1)],
             columns=colnames,
             )
     df_all = df_all.append(df_auto)
@@ -47,7 +48,7 @@ df_all = df_all.sort_values('ODOMETER')
 
 # Load auto sheet
 sh_auto = gspd.spread.Spread(AUTO_SHEET_ID)
-df_auto = sh_auto.sheet_to_df(index=0, unformatted_columns=['ODOMETER'])
+df_auto = sh_auto.sheet_to_df(index=0, unformatted_columns=colnames)
 
 # Add only new odometers
 new = df_all.loc[~df_all.ODOMETER.isin(df_auto.ODOMETER)]

@@ -47,6 +47,14 @@ def check_blacklist(file_list, localfile=None, url=None, odo_kwd='ODOMETER'):
         data = requests.get(url)
         bad_odo = Table.read(data.text, format='ascii')
 
+    # Convert boolean columns
+    bad_odo['PP'] = bad_odo['PP'] == 'TRUE'
+    bad_odo['RV'] = bad_odo['RV'] == 'TRUE'
+
+    # Keep only RV indices
+    bad_odo = bad_odo[bad_odo['RV']]
+
+    # Keep only odo column
     bad_odo = np.array(bad_odo[odo_kwd].tolist())
 
     # find which odometers are in bad list

@@ -12,6 +12,11 @@ URL_BASE = ('https://docs.google.com/spreadsheets/d/'
 SHEET_ID = '1gvMp1nHmEcKCUpxsTxkx-5m115mLuQIGHhxJCyVoZCM'
 WORKSHEET = 0
 
+# fetch data
 url = URL_BASE.format(SHEET_ID, WORKSHEET)
 data = requests.get(url)
 tbl = Table.read(data.text, format='ascii')
+
+# Convert boolean
+tbl['PP'] = tbl['PP'] == 'TRUE'
+tbl['RV'] = tbl['RV'] == 'TRUE'
