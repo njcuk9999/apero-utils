@@ -180,7 +180,7 @@ def get_object_rv(obj=None,
             Default: True
         showplots (bool): Show plots when code runs.
             Default: True
-        do_blacklist (True): Check if the input files are blacklisted.
+        do_blacklist (bool): Check if the input files are blacklisted.
             Default: False (because this adds some overheads)
         verbose (bool): Print debug information.
     """

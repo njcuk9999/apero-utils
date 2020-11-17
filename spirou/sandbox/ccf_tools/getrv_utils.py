@@ -34,6 +34,7 @@ DEFAULT_CFG = {
         'save_table': False,
         'save_cube': False,
         'save_rv': True,
+        'do_bad_odo': False,
         }
 
 
@@ -233,7 +234,14 @@ def parse_clargs():
             dest='do_plots',
             action='store_false',
             default=argparse.SUPPRESS,
-            help='Completely skip plotting routines'
+            help='Completely skip plotting routines.'
+            )
+    parser.add_argument(
+            '--bad-odo',
+            dest='do_bad_odo',
+            action='store_true',
+            default=argparse.SUPPRESS,
+            help='Check bad odometer list.'
             )
     parser.add_argument(
             '-v',

@@ -1,82 +1,74 @@
 import os
+import requests
 import numpy as np
+from astropy.table import Table
+
+URL_BASE = ('https://docs.google.com/spreadsheets/d/'
+            '{}/gviz/tq?tqx=out:csv&sheet={}')
+SHEET_ID = '1gvMp1nHmEcKCUpxsTxkx-5m115mLuQIGHhxJCyVoZCM'
+WORKSHEET = 0
 
 
-def check_blacklist(file_list):
-    # pass a file list and remove files that have their odometer
-    # included in the blacklisted list available on GitHub
+def odo_from_path(patharr):
+    """
+    Vectorized numpy string slicing in case lists get too long
+    """
+    sep = os.path.sep
+    a = np.array(np.char.split(patharr, sep).tolist())
+    a = a[:, -1]
+    a = np.char.ljust(a, 7)
+    return a.astype(int)
 
-    # adress where the blacklist is kept
-    tbl_url = ('https://raw.githubusercontent.com/njcuk9999/apero-utils/'
-               'master/spirou/sandbox/ccf_tools/blacklist_odo.tbl')
 
-    # if a previous version is on disk, then delete
-    fname = tbl_url.split('/')[-1]
-    if os.path.isfile(fname):
-        os.system('rm ' + fname)
+def check_blacklist(file_list, localfile=None, url=None, odo_kwd='ODOMETER'):
+    """
+    Pass a file list and remove files that have their odometer
+    included in the bad odometer list (google sheet or local document).
+    Args:
+        file_list (array): List of odometers to check
+        localfile (str): Local file to use as bad odometer list. Overrides
+                         any URL when not None. Default: None
+        url (str): URL to google sheet document with bad odometer list.
+                   Overrides default SLS url.
+        odo_kwd (str): Odometer keyword in bad odo list file.
+    Returns:
+        good_list (list): list of odometers that passed the check.
+    """
 
-    # get the file from github
-    os.system('wget '+tbl_url)
+    file_list = np.array(file_list)
+    odo_list = odo_from_path(file_list)  # Keep only odometer
 
-    # append lines read in the file
-    lines = []
-    with open(fname, 'r') as reader:
-        lines.append(reader.read())
+    # Load list
+    if localfile is not None:
+        bad_odo = Table.read(localfile)
+    else:
+        if url is None:
+            url = URL_BASE.format(SHEET_ID, WORKSHEET)
+        data = requests.get(url)
+        bad_odo = Table.read(data.text, format='ascii')
 
-    # remove file
-    os.system('rm '+fname)
+    # Convert boolean columns
+    bad_odo['PP'] = bad_odo['PP'] == 'TRUE'
+    bad_odo['RV'] = bad_odo['RV'] == 'TRUE'
 
-    # join lines
-    lines = ''.join(lines)
+    # Keep only RV indices
+    bad_odo = bad_odo[bad_odo['RV']]
 
-    # reformat
-    lines = np.array(lines.split('\n'))
-    keep = np.ones_like(lines, dtype=bool)
+    # Keep only odo column
+    bad_odo = np.array(bad_odo[odo_kwd].tolist())
 
-    # remove lines that are comments or too short
-    for i in range(len(lines)):
-        if len(lines[i]) < 7:  # too short to be valid
-            keep[i] = False
-            continue
-
-        if '#' == lines[i][0]:  # is a comment
-            keep[i] = False
-            continue
-
-        if ',' not in lines[i]:  # does not have a comment
-            keep[i] = False
-            continue
-
-        tmp = lines[i].split(',')[0]
-        tmp = ''.join(tmp.split(' '))
-
-        if len(tmp) != 7:  # not the length of an odometer
-            keep[i] = False
-            continue
-
-        lines[i] = tmp
-
-    # keep only lines that math the proper format
-    bad_odo = lines[keep]
-
-    # find which files should be kept (they are not in the bad odo list)
-    good_file = np.ones_like(file_list, dtype=bool)
-
-    # check if odometer is in file name
-    for i in range(len(file_list)):
-        for j in range(len(bad_odo)):
-            if bad_odo[j] in file_list[i]:
-                good_file[i] = False
+    # find which odometers are in bad list
+    # we then use this mask to filter file names
+    bad_mask = np.isin(odo_list, bad_odo)
 
     # remove bad files from list
-
-    if False in good_file:
+    if np.sum(bad_mask):
         print('We remove the following files : ')
-        bad_files = file_list[~good_file]
+        bad_files = file_list[bad_mask]
         for bad_file in bad_files:
             print('\t{0}'.format(bad_file))
         print()
     else:
-        print('No file listed in the blacklist')
+        print('No bad odometers listed.')
 
-    return file_list[good_file]
+    return file_list[~bad_mask]
