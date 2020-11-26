@@ -2,6 +2,7 @@ import os
 import glob
 from datetime import datetime
 from astropy.io import fits
+import numpy as np
 
 def intersection(lst1, lst2): 
 
@@ -42,105 +43,121 @@ def count_files_subdir(path, subdir='all', files='all'):
     return len(glob.glob('{0}/{1}/{2}'.format(path, s, f)))
 
 
-def list_odometer(path, files = 'all'):
+def list_odometers(path, files = 'all'):
+
+    #files = 'all' => a, c, d, f, and o odometers are listed
+    #files = 'a' => only a files
+    #files = 'c' => only c files
+    #files = 'd' => only d files
+    #files = 'f' => only f files
+    #files = 'o' => only o files
+
+    files_list = os.listdir('{0}'.format(path))
+    
+    odometers = []
 
     if files == 'all':
-        f = '*'
-    else:
-        f = files
 
-    file_list = os.listdir('{0}/{1}'.format(path, f))
-    
-    odometer = []
+        for i in range(len(files_list)):
+            if 'a' in files_list[i][7]: odometers.append(files_list[i][:7])
+            elif 'c' in files_list[i][7]: odometers.append(files_list[i][:7])
+            elif 'd' in files_list[i][7]: odometers.append(files_list[i][:7])
+            elif 'f' in files_list[i][7]: odometers.append(files_list[i][:7])
+            elif 'o' in files_list[i][7]: odometers.append(files_list[i][:7])
 
-    for i in range(len(tbl)):
-        if 'a' in filename[i]: index = filename[i].index('a')
-        elif 'c' in filename[i]: index = filename[i].index('c')
-        elif 'd' in filename[i]: index = filename[i].index('d')
-        elif 'f' in filename[i]: index = filename[i].index('f')
-        elif 'o' in filename[i]: index = filename[i].index('o')
-        else : return
+    if files == 'a':
+
+        for i in range(len(files_list)):
+            if 'a' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+    if files == 'c':
+
+        for i in range(len(files_list)):
+            if 'c' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+    if files == 'd':
+
+        for i in range(len(files_list)):
+            if 'd' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+    if files == 'f':
+
+        for i in range(len(files_list)):
+            if 'f' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+    if files == 'o':
+
+        for i in range(len(files_list)):
+            if files_list[i][7] == 'o': odometers.append(files_list[i][:7])
 
 
-        index = filename[i].index('')
-        odometer.append(filename[i][:index])
-
-    return odometer
+    return odometers
 
 
 class index_fits:
 
     def __init__(self, path):
         
+
         tbl = fits.getdata(path)
         self.tbl = tbl
         self.len = len(tbl)
 
         filename = tbl['FILENAME']
         self.filename= filename
-        self.night = tbl['NIGHTNAME']
+        self.nights = tbl['NIGHTNAME']
 
-        odometer = []
+        odometers = []
 
         for i in range(len(tbl)):
             index = filename[i].index('_pp.fits')
-            odometer.append(filename[i][:index])
+            odometers.append(filename[i][:index])
 
-        self.odometer = odometer
+        self.odometers = np.array(odometers)
 
 
 class log_fits:
 
     def __init__(self, path):
 
+
         tbl = fits.getdata(path)
         self.tbl = tbl
         self.len = len(tbl)
-        self.lenQCpass = sum(tbl['PASSED_ALL_QC'])
-        self.lenQCfail = len(tbl) - sum(tbl['PASSED_ALL_QC'])
-        self.lenEndpass = sum(tbl['ENDED'])
-        self.lenEndfail = len(tbl) - sum(tbl['ENDED'])
 
-        indexQCpass = tbl['PASSED_ALL_QC'] == True
-        indexQCfail = tbl['PASSED_ALL_QC'] == False
-        self.indexQCpass = indexQCpass
-        self.indexQCfail = indexQCfail
-        indexEndpass = tbl['ENDED'] == True
-        indexEndfail = tbl['ENDED'] == False          
-        self.indexEndpass = indexEndpass  
-        self.indexEndfail = indexEndfail
+        self.QC = tbl['PASSED_ALL_QC']
+        self.ENDED = tbl['ENDED']
 
-        self.nightQCpass = tbl['DIRECTORY'][indexQCpass]
-        self.nightQCfail = tbl['DIRECTORY'][indexQCfail]
-        self.nightEndpass = tbl['DIRECTORY'][indexEndpass]
-        self.nightEndfail = tbl['DIRECTORY'][indexEndfail]
-        self.QCstrpass = tbl['QC_STRING'][indexQCpass]
-        self.QCstrfail = tbl['QC_STRING'][indexQCfail]
-        self.errorEndpass = tbl['ERRORS'][indexEndpass]
-        self.errorEndfail = tbl['ERRORS'][indexEndfail]
-        self.logfileEndpass = tbl['LOGFILE'][indexEndpass]
-        self.logfileEndfail = tbl['LOGFILE'][indexEndfail]
+        indexQCtrue = tbl['PASSED_ALL_QC'] == True
+        indexQCfalse = tbl['PASSED_ALL_QC'] == False
+        self.indexQCtrue = indexQCtrue
+        self.indexQCfalse = indexQCfalse
+        indexENDEDtrue = tbl['ENDED'] == True
+        indexENDEDfalse = tbl['ENDED'] == False          
+        self.indexENDEDtrue = indexENDEDtrue  
+        self.indexENDEDfalse = indexENDEDfalse
+
+        self.nights = tbl['DIRECTORY']
 
         args = tbl['ARGS']
-        argsQCpass = tbl['ARGS'][indexQCpass]
-        argsQCfail = tbl['ARGS'][indexQCfail]
-        argsEndpass = tbl['ARGS'][indexEndpass]
-        argsEndfail = tbl['ARGS'][indexEndfail]
+        self.args = args
+        self.QCstr = tbl['QC_STRING']
+        self.ERRORS = tbl['ERRORS']
+        self.LOGFILE = tbl['LOGFILE']
 
-        self.args = args      
-        self.argsQCpass = argsQCpass
-        self.argsQCfail = argsQCfail
-        self.argsEndpass = argsEndpass
-        self.argsEndfail = argsEndfail
-
-        odometer = []
+        odometers = []
 
         for i in range(len(args)):
             index = args[i].index('.fits')
-            odometer.append(args[i][index-8:index])
+            odometers.append(args[i][index-8:index])
 
-        self.odometer = odometer
-        self.odometerQCpass = [x for x, y in zip(odometer, indexQCpass) if y == True]
-        self.odometerQCfail = [x for x, y in zip(odometer, indexQCfail) if y == True]
-        self.odometerEndpass = [x for x, y in zip(odometer, indexEndpass) if y == True]
-        self.odometerEndfail = [x for x, y in zip(odometer, indexEndfail) if y == True]
+        self.odometers = np.array(odometers)
+
+
+def inspect(tbl):
+    
+
+
+
+
+    return

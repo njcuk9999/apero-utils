@@ -3,23 +3,20 @@ from apero.core import constants
 from datetime import datetime
 from apero_tests_func import *
 
-#check1: how many raw files are there on disk
-#check2: how many pp files are there on disk (compared to raw files)
+#ALL TESTS CONDUCT BY 'preprocessing_test1.py'
 
+#check1: how many raw files are there on disk?
+#check2: how many pp files are there on disk?
 #stop1: check2 == check1?
-
-#check3: how many pp files are there in the index.fits
-
+#check3: how many pp files are there in the index.fits?
 #stop2: check3 == check2?
+#check4: how many pp files are there in the log.fits?
+#stop3: check4 == check 2?
+#check5: using the log.fits how many failed one or more QC? Which odometer? Which QC?
+#check6: using the log.fits how many failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
 
-#check4: using the log.fits how many passed all QC
-#check5: using the log.fits how many failed one or more QC
-#check6: which odometer failed one or more QC
-#check7: which QC did they fail
-#check8: using the log.fits how many failed to finish
-#check9: which odometer failed to finish
-#check10: why did they failed to finish using the 'ERRORS' columns
-#check11: why did they failed to finish using the 'LOGFILE' columns
+
+#constants
 
 params = constants.load('SPIROU')
 
@@ -29,10 +26,17 @@ date = datetime.now()
 date = date.strftime("%Y-%m-%d %H:%M:%S") #date
 
 raw_path = params['DRS_DATA_RAW']
-raw_nights = list_nights(raw_path)
+if raw_path[-1] == '/' :
+    raw_path = raw_path[:-1] #raw path without / at the end
+raw_nights = list_nights(raw_path) #list raw night directories
 
 pp_path = params['DRS_DATA_WORKING']
-pp_nights = list_nights(pp_path)
+if pp_path[-1] == '/' :
+    pp_path = pp_path[:-1] #pp path without / at the end
+pp_nights = list_nights(pp_path) #list preprocessed data night directories
+
+
+#TESTS
 
 raw_num = count_files_subdir(raw_path, subdir = 'all', files = '*.fits')  #check1
 pp_num = count_files_subdir(pp_path, subdir = 'all', files = '*pp.fits')    #check2
@@ -43,78 +47,105 @@ if pp_num == raw_num:
     color1 = 'Lime'
     stop1 = 'Yes'
     comment1 = ''
+    inspect1 = ''
 elif pp_num < raw_num:
     color1 = 'Yellow'
     stop1 = 'No'
-    comment1 = 'Not all available raw files were reduced'
+    comment1 = 'Not all available raw files were reduced.'
+    inspect1 = ''
 else :
     color1 = 'Red'
     stop1 = 'No'
-    comment1 = 'The number of pp files should always be smaller than the number of raw files'
+    comment1 = 'The number of pp files should always be smaller than the number of raw files.'
+    inspect1 = ''
 
 
-pp_indexfits_num = 0
-pp_logfits_QCpassed_num = 0
-pp_logfits_QCfailed_num = 0
-pp_logfits_endedfailed_num = 0
+#inspect all pp_nights index.fits and log.fits
 
-odometer_index = []
-odometer_QC = []
-NIGHTNAME_QC = []
-QCstr = []
-odometer_endedfailed = []
-NIGHTNAME_endedfailed = []
-ERRORS = []
-LOGFILE = []
+pp_num_indexfits = 0 #check3
+pp_num_logfits = 0 #check4
+pp_num_logfits_QC = 0
+pp_num_logfits_QCtrue = 0
+pp_num_logfits_ENDED = 0
+pp_num_logfits_ENDEDtrue = 0 
+
+odometers_logfits_QCfalse = []
+nights_logfits_QCfalse = []
+QCstr_logfits_QCfalse = []
+
+odometers_logfits_ENDEDfalse = []
+nights_logfits_ENDEDfalse = []
+ERRORS_logfits_ENDEDfalse = []
+LOGFILE_logfits_ENDEDfalse = []
 
 for i in range(len(pp_nights)):
 
     indexfits = index_fits('{0}/{1}/index.fits'.format(pp_path, pp_nights[i]))
-    odometer_index.extend(indexfits.odometer)
-
-    pp_indexfits_num += indexfits.len #check3
-    
     logfits = log_fits('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
 
-    pp_logfits_QCpassed_num += logfits.lenQCpass #check4
-    pp_logfits_QCfailed_num += logfits.lenQCfail #check5
+    pp_num_indexfits += indexfits.len #check3
 
-    odometer_QC.extend(logfits.odometerQCfail) #check6
-    NIGHTNAME_QC.extend(logfits.nightQCfail)
-    QCstr.extend(logfits.QCstrfail) #check7
+    pp_num_logfits += logfits.len #check4
+    pp_num_logfits_QC += len(logfits.QC)
+    pp_num_logfits_QCtrue += sum(logfits.QC)
+    pp_num_logfits_ENDED += len(logfits.ENDED)
+    pp_num_logfits_ENDEDtrue += sum(logfits.ENDED)
 
-    pp_logfits_endedfailed_num += logfits.lenEndfail #check8
-    odometer_endedfailed.extend(logfits.odometerEndfail) #check9
-    NIGHTNAME_endedfailed.extend(logfits.nightEndfail)
-    ERRORS.extend(logfits.errorEndfail) #check10
-    LOGFILE.extend(logfits.logfileEndfail) #check11
+    indexQCfalse = logfits.indexQCfalse
+    indexENDEDfalse = logfits.indexENDEDfalse
+
+    odometers_logfits_QCfalse.extend(logfits.odometers[indexQCfalse]) #check5
+    nights_logfits_QCfalse.extend(logfits.nights[indexQCfalse]) #check5
+    QCstr_logfits_QCfalse.extend(logfits.QCstr[indexQCfalse]) #check5
+
+    odometers_logfits_ENDEDfalse.extend(logfits.odometers[indexENDEDfalse]) #check6
+    nights_logfits_ENDEDfalse.extend(logfits.nights[indexENDEDfalse]) #check6
+    ERRORS_logfits_ENDEDfalse.extend(logfits.ERRORS[indexENDEDfalse]) #check6
+    LOGFILE_logfits_ENDEDfalse.extend(logfits.LOGFILE[indexENDEDfalse]) #check6
+
+
+pp_num_logfits_QCfalse = pp_num_logfits_QC - pp_num_logfits_QCtrue #check5
+pp_num_logfits_ENDEDfalse = pp_num_logfits_ENDED - pp_num_logfits_ENDEDtrue #check6
+
+
 
 #stop2
 
-if pp_indexfits_num == pp_num:
+if pp_num_indexfits == pp_num:
     color2 = 'Lime'
     stop2 = 'Yes'
-    comment2 = """<a href=" ">Inspect</a>"""
+    comment2 = ''
+    inspect2 = ''
     
 else:
     color2 = 'Red'
     stop2 = 'No'
-    comment2 = """<a href=" ">Inspect</a>"""
+    comment2 = ''
+    inspect2 = ''
+
+#stop3
+
+if pp_num_logfits == pp_num:
+    color3 = 'Lime'
+    stop3 = 'Yes'
+    comment3 = ''
+    inspect3 = ''
+
+elif pp_num_logfits > pp_num:
+    color3 = 'Yellow'
+    stop3 = 'No'
+    comment3 = 'Some files were processed more than once.'
+    inspect3 = ''
+    
+else:
+    color3 = 'Red'
+    stop3 = 'No'
+    comment3 = ''
+    inspect3 = ''
 
 
 
-html_hover_QC = []
-for i in range(len(odometer_QC)):
-    html_hover_QC.append("""<a href=" " title="NIGHTNAME: {0}\nQC_STRING: {1}" style="color:#000000;text-decoration:none">{2}</a>""".format(NIGHTNAME_QC[i], QCstr[i], odometer_QC[i]))
-html_hover_QC = ", ".join(html_hover_QC)
-
-
-html_hover_endedfailed = []
-for i in range(len(odometer_endedfailed)):
-    html_hover_endedfailed.append("""<a href=" " title="NIGHTNAME: {0}\nERRORS: {1}\nLOGFILE: {2}" style="color:#000000;text-decoration:none">{3}</a>""".format(NIGHTNAME_endedfailed[i], ERRORS[i], LOGFILE[i], odometer_endedfailed[i]))
-html_hover_endedfailed = ", ".join(html_hover_endedfailed)
-
-
+#Build preprocessing_test1.html
  
 html_text = f"""
 <html>
@@ -189,8 +220,8 @@ th, td {{
   </tr>
   <tr>
     <td>3</td>
-    <td># of pp files in {pp_path} index.fits </td>
-    <td>{pp_indexfits_num}</td>
+    <td># of pp files in {pp_path}/*/index.fits </td>
+    <td>{pp_num_indexfits}</td>
     <td></td>
   </tr>
   <tr>
@@ -201,32 +232,20 @@ th, td {{
   </tr>
   <tr>
     <td>4</td>
-    <td># of pp files in {pp_path}/*/log.fits that passed all QC</td>
-    <td>{pp_logfits_QCpassed_num}</td>
+    <td># of pp files in {pp_path}/*/log.fits</td>
+    <td>{pp_num_logfits}</td>
     <td></td>
   </tr>
   <tr>
     <td>5</td>
     <td># of pp files in {pp_path}/*/log.fits that failed one or more QC</td>
-    <td>{pp_logfits_QCfailed_num}</td>
+    <td>{pp_num_logfits_QCfalse}</td>
     <td></td>
   </tr>
   <tr>
     <td>6</td>
-    <td>pp files that failed one or more QC, and which QC?</td>
-    <td><small>{html_hover_QC}</small></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>7</td>
     <td># of pp files in {pp_path}/*/log.fits that failed to finish</td>
-    <td>{pp_logfits_endedfailed_num}</td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>8</td>
-    <td>pp files that failed to finish, and why?</td>
-    <td><small>{html_hover_endedfailed}</small></td>
+    <td>{pp_num_logfits_ENDEDfalse}</td>
     <td></td>
   </tr>
 </table>
