@@ -153,11 +153,25 @@ class log_fits:
 
         self.odometers = np.array(odometers)
 
+from bokeh.io.saving import save
+from bokeh.io.output import output_file
+from bokeh.models import ColumnDataSource, DataTable, DateFormatter, TableColumn
 
-def inspect(tbl):
+def inspect(test, check, data_dict):
     
+    if not os.path.isdir('{0}/{1}'.format(test, check)):
+        os.system('mkdir {0}/{1}'.format(test, check))
 
+    source = ColumnDataSource(data_dict)
+    
+    keys_list = list(data_dict.keys())
+    columns = []
+    for i in range(len(keys_list)):
+        columns.append(TableColumn(field = keys_list[i], title = keys_list[i]))
+    
+    data_table = DataTable(source=source, columns=columns, width=1200, height=1500)
 
+    output_file("{0}/{1}/{1}.html".format(test, check), title="{0}".format(check))
+    save(data_table)
 
-
-    return
+    return """<a href='{0}/{1}/{1}.html'>Inspect""".format(test, check)

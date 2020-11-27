@@ -108,7 +108,6 @@ pp_num_logfits_QCfalse = pp_num_logfits_QC - pp_num_logfits_QCtrue #check5
 pp_num_logfits_ENDEDfalse = pp_num_logfits_ENDED - pp_num_logfits_ENDEDtrue #check6
 
 
-
 #stop2
 
 if pp_num_indexfits == pp_num:
@@ -144,6 +143,19 @@ else:
     inspect3 = ''
 
 
+data_dict5 = {'Night': nights_logfits_QCfalse,
+             'Odometer': odometers_logfits_QCfalse,
+             'QC_STRING': QCstr_logfits_QCfalse,
+}
+inspect5 = inspect('preprocessing_test1', 'check5', data_dict5)
+
+data_dict6 = {'Night': nights_logfits_ENDEDfalse,
+             'Odometer': odometers_logfits_ENDEDfalse,
+             'ERRORS': ERRORS_logfits_ENDEDfalse,
+             'LOGFILE': LOGFILE_logfits_ENDEDfalse,
+}
+inspect6 = inspect('preprocessing_test1', 'check6', data_dict6)
+
 
 #Build preprocessing_test1.html
  
@@ -155,7 +167,7 @@ html_text = f"""
 <title>APERO Tests</title>
 <style>
 table {{
-  width:70%;
+  width:75%;
 }}
 table, th, td {{
   border: 1px solid black;
@@ -190,20 +202,23 @@ th, td {{
 
   <colgroup>
      <col span="1" style="width: 5%;">
-     <col span="1" style="width: 60%;">
+     <col span="1" style="width: 55%;">
      <col span="1" style="width: 5%;">
      <col span="1" style="width: 30%;">
+     <col span="1" style="width: 5%;">
   </colgroup>
   <tr>
     <th>Check</th>
     <th>Description</th>
     <th>Result</th>
-    <th>Comment</th>  
+    <th>Comments</th> 
+    <th>Inspect</th> 
   </tr>
   <tr>
     <td>1</td>
     <td># of raw files in {raw_path}</td>
     <td>{raw_num}</td>
+    <td></td>
     <td></td>
   </tr>
   <tr>
@@ -211,17 +226,20 @@ th, td {{
     <td># of pp files in {pp_path}</td>
     <td>{pp_num}</td>
     <td></td>
+    <td></td>
   </tr>
   <tr>
     <td> </td>
     <td>Check 2 == Check 1?</td>
     <td bgcolor={color1}>{stop1}</td>
     <td>{comment1}</td>
+    <td></td>
   </tr>
   <tr>
     <td>3</td>
     <td># of pp files in {pp_path}/*/index.fits </td>
     <td>{pp_num_indexfits}</td>
+    <td></td>
     <td></td>
   </tr>
   <tr>
@@ -229,11 +247,20 @@ th, td {{
     <td>Check 3 == Check 2?</td>
     <td bgcolor={color2}>{stop2}</td>
     <td>{comment2}</td>
+    <td></td>
   </tr>
   <tr>
     <td>4</td>
     <td># of pp files in {pp_path}/*/log.fits</td>
     <td>{pp_num_logfits}</td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td> </td>
+    <td>Check 4 == Check 2?</td>
+    <td bgcolor={color3}>{stop3}</td>
+    <td>{comment3}</td>
     <td></td>
   </tr>
   <tr>
@@ -241,12 +268,14 @@ th, td {{
     <td># of pp files in {pp_path}/*/log.fits that failed one or more QC</td>
     <td>{pp_num_logfits_QCfalse}</td>
     <td></td>
+    <td>{inspect5}</td>
   </tr>
   <tr>
     <td>6</td>
     <td># of pp files in {pp_path}/*/log.fits that failed to finish</td>
     <td>{pp_num_logfits_ENDEDfalse}</td>
     <td></td>
+    <td>{inspect6}</td>
   </tr>
 </table>
 

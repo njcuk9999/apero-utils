@@ -6,7 +6,7 @@
 <title>APERO Tests</title>
 <style>
 table {
-  width:70%;
+  width:75%;
 }
 table, th, td {
   border: 1px solid black;
@@ -34,27 +34,30 @@ th, td {
 <h3>Preprocessing Test #1</h3>
 <p><b>Setup: /spirou/apero-drs-student/apero-setup/setup_charles</b></p>
 <p><b>Instrument: SPIROU</b></p>
-<p><b>Date: 2020-11-26 14:30:28</b></p>
+<p><b>Date: 2020-11-27 15:03:17</b></p>
 <p>   </p>
 
 <table id="t01">
 
   <colgroup>
      <col span="1" style="width: 5%;">
-     <col span="1" style="width: 60%;">
+     <col span="1" style="width: 55%;">
      <col span="1" style="width: 5%;">
      <col span="1" style="width: 30%;">
+     <col span="1" style="width: 5%;">
   </colgroup>
   <tr>
     <th>Check</th>
     <th>Description</th>
     <th>Result</th>
-    <th>Comment</th>  
+    <th>Comments</th> 
+    <th>Inspect</th> 
   </tr>
   <tr>
     <td>1</td>
     <td># of raw files in /spirou/cfht_nights/common/rawsym_sept30</td>
     <td>42927</td>
+    <td></td>
     <td></td>
   </tr>
   <tr>
@@ -62,17 +65,20 @@ th, td {
     <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp</td>
     <td>35510</td>
     <td></td>
+    <td></td>
   </tr>
   <tr>
     <td> </td>
     <td>Check 2 == Check 1?</td>
     <td bgcolor=Yellow>No</td>
-    <td>Not all available raw files were reduced</td>
+    <td>Not all available raw files were reduced.</td>
+    <td></td>
   </tr>
   <tr>
     <td>3</td>
     <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp/*/index.fits </td>
     <td>35510</td>
+    <td></td>
     <td></td>
   </tr>
   <tr>
@@ -80,11 +86,20 @@ th, td {
     <td>Check 3 == Check 2?</td>
     <td bgcolor=Lime>Yes</td>
     <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>4</td>
     <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp/*/log.fits</td>
     <td>38778</td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
+    <td> </td>
+    <td>Check 4 == Check 2?</td>
+    <td bgcolor=Yellow>No</td>
+    <td>Some files were processed more than once.</td>
     <td></td>
   </tr>
   <tr>
@@ -92,12 +107,14 @@ th, td {
     <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp/*/log.fits that failed one or more QC</td>
     <td>80</td>
     <td></td>
+    <td><a href='preprocessing_test1/check5/check5.html'>Inspect</td>
   </tr>
   <tr>
     <td>6</td>
     <td># of pp files in /spirou/cfht_nights/cfht_july1/tmp/*/log.fits that failed to finish</td>
     <td>37</td>
     <td></td>
+    <td><a href='preprocessing_test1/check6/check6.html'>Inspect</td>
   </tr>
 </table>
 
