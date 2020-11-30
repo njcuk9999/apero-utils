@@ -1,5 +1,16 @@
 import os
+from apero.core import constants
+from datetime import datetime
+from apero_tests_func import *
 
+#constants
+
+params = constants.load('SPIROU')
+
+setup = os.environ['DRS_UCONFIG'] #setup
+instrument = params['INSTRUMENT'] #instrument
+date = datetime.now()
+date = date.strftime("%Y-%m-%d %H:%M:%S") #date
 
 test_list_short = ['preprocessing_test1', 'darkmaster_test1', 'badpixel_test1',
                    'localisation_test1', 'shapemaster_test1', 'shape_test1',
@@ -40,14 +51,16 @@ print('all tests done')
 
 
 # build table element
-
 html_table = []
 for i in range(n):
+    summary, color = summary(test_list_short[i])
     html_table.append("""
   <tr>
-    <td><a href='{0}/{0}.html'>{1}</a></td>
+    <td>{1}</td>
+    <td>{2}</td>
+    <td bgcolor={3}><a href='{0}/{0}.html'>Inspect</a></td>
   </tr>
-""".format(test_list_short[i], test_list_long[i]))
+""".format(test_list_short[i], test_list_long[i], summary, color))
 html_table = "".join(html_table)
 
 
@@ -60,7 +73,7 @@ html_text = f"""
 <title>APERO Tests</title>
 <style>
 table {{
-  width:25%;
+  width:50%;
 }}
 table, th, td {{
   border: 1px solid black;
@@ -81,6 +94,7 @@ th, td {{
   color: black;
 }}
 </style>
+
 </head>
 
 <body>
@@ -89,9 +103,25 @@ th, td {{
 
 <p>A PipelinE to Reduce Observations</p>
 
+
+<h3>APERO Tests Summary Page</h3>
+<p><b>Setup: {setup}</b></p>
+<p><b>Instrument: {instrument}</b></p>
+<p><b>Date: {date}</b></p>
+<p>   </p>
+
 <table id="t01">
+
+  <colgroup>
+     <col span="1" style="width: 50%;">
+     <col span="1" style="width: 40%;">
+     <col span="1" style="width: 10%;">
+  </colgroup>
+
   <tr>
-    <th>Recipe Test</th> 
+    <th>Recipe Test</th>
+    <th>Summary</th>
+    <th>Details</th>   
   </tr>
 {html_table}
 </table>

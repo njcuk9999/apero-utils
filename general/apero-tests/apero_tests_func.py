@@ -156,8 +156,10 @@ class log_fits:
 from bokeh.io.saving import save
 from bokeh.io.output import output_file
 from bokeh.models import ColumnDataSource, DataTable, DateFormatter, TableColumn
+from bokeh.models.widgets import Div
+from bokeh.layouts import column
 
-def inspect(test, check, data_dict):
+def inspect(test, check, data_dict, title):
     
     if not os.path.isdir('{0}/{1}'.format(test, check)):
         os.system('mkdir {0}/{1}'.format(test, check))
@@ -169,9 +171,34 @@ def inspect(test, check, data_dict):
     for i in range(len(keys_list)):
         columns.append(TableColumn(field = keys_list[i], title = keys_list[i]))
     
-    data_table = DataTable(source=source, columns=columns, width=1200, height=1500)
+    table_title = Div(text="""<font size="+1"> <b>{0}</b> </font>""".format(title), height = 30)
+    data_table = DataTable(source=source, columns=columns, autosize_mode = 'fit_columns', width=1500, height=500)
+    layout = column(table_title, data_table)
 
     output_file("{0}/{1}/{1}.html".format(test, check), title="{0}".format(check))
-    save(data_table)
+    save(layout)
 
-    return """<a href='{0}/{1}/{1}.html'>Inspect""".format(test, check)
+    html_str = """<a href='{0}/{0}.html'>Inspect""".format(check)
+
+    return html_str
+
+def summary(test):
+    f = open("{0}/{0}.html".format(test), "r")
+    html = f.read()
+
+    passed = html.count('Lime')
+    conditional = html.count('Yellow')
+    failed = html.count('Red')
+
+    n = passed + conditional + failed
+
+    if passed == n :
+        color = 'Lime'
+    elif conditional >= 1 and failed == 0 :
+        color = 'Yellow'
+    else : 
+        color = 'Red'
+
+    html_str = """Passed: {0}/{3}<br>Passed with conditions: {1}/{3}<br>Failed: {2}/{3} """.format(passed, conditional, failed, n)
+
+    return html_str, color

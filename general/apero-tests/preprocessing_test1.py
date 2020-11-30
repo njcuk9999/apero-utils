@@ -80,6 +80,11 @@ LOGFILE_logfits_ENDEDfalse = []
 
 for i in range(len(pp_nights)):
 
+    if pp_nights[i] == '2020-03-09': 
+        continue
+    if pp_nights[i] == '2020-06-22': 
+        continue     
+
     indexfits = index_fits('{0}/{1}/index.fits'.format(pp_path, pp_nights[i]))
     logfits = log_fits('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
 
@@ -147,14 +152,14 @@ data_dict5 = {'Night': nights_logfits_QCfalse,
              'Odometer': odometers_logfits_QCfalse,
              'QC_STRING': QCstr_logfits_QCfalse,
 }
-inspect5 = inspect('preprocessing_test1', 'check5', data_dict5)
+inspect5 = inspect('preprocessing_test1', 'check5', data_dict5, 'Odometers that failed one or more Quality Control')
 
 data_dict6 = {'Night': nights_logfits_ENDEDfalse,
              'Odometer': odometers_logfits_ENDEDfalse,
              'ERRORS': ERRORS_logfits_ENDEDfalse,
              'LOGFILE': LOGFILE_logfits_ENDEDfalse,
 }
-inspect6 = inspect('preprocessing_test1', 'check6', data_dict6)
+inspect6 = inspect('preprocessing_test1', 'check6', data_dict6, 'Odometers that failed to finish')
 
 
 #Build preprocessing_test1.html
@@ -212,7 +217,7 @@ th, td {{
     <th>Description</th>
     <th>Result</th>
     <th>Comments</th> 
-    <th>Inspect</th> 
+    <th>Details</th> 
   </tr>
   <tr>
     <td>1</td>
