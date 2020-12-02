@@ -1,6 +1,7 @@
 """
 Some utility functions to play with astro databases
 """
+import warnings
 import requests
 import numpy as np
 from astropy.table import Table
@@ -57,7 +58,7 @@ def add_aliases(df):
             continue
         elif np.isnan(row['ALIASES']):
             simbad_ids = get_aliases_from_gaia(row['GAIADR2ID'])
-            aliases = '|'.join([row['OBJNAME'], simbad_ids])
+            aliases = '|'.join([row['OBJECT'], simbad_ids])
             df.at[index, 'ALIASES'] = aliases
         else:
             raise ValueError('Unexpected alias type')
@@ -69,7 +70,7 @@ def check_id(df, replace=False):
     """
     Steps:
         1. String comparison with  formatting to match more objects. Some
-           catalog prefixes are remapped (e.g. Gl->GJ) for Simbad.
+           catalog prefixes are remapped (e.g. Gl->GJ) to improve matches.
         2. For TOIs, which are not always on Simbad, we also check the MAST
            database to verify if Gaia ID matches TOI or TIC
     A string comparison is done with a bit of formatting to match more objects.
@@ -83,20 +84,20 @@ def check_id(df, replace=False):
 
     df = df.copy()
 
-    # Get alias list (without first, which is just objname copied direclty)
+    # Get alias list (without first, which is just object copied direclty)
     aliases = df.loc[~df['CHECKED']]['ALIASES']
     aliases = aliases.str.upper().str.replace(' ', '').str.split('|').str[1:]
     aliases = aliases.tolist()
 
     # Format names
-    names = df.loc[~df['CHECKED']]['OBJNAME'].str.upper().str.replace(' ', '')
+    names = df.loc[~df['CHECKED']]['OBJECT'].str.upper().str.replace(' ', '')
     names = names.tolist()
 
     # String-based checks only
     match = check_str(names, aliases)
     df['FOUND'] = df['FOUND'].mask(~df['CHECKED'], match)  # Update matches
     print('The following objects were not found with string matching.')
-    print(df['OBJNAME'].loc[~df['FOUND']])
+    print(df['OBJECT'].loc[~df['FOUND']])
 
     # Update CHECKED only for objects found so far
     df['CHECKED'] = df['CHECKED'].mask(~df['CHECKED'], match)  # Update checks
@@ -106,14 +107,14 @@ def check_id(df, replace=False):
     df_left = check_tess(df_left, replace=replace)
     df.loc[~df['CHECKED']] = df_left
     print('The following objects were not found with TOI validation.')
-    print(df['OBJNAME'].loc[~df['FOUND']])
+    print(df['OBJECT'].loc[~df['FOUND']])
 
     if replace:
         df_left = df.loc[~df['CHECKED']]  # Only target not found yet
         check_simbad(df_left)
         df.loc[~df['CHECKED']] = df_left
     print('The following objects were not found in SIMBAD (raw string only).')
-    print(df['OBJNAME'].loc[~df['FOUND']])
+    print(df['OBJECT'].loc[~df['FOUND']])
 
     # Mark all as checked
     df['CHECKED'] = df['CHECKED'].mask(~df['CHECKED'], True)
@@ -161,8 +162,8 @@ def check_tess(df, replace=False):
 
     # Replace TOI names with TIC
     # Keep order consistent with dataframe
-    toi_inds = df.index[df['OBJNAME'].str.startswith('TOI')]
-    tois = df['OBJNAME'].loc[toi_inds]
+    toi_inds = df.index[df['OBJECT'].str.startswith('TOI')]
+    tois = df['OBJECT'].loc[toi_inds]
     tois = tois.str.split('-').map(lambda x: x[1]) + '.01'
     tois = tois.tolist()
     toi_to_tic = df_toi.loc[df_toi['TOI'].isin(tois)]
@@ -200,30 +201,36 @@ def check_tess(df, replace=False):
     return df
 
 
-def check_simbad(df):
+def check_simbad(df, verbose=False):
     """
-    Check list of names in simbad and return gaia id if any
+    Check list of names in simbad and return gaia id if any.
     """
-    names = df['OBJNAME']
-    for i, name in enumerate(names):
-        res = Simbad.query_objectids(name)
-        count = 0
-        try:
-            for a in res['ID']:
-                if 'Gaia' in a:
-                    gaiaid = a.split(' ')[-1]
-                    count += 1
-        except TypeError:
-            pass
-        if count == 0:
-            print(f'No GAIA ID found for {name}')
-        elif count == 1:
-            print(f'Found GAIA ID for {name}')
-            df['GAIADR2ID'].iloc[i] = gaiaid
-            df['COMMENTS'].iloc[i] = 'Updated Gaia ID from SIMBAD'
-            df['FOUND'].iloc[i] = True
-        elif count > 1:
-            print(f'Gaia ID for {name} is ambiguous, returning no match')
+    df = df.copy()
+    names = df['OBJECT']
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        for i, name in enumerate(names):
+            res = Simbad.query_objectids(name)
+            count = 0
+            try:
+                for a in res['ID']:
+                    if 'Gaia DR2' in a:
+                        gaiaid = a.split(' ')[-1]
+                        count += 1
+            except TypeError:
+                pass
+            if count == 0:
+                if verbose:
+                    print(f'No GAIA ID found for {name}')
+            elif count == 1:
+                if verbose:
+                    print(f'Found GAIA ID for {name}')
+                df['GAIADR2ID'].iloc[i] = gaiaid
+                df['COMMENTS'].iloc[i] = 'Updated Gaia ID from SIMBAD'
+                df['FOUND'].iloc[i] = True
+            elif count > 1:
+                if verbose:
+                    print(f'Multiple Gaia ID for {name}, returning no match')
 
     return df
 
