@@ -271,7 +271,13 @@ def get_full_sheet(sheet_id, ws=0):
     sh = gspd.spread.Spread(sheet_id)
     sh.open_sheet(ws)
 
-    df = sh.sheet_to_df(index=0, unformatted_columns=COLNAMES)
+    if sh.sheet.title == 'Info':
+        df = sh.sheet_to_df(index=0, unformatted_columns=COLNAMES)
+    else:
+        try:
+            df = sh.sheet_to_df(index=0, unformatted_columns=['OBJECT'])
+        except KeyError:
+            df = sh.sheet_to_df(index=0)
 
     return df
 

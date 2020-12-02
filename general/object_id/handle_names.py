@@ -9,6 +9,7 @@ import pandas as pd
 import utils as ut
 from astroquery.simbad import Simbad
 
+# Known bad names
 BAD_NAMES = [
         'sky.*_.*',
         '.*_sky.*',
@@ -19,6 +20,15 @@ BAD_NAMES = [
         '.*Test',
         ]
 BAD_NAMES = '|'.join(BAD_NAMES)  # pipe symbol as OR in regex
+
+# Known rejected names
+REJ_NAMES = [
+        'Moon.*',
+        'Neptune.*',
+        'Saturn.*',
+        'Venus.*',
+        ]
+REJ_NAMES = '|'.join(REJ_NAMES)  # pipe symbol as OR in regex
 
 path_to_data = '/home/vandal/Documents/spirou/obj_db/object_info.csv'
 sheet_id = '1jwlux8AJjBMMVrbg6LszJIpFJrk6alhbT5HA7BiAHD8'
@@ -131,8 +141,13 @@ for ind, row in df_sheet.iterrows():
         print()
 
 # Objects without str match
-no_match = new_names[~cum_match_mask].sort_values(ignore_index=True)
-df_test = df_test[~cum_match_mask].sort_values('OBJECT', ignore_index=True)
+no_match = new_names[~cum_match_mask].sort_values(ignore_index=True,
+                                                  key=lambda v: v.str.upper(),
+                                                  )
+df_test = df_test[~cum_match_mask].sort_values('OBJECT',
+                                               ignore_index=True,
+                                               key=lambda v: v.str.upper(),
+                                               )
 
 # Append matched GAIA IDs as aliases automatically
 al_arr = df_alias.GAIADR2ID.values
@@ -146,7 +161,10 @@ df_new['ALIASES'] = df_new['OBJECT']
 funs = dict(zip(df_new.columns, ['first'] * len(df_new.columns)))
 funs['ALIASES'] = '|'.join
 df_new = df_new.groupby('GAIADR2ID').agg(funs).reset_index(drop=True)
-df_new = df_new.sort_values('OBJECT', ignore_index=True)
+df_new = df_new.sort_values('OBJECT',
+                            ignore_index=True,
+                            key=lambda v: v.str.upper(),
+                            )
 
 
 # Among no_match, see if any are found in simbad
@@ -165,12 +183,38 @@ with warnings.catch_warnings():
         df_test.loc[i, 'COMMENTS'] = 'Found aliases in SIMBAD'
 
 df_new = df_new.append(df_test[df_test.ALIASES.notnull()])
-df_new = df_new.sort_values('OBJECT', ignore_index=True)
+df_new = df_new.sort_values('OBJECT',
+                            ignore_index=True,
+                            key=lambda v: v.str.upper(),
+                            )
 df_test = df_test[df_test.ALIASES.isnull()]
 
-# Update sheet with new objects for which 100% sure
-# TODO: marked ones with GAIA ID as CHECKED and all new to manual_edit
-# df_sheet = df_sheet.append(df_new, ignore_index=True).sort_values('OBJECT')
-# backup_df = ut.update_full_sheet(sheet_id, df_sheet)
+# Update some columns for new objects
+df_new['CHECKED'] = df_new.GAIADR2ID.notnull()
+df_new['FOUND'] = df_new.GAIADR2ID.notnull()
+df_new['MANUAL_EDIT'] = False
 
-# TODO: Add non-matched objects
+# Update sheet with new objects for which 100% sure
+if df_new.shape[0] > 0:
+    df_sheet = df_sheet.append(df_new, ignore_index=True).sort_values(
+                                                'OBJECT',
+                                                ignore_index=True,
+                                                key=lambda v: v.str.upper(),
+                                                )
+    backup_df = ut.update_full_sheet(sheet_id, df_sheet)
+
+# Rejected objects
+rej_names = df_test.loc[df_test.OBJECT.str.fullmatch(REJ_NAMES), 'OBJECT']
+rej_names = pd.DataFrame(rej_names)  # Make DF
+df_rej = ut.get_full_sheet(sheet_id, ws='Rejected')  # Load known rejected 
+rej_mask = rej_names.OBJECT.isin(df_rej.OBJECT)
+df_rej = df_rej.append(rej_names[~rej_mask], ignore_index=True).sort_values(
+                                                'OBJECT',
+                                                ignore_index=True,
+                                                key=lambda v: v.str.upper(),
+                                                )
+if not rej_mask.all():
+    df_back = ut.update_full_sheet(sheet_id, df_rej, ws='Rejected')
+
+# Objects without match and not rejected (mostly spelling)
+# TODO: Run gaia matching function and check names
