@@ -19,7 +19,11 @@ def vals_and_counts(df, kwd, threshold=None):
 
     # reject unphysical values
     if threshold is not None:
-        vals = vals[np.abs(vals) < threshold]
+        mask = np.logical_and(
+                np.abs(vals) < threshold[1],
+                np.abs(vals) > threshold[0],
+                )
+        vals = vals[mask]
 
     vals = vals[np.nonzero(vals)]
     counts = counts[vals].values
@@ -66,7 +70,7 @@ for remote_object in df_id['OBJECT']:
     rv, rv_count = vals_and_counts(objrows, 'OBJRV', threshold=(0, 2000))
     teff, teff_count = vals_and_counts(objrows,
                                        'OBJTEMP',
-                                       # threshold=(1000, np.inf),
+                                       threshold=(1000, np.inf),
                                        )
 
     # Append latest value to "main" list (pandas unique used, so no sorting)
