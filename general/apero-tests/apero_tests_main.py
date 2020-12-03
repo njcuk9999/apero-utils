@@ -36,7 +36,6 @@ test_list_long = ['Preprocessing Recipe Test #1', 'Dark Master Recipe Test #1',
                   'Make Template Recipe Test #1', 'CCF Recipe Test #1']
 
 n = len(test_list_short)  # number of tests
-n = 1
 for i in range(n):
 
     if not os.path.isdir(test_list_short[i]):
@@ -44,23 +43,38 @@ for i in range(n):
 
     print('test {0}/{1}'.format(i+1,n))   
     print('running {0}\n'.format(test_list_short[i]))    
-    os.system('python {0}.py'.format(test_list_short[i]))
-
-
+    
+    try:
+        os.system('python {0}.py'.format(test_list_short[i]))
+    except:
+        pass
+    
 print('all tests done')   
 
 
 # build table element
 html_table = []
+
 for i in range(n):
-    summary, color = summary(test_list_short[i])
-    html_table.append("""
-  <tr>
-    <td>{1}</td>
-    <td>{2}</td>
-    <td bgcolor={3}><a href='{0}/{0}.html'>Inspect</a></td>
-  </tr>
-""".format(test_list_short[i], test_list_long[i], summary, color))
+    
+    if os.path.isfile("{0}/{0}.html".format(test_list_short[i])):
+        summary, color = summary(test_list_short[i])
+        html_table.append("""
+        <tr>
+          <td>{1}</td>
+          <td>{2}</td>
+          <td bgcolor={3}><a href='{0}/{0}.html'>Inspect</a></td>
+        </tr>
+        """.format(test_list_short[i], test_list_long[i], summary, color))
+
+    else : 
+        html_table.append("""
+        <tr>
+          <td>{0}</td>
+          <td></td>
+          <td></td>
+        </tr>
+        """.format(test_list_long[i]))
 html_table = "".join(html_table)
 
 

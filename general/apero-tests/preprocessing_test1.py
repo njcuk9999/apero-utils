@@ -11,9 +11,10 @@ from apero_tests_func import *
 #check3: how many pp files are there in the index.fits?
 #stop2: check3 == check2?
 #check4: how many pp files are there in the log.fits?
-#stop3: check4 == check 2?
-#check5: using the log.fits how many failed one or more QC? Which odometer? Which QC?
-#check6: using the log.fits how many failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
+#check5: how many unique pp files are there in the log.fits?
+#stop3: check5 == check 2?
+#check6: using the log.fits how many failed one or more QC? Which odometer? Which QC?
+#check7: using the log.fits how many failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
 
 
 #constants
@@ -64,6 +65,7 @@ else :
 
 pp_num_indexfits = 0 #check3
 pp_num_logfits = 0 #check4
+pp_num_unique_logfits = 0 #check5
 pp_num_logfits_QC = 0
 pp_num_logfits_QCtrue = 0
 pp_num_logfits_ENDED = 0
@@ -78,39 +80,47 @@ nights_logfits_ENDEDfalse = []
 ERRORS_logfits_ENDEDfalse = []
 LOGFILE_logfits_ENDEDfalse = []
 
+missing_indexfits = []
+missing_logfits = []
+
 for i in range(len(pp_nights)):
 
-    if pp_nights[i] == '2020-03-09': 
-        continue
-    if pp_nights[i] == '2020-06-22': 
-        continue     
+    if os.path.isfile('{0}/{1}/index.fits'.format(pp_path, pp_nights[i])):
+        indexfits = index_fits('{0}/{1}/index.fits'.format(pp_path, pp_nights[i]))
+        pp_num_indexfits += indexfits.len #check3
 
-    indexfits = index_fits('{0}/{1}/index.fits'.format(pp_path, pp_nights[i]))
-    logfits = log_fits('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
-
-    pp_num_indexfits += indexfits.len #check3
-
-    pp_num_logfits += logfits.len #check4
-    pp_num_logfits_QC += len(logfits.QC)
-    pp_num_logfits_QCtrue += sum(logfits.QC)
-    pp_num_logfits_ENDED += len(logfits.ENDED)
-    pp_num_logfits_ENDEDtrue += sum(logfits.ENDED)
-
-    indexQCfalse = logfits.indexQCfalse
-    indexENDEDfalse = logfits.indexENDEDfalse
-
-    odometers_logfits_QCfalse.extend(logfits.odometers[indexQCfalse]) #check5
-    nights_logfits_QCfalse.extend(logfits.nights[indexQCfalse]) #check5
-    QCstr_logfits_QCfalse.extend(logfits.QCstr[indexQCfalse]) #check5
-
-    odometers_logfits_ENDEDfalse.extend(logfits.odometers[indexENDEDfalse]) #check6
-    nights_logfits_ENDEDfalse.extend(logfits.nights[indexENDEDfalse]) #check6
-    ERRORS_logfits_ENDEDfalse.extend(logfits.ERRORS[indexENDEDfalse]) #check6
-    LOGFILE_logfits_ENDEDfalse.extend(logfits.LOGFILE[indexENDEDfalse]) #check6
+    else:
+        missing_indexfits.append('{0}/{1}/index.fits'.format(pp_path, pp_nights[i]))
 
 
-pp_num_logfits_QCfalse = pp_num_logfits_QC - pp_num_logfits_QCtrue #check5
-pp_num_logfits_ENDEDfalse = pp_num_logfits_ENDED - pp_num_logfits_ENDEDtrue #check6
+    if os.path.isfile('{0}/{1}/log.fits'.format(pp_path, pp_nights[i])):
+        logfits = log_fits('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
+
+        pp_num_logfits += logfits.len #check4
+        pp_num_unique_logfits += logfits.len_unique #check5
+        pp_num_logfits_QC += len(logfits.QC)
+        pp_num_logfits_QCtrue += sum(logfits.QC)
+        pp_num_logfits_ENDED += len(logfits.ENDED)
+        pp_num_logfits_ENDEDtrue += sum(logfits.ENDED)
+
+        indexQCfalse = logfits.indexQCfalse
+        indexENDEDfalse = logfits.indexENDEDfalse
+
+        odometers_logfits_QCfalse.extend(logfits.odometers[indexQCfalse]) #check6
+        nights_logfits_QCfalse.extend(logfits.nights[indexQCfalse]) #check6
+        QCstr_logfits_QCfalse.extend(logfits.QCstr[indexQCfalse]) #check6
+
+        odometers_logfits_ENDEDfalse.extend(logfits.odometers[indexENDEDfalse]) #check7
+        nights_logfits_ENDEDfalse.extend(logfits.nights[indexENDEDfalse]) #check7
+        ERRORS_logfits_ENDEDfalse.extend(logfits.ERRORS[indexENDEDfalse]) #check7
+        LOGFILE_logfits_ENDEDfalse.extend(logfits.LOGFILE[indexENDEDfalse]) #check7
+
+
+    else:
+        missing_logfits.append('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
+
+pp_num_logfits_QCfalse = pp_num_logfits_QC - pp_num_logfits_QCtrue #check6
+pp_num_logfits_ENDEDfalse = pp_num_logfits_ENDED - pp_num_logfits_ENDEDtrue #check7
 
 
 #stop2
@@ -129,13 +139,13 @@ else:
 
 #stop3
 
-if pp_num_logfits == pp_num:
+if pp_num_unique_logfits == pp_num:
     color3 = 'Lime'
     stop3 = 'Yes'
     comment3 = ''
     inspect3 = ''
 
-elif pp_num_logfits > pp_num:
+elif pp_num_unique_logfits > pp_num:
     color3 = 'Yellow'
     stop3 = 'No'
     comment3 = 'Some files were processed more than once.'
@@ -148,18 +158,18 @@ else:
     inspect3 = ''
 
 
-data_dict5 = {'Night': nights_logfits_QCfalse,
+data_dict6 = {'Night': nights_logfits_QCfalse,
              'Odometer': odometers_logfits_QCfalse,
              'QC_STRING': QCstr_logfits_QCfalse,
 }
-inspect5 = inspect('preprocessing_test1', 'check5', data_dict5, 'Odometers that failed one or more Quality Control')
+inspect6 = inspect('preprocessing_test1', 'check7', data_dict6, 'Odometers that failed one or more Quality Control')
 
-data_dict6 = {'Night': nights_logfits_ENDEDfalse,
+data_dict7 = {'Night': nights_logfits_ENDEDfalse,
              'Odometer': odometers_logfits_ENDEDfalse,
              'ERRORS': ERRORS_logfits_ENDEDfalse,
              'LOGFILE': LOGFILE_logfits_ENDEDfalse,
 }
-inspect6 = inspect('preprocessing_test1', 'check6', data_dict6, 'Odometers that failed to finish')
+inspect7 = inspect('preprocessing_test1', 'check8', data_dict7, 'Odometers that failed to finish')
 
 
 #Build preprocessing_test1.html
@@ -262,25 +272,32 @@ th, td {{
     <td></td>
   </tr>
   <tr>
+    <td>5</td>
+    <td># of unique pp files in {pp_path}/*/log.fits</td>
+    <td>{pp_num_unique_logfits}</td>
+    <td></td>
+    <td></td>
+  </tr>
+  <tr>
     <td> </td>
-    <td>Check 4 == Check 2?</td>
+    <td>Check 5 == Check 2?</td>
     <td bgcolor={color3}>{stop3}</td>
     <td>{comment3}</td>
     <td></td>
   </tr>
   <tr>
-    <td>5</td>
-    <td># of pp files in {pp_path}/*/log.fits that failed one or more QC</td>
+    <td>6</td>
+    <td># of unique pp files in {pp_path}/*/log.fits that failed one or more QC</td>
     <td>{pp_num_logfits_QCfalse}</td>
     <td></td>
-    <td>{inspect5}</td>
+    <td>{inspect6}</td>
   </tr>
   <tr>
-    <td>6</td>
-    <td># of pp files in {pp_path}/*/log.fits that failed to finish</td>
+    <td>7</td>
+    <td># of unique pp files in {pp_path}/*/log.fits that failed to finish</td>
     <td>{pp_num_logfits_ENDEDfalse}</td>
     <td></td>
-    <td>{inspect6}</td>
+    <td>{inspect7}</td>
   </tr>
 </table>
 

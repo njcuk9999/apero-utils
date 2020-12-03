@@ -106,6 +106,7 @@ class index_fits:
         filename = tbl['FILENAME']
         self.filename= filename
         self.nights = tbl['NIGHTNAME']
+        self.object = tbl['KW_OBJNAME']
 
         odometers = []
 
@@ -125,6 +126,24 @@ class log_fits:
         self.tbl = tbl
         self.len = len(tbl)
 
+        #don't consider duplicates
+        args = tbl['ARGS']
+        
+        odometers = []
+
+        for i in range(len(args)):
+            index = args[i].index('.fits')
+            odometers.append(args[i][index-8:index])
+
+        odometers, index_unique = np.unique(odometers, return_index = True)
+        self.odometers = odometers
+        
+        tbl = tbl[index_unique]
+        self.tbl_unique = tbl
+        self.len_unique = len(tbl)
+ 
+       
+
         self.QC = tbl['PASSED_ALL_QC']
         self.ENDED = tbl['ENDED']
 
@@ -138,20 +157,13 @@ class log_fits:
         self.indexENDEDfalse = indexENDEDfalse
 
         self.nights = tbl['DIRECTORY']
+        self.args = tbl['ARGS']
 
-        args = tbl['ARGS']
-        self.args = args
         self.QCstr = tbl['QC_STRING']
         self.ERRORS = tbl['ERRORS']
         self.LOGFILE = tbl['LOGFILE']
 
-        odometers = []
 
-        for i in range(len(args)):
-            index = args[i].index('.fits')
-            odometers.append(args[i][index-8:index])
-
-        self.odometers = np.array(odometers)
 
 from bokeh.io.saving import save
 from bokeh.io.output import output_file
@@ -183,6 +195,7 @@ def inspect(test, check, data_dict, title):
     return html_str
 
 def summary(test):
+
     f = open("{0}/{0}.html".format(test), "r")
     html = f.read()
 
@@ -202,3 +215,4 @@ def summary(test):
     html_str = """Passed: {0}/{3}<br>Passed with conditions: {1}/{3}<br>Failed: {2}/{3} """.format(passed, conditional, failed, n)
 
     return html_str, color
+
