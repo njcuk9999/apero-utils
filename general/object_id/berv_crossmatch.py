@@ -72,8 +72,8 @@ pconst = Pconst()
 
 # Fake APERO params
 FAKE_PARAMS = dict()
-# FAKE_PARAMS['OBJ_LIST_GAIA_URL'] = 'https://gea.esac.esa.int/tap-server/tap'
-FAKE_PARAMS['OBJ_LIST_GAIA_URL'] = 'https://gaia.obspm.fr/tap-server/tap'
+FAKE_PARAMS['OBJ_LIST_GAIA_URL'] = 'https://gea.esac.esa.int/tap-server/tap'
+# FAKE_PARAMS['OBJ_LIST_GAIA_URL'] = 'https://gaia.obspm.fr/tap-server/tap'
 FAKE_PARAMS['OBJ_LIST_CROSS_MATCH_RADIUS'] = 180
 FAKE_PARAMS['OBJ_LIST_GAIA_MAG_CUT'] = 15.0
 FAKE_PARAMS['OBJ_LIST_GAIA_PLX_LIM'] = 0.5

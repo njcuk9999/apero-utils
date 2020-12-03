@@ -8,11 +8,12 @@ sheet_id = '1jwlux8AJjBMMVrbg6LszJIpFJrk6alhbT5HA7BiAHD8'
 # Load dataframe corresponding to google sheet
 df_full = ut.get_full_sheet(sheet_id)
 
-# Only check new inputs
-df = df_full[~df_full['CHECKED']]
+# Only check inputs with auto-edits
+# df = df_full[~df_full['CHECKED']]
+df = df_full[~df_full['MANUAL_EDIT']]
 
 # Run ID checks
-df = ut.check_id(df, replace=True)
+# df = ut.check_id(df, replace=True)
 
 # Get 2mass id for each gaia id
 df = ut.twomass_from_gaia(df)
@@ -21,7 +22,8 @@ df = ut.twomass_from_gaia(df)
 df = ut.twomass_from_simbad(df)
 
 # Add newly checked entries to full database
-df_full[~df_full['CHECKED']] = df
+# df_full[~df_full['CHECKED']] = df
+df_full[~df_full['MANUAL_EDIT']] = df
 
 
 # Update sheet

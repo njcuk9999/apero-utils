@@ -16,8 +16,8 @@ import berv_crossmatch as bcm
 EXOFOP_URL = 'https://exofop.ipac.caltech.edu/'
 TOI_URL = EXOFOP_URL+'tess/download_toi.php?sort=toi&output=csv'
 
-# GAIA_2MASS_URL = 'https://gea.esac.esa.int/tap-server/tap'
-GAIA_2MASS_URL = 'https://gaia.obspm.fr/tap-server/tap'
+GAIA_2MASS_URL = 'https://gea.esac.esa.int/tap-server/tap'
+# GAIA_2MASS_URL = 'https://gaia.obspm.fr/tap-server/tap'
 
 COLNAMES = ['OBJECT',
             'GAIADR2ID',
@@ -61,16 +61,24 @@ def add_aliases(df):
     """
 
     for index, row in df.iterrows():
-        if type(row['ALIASES']) == str:
+        print('Getting aliases for {}'.format(row['OBJECT']))
+        simbad_ids = get_aliases_from_gaia(row['GAIADR2ID'])
+        try:
+            aliases = '|'.join([row['OBJECT'], simbad_ids])
+        except TypeError:
+            # When found nothing, skip
             continue
+        if type(row['ALIASES']) == str:
+            old = row['ALIASES']
+            full_al = '|'.join([old, aliases])
+            df.at[index, 'ALIASES'] = full_al
         elif np.isnan(row['ALIASES']):
-            simbad_ids = get_aliases_from_gaia(row['GAIADR2ID'])
             if simbad_ids is None:
                 continue
-            aliases = '|'.join([row['OBJECT'], simbad_ids])
             df.at[index, 'ALIASES'] = aliases
-        else:
-            raise ValueError('Unexpected alias type')
+
+    # unique aliases
+    df['ALIASES'] = df['ALIASES'].str.split('|').apply(set).str.join('|')
 
     return df
 

@@ -7,16 +7,20 @@ import gspread_pandas as gspd
 
 import utils as ut
 
-path_to_data = '/home/vandal/Documents/spirou/obj_db/object_info.csv'
+path_to_data = '/home/vandal/Documents/spirou/obj_db/object_info_full.csv'
 sheet_id = '1jwlux8AJjBMMVrbg6LszJIpFJrk6alhbT5HA7BiAHD8'
 
 
 def vals_and_counts(df, kwd, threshold=None):
+
     vals = df[kwd]
     counts = vals.value_counts()
     vals = vals.dropna().unique()
+
+    # reject unphysical values
     if threshold is not None:
-        vals = vals[np.abs(vals) < threshold]  # reject unphysical values
+        vals = vals[np.abs(vals) < threshold]
+
     vals = vals[np.nonzero(vals)]
     counts = counts[vals].values
 
@@ -59,8 +63,11 @@ teff_all_count = []
 # There may be a better way with pandas, but fast enough with 121 object
 for remote_object in df_id['OBJECT']:
     objrows = df[df['OBJECT'] == remote_object]
-    rv, rv_count = vals_and_counts(objrows, 'OBJRV', threshold=2000)
-    teff, teff_count = vals_and_counts(objrows, 'OBJTEMP')
+    rv, rv_count = vals_and_counts(objrows, 'OBJRV', threshold=(0, 2000))
+    teff, teff_count = vals_and_counts(objrows,
+                                       'OBJTEMP',
+                                       # threshold=(1000, np.inf),
+                                       )
 
     # Append latest value to "main" list (pandas unique used, so no sorting)
     tryaddlast(rv_list, rv)
@@ -87,3 +94,4 @@ sh.open_sheet('Maintenance')
 maint = sh.sheet_to_df(index=0)
 cols = ['RV_ALL', 'RV_COUNTS', 'TEFF_ALL', 'TEFF_COUNTS']
 maint[cols] = np.array([rv_all, rv_all_count, teff_all, teff_all_count]).T
+sh.df_to_sheet(maint, index=False, replace=True)
