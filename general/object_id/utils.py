@@ -2,6 +2,7 @@
 Some utility functions to play with astro databases
 """
 import warnings
+
 import requests
 import numpy as np
 from astropy.table import Table
@@ -10,10 +11,13 @@ from astroquery.mast import Catalogs
 from astroquery.utils.tap.core import TapPlus
 import gspread_pandas as gspd
 
+import berv_crossmatch as bcm
+
 EXOFOP_URL = 'https://exofop.ipac.caltech.edu/'
 TOI_URL = EXOFOP_URL+'tess/download_toi.php?sort=toi&output=csv'
 
-GAIA_2MASS_URL = 'https://gea.esac.esa.int/tap-server/tap'
+# GAIA_2MASS_URL = 'https://gea.esac.esa.int/tap-server/tap'
+GAIA_2MASS_URL = 'https://gaia.obspm.fr/tap-server/tap'
 
 COLNAMES = ['OBJECT',
             'GAIADR2ID',
@@ -38,7 +42,10 @@ def get_aliases_from_gaia(gaiaid):
     """
 
     tbl = Simbad.query_objectids(f'Gaia dr2 {gaiaid}')
-    aliases = '|'.join(tbl.to_pandas()['ID'].str.decode('utf-8').tolist())
+    try:
+        aliases = '|'.join(tbl.to_pandas()['ID'].str.decode('utf-8').tolist())
+    except AttributeError:
+        aliases = None
 
     return aliases
 
@@ -58,6 +65,8 @@ def add_aliases(df):
             continue
         elif np.isnan(row['ALIASES']):
             simbad_ids = get_aliases_from_gaia(row['GAIADR2ID'])
+            if simbad_ids is None:
+                continue
             aliases = '|'.join([row['OBJECT'], simbad_ids])
             df.at[index, 'ALIASES'] = aliases
         else:
@@ -271,12 +280,16 @@ def get_full_sheet(sheet_id, ws=0):
     sh = gspd.spread.Spread(sheet_id)
     sh.open_sheet(ws)
 
-    if sh.sheet.title == 'Info':
-        df = sh.sheet_to_df(index=0, unformatted_columns=COLNAMES)
+    if sh.sheet.title in ['Info', 'Need Sorting']:
+        # Make sure true/false handled properly in Info sheet
+        try:
+            df = sh.sheet_to_df(index=0, unformatted_columns=COLNAMES)
+        except IndexError:
+            df = sh.sheet_to_df(index=0)
     else:
         try:
             df = sh.sheet_to_df(index=0, unformatted_columns=['OBJECT'])
-        except KeyError:
+        except (KeyError, AttributeError, IndexError):
             df = sh.sheet_to_df(index=0)
 
     return df
@@ -330,5 +343,40 @@ def twomass_from_simbad(df):
             df['COMMENTS'].iloc[i] = (df['COMMENTS'].iloc[i]
                                       + ' 2MASS ID from SIMBAD'
                                       )
+
+    return df
+
+
+def gaia_crossmatch(df):
+    """
+    Cross-match gaia id from coordinates in a dataframe
+    """
+    df = df.copy()
+
+    # Some APERO database args
+    params = bcm.FAKE_PARAMS
+    pconst = bcm.Pconst()
+    objdbm = None
+    outdict = dict()
+
+    # Loop through targets
+    for i, row in df.iterrows():
+        gaia_id = None
+        ra = row['RA_DEG']
+        dec = row['DEC_DEG']
+        objname = row['OBJECT']
+        mjd = row['MJDEND']
+
+        # Setup object for this target
+        astro_obj = bcm.AstroObject(params, pconst, gaia_id, ra, dec, objdbm,
+                                    objname, 0.0, 0.0, 0.0, 0.0, None)
+
+        # Resolve tgarget with gaia id
+        astro_obj.resolve_target(mjd)
+
+        # Write to dict
+        astro_obj.write_table(outdict)
+
+    df['GAIADR2ID'] = outdict['GAIADR2ID']
 
     return df

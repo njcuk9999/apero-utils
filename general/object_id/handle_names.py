@@ -18,6 +18,7 @@ BAD_NAMES = [
         'FakeTarget',
         'Test.*',
         '.*Test',
+        'Engineering'
         ]
 BAD_NAMES = '|'.join(BAD_NAMES)  # pipe symbol as OR in regex
 
@@ -30,7 +31,7 @@ REJ_NAMES = [
         ]
 REJ_NAMES = '|'.join(REJ_NAMES)  # pipe symbol as OR in regex
 
-path_to_data = '/home/vandal/Documents/spirou/obj_db/object_info.csv'
+path_to_data = '/home/vandal/Documents/spirou/obj_db/object_info_full.csv'
 sheet_id = '1jwlux8AJjBMMVrbg6LszJIpFJrk6alhbT5HA7BiAHD8'
 
 # Load all data
@@ -158,13 +159,13 @@ df_sheet.loc[inds, 'ALIASES'] = new_al
 
 # Among new gaia ids, make sure no duplicates
 df_new['ALIASES'] = df_new['OBJECT']
-funs = dict(zip(df_new.columns, ['first'] * len(df_new.columns)))
-funs['ALIASES'] = '|'.join
-df_new = df_new.groupby('GAIADR2ID').agg(funs).reset_index(drop=True)
-df_new = df_new.sort_values('OBJECT',
-                            ignore_index=True,
-                            key=lambda v: v.str.upper(),
-                            )
+# funs = dict(zip(df_new.columns, ['first'] * len(df_new.columns)))
+# funs['ALIASES'] = '|'.join
+# df_new = df_new.groupby('GAIADR2ID').agg(funs).reset_index(drop=True)
+# df_new = df_new.sort_values('OBJECT',
+#                             ignore_index=True,
+#                             key=lambda v: v.str.upper(),
+#                             )
 
 
 # Among no_match, see if any are found in simbad
@@ -182,12 +183,13 @@ with warnings.catch_warnings():
         df_test.loc[i, 'ALIASES'] = aliases
         df_test.loc[i, 'COMMENTS'] = 'Found aliases in SIMBAD'
 
-df_new = df_new.append(df_test[df_test.ALIASES.notnull()])
-df_new = df_new.sort_values('OBJECT',
-                            ignore_index=True,
-                            key=lambda v: v.str.upper(),
-                            )
-df_test = df_test[df_test.ALIASES.isnull()]
+# RUN THIS IF WANT TO ADD FIELDS WITH EMTPY id
+# df_new = df_new.append(df_test[df_test.ALIASES.notnull()])
+# df_new = df_new.sort_values('OBJECT',
+#                             ignore_index=True,
+#                             key=lambda v: v.str.upper(),
+#                             )
+# df_test = df_test[df_test.ALIASES.isnull()]
 
 # Update some columns for new objects
 df_new['CHECKED'] = df_new.GAIADR2ID.notnull()
@@ -196,6 +198,7 @@ df_new['MANUAL_EDIT'] = False
 
 # Update sheet with new objects for which 100% sure
 if df_new.shape[0] > 0:
+    print('Updating info sheet with new objects')
     df_sheet = df_sheet.append(df_new, ignore_index=True).sort_values(
                                                 'OBJECT',
                                                 ignore_index=True,
@@ -205,8 +208,9 @@ if df_new.shape[0] > 0:
 
 # Rejected objects
 rej_names = df_test.loc[df_test.OBJECT.str.fullmatch(REJ_NAMES), 'OBJECT']
+df_test = df_test[~df_test.OBJECT.str.fullmatch(REJ_NAMES)]
 rej_names = pd.DataFrame(rej_names)  # Make DF
-df_rej = ut.get_full_sheet(sheet_id, ws='Rejected')  # Load known rejected 
+df_rej = ut.get_full_sheet(sheet_id, ws='Rejected')  # Load known rejected
 rej_mask = rej_names.OBJECT.isin(df_rej.OBJECT)
 df_rej = df_rej.append(rej_names[~rej_mask], ignore_index=True).sort_values(
                                                 'OBJECT',
@@ -214,7 +218,62 @@ df_rej = df_rej.append(rej_names[~rej_mask], ignore_index=True).sort_values(
                                                 key=lambda v: v.str.upper(),
                                                 )
 if not rej_mask.all():
+    print('Updating rejected sheet with new objects')
     df_back = ut.update_full_sheet(sheet_id, df_rej, ws='Rejected')
 
-# Objects without match and not rejected (mostly spelling)
-# TODO: Run gaia matching function and check names
+# Get gaia id from position match where possible
+dup_mask = df_local.OBJECT.duplicated(keep='last')
+df_local_one = df_local[~dup_mask]
+test_mask = df_local.OBJECT.isin(df_test.OBJECT)
+df_with_id = ut.gaia_crossmatch(df_local_one[test_mask])
+ord_ids = df_with_id.set_index('OBJECT').loc[df_test.OBJECT].GAIADR2ID
+df_test['GAIADR2ID'] = ord_ids.values  # sorted above so safe to use values
+id_mask = df_test.GAIADR2ID.notnull()
+# df_test['ALIASES'] = df_test.OBJECT
+df_checked = df_test.copy()
+df_checked[id_mask] = ut.add_aliases(df_checked[id_mask])
+al_mask = df_checked.ALIASES.notnull()
+df_checked['CHECKED'] = False
+df_checked['FOUND'] = False
+df_checked['MANUAL_EDIT'] = False
+df_checked[al_mask] = ut.check_id(df_checked[al_mask])
+
+# Split found and not found objects
+df_found = df_checked[df_checked.FOUND]
+df_not_found = df_checked[~df_checked.FOUND]
+
+# Addd found to new
+df_new = df_new.append(df_found)
+df_new = df_new.sort_values('OBJECT',
+                            ignore_index=True,
+                            key=lambda v: v.str.upper(),
+                            )
+
+# Add new to sheet
+if df_new.shape[0] > 0:
+    print('Updating info sheet with new objects')
+    df_sheet = df_sheet.append(df_new, ignore_index=True).sort_values(
+                                                'OBJECT',
+                                                ignore_index=True,
+                                                key=lambda v: v.str.upper(),
+                                                )
+    id_mask = df_sheet.GAIADR2ID.notnull()
+    sheet_no_id = df_sheet[~id_mask]  # Should be empty if sheet OK
+    df_sheet = df_sheet[id_mask]
+    funs = dict(zip(df_new.columns, ['first'] * len(df_new.columns)))
+    funs['ALIASES'] = '|'.join
+    df_sheet = df_sheet.groupby('GAIADR2ID').agg(funs).reset_index(drop=True)
+    df_sheet = df_sheet.append(sheet_no_id)
+    df_sheet = df_sheet.sort_values('OBJECT',
+                                    ignore_index=True,
+                                    key=lambda v: v.str.upper(),
+                                    )
+    unique_al = df_sheet['ALIASES'].str.split('|').apply(set).str.join('|')
+    df_sheet['ALIASES'] = unique_al
+    backup_df = ut.update_full_sheet(sheet_id, df_sheet)
+    backup_df.to_csv('backup_sheet.csv', index=False)
+
+# Update objects that need sorting to a separate sheet
+need_sort = ut.get_full_sheet(sheet_id, ws='Need Sorting')
+need_sort = need_sort.append(df_not_found)
+backup_need = ut.update_full_sheet(sheet_id, need_sort, ws='Need Sorting')
