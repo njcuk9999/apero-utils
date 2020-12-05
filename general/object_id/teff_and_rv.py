@@ -94,8 +94,10 @@ df_id.loc[update_mask & teff_mask, 'TEFF_REF'] = 'HEADER[CFHT]'
 sh.df_to_sheet(df_id, index=False, replace=True)
 
 # Update the maintenance sheet (no mask for this one)
+# Will need to do this without overwrite...
 sh.open_sheet('Maintenance')
 maint = sh.sheet_to_df(index=0)
 cols = ['RV_ALL', 'RV_COUNTS', 'TEFF_ALL', 'TEFF_COUNTS']
-maint[cols] = np.array([rv_all, rv_all_count, teff_all, teff_all_count]).T
+new_arr = np.array([rv_all, rv_all_count, teff_all, teff_all_count]).T
+maint = pd.DataFrame(new_arr, columns=maint.columns)
 sh.df_to_sheet(maint, index=False, replace=True)

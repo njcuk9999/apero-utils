@@ -61,7 +61,7 @@ def add_aliases(df):
     """
 
     for index, row in df.iterrows():
-        print('Getting aliases for {}'.format(row['OBJECT']))
+        print('Getting aliases for {}'.format(row['OBJECT']), end='\r')
         simbad_ids = get_aliases_from_gaia(row['GAIADR2ID'])
         try:
             aliases = '|'.join([row['OBJECT'], simbad_ids])
@@ -112,6 +112,7 @@ def check_id(df, replace=False):
 
     # String-based checks only
     match = check_str(names, aliases)
+    print(match)
     df['FOUND'] = df['FOUND'].mask(~df['CHECKED'], match)  # Update matches
     print('The following objects were not found with string matching.')
     print(df['OBJECT'].loc[~df['FOUND']])
@@ -196,6 +197,7 @@ def check_tess(df, replace=False):
             objType='STAR',
             ID=tics.tolist()).to_pandas()[['ID', 'GAIA']]
     tic_gaia = tic_gaia.set_index('ID', drop=False)
+    print(tic_gaia)
     tic_gaia = tic_gaia.reindex(tics).set_index(np.arange(len(tics)))
     mask = tic_gaia['GAIA'].values == gaiaids.values
 
