@@ -144,12 +144,13 @@ def bad_and_rejected(names, sh=None, bad=None, rej=None, verbose=False):
 
     # Remove rejected
     rej_names = good_names[good_names.str.fullmatch(rej)]
-    good_names = good_names[~good_names.str.fullmatch(rej)]
 
     # Update rejected names in google sheet
     if sh is not None:
         rej_names = pd.DataFrame(rej_names)
         df_rej = ut.get_full_sheet(sh, ws='Rejected')  # Remote names
+        rej_all = '|'.join(rej.OBJECT.tolist())
+        rej_all = '|'.join([rej, rej_all])
         rej_mask = rej_names.OBJECT.isin(df_rej.OBJECT)
         if not rej_mask.all():  # Update only  if new objects
             if verbose:
@@ -157,6 +158,10 @@ def bad_and_rejected(names, sh=None, bad=None, rej=None, verbose=False):
             df_rej = df_rej.append(rej_names[~rej_mask], ignore_index=True)
             df_rej = df_rej.sort_values('OBJECT')
             ut.update_full_sheet(sh, df_rej, ws='Rejected')
+    else:
+        rej_all = rej
+
+    good_names = good_names[~good_names.str.fullmatch(rej)]
 
     return good_names
 
