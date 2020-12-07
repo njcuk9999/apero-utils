@@ -7,20 +7,20 @@ Created on 2020-10-2020-10-22 11:49
 
 @author: cook
 """
+import warnings
+from typing import List, Union
 from astropy.time import Time
 from astropy.table import Table
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance
 import numpy as np
 import requests
-from typing import List, Union
-import warnings
 
 
 # =============================================================================
 # Define variables
 # =============================================================================
-__NAME__ = 'berv_crossmatch.py'
+__NAME__ = 'astro_obj.py'
 
 # Fake Logging function
 def WLOG(params, level, message, *args, **kwargs):
