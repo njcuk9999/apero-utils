@@ -2,6 +2,7 @@ import os
 from apero.core import constants
 from datetime import datetime
 from apero_tests_func import *
+import numpy as np
 
 #ALL TESTS CONDUCT BY 'badpixel_test1.py'
 
@@ -36,6 +37,15 @@ recipe_num_logfits = 0 #check1
 
 for i in range(len(reduced_nights)):
 
+    #inspect index.fits if the file exists
+    if os.path.isfile('{0}/{1}/index.fits'.format(reduced_path, reduced_nights[i])):
+        
+    
+    #missing index.fits
+    else:
+        missing_indexfits.append('{0}/{1}/index.fits'.format(reduced_path, reduced_nights[i]))
+
+
     if os.path.isfile('{0}/{1}/log.fits'.format(reduced_path, reduced_nights[i])):
         logfits = log_fits('{0}/{1}/log.fits'.format(reduced_path, reduced_nights[i]))
 
@@ -45,7 +55,7 @@ for i in range(len(reduced_nights)):
 
 
 
-#Build preprocessing_test1.html
+#Build badpixel_test1.html
  
 html_text = f"""
 <html>

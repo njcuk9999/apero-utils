@@ -2,7 +2,6 @@ import os
 import glob
 from datetime import datetime
 from astropy.io import fits
-import numpy as np
 
 def intersection(lst1, lst2): 
 
@@ -119,9 +118,7 @@ class log_fits:
         self.len = len(tbl)
         self.recipe = tbl['RECIPE']     
         self.QC = tbl['PASSED_ALL_QC']
-        self.lenQCtrue = sum(tbl['PASSED_ALL_QC'])
         self.ENDED = tbl['ENDED']
-        self.lenENDEDtrue = sum(tbl['PASSED_ALL_QC'])
 
         self.indexQCtrue = tbl['PASSED_ALL_QC'] == True
         self.indexQCfalse = tbl['PASSED_ALL_QC'] == False        

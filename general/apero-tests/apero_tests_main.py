@@ -1,6 +1,6 @@
 import os
 from apero.core import constants
-from datetime import datetime
+from datetime import datetime, timedelta
 from apero_tests_func import *
 
 #constants
@@ -9,8 +9,7 @@ params = constants.load('SPIROU')
 
 setup = os.environ['DRS_UCONFIG'] #setup
 instrument = params['INSTRUMENT'] #instrument
-date = datetime.now()
-date = date.strftime("%Y-%m-%d %H:%M:%S") #date
+date_ini = datetime.now() #initial date
 
 test_list_short = ['preprocessing_test1', 'darkmaster_test1', 'badpixel_test1',
                    'localisation_test1', 'shapemaster_test1', 'shape_test1',
@@ -78,6 +77,17 @@ for i in range(n):
 html_table = "".join(html_table)
 
 
+date_final = datetime.now() #final date
+
+delta_date = date_final - date_ini
+seconds = delta_date.total_seconds()
+hours = seconds // 3600
+minutes = (seconds % 3600) // 60
+seconds = seconds % 60
+running_time = '{0}:{1}:{2:0.2f}'.format(hours, minutes, seconds)
+
+date_final = date_final.strftime("%Y-%m-%d %H:%M:%S")
+
 # build main .html doc
 
 html_text = f"""
@@ -121,7 +131,8 @@ th, td {{
 <h3>APERO Tests Summary Page</h3>
 <p><b>Setup: {setup}</b></p>
 <p><b>Instrument: {instrument}</b></p>
-<p><b>Date: {date}</b></p>
+<p><b>Date: {date_final}</b></p>
+<p><b>Running Time: {delta_date}</b></p>
 <p>   </p>
 
 <table id="t01">

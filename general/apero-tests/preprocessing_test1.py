@@ -2,6 +2,7 @@ import os
 from apero.core import constants
 from datetime import datetime
 from apero_tests_func import *
+import numpy as np
 
 #ALL TESTS CONDUCT BY 'preprocessing_test1.py'
 
@@ -14,7 +15,7 @@ from apero_tests_func import *
 #check5: how many unique pp files are there in the log.fits?
 #stop3: check5 == check 2?
 #check6: using the log.fits how many unique files failed one or more QC? Which odometer? Which QC?
-#check7: using the log.fits how many uniques files failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
+#check7: using the log.fits how many unique files failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
 
 
 #constants
