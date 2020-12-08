@@ -22,4 +22,4 @@ Call apero_tests_main.py to perform a series of tests:
 18. Make Template Recipe Test #1
 19. CCF Recipe Test #1
 
-This will produce multiple html documents including the main summary page (apero_tests.html).
+This will produce multiple html documents to present the tests results including a main summary page (apero_tests.html).
