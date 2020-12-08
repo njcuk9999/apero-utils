@@ -13,6 +13,8 @@ def intersection(lst1, lst2):
 def list_nights(path):
 
     list = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
+    if 'other' in list :    
+        list.remove('other')
     list.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
 
     return list
@@ -102,19 +104,9 @@ class index_fits:
         tbl = fits.getdata(path)
         self.tbl = tbl
         self.len = len(tbl)
-
-        filename = tbl['FILENAME']
-        self.filename= filename
+        self.filename= tbl['FILENAME']
         self.nights = tbl['NIGHTNAME']
         self.object = tbl['KW_OBJNAME']
-
-        odometers = []
-
-        for i in range(len(tbl)):
-            index = filename[i].index('_pp.fits')
-            odometers.append(filename[i][:index])
-
-        self.odometers = np.array(odometers)
 
 
 class log_fits:
@@ -125,36 +117,16 @@ class log_fits:
         tbl = fits.getdata(path)
         self.tbl = tbl
         self.len = len(tbl)
-
-        #don't consider duplicates
-        args = tbl['ARGS']
-        
-        odometers = []
-
-        for i in range(len(args)):
-            index = args[i].index('.fits')
-            odometers.append(args[i][index-8:index])
-
-        odometers, index_unique = np.unique(odometers, return_index = True)
-        self.odometers = odometers
-        
-        tbl = tbl[index_unique]
-        self.tbl_unique = tbl
-        self.len_unique = len(tbl)
- 
-       
-
+        self.recipe = tbl['RECIPE']     
         self.QC = tbl['PASSED_ALL_QC']
+        self.lenQCtrue = sum(tbl['PASSED_ALL_QC'])
         self.ENDED = tbl['ENDED']
+        self.lenENDEDtrue = sum(tbl['PASSED_ALL_QC'])
 
-        indexQCtrue = tbl['PASSED_ALL_QC'] == True
-        indexQCfalse = tbl['PASSED_ALL_QC'] == False
-        self.indexQCtrue = indexQCtrue
-        self.indexQCfalse = indexQCfalse
-        indexENDEDtrue = tbl['ENDED'] == True
-        indexENDEDfalse = tbl['ENDED'] == False          
-        self.indexENDEDtrue = indexENDEDtrue  
-        self.indexENDEDfalse = indexENDEDfalse
+        self.indexQCtrue = tbl['PASSED_ALL_QC'] == True
+        self.indexQCfalse = tbl['PASSED_ALL_QC'] == False        
+        self.indexENDEDtrue = tbl['ENDED'] == True 
+        self.indexENDEDfalse = tbl['ENDED'] == False
 
         self.nights = tbl['DIRECTORY']
         self.args = tbl['ARGS']
@@ -199,11 +171,15 @@ def summary(test):
     f = open("{0}/{0}.html".format(test), "r")
     html = f.read()
 
+
     passed = html.count('Lime')
     conditional = html.count('Yellow')
     failed = html.count('Red')
 
+
+
     n = passed + conditional + failed
+
 
     if passed == n :
         color = 'Lime'

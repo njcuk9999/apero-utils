@@ -56,16 +56,16 @@ print('all tests done')
 html_table = []
 
 for i in range(n):
-    
+
     if os.path.isfile("{0}/{0}.html".format(test_list_short[i])):
-        summary, color = summary(test_list_short[i])
+        html_str, color = summary(test_list_short[i])
         html_table.append("""
         <tr>
           <td>{1}</td>
           <td>{2}</td>
           <td bgcolor={3}><a href='{0}/{0}.html'>Inspect</a></td>
         </tr>
-        """.format(test_list_short[i], test_list_long[i], summary, color))
+        """.format(test_list_short[i], test_list_long[i], html_str, color))
 
     else : 
         html_table.append("""

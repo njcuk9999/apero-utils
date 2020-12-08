@@ -1,0 +1,102 @@
+
+<html>
+
+
+<head>
+<title>APERO Tests</title>
+<style>
+table {
+  width:75%;
+}
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 15px;
+  text-align: left;
+}
+#t01 tr:nth-child(even) {
+  background-color: #eee;
+}
+#t01 tr:nth-child(odd) {
+ background-color: #fff;
+}
+#t01 th {
+  background-color: white;
+  color: black;
+}
+</style>
+</head>
+
+<body>
+
+<h3>Bad Pixel Correction Recipe Test #1</h3>
+<p><b>Setup: /spirou/drs/setup/setup_sept1/</b></p>
+<p><b>Instrument: SPIROU</b></p>
+<p><b>Date: 2020-12-03 10:44:22</b></p>
+<p>   </p>
+
+<table id="t01">
+
+  <colgroup>
+     <col span="1" style="width: 5%;">
+     <col span="1" style="width: 55%;">
+     <col span="1" style="width: 5%;">
+     <col span="1" style="width: 30%;">
+     <col span="1" style="width: 5%;">
+  </colgroup>
+  <tr>
+    <th>Check</th>
+    <th>Description</th>
+    <th>Result</th>
+    <th>Comments</th> 
+    <th>Details</th> 
+  </tr>
+  <tr>
+    <td>1</td>
+    <td>How many recipes were run</td>
+    <td>484</td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>2</td>
+    <td>How many of each output do we have</td>
+    <td></td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>3</td>
+    <td># of unique files in /spirou/cfht_nights/cfht_sept1/reduced/*/log.fits that failed one or more QC</td>
+    <td></td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>4</td>
+    <td>For each calib entry how many are in the calibDB</td>
+    <td></td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>5</td>
+    <td>Plot the different QCs as a function of time</td>
+    <td></td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>6</td>
+    <td># of unique files in /spirou/cfht_nights/cfht_sept1/reduced/*/log.fits that failed to finish</td>
+    <td></td>
+    <td></td> 
+    <td></td>
+  </tr>
+</table>
+
+
+</body>
+</html>
