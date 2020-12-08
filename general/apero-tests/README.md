@@ -1,4 +1,4 @@
-#APERO tests
+# APERO tests
 
 Call apero_tests_main.py to perform a series of tests:
 
