@@ -18,6 +18,17 @@ def list_nights(path):
 
     return list
 
+def list_files(path, files = 'all'):
+
+    if files == 'all':
+        f = ''
+    else:
+        f = files
+
+    list = [x for x in os.listdir(path) if x.endswith(f)]
+
+    return list
+
 
 def count_files(path, files = 'all'):
 
@@ -44,7 +55,7 @@ def count_files_subdir(path, subdir='all', files='all'):
     return len(glob.glob('{0}/{1}/{2}'.format(path, s, f)))
 
 
-def list_odometers(path, files = 'all'):
+def list_raw_odometers(path, files = 'all'):
 
     #files = 'all' => a, c, d, f, and o odometers are listed
     #files = 'a' => only a files
@@ -57,39 +68,57 @@ def list_odometers(path, files = 'all'):
     
     odometers = []
 
+
     if files == 'all':
 
         for i in range(len(files_list)):
-            if 'a' in files_list[i][7]: odometers.append(files_list[i][:7])
-            elif 'c' in files_list[i][7]: odometers.append(files_list[i][:7])
-            elif 'd' in files_list[i][7]: odometers.append(files_list[i][:7])
-            elif 'f' in files_list[i][7]: odometers.append(files_list[i][:7])
-            elif 'o' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+            if 'persi_' in files_list[i]: files_list[i].replace('persi_','')
+
+            if 'a' in files_list[i][7]: odometers.append(files_list[i][:8])
+            elif 'c' in files_list[i][7]: odometers.append(files_list[i][:8])
+            elif 'd' in files_list[i][7]: odometers.append(files_list[i][:8])
+            elif 'f' in files_list[i][7]: odometers.append(files_list[i][:8])
+            elif 'o' in files_list[i][7]: odometers.append(files_list[i][:8])
 
     if files == 'a':
 
         for i in range(len(files_list)):
-            if 'a' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+            if 'persi_' in files_list[i]: files_list[i].replace('persi_','')
+
+            if 'a' in files_list[i][7]: odometers.append(files_list[i][:8])
 
     if files == 'c':
 
         for i in range(len(files_list)):
-            if 'c' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+            if 'persi_' in files_list[i]: files_list[i].replace('persi_','')
+            if 'c' in files_list[i][7]: odometers.append(files_list[i][:8])
 
     if files == 'd':
 
         for i in range(len(files_list)):
-            if 'd' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+            if 'persi_' in files_list[i]: files_list[i].replace('persi_','')
+
+            if 'd' in files_list[i][7]: odometers.append(files_list[i][:8])
 
     if files == 'f':
 
         for i in range(len(files_list)):
-            if 'f' in files_list[i][7]: odometers.append(files_list[i][:7])
+
+            if 'persi_' in files_list[i]: files_list[i].replace('persi_','')
+
+            if 'f' in files_list[i][7]: odometers.append(files_list[i][:8])
 
     if files == 'o':
 
         for i in range(len(files_list)):
-            if files_list[i][7] == 'o': odometers.append(files_list[i][:7])
+          
+            if 'persi_' in files_list[i]: files_list[i].replace('persi_','')
+
+            if files_list[i][7] == 'o': odometers.append(files_list[i][:8])
 
 
     return odometers
@@ -159,7 +188,7 @@ def inspect(test, check, data_dict, title):
     output_file("{0}/{1}/{1}.html".format(test, check), title="{0}".format(check))
     save(layout)
 
-    html_str = """<a href='{0}/{0}.html'>Inspect""".format(check)
+    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(check)
 
     return html_str
 

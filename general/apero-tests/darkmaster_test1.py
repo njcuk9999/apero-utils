@@ -6,13 +6,17 @@ import numpy as np
 
 #ALL TESTS CONDUCT BY 'darkmaster_test1.py'
 
-#check1: how many recipes were run?
+#check1: how many recipes were run? (cal_dark_master_{instrument} in other/log.fits)
 #check2: how many of each output do we have?
          #output1: {ODOMETER_CODE}_pp_dark_master.fits  \\ dark master file (4096x4096) + FITS-TABLE
-#stop1: check2 == check1?
-#check3: using the log.fits how many unique files failed one or more QC? Which odometer? Which QC?
-#check4: for each calib entry how many are in the calibDB?
-#check5: using the log.fits how many unique files failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
+#check3: how many of each unique output do we have?
+         #output1: {ODOMETER_CODE}_pp_dark_master.fits  \\ dark master file (4096x4096) + FITS-TABLE
+#stop1: check3 == check1?
+#check4: how many entry in master_calib_{INSTRUMENT}.txt? 
+#check5: for each calib entry how many are in the calibDB?
+#stop2: check5 == check5?
+#check6: using the log.fits how many entry failed one or more QC?
+#check7: using the log.fits how many entry failed to finish?
 
 
 #constants
@@ -20,7 +24,7 @@ import numpy as np
 params = constants.load('SPIROU')
 
 setup = os.environ['DRS_UCONFIG'] #setup
-instrument = params['INSTRUMENT'] #instrument
+instrument = params['INSTRUMENT'] #instrument 
 date = datetime.now()
 date = date.strftime("%Y-%m-%d %H:%M:%S") #date
 
@@ -29,58 +33,108 @@ if reduced_path[-1] == '/' :
     reduced_path = reduced_path[:-1] #reduced path without / at the end
 reduced_nights = list_nights(reduced_path) #list reduced night directories
 
+other_path = reduced_path + '/other' #other directory path
+
+calibDB_path = params['DRS_CALIB_DB'] #calibDB path
+if calibDB_path[-1] == '/' :
+    calibDB_path = calibDB_path[:-1] #calibDB path without / at the end
+
+#output list
+output_list = ['*_pp_dark_master.fits']
+
+#calibDB entries list
+
+calibDB_entries_list = ['DARKM']
 
 
-#inspect all reduced_nights log.fits
+#TESTS
 
-recipe_num_logfits = 0 #check1
 
-output1 = [] 
+#inspect all reduced_nights and other/log.fits
 
-odometers_logfits_QCfalse = [] #check3
-nights_logfits_QCfalse = [] #check3
-QCstr_logfits_QCfalse = [] #check3
-
-odometers_logfits_ENDEDfalse = [] #check5
-nights_logfits_ENDEDfalse = [] #check5
-ERRORS_logfits_ENDEDfalse = [] #check5
-LOGFILE_logfits_ENDEDfalse = [] #check5
-
-missing_indexfits = []
-missing_logfits = []
-
-missing_indexfits = []
-missing_logfits = []
+output1 = [] #check2
 
 for i in range(len(reduced_nights)):
 
-    output1.append(glob.glob('{0}/{1}/{2}'.format(reduced_path, reduced_nights[i]), '*_pp_dark_master.fits'))
-
-    #inspect index.fits if the file exists
-    #if os.path.isfile('{0}/{1}/index.fits'.format(reduced_path, reduced_nights[i])):
-    #    pass    
-    
-    #missing index.fits
-    #else:
-    #    missing_indexfits.append('{0}/{1}/index.fits'.format(reduced_path, reduced_nights[i]))
+    output1.extend(list_files('{0}/{1}'.format(reduced_path, reduced_nights[i]), files = '_pp_dark_master.fits'))
 
 
-    #inspect log.fits if the file exists
-    if os.path.isfile('{0}/{1}/log.fits'.format(reduced_path, reduced_nights[i])):
-        
-        logfits = log_fits('{0}/{1}/log.fits'.format(reduced_path, reduced_nights[i]))
+logfits = log_fits('{0}/other/log.fits'.format(reduced_path))
+index_recipe = logfits.recipe == 'cal_dark_master_{0}'.format(instrument.lower())
+recipe_num_logfits = sum(index_recipe) #check1
 
-        recipe_num_logfits += sum(logfits.recipe == 'cal_dark_master_spirou')  #check1
-        
-        index_recipe = logfits.recipe == 'cal_dark_master_spirou'
-        index_QCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe) #QC false + correct recipe
-        
+indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe) #QC false + correct recipe
+indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe) #ENDED false + correct recipe
 
-    #missing log.fits
-    else:
-        missing_logfits.append('{0}/{1}/log.fits'.format(reduced_path, reduced_nights[i]))
+num_logfits_QCfalse = sum(indexQCfalse) #check6
+if num_logfits_QCfalse == 0:
+    comments_check6 = ''
+else :
+    comments_check6 = 'Inspect the log.fits. One or more file have somehow failed QC.'
+num_logfits_ENDEDfalse = sum(indexENDEDfalse) #check7
+if num_logfits_QCfalse == 0:
+    comments_check7 = ''
+else :
+    comments_check7 = 'Inspect the log.fits. One or more file have somehow failed QC.'
 
-output1 = np.unique(out
+
+output1_num = len(output1) #check2
+output1_num_unique = len(np.unique(output1)) #check3
+
+data_dict_check3 = {'File name ({0})'.format(output_list[0]): np.unique(output1),
+}
+inspect_check3 = inspect('darkmaster_test1', 'check3', data_dict_check3, 'Dark Master Recipe Unique Output Files in {0}'.format(reduced_path))
+
+
+#stop1
+
+if output1_num_unique == recipe_num_logfits:
+    color1 = 'Lime'
+    stop1 = 'Yes'
+    comment1 = ''
+    inspect1 = ''
+elif output1_num_unique < recipe_num_logfits:
+    color1 = 'Yellow'
+    stop1 = 'No'
+    comment1 = 'One or more output were not produced.'
+    inspect1 = ''
+else :
+    color1 = 'Red'
+    stop1 = 'No'
+    comment1 = 'The number of unique output files should always be equal or smaller than the number of recipe called.'
+    inspect1 = ''
+
+#inspect calibDB
+
+f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
+master_calib_txt = f.read()
+output1_num_entries = master_calib_txt.count('DARKM') #check4
+output1_calibDB = list_files("{0}".format(calibDB_path), files = '_pp_dark_master.fits')
+output1_num_calibDB = len(output1_calibDB) #check5
+
+data_dict_check5 = {'File name ({0})'.format(output_list[0]): output1_calibDB,
+}
+inspect_check5 = inspect('darkmaster_test1', 'check5', data_dict_check5, 'Dark Master Recipe Output Files in {0}'.format(calibDB_path))
+
+
+#stop2
+
+if output1_num_calibDB == output1_num_entries:
+    color2 = 'Lime'
+    stop2 = 'Yes'
+    comment2 = ''
+    inspect2 = ''
+elif output1_num_calibDB < output1_num_entries:
+    color2 = 'Yellow'
+    stop2 = 'No'
+    comment2 = 'One or more output are not in the calibDB.'
+    inspect2 = ''
+else :
+    color2 = 'Red'
+    stop2 = 'No'
+    comment2 = 'The calibDB should not have more output files than what was produced.'
+    inspect2 = ''
+
 
 
 
@@ -120,10 +174,15 @@ th, td {{
 <body>
 
 <h3>Dark Master Recipe Test #1</h3>
-<p><b>Setup: {setup}</b></p>
-<p><b>Instrument: {instrument}</b></p>
-<p><b>Date: {date}</b></p>
-<p>   </p>
+<p><b>Setup: {setup}</b><br>
+<p><b>Instrument: {instrument}</b><br>
+<p><b>Date: {date}</b><br>
+<br>
+<p>Script: cal_dark_master_{instrument.lower()}.py<br>
+<p>Output files: {output_list[0]}<br>
+<p>Calibration database entry: DARKM<br>
+<p><a href='https://github.com/njcuk9999/apero-drs#82-dark-master-recipe'>Link</a> to Dark Master Recipe description</p>
+<br></br>
 
 <table id="t01">
 
@@ -143,37 +202,65 @@ th, td {{
   </tr>
   <tr>
     <td>1</td>
-    <td>How many recipes were run</td>
+    <td># of time cal_dark_master_{instrument.lower()}.py was called</td>
     <td>{recipe_num_logfits}</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
     <td>2</td>
-    <td>How many of each output do we have</td>
+    <td># of {output_list[0]} in {reduced_path}</td>
     <td>{output1_num}</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
     <td>3</td>
-    <td># of unique files in {reduced_path}/*/log.fits that failed one or more QC</td>
+    <td># of unique {output_list[0]} in {reduced_path}</td>
+    <td>{output1_num_unique}</td>
+    <td></td> 
+    <td>{inspect_check3}</td> 
+  </tr>
+  <tr>
     <td></td>
-    <td></td> 
-    <td></td> 
+    <td>Check3 == Check1?</td>
+    <td bgcolor={color1}>{stop1}</td>
+    <td>{comment1}</td>
+    <td>{inspect1}</td>
   </tr>
   <tr>
     <td>4</td>
-    <td>For each calib entry how many are in the calibDB</td>
-    <td></td>
+    <td># of {calibDB_entries_list[0]} entry in {calibDB_path}/master_calib_{instrument}.txt</td>
+    <td>{output1_num_entries}</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
-    <td>6</td>
-    <td># of unique files in {reduced_path}/*/log.fits that failed to finish</td>
-    <td></td>
+    <td>5</td>
+    <td># of {output_list[0]} in {calibDB_path}</td>
+    <td>{output1_num_calibDB}</td>
     <td></td> 
+    <td>{inspect_check5}</td> 
+  </tr>
+  <tr>
+    <td></td>
+    <td>Check5 == Check4?</td>
+    <td bgcolor={color2}>{stop2}</td>
+    <td>{comment2}</td>
+    <td>{inspect2}</td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td># of entry in {reduced_path}/other/log.fits that failed one or more QC</td>
+    <td>{num_logfits_QCfalse}</td>
+    <td>{comments_check6}</td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>7</td>
+    <td># of entry in {reduced_path}/other/log.fits that failed to finish</td>
+    <td>{num_logfits_ENDEDfalse}</td>
+    <td>{comments_check7}</td> 
     <td></td>
   </tr>
 </table>

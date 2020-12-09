@@ -11,11 +11,11 @@ import numpy as np
 #stop1: check2 == check1?
 #check3: how many pp files are there in the index.fits?
 #stop2: check3 == check2?
-#check4: how many pp files are there in the log.fits?
-#check5: how many unique pp files are there in the log.fits?
+#check4: how many recipes were run? (cal_preprocess_{instrument} in tmp/*/log.fits)
+#check5: how many unique odometers files were preprocessed according to the log.fits?
 #stop3: check5 == check 2?
-#check6: using the log.fits how many unique files failed one or more QC? Which odometer? Which QC?
-#check7: using the log.fits how many unique files failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
+#check6: using the log.fits how many unique odometers failed one or more QC? Which odometer? Which QC?
+#check7: using the log.fits how many unique odometers failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
 
 
 #constants
@@ -37,11 +37,14 @@ if pp_path[-1] == '/' :
     pp_path = pp_path[:-1] #pp path without / at the end
 pp_nights = list_nights(pp_path) #list preprocessed data night directories
 
+#output list
+output_list = ['*_pp.fits']
+
 
 #TESTS
 
 raw_num = count_files_subdir(raw_path, subdir = 'all', files = '*.fits')  #check1
-pp_num = count_files_subdir(pp_path, subdir = 'all', files = '*pp.fits')    #check2
+pp_num = count_files_subdir(pp_path, subdir = 'all', files = '*_pp.fits')    #check2
 
 #stop1
 
@@ -82,6 +85,9 @@ LOGFILE_logfits_ENDEDfalse = [] #check7
 missing_indexfits = []
 missing_logfits = []
 
+#odometers_all = []
+#test = []
+
 for i in range(len(pp_nights)):
 
     #inspect index.fits if the file exists
@@ -106,9 +112,10 @@ for i in range(len(pp_nights)):
         
         odometers = []
 
-        for i in range(len(args)):
-            index = args[i].index('.fits')
-            odometers.append(args[i][index-8:index])
+        for j in range(len(args)):
+            if 'persi_' in args[j]: args[j].replace('persi_','')
+            index = args[j].index('.fits')
+            odometers.append(args[j][index-8:index])
 
         odometers, index_unique = np.unique(odometers, return_index = True)
 
@@ -132,7 +139,17 @@ for i in range(len(pp_nights)):
     #missing log.fits
     else:
         missing_logfits.append('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
+  
 
+    #odometers_all.extend(odometers)
+    #file_name = list_files('{0}/{1}'.format(pp_path, pp_nights[i]), files = '_pp.fits')
+    #test.extend(file_name[:8])
+    
+
+#print(len(odometers_all))
+#print(len(test))
+#print(len(np.intersect1d(odometers_all, test)))
+#print(np.setdiff1d(odometers_all, test))
 
 #stop2
 
@@ -173,14 +190,14 @@ data_dict_check6 = {'Night': nights_logfits_QCfalse,
              'Odometer': odometers_logfits_QCfalse,
              'QC_STRING': QCstr_logfits_QCfalse,
 }
-inspect_check6 = inspect('preprocessing_test1', 'check6', data_dict_check6, 'Odometers that failed one or more Quality Control')
+inspect_check6 = inspect('preprocessing_test1', 'check6', data_dict_check6, 'Odometers that Failed One or More Quality Control')
 
 data_dict_check7 = {'Night': nights_logfits_ENDEDfalse,
              'Odometer': odometers_logfits_ENDEDfalse,
              'ERRORS': ERRORS_logfits_ENDEDfalse,
              'LOGFILE': LOGFILE_logfits_ENDEDfalse,
 }
-inspect_check7 = inspect('preprocessing_test1', 'check7', data_dict_check7, 'Odometers that failed to finish')
+inspect_check7 = inspect('preprocessing_test1', 'check7', data_dict_check7, 'Odometers that Failed to Finish')
 
 
 #Build preprocessing_test1.html
@@ -219,10 +236,14 @@ th, td {{
 <body>
 
 <h3>Preprocessing Recipe Test #1</h3>
-<p><b>Setup: {setup}</b></p>
-<p><b>Instrument: {instrument}</b></p>
-<p><b>Date: {date}</b></p>
-<p>   </p>
+<p><b>Setup: {setup}</b><br>
+<p><b>Instrument: {instrument}</b><br>
+<p><b>Date: {date}</b><br>
+<br>
+<p>Script: cal_preprocessing_{instrument.lower()}.py<br>
+<p>Output files: {output_list[0]}<br>
+<p><a href='https://github.com/njcuk9999/apero-drs#81-preprocessing-recipe'>Link</a> to Preprocessing Recipe description</p>
+<br></br>
 
 <table id="t01">
 
@@ -259,7 +280,7 @@ th, td {{
     <td>Check 2 == Check 1?</td>
     <td bgcolor={color1}>{stop1}</td>
     <td>{comment1}</td>
-    <td></td>
+    <td>{inspect1}</td>
   </tr>
   <tr>
     <td>3</td>
@@ -273,18 +294,18 @@ th, td {{
     <td>Check 3 == Check 2?</td>
     <td bgcolor={color2}>{stop2}</td>
     <td>{comment2}</td>
-    <td></td>
+    <td>{inspect2}</td>
   </tr>
   <tr>
     <td>4</td>
-    <td># of pp files in {pp_path}/*/log.fits</td>
+    <td># of time cal_preprocess_{instrument.lower()}.py was called</td>
     <td>{pp_num_logfits}</td>
     <td></td>
     <td></td>
   </tr>
   <tr>
     <td>5</td>
-    <td># of unique pp files in {pp_path}/*/log.fits</td>
+    <td># of unique odometers preprocessed according to {pp_path}/*/log.fits</td>
     <td>{pp_num_logfits_unique}</td>
     <td></td>
     <td></td>
@@ -294,18 +315,18 @@ th, td {{
     <td>Check 5 == Check 2?</td>
     <td bgcolor={color3}>{stop3}</td>
     <td>{comment3}</td>
-    <td></td>
+    <td>{inspect3}</td>
   </tr>
   <tr>
     <td>6</td>
-    <td># of unique pp files in {pp_path}/*/log.fits that failed one or more QC</td>
+    <td># of unique odometers in {pp_path}/*/log.fits that failed one or more QC</td>
     <td>{pp_num_logfits_unique_QCfalse}</td>
     <td></td>
     <td>{inspect_check6}</td>
   </tr>
   <tr>
     <td>7</td>
-    <td># of unique pp files in {pp_path}/*/log.fits that failed to finish</td>
+    <td># of unique odometers in {pp_path}/*/log.fits that failed to finish</td>
     <td>{pp_num_logfits_unique_ENDEDfalse}</td>
     <td></td>
     <td>{inspect_check7}</td>

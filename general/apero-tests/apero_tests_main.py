@@ -41,7 +41,7 @@ for i in range(n):
         os.system('mkdir {0}'.format(test_list_short[i]))
 
     print('test {0}/{1}'.format(i+1,n))   
-    print('running {0}\n'.format(test_list_short[i]))    
+    print('running {0}.py\n'.format(test_list_short[i]))    
     
     try:
         os.system('python {0}.py'.format(test_list_short[i]))
@@ -80,11 +80,6 @@ html_table = "".join(html_table)
 date_final = datetime.now() #final date
 
 delta_date = date_final - date_ini
-seconds = delta_date.total_seconds()
-hours = seconds // 3600
-minutes = (seconds % 3600) // 60
-seconds = seconds % 60
-running_time = '{0}:{1}:{2:0.2f}'.format(hours, minutes, seconds)
 
 date_final = date_final.strftime("%Y-%m-%d %H:%M:%S")
 
@@ -125,15 +120,14 @@ th, td {{
 
 <img src='images/apero_logo.png' alt='APERO'>
 
-<p>A PipelinE to Reduce Observations</p>
-
+<font size="-1">A PipelinE to Reduce Observations</font>
 
 <h3>APERO Tests Summary Page</h3>
-<p><b>Setup: {setup}</b></p>
-<p><b>Instrument: {instrument}</b></p>
-<p><b>Date: {date_final}</b></p>
+<p><b>Setup: {setup}</b><br>
+<p><b>Instrument: {instrument}</b><br>
+<p><b>Date: {date_final}</b><br>
 <p><b>Running Time: {delta_date}</b></p>
-<p>   </p>
+<br></br>
 
 <table id="t01">
 
