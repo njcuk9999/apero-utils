@@ -3,8 +3,9 @@ The [APERO Object ID Google Sheet](https://docs.google.com/spreadsheets/d/1jwlux
 files facilitate the management of the sheet with two executable scripts and various utility
 functions.
 
-## Files
+See the [Wiki](https://github.com/njcuk9999/apero-utils/wiki) for information on [APERO object identification](https://github.com/njcuk9999/apero-utils/wiki/APERO-Object-Identification) and [using Google sheets with Python](https://github.com/njcuk9999/apero-utils/wiki/Working-with-Google-Sheets).
 
+## Files
 - `full_update.py`: Performs a full update of the sheet using local data. This performs the following tasks:
   - Fetch data from `.fits` headers or use a pre-constructed local `.csv` file.
   - Include new objects in the main sheet.
