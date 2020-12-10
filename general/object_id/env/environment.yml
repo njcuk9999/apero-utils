@@ -1,0 +1,15 @@
+name: apero-sheets
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - pip
+  - python
+  - gspread-pandas
+  - astropy
+  - numpy
+  - pandas
+  - requests
+  - astroquery
+  - tqdm
+  - pynvim
