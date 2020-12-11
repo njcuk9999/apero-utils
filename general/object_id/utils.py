@@ -16,7 +16,7 @@ import astro_object as ao
 
 COLNAMES = ['OBJECT',
             'GAIADR2ID',
-            '2MASSID',
+            'TWOMASSID',
             'RV',
             'RV_REF',
             'TEFF',
@@ -26,7 +26,7 @@ COLNAMES = ['OBJECT',
             'FOUND',
             'MANUAL_EDIT',
             'COMMENTS']
-ID_COLS = ['GAIADR2ID', '2MASSID']
+ID_COLS = ['GAIADR2ID', 'TWOMASSID']
 VAL_COLS = ['RV', 'TEFF']
 NA_COLS = ID_COLS + VAL_COLS
 EXOFOP_URL = 'https://exofop.ipac.caltech.edu/'
@@ -202,10 +202,10 @@ def unique_sheet(df_sheet):
     df_sheet = df_sheet.append(sheet_no_id, ignore_index=True)
 
     # 2MASS ID duplicates
-    id_mask = df_sheet['2MASSID'].notnull()
+    id_mask = df_sheet['TWOMASSID'].notnull()
     sheet_no_id = df_sheet[~id_mask]
     df_sheet = df_sheet[id_mask]
-    df_sheet = df_sheet.groupby('2MASSID').agg(funs).reset_index(drop=True)
+    df_sheet = df_sheet.groupby('TWOMASSID').agg(funs).reset_index(drop=True)
     df_sheet = df_sheet.append(sheet_no_id, ignore_index=True)
 
     # Update aliases
@@ -352,9 +352,9 @@ def update_aliases(df, new_aliases=None, inplace=False):
     aliases[mask_gaia] = aliases[mask_gaia].str.cat(
             'Gaia DR2 ' + df.GAIADR2ID[mask_gaia]
             )
-    mask_2mass = df['2MASSID'].notnull()
+    mask_2mass = df['TWOMASSID'].notnull()
     aliases[mask_2mass] = aliases[mask_2mass].str.cat(
-            '2MASS J' + df['2MASSID'][mask_2mass]
+            '2MASS J' + df['TWOMASSID'][mask_2mass]
             )
 
     # Make sure object is not current list, and that list is unique
@@ -611,7 +611,7 @@ def twomass_from_gaia(df):
     df_2mass = df_2mass['original_ext_source_id']
 
     # Weird encoding workaround
-    df['2MASSID'] = df_2mass.str.strip("b\'\"").values
+    df['TWOMASSID'] = df_2mass.str.strip("b\'\"").values
 
     return df
 

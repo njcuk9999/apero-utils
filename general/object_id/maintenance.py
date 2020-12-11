@@ -330,11 +330,11 @@ def get_2mass_id(df_sheet):
     """
     Search 2MASS ID of objects
     """
-    mask = df_sheet['2MASSID'].isnull()
+    mask = df_sheet['TWOMASSID'].isnull()
 
     df_sheet[mask] = ut.twomass_from_gaia(df_sheet[mask])
 
-    mask = df_sheet['2MASSID'].isnull()
+    mask = df_sheet['TWOMASSID'].isnull()
 
     df_sheet[mask] = ut.twomass_from_simbad(df_sheet[mask])
 
@@ -356,7 +356,7 @@ def find_aliases_simbad(df_sheet):
     # Get aliases from 2MASS ID
     mask = (df_sheet.ALIASES.str.split('|').str.len() < 4)
     df_update = df_sheet[mask]
-    aliases = ut.get_aliases_twomass(df_update['2MASSID'])
+    aliases = ut.get_aliases_twomass(df_update['TWOMASSID'])
     df_update = ut.update_aliases(df_update, new_aliases=aliases)
     df_sheet[mask] = df_update
 
