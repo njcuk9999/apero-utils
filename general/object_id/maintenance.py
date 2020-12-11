@@ -330,7 +330,8 @@ def get_2mass_id(df_sheet):
     """
     Search 2MASS ID of objects
     """
-    mask = df_sheet['TWOMASSID'].isnull()
+    # Avoid crashing gaia query
+    mask = df_sheet['TWOMASSID'].isnull() & df_sheet.GAIADR2ID.notnull()
 
     df_sheet[mask] = ut.twomass_from_gaia(df_sheet[mask])
 
