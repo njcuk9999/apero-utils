@@ -620,17 +620,17 @@ def twomass_from_simbad(df):
     """
     Check simbad aliases for missing 2mass ids
     """
-    print(df.index[df['2MASSID'].isna()])
+    print(df.index[df['TWOMASSID'].isna()])
     print(df.ALIASES)
-    for i in df.index[df['2MASSID'].isna()]:
+    for i in df.index[df['TWOMASSID'].isna()]:
         aliases = df['ALIASES'].loc[i].split('|')
         count = 0
         for alias in aliases:
-            if '2MASS' in alias:
+            if 'TWOMASSID' in alias:
                 twomass = alias
                 count += 1
         if count == 1:
-            df['2MASSID'].iloc[i] = twomass.split('J')[1]
+            df['TWOMASSID'].iloc[i] = twomass.split('J')[1]
             df['COMMENTS'].iloc[i] = (df['COMMENTS'].iloc[i]
                                       + ' 2MASS ID from SIMBAD'
                                       )
