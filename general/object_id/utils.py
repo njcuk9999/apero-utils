@@ -27,6 +27,8 @@ COLNAMES = ['OBJECT',
             'MANUAL_EDIT',
             'COMMENTS']
 ID_COLS = ['GAIADR2ID', '2MASSID']
+VAL_COLS = ['RV', 'TEFF']
+NA_COLS = ID_COLS + VAL_COLS
 EXOFOP_URL = 'https://exofop.ipac.caltech.edu/'
 GAIA_2MASS_URL = 'https://gea.esac.esa.int/tap-server/tap'
 TOI_URL = EXOFOP_URL+'tess/download_toi.php?sort=toi&output=csv'
@@ -74,7 +76,7 @@ def get_full_sheet(sh, ws=0, index=0):
             df = sh.sheet_to_df(index=index, unformatted_columns=COLNAMES)
 
             # Make sure nan for empty ids
-            df[ID_COLS] = df[ID_COLS].replace('', np.nan)
+            df[NA_COLS] = df[NA_COLS].replace('', np.nan)
         except IndexError:
             df = sh.sheet_to_df(index=index)
 

@@ -149,7 +149,7 @@ def bad_and_rejected(names, sh=None, bad=None, rej=None, verbose=False):
     if sh is not None:
         rej_names = pd.DataFrame(rej_names)
         df_rej = ut.get_full_sheet(sh, ws='Rejected')  # Remote names
-        rej_all = '|'.join(rej.OBJECT.tolist())
+        rej_all = '|'.join(df_rej.OBJECT.tolist())
         rej_all = '|'.join([rej, rej_all])
         rej_mask = rej_names.OBJECT.isin(df_rej.OBJECT)
         if not rej_mask.all():  # Update only  if new objects
@@ -398,25 +398,34 @@ def teff_and_rv(sh, df_sheet, df_loc):
 
     # Update RV and TEFF in Info worksheet
     update_mask = ~df_sheet['MANUAL_EDIT']
-    rv_teff_update = np.array([rv_list, teff_list]).T[update_mask]
-    df_sheet.loc[update_mask, ['RV', 'TEFF']] = rv_teff_update
-    rv_mask, teff_mask = ~np.isnan(rv_teff_update).T
-    df_sheet.loc[update_mask & rv_mask, 'RV_REF'] = 'HEADER[CFHT]'
-    df_sheet.loc[update_mask & teff_mask, 'TEFF_REF'] = 'HEADER[CFHT]'
+    rv_teff_vals = np.array([rv_list, teff_list]).T
+    rv_teff_vals = pd.DataFrame(rv_teff_vals, columns=['RV', 'TEFF'])
+    update_mask = update_mask.values[:, None] & rv_teff_vals.notnull()
+    rv_teff_update = rv_teff_vals[update_mask]
+    for col in ['RV', 'TEFF']:
+        rv_teff_update[col+'_REF'] = 'HEADER[CFHT]'  # Add reference too
+        col2 = [col, col+'_REF']
+        df_sheet.loc[update_mask[col], col2] = rv_teff_update[col2]
     ut.update_full_sheet(sh, df_sheet, ws='Info')
 
     # Update the maintenance sheet (no mask for this one)
-    df_maint = ut.get_full_sheet(sh, ws='Maintenance', index=0)
+    df_maint = ut.get_full_sheet(sh, ws='Maintenance', index=1)
+    df_maint = df_maint.reindex(df_sheet.OBJECT)
+    df_maint = df_maint.fillna('')
     new_arr = np.array([rv_all, rv_all_count, teff_all, teff_all_count]).T
     df_new = pd.DataFrame(new_arr,
-                          columns=df_maint.columns[1:],
+                          columns=df_maint.columns,
+                          index=df_maint.index,
                           )
-    df_maint.OBJECT = df_sheet.OBJECT
     for col in df_maint.columns[1:]:
-        df_maint[col] = df_maint[col].str.cat(df_new[col].astype(str), sep='|')
-        df_maint[col] = df_maint[col].str.split('|').apply(
-                lambda vals: [str(float(val)) for val in vals
-                              if val != ''
-                              ]
-                ).apply(set).str.join('|')
-    ut.update_full_sheet(sh, df_maint, ws='Maintenance', index=False)
+        try:
+            df_maint[col] = df_maint[col].str.cat(df_new[col].astype(str),
+                                                  sep='|')
+            df_maint[col] = df_maint[col].str.split('|').apply(
+                    lambda vals: [str(float(val)) for val in vals
+                                  if val != ''
+                                  ]
+                    ).apply(pd.unique).str.join('|')
+        except AttributeError:
+            df_maint[col] = df_new[col]
+    ut.update_full_sheet(sh, df_maint, ws='Maintenance', index=1)
