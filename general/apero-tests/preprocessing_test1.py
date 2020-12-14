@@ -241,7 +241,7 @@ th, td {{
 <p><b>Date: {date}</b><br>
 <br>
 <p>Script: cal_preprocessing_{instrument.lower()}.py<br>
-<p>Output files: {output_list[0]}<br>
+<p>Output files: {output_list}<br>
 <p><a href='https://github.com/njcuk9999/apero-drs#81-preprocessing-recipe'>Link</a> to Preprocessing Recipe description</p>
 <br></br>
 
