@@ -6,8 +6,9 @@ from astropy.time import Time
 from ccf2rv import *
 from per_epoch_table import per_epoch_table
 
-def sinusoidal(phase,dphase,amp,zp):
-    return np.sin( (phase+dphase))*amp+zp
+def sinusoidal(time, period,phase0,amp,zp):
+    phase = 2*np.pi*time/period + phase0
+    return np.sin(phase)*amp+zp
 
 # do not *formally* exclude an order, but this is done later with the bandpass keyword
 exclude_orders = [28,47,48]
@@ -17,15 +18,13 @@ mask =  'gl846_full'
 method = 'all'
 sanitize = False
 # number of median-absolute deviations within an epoch to consider a point discrepant
-tbl,dico = get_object_rv(object,mask =mask,
+dico = get_object_rv(object,mask =mask,
                     method = method,force = True,
                     exclude_orders = exclude_orders,
                     snr_min = 20.0, velocity_window = 20, sanitize = sanitize,
-                    dvmax_per_order = 3.0, bandpass = 'YJHK',
-                    doplot = True, do_blacklist = True,
-                    detailed_output = True,
-                    sed_match = False)
+                    dvmax_per_order = 3.0, bandpass = 'YJHK',detailed_output = True)
 
+tbl = dico['TABLE_CCF']
 
 rv = np.array(tbl['RV'])
 rv -= np.mean(rv)
@@ -73,12 +72,12 @@ for ite in range(len(damps)):
         all_ccs[:,ite] = np.nanmean(ccf3[:,16:],axis=1)
 
 
-print(  dico['ccf_RV'][np.argmin(moy)] )
+print(  dico['MEAN_CCF'][np.argmin(moy)] )
 
 
-plt.imshow(-all_ccs/np.nanstd(all_ccs),aspect = 'auto',extent = [np.min(damps),np.max(damps),np.min(dico['ccf_RV']),np.max(dico['ccf_RV'])])
+plt.imshow(-all_ccs/np.nanstd(all_ccs),aspect = 'auto',extent = [np.min(damps),np.max(damps),np.min(dico['MEAN_CCF']),np.max(dico['MEAN_CCF'])])
 plt.plot([np.min(damps),np.max(damps)],[-29.4,-29.4],linestyle = '--',alpha = 0.5,color ='white')
-plt.ylim([-29.5-30,-29.5+30])
+#plt.ylim([-29.5-30,-29.5+30])
 plt.xlabel('Mass ratio')
 plt.ylabel('RV [km/s]')
 plt.show()
@@ -93,24 +92,36 @@ tbl_bin = per_epoch_table(tbl,nMAD_cut = 5)
 t2 = Time(tbl_bin['MJDATE_MEAN'], format = 'mjd')
 t3 = Time(tbl['MJDATE'], format = 'mjd')
 
+#period, phase0, amp, zp
+
 # get phase for sine fitting
+#phase_bin = 2*np.pi*tbl_bin['MJDATE_MEAN']/period
+#phase = 2*np.pi*tbl['MJDATE']/period
+
+# fit sinusoid
+p0 =  [14.4,0,(np.max( tbl_bin['RV'])-np.min( tbl_bin['RV']))/2,np.mean(tbl_bin['RV'])]
+for ite in range(2):
+    fit, pcov = curve_fit(sinusoidal, tbl_bin['MJDATE_MEAN'], tbl_bin['RV'],p0 = p0)
+    p0 = np.array(fit)
+    print(fit)
+
+period = fit[0]
+
 phase_bin = 2*np.pi*tbl_bin['MJDATE_MEAN']/period
 phase = 2*np.pi*tbl['MJDATE']/period
 
-# fit sinusoid
-fit, pcov = curve_fit(sinusoidal, phase_bin, tbl_bin['RV'])
 
 # some plotting fiddling
 dt = np.max(tbl_bin['MJDATE_MEAN']) - np.min(tbl_bin['MJDATE_MEAN'])
 time_plot = np.arange(np.min(tbl_bin['MJDATE_MEAN'])-dt/10,np.max(tbl_bin['MJDATE_MEAN'])+dt/10,dt/1000)
 phase_plot = 2*np.pi*time_plot/period
 
-model_bin =  sinusoidal(phase_bin,*fit)
-model=  sinusoidal(phase,*fit)
-model_plot =  sinusoidal(phase_plot,*fit)
+model_bin =  sinusoidal(tbl_bin['MJDATE_MEAN'],*fit)
+model=  sinusoidal(tbl['MJDATE'],*fit)
+model_plot =  sinusoidal(time_plot,*fit)
 
-print('Amplitude of the sinusoidal at {0} days: {1:.2f} m/s'.format(period, 1000*fit[1]))
-print('Mean velocity: {1:.2f} m/s'.format(period, 1000*fit[2]))
+print('Amplitude of the sinusoidal at {0} days: {1:.2f} m/s'.format(period, 1000*fit[2]))
+print('Mean velocity: {1:.2f} m/s'.format(period, 1000*fit[3]))
 
 print('Mean/Median per-epoch STDDEV {0}/{1} km/s'.format(np.mean(tbl_bin["ERROR_RV"])
                                                         ,np.median(tbl_bin["ERROR_RV"])))

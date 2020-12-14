@@ -6,7 +6,6 @@ import sys
 from scipy.signal import convolve2d
 from astropy.table import Table
 
-
 def mk_isolated_nans(image):
     # input image is known to have its pixels in the right position
     # without shifts

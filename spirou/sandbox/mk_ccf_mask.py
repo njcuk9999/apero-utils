@@ -310,5 +310,5 @@ def mk_ccf_mask(templates,doplot = False):
 
 
 
-templates = glob.glob('Template_s1d_GL*_sc1d_v_file_AB.fits')
-mk_ccf_mask(templates,doplot = False)
+#templates = glob.glob('Template_s1d_GL*_sc1d_v_file_AB.fits')
+#mk_ccf_mask(templates,doplot = False)
