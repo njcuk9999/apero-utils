@@ -3,6 +3,7 @@ import glob
 from datetime import datetime
 from astropy.io import fits
 
+
 def intersection(lst1, lst2): 
 
     lst3 = [value for value in lst1 if value in lst2] 
@@ -11,12 +12,12 @@ def intersection(lst1, lst2):
 
 def list_nights(path):
 
-    list = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
-    if 'other' in list :    
-        list.remove('other')
-    list.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
+    list_nights = [x for x in os.listdir(path) if os.path.isdir(os.path.join(path, x))]
+    if 'other' in list_nights :    
+        list_nights.remove('other')
+    list_nights.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
 
-    return list
+    return list_nights
 
 def list_files(path, files = 'all'):
 
@@ -25,9 +26,11 @@ def list_files(path, files = 'all'):
     else:
         f = files
 
-    list = [x for x in os.listdir(path) if x.endswith(f)]
-
-    return list
+    list_files = [x for x in os.listdir(path) if x.endswith(f)]
+    
+    if len(list_files) == 0:
+        print(path) 
+    return list_files
 
 
 def count_files(path, files = 'all'):
@@ -162,7 +165,6 @@ class log_fits:
         self.LOGFILE = tbl['LOGFILE']
 
 
-
 from bokeh.io.saving import save
 from bokeh.io.output import output_file
 from bokeh.models import ColumnDataSource, DataTable, DateFormatter, TableColumn
@@ -217,4 +219,3 @@ def summary(test):
     html_str = """Passed: {0}/{3}<br>Passed with conditions: {1}/{3}<br>Failed: {2}/{3} """.format(passed, conditional, failed, n)
 
     return html_str, color
-
