@@ -32,18 +32,23 @@ th, td {
 <body>
 
 <h3>Bad Pixel Correction Recipe Test #1</h3>
-<p><b>Setup: /spirou/drs/setup/setup_sept1/</b></p>
-<p><b>Instrument: SPIROU</b></p>
-<p><b>Date: 2020-12-08 14:10:06</b></p>
-<p>   </p>
+<p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
+<p><b>Instrument: SPIROU</b><br>
+<p><b>Date: 2020-12-14 15:22:04</b><br>
+<br>
+<p>Script: cal_badpix_spirou.py<br>
+<p>Output files: *_pp_badpixel.fits, *_pp_bmap.fits<br>
+<p>Calibration database entry: BADPIX, BKGRDMAP<br>
+<p><a href='https://github.com/njcuk9999/apero-drs#83-bad-pixel-correction-recipe'>Link</a> to Bad Pixel Correction Recipe description</p>
+<br></br>
 
 <table id="t01">
 
   <colgroup>
      <col span="1" style="width: 5%;">
      <col span="1" style="width: 55%;">
-     <col span="1" style="width: 5%;">
-     <col span="1" style="width: 30%;">
+     <col span="1" style="width: 15%;">
+     <col span="1" style="width: 20%;">
      <col span="1" style="width: 5%;">
   </colgroup>
   <tr>
@@ -55,44 +60,65 @@ th, td {
   </tr>
   <tr>
     <td>1</td>
-    <td>How many recipes were run</td>
+    <td># of time cal_badpix_spirou.py was called</td>
     <td>484</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
     <td>2</td>
-    <td>How many of each output do we have</td>
-    <td></td>
+    <td># of *_pp_badpixel.fits, *_pp_bmap.fits in /spirou/cfht_nights/cfht_sept1/reduced</td>
+    <td>*_pp_badpixel.fits: 518<br>*_pp_bmap.fits: 518</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
     <td>3</td>
-    <td># of unique files in /spirou/cfht_nights/cfht_sept1/reduced/*/log.fits that failed one or more QC</td>
-    <td></td>
+    <td># of unique *_pp_badpixel.fits, *_pp_bmap.fits in /spirou/cfht_nights/cfht_sept1/reduced</td>
+    <td>*_pp_badpixel.fits: 481<br>*_pp_bmap.fits: 481</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
-    <td>4</td>
-    <td>For each calib entry how many are in the calibDB</td>
     <td></td>
+    <td>Check 3 == Check 1?</td>
+    <td bgcolor=Yellow>No</td>
+    <td>One or more output were not produced OR recipe called multiple times in the same directory.</td>
+    <td></td>
+  </tr>
+  <tr>
+    <td>4</td>
+    <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed one or more QC</td>
+    <td>0</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
     <td>5</td>
-    <td>Plot the different QCs as a function of time</td>
+    <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed to finish</td>
+    <td>0</td>
+    <td></td> 
     <td></td>
+  </tr>
+  <tr>
+    <td>6</td>
+    <td># of BADPIX, BKGRDMAP entry in /spirou/cfht_nights/cfht_sept1/calibDB/master_calib_SPIROU.txt</td>
+    <td>BADPIX: 484<br>BKGRDMAP: 484</td>
     <td></td> 
     <td></td> 
   </tr>
   <tr>
-    <td>6</td>
-    <td># of unique files in /spirou/cfht_nights/cfht_sept1/reduced/*/log.fits that failed to finish</td>
-    <td></td>
+    <td>7</td>
+    <td># of *_pp_badpixel.fits, *_pp_bmap.fits in /spirou/cfht_nights/cfht_sept1/calibDB</td>
+    <td>*_pp_badpixel.fits: 481<br>*_pp_bmap.fits: 481</td>
     <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td></td>
+    <td>Check 7== Check 6?</td>
+    <td bgcolor=Yellow>No</td>
+    <td>One or more output are not in the calibDB OR some entries are identical.</td>
     <td></td>
   </tr>
 </table>
