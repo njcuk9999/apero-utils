@@ -8,15 +8,15 @@ import numpy as np
 
 #check1: how many recipes were run? (cal_dark_master_{instrument} in other/log.fits)
 #check2: how many of each output do we have?
-         #output1: {ODOMETER_CODE}_pp_dark_master.fits  \\ dark master file (4096x4096) + FITS-TABLE
+         #output1: {ODOMETER_CODE}_pp_dark_master.fits
 #check3: how many of each unique output do we have?
-         #output1: {ODOMETER_CODE}_pp_dark_master.fits  \\ dark master file (4096x4096) + FITS-TABLE
+         #output1: {ODOMETER_CODE}_pp_dark_master.fits
 #stop1: check3 == check1?
-#check4: how many entry in master_calib_{INSTRUMENT}.txt? 
-#check5: for each calib entry how many are in the calibDB?
-#stop2: check5 == check5?
-#check6: using the log.fits how many entry failed one or more QC?
-#check7: using the log.fits how many entry failed to finish?
+#check4: using the log.fits how many entry failed one or more QC?
+#check5: using the log.fits how many entry failed to finish?
+#check6: how many entry DARKM in master_calib_{INSTRUMENT}.txt? 
+#check7: for each calib entry how many are in the calibDB?
+#stop2: check7 == check6?
 
 
 #constants
@@ -44,7 +44,7 @@ output_list = ['*_pp_dark_master.fits']
 
 #calibDB entries list
 
-calibDB_entries_list = ['DARKM']
+calibDB_entry_list = ['DARKM']
 
 
 #TESTS
@@ -66,16 +66,16 @@ recipe_num_logfits = sum(index_recipe) #check1
 indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe) #QC false + correct recipe
 indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe) #ENDED false + correct recipe
 
-num_logfits_QCfalse = sum(indexQCfalse) #check6
+num_logfits_QCfalse = sum(indexQCfalse) #check4
 if num_logfits_QCfalse == 0:
-    comments_check6 = ''
+    comments_check4 = ''
 else :
-    comments_check6 = 'Inspect the log.fits. One or more file have somehow failed QC.'
-num_logfits_ENDEDfalse = sum(indexENDEDfalse) #check7
-if num_logfits_QCfalse == 0:
-    comments_check7 = ''
+    comments_check4 = 'Inspect the log.fits of {0}/{1}. One or more entry have somehow failed QC.'.format(reduced_path, logfits.nights[0])
+num_logfits_ENDEDfalse = sum(indexENDEDfalse) #check5
+if num_logfits_ENDEDfalse == 0:
+    comments_check5 = ''
 else :
-    comments_check7 = 'Inspect the log.fits. One or more file have somehow failed QC.'
+    comments_check5 = 'Inspect the log.fits of {0}/{1}. One or more entry have somehow failed to finish.'.format(reduced_path, logfits.nights[0])
 
 
 output1_num = len(output1) #check2
@@ -108,23 +108,23 @@ else :
 
 f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
 master_calib_txt = f.read()
-output1_num_entries = master_calib_txt.count('DARKM') #check4
+output1_num_entry = master_calib_txt.count('DARKM') #check6
 output1_calibDB = list_files("{0}".format(calibDB_path), files = '_pp_dark_master.fits')
-output1_num_calibDB = len(output1_calibDB) #check5
+output1_num_calibDB = len(output1_calibDB) #check7
 
-data_dict_check5 = {'File name ({0})'.format(output_list[0]): output1_calibDB,
+data_dict_check7 = {'File name ({0})'.format(output_list[0]): output1_calibDB,
 }
-inspect_check5 = inspect('darkmaster_test1', 'check5', data_dict_check5, 'Dark Master Recipe Output Files in {0}'.format(calibDB_path))
+inspect_check7 = inspect('darkmaster_test1', 'check7', data_dict_check7, 'Dark Master Recipe Output Files in {0}'.format(calibDB_path))
 
 
 #stop2
 
-if output1_num_calibDB == output1_num_entries:
+if output1_num_calibDB == output1_num_entry:
     color2 = 'Lime'
     stop2 = 'Yes'
     comment2 = ''
     inspect2 = ''
-elif output1_num_calibDB < output1_num_entries:
+elif output1_num_calibDB < output1_num_entry:
     color2 = 'Yellow'
     stop2 = 'No'
     comment2 = 'One or more output are not in the calibDB.'
@@ -179,8 +179,8 @@ th, td {{
 <p><b>Date: {date}</b><br>
 <br>
 <p>Script: cal_dark_master_{instrument.lower()}.py<br>
-<p>Output files: {output_list[0]}<br>
-<p>Calibration database entry: DARKM<br>
+<p>Output files: {output_list}<br>
+<p>Calibration database entry: {calibDB_entry_list}<br>
 <p><a href='https://github.com/njcuk9999/apero-drs#82-dark-master-recipe'>Link</a> to Dark Master Recipe description</p>
 <br></br>
 
@@ -223,45 +223,45 @@ th, td {{
   </tr>
   <tr>
     <td></td>
-    <td>Check3 == Check1?</td>
+    <td>Check 3 == Check 1?</td>
     <td bgcolor={color1}>{stop1}</td>
     <td>{comment1}</td>
     <td>{inspect1}</td>
   </tr>
   <tr>
     <td>4</td>
-    <td># of {calibDB_entries_list[0]} entry in {calibDB_path}/master_calib_{instrument}.txt</td>
-    <td>{output1_num_entries}</td>
-    <td></td> 
+    <td># of entry in {reduced_path}/other/log.fits that failed one or more QC</td>
+    <td>{num_logfits_QCfalse}</td>
+    <td>{comments_check4}</td> 
     <td></td> 
   </tr>
   <tr>
     <td>5</td>
-    <td># of {output_list[0]} in {calibDB_path}</td>
-    <td>{output1_num_calibDB}</td>
-    <td></td> 
-    <td>{inspect_check5}</td> 
-  </tr>
-  <tr>
+    <td># of entry in {reduced_path}/other/log.fits that failed to finish</td>
+    <td>{num_logfits_ENDEDfalse}</td>
+    <td>{comments_check5}</td> 
     <td></td>
-    <td>Check5 == Check4?</td>
-    <td bgcolor={color2}>{stop2}</td>
-    <td>{comment2}</td>
-    <td>{inspect2}</td>
   </tr>
   <tr>
     <td>6</td>
-    <td># of entry in {reduced_path}/other/log.fits that failed one or more QC</td>
-    <td>{num_logfits_QCfalse}</td>
-    <td>{comments_check6}</td> 
+    <td># of {calibDB_entry_list[0]} entry in {calibDB_path}/master_calib_{instrument}.txt</td>
+    <td>{output1_num_entry}</td>
+    <td></td> 
     <td></td> 
   </tr>
   <tr>
     <td>7</td>
-    <td># of entry in {reduced_path}/other/log.fits that failed to finish</td>
-    <td>{num_logfits_ENDEDfalse}</td>
-    <td>{comments_check7}</td> 
+    <td># of {output_list[0]} in {calibDB_path}</td>
+    <td>{output1_num_calibDB}</td>
+    <td></td> 
+    <td>{inspect_check7}</td> 
+  </tr>
+  <tr>
     <td></td>
+    <td>Check 7== Check 6?</td>
+    <td bgcolor={color2}>{stop2}</td>
+    <td>{comment2}</td>
+    <td>{inspect2}</td>
   </tr>
 </table>
 
@@ -273,7 +273,6 @@ th, td {{
 
 with open('darkmaster_test1/darkmaster_test1.html', 'w') as f:
     f.write(html_text)
-
 
 
 
