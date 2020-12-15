@@ -1,0 +1,93 @@
+
+<html>
+
+
+<head>
+<title>APERO Tests</title>
+<style>
+table {
+  width:75%;
+}
+table, th, td {
+  border: 1px solid black;
+  border-collapse: collapse;
+}
+th, td {
+  padding: 15px;
+  text-align: left;
+}
+#t01 tr:nth-child(even) {
+  background-color: #eee;
+}
+#t01 tr:nth-child(odd) {
+ background-color: #fff;
+}
+#t01 th {
+  background-color: white;
+  color: black;
+}
+</style>
+</head>
+
+<body>
+
+<h3>Localisation Recipe Test #1</h3>
+<p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
+<p><b>Instrument: SPIROU</b><br>
+<p><b>Date: 2020-12-15 16:00:32</b><br>
+<br>
+<p>Script: cal_loc_spirou.py<br>
+<p>Output files: *_pp_order_profile_C.fits, *_pp_loco_C.fits, *_pp_fwhm-order_C.fits, *_pp_with-order_C.fits<br>
+<p>Calibration database entry: ORDER_PROFILE_{FIBER}, LOC_{FIBER}<br>
+<p><a href='https://github.com/njcuk9999/apero-drs#84-localisation-recipe'>Link</a> to Localisation Recipe description</p>
+<br></br>
+
+<table id="t01">
+
+  <colgroup>
+     <col span="1" style="width: 5%;">
+     <col span="1" style="width: 50%;">
+     <col span="1" style="width: 20%;">
+     <col span="1" style="width: 20%;">
+     <col span="1" style="width: 5%;">
+  </colgroup>
+  <tr>
+    <th>Check</th>
+    <th>Description</th>
+    <th>Result</th>
+    <th>Comments</th> 
+    <th>Details</th> 
+  </tr>
+  <tr>
+    <td>1</td>
+    <td># of time cal_loc_spirou.py was called</td>
+    <td>969</td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>2</td>
+    <td># of *_pp_order_profile_C.fits, *_pp_loco_C.fits, *_pp_fwhm-order_C.fits, *_pp_with-order_C.fits in /spirou/cfht_nights/cfht_sept1/reduced</td>
+    <td>*_pp_order_profile_C.fits: 743<br>*_pp_loco_C.fits: 743<br>*_pp_fwhm-order_C.fits: 485<br>*_pp_with-order_C.fits: 485</td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td>3</td>
+    <td># of unique *_pp_order_profile_C.fits, *_pp_loco_C.fits, *_pp_fwhm-order_C.fits, *_pp_with-order_C.fits in /spirou/cfht_nights/cfht_sept1/reduced</td>
+    <td>*_pp_order_profile_C.fits: 485<br>*_pp_loco_C.fits: 485<br>*_pp_fwhm-order_C.fits: 485<br>*_pp_with-order_C.fits: 485</td>
+    <td></td> 
+    <td></td> 
+  </tr>
+  <tr>
+    <td></td>
+    <td>Check 3 == Check 1?</td>
+    <td bgcolor=Yellow>No</td>
+    <td>One or more output were not produced OR recipe called multiple times in the same directory.</td>
+    <td></td>
+  </tr>
+</table>
+
+
+</body>
+</html>

@@ -10,11 +10,9 @@ import numpy as np
 #check2: how many of each output do we have?
          #output1: {ODOMETER_CODE}_pp_badpixel.fits
          #output2: {ODOMETER_CODE}_pp_bmap.fits
-         #output3: DEBUG_{ODOMETER_CODE}_pp_background.fits
 #check3: how many of each unique output do we have?
          #output1: {ODOMETER_CODE}_pp_badpixel.fits
          #output2: {ODOMETER_CODE}_pp_bmap.fits
-         #output3: DEBUG_{ODOMETER_CODE}_pp_background.fits
 #stop1: check3 == check1?
 #check4: using the log.fits how many entry failed one or more QC?
 #check5: using the log.fits how many entry failed to finish?
@@ -63,8 +61,8 @@ missing_logfits = []
 
 for i in range(len(reduced_nights)):
 
-    output1.extend(list_files('{0}/{1}'.format(reduced_path, reduced_nights[i]), files = '_pp_badpixel.fits'))
-    output2.extend(list_files('{0}/{1}'.format(reduced_path, reduced_nights[i]), files = '_pp_bmap.fits'))
+    output1.extend(list_files('{0}/{1}'.format(reduced_path, reduced_nights[i]), files = output_list[0][1:]))
+    output2.extend(list_files('{0}/{1}'.format(reduced_path, reduced_nights[i]), files = output_list[1][1:]))
 
     #inspect log.fits if the file exists
     if os.path.isfile('{0}/{1}/log.fits'.format(reduced_path, reduced_nights[i])):
@@ -123,15 +121,13 @@ index_start = master_calib_txt[:master_calib_txt.index('# DRS processed')].count
 entry_col, night_col, file_col = np.genfromtxt("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), delimiter = ' ', unpack = True, usecols = (0,2,3), skip_header = index_start, dtype=str)
 
 output1_num_entry = master_calib_txt.count(calibDB_entry_list[0]) #check6
-output1_calibDB = list_files("{0}".format(calibDB_path), files = '_pp_badpixel.fits')
+output1_calibDB = list_files("{0}".format(calibDB_path), files = output_list[0][1:])
 output1_num_calibDB = len(output1_calibDB) #check7
 output2_num_entry = master_calib_txt.count(calibDB_entry_list[1]) #check6
-output2_calibDB = list_files("{0}".format(calibDB_path), files = '_pp_bmap.fits')
+output2_calibDB = list_files("{0}".format(calibDB_path), files = output_list[1][1:])
 output2_num_calibDB = len(output1_calibDB) #check7
 
-test, test1 = np.unique(file_col[entry_col == 'BADPIX'], return_counts=True)
-dup = test[test1 > 1]
-print(dup)
+
 #stop2
 
 if output1_num_calibDB == output1_num_entry and output2_num_calibDB == output2_num_entry:
@@ -139,11 +135,39 @@ if output1_num_calibDB == output1_num_entry and output2_num_calibDB == output2_n
     stop2 = 'Yes'
     comment2 = ''
     inspect2 = ''
+
 elif output1_num_calibDB < output1_num_entry or output2_num_calibDB < output2_num_entry:
+
     color2 = 'Yellow'
     stop2 = 'No'
-    comment2 = 'One or more output are not in the calibDB OR some entries are identical.'
-    inspect2 = ''
+
+    #check for missing output
+    if sum(np.in1d(file_col[entry_col == 'BADPIX'], output1_calibDB)) < len(file_col[entry_col == 'BADPIX']) or sum(np.in1d(file_col[entry_col == 'BKGRDMAP'], output2_calibDB)) < len(file_col[entry_col == 'BADPIX']):
+        night_output1_missing = night_col[entry_col == 'BADPIX'][np.in1d(file_col[entry_col == 'BADPIX'], output1_calibDB) == False]
+        output1_missing = file_col[entry_col == 'BADPIX'][np.in1d(file_col[entry_col == 'BADPIX'], output1_calibDB) == False]
+        night_output2_missing = night_col[entry_col == 'BKGRDMAP'][np.in1d(file_col[entry_col == 'BKGRDMAP'], output2_calibDB) == False]
+        output2_missing = file_col[entry_col == 'BKGRDMAP'][np.in1d(file_col[entry_col == 'BKGRDMAP'], output2_calibDB) == False]
+        comment2 = 'One or more output are not in the calibDB.'
+        data_dict2 = {'Night': np.concatenate((night_output1_missing, night_output2_missing)),
+        'File name': np.concatenate((output1_missing, output2_missing)),
+        }
+        inspect2 = inspect('badpixel_test1', 'stop2', data_dict2, 'Missing Output in {0}'.format(calibDB_path))
+
+    #check for duplicates
+    else:
+        file_col_output1_unique, index_output1_dup, return_counts_output1 = np.unique(file_col[entry_col == 'BADPIX'], return_index = True, return_counts=True)
+        file_col_output2_unique, index_output2_dup, return_counts_output2 = np.unique(file_col[entry_col == 'BKGRDMAP'], return_index = True, return_counts=True)
+        night_output1_dup = night_col[entry_col == 'BADPIX'][index_output1_dup][return_counts_output1 > 1]
+        output1_dup = file_col_output1_unique[return_counts_output1 > 1]
+        night_output2_dup = night_col[entry_col == 'BKGRDMAP'][index_output2_dup][return_counts_output2 > 1]
+        output2_dup = file_col_output2_unique[return_counts_output2 > 1]
+        comment2 = 'Some entries in master_calib_{0}.txt are identical.'.format(instrument.lower())
+        data_dict2 = {'Night': np.concatenate((night_output1_dup, night_output2_dup)),
+        'File name': np.concatenate((output1_dup, output2_dup)),
+        'Occurrence': np.concatenate((return_counts_output1[return_counts_output1 > 1], return_counts_output2[return_counts_output2 > 1]))
+        }
+        inspect2 = inspect('badpixel_test1', 'stop2', data_dict2, 'Duplicate Entries in master_calib_{0}.txt'.format(instrument.lower()))
+
 else :
     color2 = 'Red'
     stop2 = 'No'
@@ -271,7 +295,7 @@ th, td {{
   </tr>
   <tr>
     <td></td>
-    <td>Check 7== Check 6?</td>
+    <td>Check 7 == Check 6?</td>
     <td bgcolor={color2}>{stop2}</td>
     <td>{comment2}</td>
     <td>{inspect2}</td>

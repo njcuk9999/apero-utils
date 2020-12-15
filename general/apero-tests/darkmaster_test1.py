@@ -258,7 +258,7 @@ th, td {{
   </tr>
   <tr>
     <td></td>
-    <td>Check 7== Check 6?</td>
+    <td>Check 7 == Check 6?</td>
     <td bgcolor={color2}>{stop2}</td>
     <td>{comment2}</td>
     <td>{inspect2}</td>
