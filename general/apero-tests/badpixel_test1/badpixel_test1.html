@@ -34,7 +34,7 @@ th, td {
 <h3>Bad Pixel Correction Recipe Test #1</h3>
 <p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
 <p><b>Instrument: SPIROU</b><br>
-<p><b>Date: 2020-12-15 16:00:19</b><br>
+<p><b>Date: 2020-12-16 16:32:52</b><br>
 <br>
 <p>Script: cal_badpix_spirou.py<br>
 <p>Output files: *_pp_badpixel.fits, *_pp_bmap.fits<br>
@@ -83,8 +83,8 @@ th, td {
     <td></td>
     <td>Check 3 == Check 1?</td>
     <td bgcolor=Yellow>No</td>
-    <td>One or more output were not produced OR recipe called multiple times in the same directory.</td>
-    <td></td>
+    <td>Recipe called 3 times or more in the same night directory.</td>
+    <td><a href='stop1/stop1.html'>Inspect</a></td>
   </tr>
   <tr>
     <td>4</td>
@@ -118,7 +118,7 @@ th, td {
     <td></td>
     <td>Check 7 == Check 6?</td>
     <td bgcolor=Yellow>No</td>
-    <td>Some entries in master_calib_spirou.txt are identical.</td>
+    <td>Some entries in master_calib_SPIROU.txt are identical.</td>
     <td><a href='stop2/stop2.html'>Inspect</a></td>
   </tr>
 </table>

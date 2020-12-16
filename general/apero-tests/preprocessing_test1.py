@@ -14,7 +14,7 @@ import numpy as np
 #check4: how many recipes were run? (cal_preprocess_{instrument} in tmp/*/log.fits)
 #check5: how many unique odometers files were preprocessed according to the log.fits?
 #stop3: check5 == check 2?
-#check6: using the log.fits how many unique odometers failed one or more QC? Which odometer? Which QC?
+#check6: using the log.fits how many unique odometers failed one or more QC? Which odometers? Which QC?
 #check7: using the log.fits how many unique odometers failed to finish? Which odometers? Why (using the ERRORS and LOGFILE columns)?
 
 
@@ -40,29 +40,28 @@ pp_nights = list_nights(pp_path) #list preprocessed data night directories
 #output list
 output_list = ['*_pp.fits']
 
-
 #TESTS
 
 raw_num = count_files_subdir(raw_path, subdir = 'all', files = '*.fits')  #check1
-pp_num = count_files_subdir(pp_path, subdir = 'all', files = '*_pp.fits')    #check2
+pp_num = count_files_subdir(pp_path, subdir = 'all', files = output_list[0])    #check2
 
 #stop1
 
 if pp_num == raw_num:
-    color1 = 'Lime'
-    stop1 = 'Yes'
-    comment1 = ''
-    inspect1 = ''
+    color_stop1 = 'Lime'
+    result_stop1 = 'Yes'
+    comment_stop1 = ''
+    inspect_stop1 = ''
 elif pp_num < raw_num:
-    color1 = 'Yellow'
-    stop1 = 'No'
-    comment1 = 'Not all available raw files were reduced.'
-    inspect1 = ''
+    color_stop1 = 'Yellow'
+    result_stop1 = 'No'
+    comment_stop1 = 'Not all available raw files were reduced.'
+    inspect_stop1 = ''
 else :
-    color1 = 'Red'
-    stop1 = 'No'
-    comment1 = 'The number of pp files should always be smaller than the number of raw files.'
-    inspect1 = ''
+    color_stop1 = 'Red'
+    result_stop1 = 'No'
+    comment_stop1 = 'The number of pp files should always be smaller than the number of raw files.'
+    inspect_stop1 = ''
 
 
 #inspect all pp_nights index.fits and log.fits
@@ -154,36 +153,36 @@ for i in range(len(pp_nights)):
 #stop2
 
 if pp_num_indexfits == pp_num:
-    color2 = 'Lime'
-    stop2 = 'Yes'
-    comment2 = ''
-    inspect2 = ''
+    color_stop2 = 'Lime'
+    result_stop2 = 'Yes'
+    comment_stop2 = ''
+    inspect_stop2 = ''
     
 else:
-    color2 = 'Red'
-    stop2 = 'No'
-    comment2 = ''
-    inspect2 = ''
+    color_stop2 = 'Red'
+    result_stop2 = 'No'
+    comment_stop2 = ''
+    inspect_stop2 = ''
 
 #stop3
 
 if pp_num_logfits_unique == pp_num:
-    color3 = 'Lime'
-    stop3 = 'Yes'
-    comment3 = ''
-    inspect3 = ''
+    color_stop3 = 'Lime'
+    result_stop3 = 'Yes'
+    comment_stop3 = ''
+    inspect_stop3 = ''
 
 elif pp_num_logfits_unique > pp_num:
-    color3 = 'Yellow'
-    stop3 = 'No'
-    comment3 = 'Some files were processed more than once.'
-    inspect3 = ''
+    color_stop3 = 'Yellow'
+    result_stop3 = 'No'
+    comment_stop3 = 'Some files were processed more than once.'
+    inspect_stop3 = ''
     
 else:
-    color3 = 'Red'
-    stop3 = 'No'
-    comment3 = ''
-    inspect3 = ''
+    color_stop3 = 'Red'
+    result_stop3 = 'No'
+    comment_stop3 = ''
+    inspect_stop3 = ''
 
 
 data_dict_check6 = {'Night': nights_logfits_QCfalse,
@@ -241,7 +240,7 @@ th, td {{
 <p><b>Date: {date}</b><br>
 <br>
 <p>Script: cal_preprocessing_{instrument.lower()}.py<br>
-<p>Output files: {output_list}<br>
+<p>Output files: {output_list[0]}<br>
 <p><a href='https://github.com/njcuk9999/apero-drs#81-preprocessing-recipe'>Link</a> to Preprocessing Recipe description</p>
 <br></br>
 
@@ -278,9 +277,9 @@ th, td {{
   <tr>
     <td> </td>
     <td>Check 2 == Check 1?</td>
-    <td bgcolor={color1}>{stop1}</td>
-    <td>{comment1}</td>
-    <td>{inspect1}</td>
+    <td bgcolor={color_stop1}>{result_stop1}</td>
+    <td>{comment_stop1}</td>
+    <td>{inspect_stop1}</td>
   </tr>
   <tr>
     <td>3</td>
@@ -292,9 +291,9 @@ th, td {{
   <tr>
     <td> </td>
     <td>Check 3 == Check 2?</td>
-    <td bgcolor={color2}>{stop2}</td>
-    <td>{comment2}</td>
-    <td>{inspect2}</td>
+    <td bgcolor={color_stop2}>{result_stop2}</td>
+    <td>{comment_stop2}</td>
+    <td>{inspect_stop2}</td>
   </tr>
   <tr>
     <td>4</td>
@@ -313,9 +312,9 @@ th, td {{
   <tr>
     <td> </td>
     <td>Check 5 == Check 2?</td>
-    <td bgcolor={color3}>{stop3}</td>
-    <td>{comment3}</td>
-    <td>{inspect3}</td>
+    <td bgcolor={color_stop3}>{result_stop3}</td>
+    <td>{comment_stop3}</td>
+    <td>{inspect_stop3}</td>
   </tr>
   <tr>
     <td>6</td>

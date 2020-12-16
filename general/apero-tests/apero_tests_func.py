@@ -183,8 +183,8 @@ def inspect(test, check, data_dict, title):
     for i in range(len(keys_list)):
         columns.append(TableColumn(field = keys_list[i], title = keys_list[i]))
     
-    table_title = Div(text="""<font size="+1"> <b>{0}</b> </font>""".format(title), height = 30)
-    data_table = DataTable(source=source, columns=columns, autosize_mode = 'fit_columns', width=1500, height=500)
+    table_title = Div(text="""<font size="+1"> <b>{0}</b> </font>""".format(title), height = 50)
+    data_table = DataTable(source=source, columns=columns, autosize_mode = 'fit_columns', min_width = 1000, max_width = 1500, width_policy = 'min', height=600, editable = True)
     layout = column(table_title, data_table)
 
     output_file("{0}/{1}/{1}.html".format(test, check), title="{0}".format(check))
