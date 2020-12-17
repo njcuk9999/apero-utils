@@ -1,56 +1,94 @@
+"""
+Main script to run apero tests
+
+@author: charles
+"""
 import os
+from datetime import datetime
+
+from apero_tests_func import summary
 from apero.core import constants
-from datetime import datetime, timedelta
-from apero_tests_func import *
 
-#constants
-
+# =============================================================================
+# Define constants
+# =============================================================================
 params = constants.load('SPIROU')
 
-setup = os.environ['DRS_UCONFIG'] #setup
-instrument = params['INSTRUMENT'] #instrument
-date_ini = datetime.now() #initial date
+setup = os.environ['DRS_UCONFIG']  # setup
+instrument = params['INSTRUMENT']  # instrument
+date_ini = datetime.now()          # initial date
 
-test_list_short = ['preprocessing_test1', 'darkmaster_test1', 'badpixel_test1',
-                   'localisation_test1', 'shapemaster_test1', 'shape_test1',
-                   'flat_test1', 'thermal_test1', 'masterleak_test1',
-                   'leak_test1', 'masterwavelength_test1', 'wavelength_test1',
-                   'extraction_test1', 'extraction_test2', 'extraction_test3',
-                   'maketellu_test1', 'fittellu_test1', 'maketemplate_test1',
-                   'ccf_test1']
+test_list_short = [
+        # Preprocessing
+        'preprocessing_test1',
 
-test_list_long = ['Preprocessing Recipe Test #1', 'Dark Master Recipe Test #1',
-                  'Bad Pixel Correction Recipe Test #1',
-                  'Localisation Recipe Test #1', 'Shape Master Recipe Test #1',
-                  'Shape (per night) Recipe Test #1',
-                  'Flat/Blaze Correction Recipe Test #1',
-                  'Thermal Correction Test #1',
-                  'Master Leak Correction Recipe Test #1',
-                  'Leak (per night) Correction Test #1',
-                  'Master Wavelength Solution Recipe Test #1',
-                  'Wavelength Solution (per night) Test #1',
-                  'Extraction Recipe Test #1', 'Extraction Recipe Test #2',
-                  'Extraction Recipe Test #3', 'Make Telluric Recipe Test #1',
-                  'Fit Telluric Recipe Test #1',
-                  'Make Template Recipe Test #1', 'CCF Recipe Test #1']
+        # Calibration
+        'darkmaster_test1',
+        'badpixel_test1',
+        'localisation_test1',
+        'shapemaster_test1',
+        'shape_test1',
+        'flat_test1',
+        'thermal_test1',
+        'masterleak_test1',
+        'leak_test1',
+        'masterwavelength_test1',
+        'wavelength_test1',
+        'extraction_test1',
+        'extraction_test2',
+        'extraction_test3',
 
+        # Science
+        'maketellu_test1',
+        'fittellu_test1',
+        'maketemplate_test1',
+        'ccf_test1'
+                   ]
+
+test_list_long = [
+        'Preprocessing Recipe Test #1',
+        'Dark Master Recipe Test #1',
+        'Bad Pixel Correction Recipe Test #1',
+        'Localisation Recipe Test #1',
+        'Shape Master Recipe Test #1',
+        'Shape (per night) Recipe Test #1',
+        'Flat/Blaze Correction Recipe Test #1',
+        'Thermal Correction Test #1',
+        'Master Leak Correction Recipe Test #1',
+        'Leak (per night) Correction Test #1',
+        'Master Wavelength Solution Recipe Test #1',
+        'Wavelength Solution (per night) Test #1',
+        'Extraction Recipe Test #1',
+        'Extraction Recipe Test #2',
+        'Extraction Recipe Test #3',
+        'Make Telluric Recipe Test #1',
+        'Fit Telluric Recipe Test #1',
+        'Make Template Recipe Test #1',
+        'CCF Recipe Test #1'
+        ]
+
+# =============================================================================
+# Run the tests
+# =============================================================================
 n = len(test_list_short)  # number of tests
 for i in range(n):
 
     if not os.path.isdir(test_list_short[i]):
         os.system('mkdir {0}'.format(test_list_short[i]))
 
-    print('test {0}/{1}'.format(i+1,n))   
-    print('running {0}.py\n'.format(test_list_short[i]))    
-    
+    print('test {0}/{1}'.format(i+1, n))
+    print('running {0}.py\n'.format(test_list_short[i]))
+
     try:
         os.system('python {0}.py'.format(test_list_short[i]))
     except:
         pass
-    
-print('all tests done')   
 
+print('all tests done')
 
+# =============================================================================
+# Write html summary
+# =============================================================================
 # build table element
 html_table = []
 
@@ -66,7 +104,7 @@ for i in range(n):
         </tr>
         """.format(test_list_short[i], test_list_long[i], html_str, color))
 
-    else : 
+    else:
         html_table.append("""
         <tr>
           <td>{0}</td>
@@ -77,7 +115,7 @@ for i in range(n):
 html_table = "".join(html_table)
 
 
-date_final = datetime.now() #final date
+date_final = datetime.now()  # final date
 
 delta_date = date_final - date_ini
 
@@ -140,7 +178,7 @@ th, td {{
   <tr>
     <th>Recipe Test</th>
     <th>Summary</th>
-    <th>Details</th>   
+    <th>Details</th>
   </tr>
 {html_table}
 </table>
