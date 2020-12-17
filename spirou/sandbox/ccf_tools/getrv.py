@@ -75,4 +75,5 @@ for run_id in ccf_dict.keys():
             doplot=cfg['do_plots'],
             showplots=cfg['show_plots'],
             saveplots=cfg['save_plots'],
+            do_blacklist=cfg['do_bad_odo'],
             )
