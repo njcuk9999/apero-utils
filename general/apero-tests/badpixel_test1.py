@@ -161,10 +161,10 @@ else:
     data_dict_check4 = {'Night': nights_logfits_QCfalse,
                         'QC_STRING': QCstr_logfits_QCfalse,
                         }
-    inspect_check4 = atf.inspect('badpixel_test1',
-                                 'check4',
-                                  data_dict_check4,
-                                  'Nights that Failed Quality Control')
+    inspect_check4 = atf.inspect_table('badpixel_test1',
+                                       'check4',
+                                       data_dict_check4,
+                                       'Nights that Failed Quality Control')
 
 # check5
 if num_logfits_ENDEDfalse == 0:
@@ -176,10 +176,10 @@ else:
                         'ERRORS': ERRORS_logfits_ENDEDfalse,
                         'LOGFILE': LOGFILE_logfits_ENDEDfalse,
                         }
-    inspect_check5 = atf.inspect('badpixel_test1',
-                                 'check5',
-                                 data_dict_check5,
-                                 'Nights that Failed to Finish')
+    inspect_check5 = atf.inspect_table('badpixel_test1',
+                                       'check5',
+                                       data_dict_check5,
+                                       'Nights that Failed to Finish')
 
 
 # stop1
@@ -204,15 +204,16 @@ elif (output1_num_unique < recipe_num_logfits
                            'File name': np.concatenate((output1_missing,
                                                         output2_missing)),
                            }
-        inspect_stop1 = atf.inspect('badpixel_test1',
-                                    'stop1',
-                                    data_dict_stop1,
-                                    'Missing Outputs in {0}'.format(
-                                        reduced_path)
-                                    )
-    #if duplicates
+        inspect_stop1 = atf.inspect_table('badpixel_test1',
+                                          'stop1',
+                                          data_dict_stop1,
+                                          'Missing Outputs in {0}'.format(
+                                              reduced_path)
+                                          )
+    # if duplicates
     else:
-        comment_stop1 = 'Recipe called 3 times or more in the same night directory.'
+        comment_stop1 = ('Recipe called 3 times or more in the same '
+                         'night directory.')
         data_dict_stop1 = {'Night': np.concatenate((night_output1_dup,
                                                     night_output2_dup)),
                            'File name': np.concatenate((output1_dup,
@@ -291,12 +292,12 @@ elif (output1_num_calibDB < output1_num_entry
                            'File name': np.concatenate((output1_missing,
                                                         output2_missing)),
                            }
-        inspect_stop2 = atf.inspect('badpixel_test1',
-                                    'stop2',
-                                    data_dict_stop2,
-                                    'Missing Output in {0}'.format(
-                                        calibDB_path)
-                                    )
+        inspect_stop2 = atf.inspect_table('badpixel_test1',
+                                          'stop2',
+                                          data_dict_stop2,
+                                          'Missing Output in {0}'.format(
+                                              calibDB_path)
+                                          )
 
     # check for duplicates
     else:
@@ -334,12 +335,13 @@ elif (output1_num_calibDB < output1_num_entry
                                return_counts_output2[count_mask2]
                                ))
                            }
-        inspect_stop2 = atf.inspect('badpixel_test1',
-                                    'stop2',
-                                    data_dict_stop2,
-                                    ('Duplicate Entries in '
-                                     'master_calib_{0}.txt').format(instrument)
-                                    )
+        inspect_stop2 = atf.inspect_table(
+                'badpixel_test1',
+                'stop2',
+                data_dict_stop2,
+                ('Duplicate Entries in '
+                 'master_calib_{0}.txt').format(instrument)
+                )
 
 else:
     color_stop2 = 'Red'
@@ -419,14 +421,14 @@ th, td {{
   </tr>
   <tr>
     <td>2</td>
-    <td># of {', '.join(output_list)} in {reduced_path}</td>
+    <td># of outputs in {reduced_path}</td>
     <td>{output_list[0]}: {output1_num}<br>{output_list[1]}: {output2_num}</td>
     <td></td>
     <td></td>
   </tr>
   <tr>
     <td>3</td>
-    <td># of unique {', '.join(output_list)} in {reduced_path}</td>
+    <td># of unique outputs in {reduced_path}</td>
     <td>{output_list[0]}: {output1_num_unique}<br>{output_list[1]}: {output2_num_unique}</td>
     <td></td>
     <td></td>

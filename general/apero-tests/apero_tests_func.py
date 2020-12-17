@@ -208,11 +208,12 @@ class log_fits:
         self.args = tbl['ARGS']
 
         self.QCstr = tbl['QC_STRING']
+        self.QCvalue = tbl['QC_VALUES']
         self.ERRORS = tbl['ERRORS']
         self.LOGFILE = tbl['LOGFILE']
 
 
-def inspect(test, check, data_dict, title):
+def inspect_table(test, check, data_dict, title):
     """
     Write an 'inspect' html element.
     """
@@ -245,6 +246,59 @@ def inspect(test, check, data_dict, title):
     output_file(
             "{0}/{1}/{1}.html".format(test, check),
             title="{0}".format(check))
+    save(layout)
+
+    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(check)
+
+    return html_str
+
+
+def inspect_plot(test, check, data_dict, title):
+    """
+    WIP
+    """
+
+    if not os.path.isdir('{0}/{1}'.format(test, check)):
+        os.system('mkdir {0}/{1}'.format(test, check))
+
+    # y variable list
+    axis_map = data_dict
+    axis_map_list = list(axis_map.keys())
+
+    # create widget
+    y_axis = Select(title="Quality Control",
+                    options=axis_map_list,
+                    width=260)
+
+    # data sets
+    source = ColumnDataSource(data_dict)
+
+    # bokeh tools
+    TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
+             "save", "tap"]
+
+    # titles
+    titlestr = title
+
+    p = figure(plot_width=1200, plot_height=700, tools=TOOLS,
+               tooltips=TOOLTIPS, title = titlestr)
+    p.title.text_font_size = '12pt'
+
+    plot = p.circle('Night',
+                    axis_map_list[0],
+                    source=source
+                    )
+
+    table_title = Div(text="""<font size="+1"> <b>{0}</b> </font>""".format(title), height=50)
+    data_table = DataTable(source=source, columns=columns,
+                           autosize_mode='fit_columns', min_width=1000,
+                           max_width=1500, width_policy='min', height=600,
+                           editable=True)
+    layout = column(table_title, data_table)
+
+    output_file(
+            "{0}/{1}/{1}.html".format(test, check), title="{0}".format(check)
+            )
     save(layout)
 
     html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(check)
