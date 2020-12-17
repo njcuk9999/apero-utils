@@ -189,14 +189,14 @@ data_dict_check6 = {'Night': nights_logfits_QCfalse,
              'Odometer': odometers_logfits_QCfalse,
              'QC_STRING': QCstr_logfits_QCfalse,
 }
-inspect_check6 = inspect('preprocessing_test1', 'check6', data_dict_check6, 'Odometers that Failed One or More Quality Control')
+inspect_check6 = inspect_table('preprocessing_test1', 'check6', data_dict_check6, 'Odometers that Failed One or More Quality Control')
 
 data_dict_check7 = {'Night': nights_logfits_ENDEDfalse,
              'Odometer': odometers_logfits_ENDEDfalse,
              'ERRORS': ERRORS_logfits_ENDEDfalse,
              'LOGFILE': LOGFILE_logfits_ENDEDfalse,
 }
-inspect_check7 = inspect('preprocessing_test1', 'check7', data_dict_check7, 'Odometers that Failed to Finish')
+inspect_check7 = inspect_table('preprocessing_test1', 'check7', data_dict_check7, 'Odometers that Failed to Finish')
 
 
 #Build preprocessing_test1.html
