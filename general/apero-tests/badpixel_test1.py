@@ -118,7 +118,7 @@ for i in range(len(reduced_nights)):
             night_output2_missing.extend(reduced_nights[i])
             output2_missing.extend(output_list[1])
 
-        #checking for duplicates
+        # checking for duplicates
         if sum(index_recipe) > 2 and len(output1_list_files) == 2:
             night_output1_dup.extend([reduced_nights[i], reduced_nights[i]])
             output1_dup.extend(output1_list_files)
