@@ -230,9 +230,11 @@ if sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[ind
 
 # checking for duplicates
 
-if len(output1_calibDB) < output1_num_entry: 
+if len(output1_calibDB) < output1_num_entry:
 
-    file_col_output1_unique, index_output1_dup, return_counts_output1 = np.unique(
+    (file_col_output1_unique,
+     index_output1_dup,
+     return_counts_output1) = np.unique(
                  file_col[index_key_output1],
                  return_index=True,
                  return_counts=True
@@ -277,7 +279,7 @@ elif output1_num_calibDB < output1_num_entry:
         data_dict_stop2 = {'Night': night_output1_dup_calibDB,
                            'File name': output1_dup_calibDB,
                            'Occurrence': return_counts_output1[count_mask1]
-                          }
+                           }
         inspect_stop2 = atf.inspect_table(
                 'darkmaster',
                 'stop2',

@@ -2,7 +2,8 @@
 Check if localisation calib worked fine.
 
 Tests preformed
-check1: how many recipes were run (cal_loc_{instrument} in log.fits)? how many in the master directory?
+check1: how many recipes were run (cal_loc_{instrument} in log.fits)?
+        how many in the master directory?
 check2: how many of each output do we have?
         output1: {ODOMETER_CODE}_pp_order_profile_C.fits
         output2: {ODOMETER_CODE}_pp_loco_C.fits
@@ -71,17 +72,17 @@ calibDB_entry_list = ['ORDER_PROFILE_{FIBER}', 'LOC_{FIBER}']
 # =============================================================================
 # inspect all reduced_nights log.fits
 
-tot_recipe_num_logfits = 0      # check1
-master_recipe_num_logfits = 0   # check1
-num_logfits_QCfalse = 0         # check4
-num_logfits_ENDEDfalse = 0      # check5
+tot_recipe_num_logfits = 0       # check1
+master_recipe_num_logfits = 0    # check1
+num_logfits_QCfalse = 0          # check4
+num_logfits_ENDEDfalse = 0       # check5
 
-nights_logfits_QCfalse = []     # check4
-QCstr_logfits_QCfalse = []      # check4
+nights_logfits_QCfalse = []      # check4
+QCstr_logfits_QCfalse = []       # check4
 
-nights_logfits_ENDEDfalse = []  # check5
-ERRORS_logfits_ENDEDfalse = []  # check5
-LOGFILE_logfits_ENDEDfalse = [] # check5
+nights_logfits_ENDEDfalse = []   # check5
+ERRORS_logfits_ENDEDfalse = []   # check5
+LOGFILE_logfits_ENDEDfalse = []  # check5
 
 output1 = []
 output2 = []
@@ -112,23 +113,23 @@ for i in range(len(reduced_nights)):
 
     output1_list_files = atf.list_files(
             '{0}/{1}'.format(reduced_path, reduced_nights[i]),
-            files=(output_list[0][1:].replace('{FIBER}','AB'),
-            output_list[0][1:].replace('{FIBER}','C'))
+            files=(output_list[0][1:].replace('{FIBER}', 'AB'),
+                   output_list[0][1:].replace('{FIBER}', 'C'))
             )
     output2_list_files = atf.list_files(
             '{0}/{1}'.format(reduced_path, reduced_nights[i]),
-            files=(output_list[1][1:].replace('{FIBER}','AB'),
-            output_list[1][1:].replace('{FIBER}','C'))
+            files=(output_list[1][1:].replace('{FIBER}', 'AB'),
+                   output_list[1][1:].replace('{FIBER}', 'C'))
             )
     output3_list_files = atf.list_files(
             '{0}/{1}'.format(reduced_path, reduced_nights[i]),
-            files=(output_list[2][1:].replace('{FIBER}','AB'),
-            output_list[2][1:].replace('{FIBER}','C'))
+            files=(output_list[2][1:].replace('{FIBER}', 'AB'),
+                   output_list[2][1:].replace('{FIBER}', 'C'))
             )
     output4_list_files = atf.list_files(
             '{0}/{1}'.format(reduced_path, reduced_nights[i]),
-            files=(output_list[3][1:].replace('{FIBER}','AB'),
-            output_list[3][1:].replace('{FIBER}','C'))
+            files=(output_list[3][1:].replace('{FIBER}', 'AB'),
+                   output_list[3][1:].replace('{FIBER}', 'C'))
             )
 
     output1.extend(output1_list_files)
@@ -163,19 +164,20 @@ for i in range(len(reduced_nights)):
             night_output4_missing.append(reduced_nights[i])
             output4_missing.append(output_list[3])
 
-        
         # checking for duplicates
         if sum(index_recipe) > len(output1_list_files):
-            
-            #checking if it is the master directory
+
+            # checking if it is the master directory
             for j in range(sum(index_recipe)):
                 if '--master=True' in logfits.runstr[index_recipe][j]:
                     master_recipe_num_logfits += 1
-                    comments_check1 = ('An additional {0} recipes with '
+                    comments_check1 = (
+                            'An additional {0} recipes with '
                             '--master=True were called in the master '
                             'directory {1}.'.format(master_recipe_num_logfits,
-                            reduced_nights[i]))
-            
+                                                    reduced_nights[i])
+                            )
+
             non_dup_num = sum(index_recipe) - master_recipe_num_logfits
 
             if non_dup_num == len(output1_list_files):
@@ -219,8 +221,7 @@ for i in range(len(reduced_nights)):
     else:
         missing_logfits.append('{0}/{1}/log.fits'.format(reduced_path,
                                                          reduced_nights[i])
-   
-                            )
+                               )
 recipe_num_logfits = tot_recipe_num_logfits-master_recipe_num_logfits  # check1
 output1_num = len(output1)                    # check2
 output1_num_unique = len(np.unique(output1))  # check3
@@ -349,42 +350,49 @@ key_col, master_col, night_col, file_col = np.genfromtxt(
         usecols=(0, 1, 2, 3),
         skip_header=index_start,
         dtype=str)
-master_col = master_col.astype(dtype = bool) # str to bool
+master_col = master_col.astype(dtype=bool)  # str to bool
 
-index_key_output1 = np.logical_or(key_col == calibDB_entry_list[0].replace('{FIBER}', 'AB'),
-        key_col == calibDB_entry_list[0].replace('{FIBER}', 'C'))
-index_key_output2 = np.logical_or(key_col == calibDB_entry_list[1].replace('{FIBER}', 'AB'),
-        key_col == calibDB_entry_list[1].replace('{FIBER}', 'C'))
+index_key_output1 = np.logical_or(
+        key_col == calibDB_entry_list[0].replace('{FIBER}', 'AB'),
+        key_col == calibDB_entry_list[0].replace('{FIBER}', 'C')
+        )
+index_key_output2 = np.logical_or(
+        key_col == calibDB_entry_list[1].replace('{FIBER}', 'AB'),
+        key_col == calibDB_entry_list[1].replace('{FIBER}', 'C')
+        )
 
-tot_output1_num_entry = len(key_col[index_key_output1]) # check6
+tot_output1_num_entry = len(key_col[index_key_output1])  # check6
 master_output1_num_entry = np.sum(master_col[index_key_output1])
 output1_num_entry = tot_output1_num_entry - master_output1_num_entry
-output1_calibDB = atf.list_files("{0}".format(calibDB_path),
-        files=(output_list[0][1:].replace('{FIBER}','AB'),
-        output_list[0][1:].replace('{FIBER}','C'))
+output1_calibDB = atf.list_files(
+        "{0}".format(calibDB_path),
+        files=(output_list[0][1:].replace('{FIBER}', 'AB'),
+               output_list[0][1:].replace('{FIBER}', 'C'))
         )
 output1_num_calibDB = len(output1_calibDB)  # check7
 
-tot_output2_num_entry = len(key_col[index_key_output2]) # check6
+tot_output2_num_entry = len(key_col[index_key_output2])  # check6
 master_output2_num_entry = np.sum(master_col[index_key_output2])
 output2_num_entry = tot_output2_num_entry - master_output2_num_entry
-output2_calibDB = atf.list_files("{0}".format(calibDB_path),
-        files=(output_list[1][1:].replace('{FIBER}','AB'),
-        output_list[1][1:].replace('{FIBER}','C'))
+output2_calibDB = atf.list_files(
+        "{0}".format(calibDB_path),
+        files=(output_list[1][1:].replace('{FIBER}', 'AB'),
+               output_list[1][1:].replace('{FIBER}', 'C'))
         )
 output2_num_calibDB = len(output2_calibDB)  # check7
 
 comments_check6 = ('An additional {0} {1} and {2} {3} with master = 1 '
-        'are in the master_calibDB_{4}.'.format(master_output1_num_entry,
-        calibDB_entry_list[0], master_output2_num_entry,
-        calibDB_entry_list[1], instrument))
+                   'are in the master_calibDB_{4}.'.format(
+                       master_output1_num_entry,
+                       calibDB_entry_list[0], master_output2_num_entry,
+                       calibDB_entry_list[1], instrument)
+                   )
 
 
 # checking for missing output
-
 output1_missing_calibDB = []
 output2_missing_calibDB = []
-if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1]) 
+if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1])
         or sum(np.in1d(file_col[index_key_output2], output2_calibDB)) < len(file_col[index_key_output2])):
 
     index_output1_missing = ~np.in1d(
@@ -402,28 +410,31 @@ if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[in
 
 # checking for duplicates
 
-if (len(output1_calibDB) < output1_num_entry 
+if (len(output1_calibDB) < output1_num_entry
         or len(output2_calibDB) < output2_num_entry):
 
-    file_col_output1_unique, index_output1_dup, return_counts_output1 = np.unique(
+    (file_col_output1_unique,
+     index_output1_dup,
+     return_counts_output1) = np.unique(
                  file_col[index_key_output1][~master_col[index_key_output1]],
                  return_index=True,
                  return_counts=True
                  )
-    file_col_output2_unique, index_output2_dup, return_counts_output2 = np.unique(
+    (file_col_output2_unique,
+     index_output2_dup,
+     return_counts_output2) = np.unique(
                  file_col[index_key_output2][~master_col[index_key_output2]],
                  return_index=True,
                  return_counts=True
                  )
 
+    # Keeping long lines for now, will split later
+    # (indices on next line were hard to read)
     count_mask1 = return_counts_output1 > 1
     count_mask2 = return_counts_output2 > 1
-
-    night_output1_dup_calibDB = night_col[index_key_output1][~master_col
-            [index_key_output1]][index_output1_dup][count_mask1]
+    night_output1_dup_calibDB = night_col[index_key_output1][~master_col[index_key_output1]][index_output1_dup][count_mask1]
     output1_dup_calibDB = file_col_output1_unique[count_mask1]
-    night_output2_dup_calibDB = night_col[index_key_output2][~master_col
-            [index_key_output2]][index_output2_dup][count_mask2]
+    night_output2_dup_calibDB = night_col[index_key_output2][~master_col[index_key_output2]][index_output2_dup][count_mask2]
     output2_dup_calibDB = file_col_output2_unique[count_mask2]
 
 
@@ -445,10 +456,14 @@ elif (output1_num_calibDB < output1_num_entry
     if len(output1_missing_calibDB) > 0 or len(output2_missing_calibDB) > 0:
 
         comment_stop2 = 'One or more outputs are not in the calibDB.'
-        data_dict_stop2 = {'Night': np.concatenate((night_output1_missing_calibDB,
-                                                    night_output2_missing_calibDB)),
-                           'File name': np.concatenate((output1_missing_calibDB,
-                                                        output2_missing_calibDB)),
+        data_dict_stop2 = {'Night': np.concatenate(
+                                            (night_output1_missing_calibDB,
+                                             night_output2_missing_calibDB)
+                                    ),
+                           'File name': np.concatenate(
+                                                (output1_missing_calibDB,
+                                                 output2_missing_calibDB)
+                                        ),
                            }
         inspect_stop2 = atf.inspect_table('badpixel_test1',
                                           'stop2',
@@ -461,14 +476,18 @@ elif (output1_num_calibDB < output1_num_entry
 
         comment_stop2 = ('Some entries in master_calib_{0}.txt are '
                          'identical.').format(instrument)
-        data_dict_stop2 = {'Night': np.concatenate((night_output1_dup_calibDB,
-                                                    night_output2_dup_calibDB)),
-                           'File name': np.concatenate((output1_dup_calibDB,
-                                                        output2_dup_calibDB)),
-                           'Occurrence': np.concatenate((
-                               return_counts_output1[count_mask1],
-                               return_counts_output2[count_mask2]
-                               ))
+        data_dict_stop2 = {'Night': np.concatenate(
+                                            (night_output1_dup_calibDB,
+                                             night_output2_dup_calibDB)
+                                    ),
+                           'File name': np.concatenate(
+                                                (output1_dup_calibDB,
+                                                 output2_dup_calibDB)
+                                                ),
+                           'Occurrence': np.concatenate(
+                                        (return_counts_output1[count_mask1],
+                                         return_counts_output2[count_mask2])
+                                         )
                            }
         inspect_stop2 = atf.inspect_table(
                 'badpixel_test1',
