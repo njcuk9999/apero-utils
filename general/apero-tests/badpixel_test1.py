@@ -219,13 +219,14 @@ elif (output1_num_unique < recipe_num_logfits
                            'File name': np.concatenate((output1_dup,
                                                         output2_dup)),
                            }
-        inspect_stop1 = atf.inspect('badpixel_test1',
-                                    'stop1',
-                                    data_dict_stop1,
-                                    ('Bad Pixel Recipe Called 3 Times or More '
-                                     'While Producing the Same Two Outputs in '
-                                     '{0}').format(reduced_path)
-                                    )
+        inspect_stop1 = atf.inspect_table(
+                'badpixel_test1',
+                'stop1',
+                data_dict_stop1,
+                ('Bad Pixel Recipe Called 3 Times or More '
+                 'While Producing the Same Two Outputs in '
+                 '{0}').format(reduced_path)
+                )
 
 else:
     color_stop1 = 'Red'
