@@ -37,7 +37,7 @@ def list_nights(path):
         nlist.remove('other')
     nlist.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
 
-    return list_nights
+    return nlist
 
 
 def list_files(path, files='all'):
