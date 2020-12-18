@@ -2,7 +2,7 @@
 Check if bad pixel calib worked fine.
 
 Tests preformed
-    check1: how many recipes were run? (cal_badpix_{instrument} in log.fits)
+    check1: how many recipes were run (cal_badpix_{instrument} in log.fits)? how many in the master directory?
     check2: how many of each output do we have?
             #output1: {ODOMETER_CODE}_pp_badpixel.fits
             #output2: {ODOMETER_CODE}_pp_bmap.fits
@@ -59,7 +59,8 @@ calibDB_entry_list = ['BADPIX', 'BKGRDMAP']
 # =============================================================================
 # inspect all reduced_nights and other/log.fits
 
-recipe_num_logfits = 0           # check1
+tot_recipe_num_logfits = 0       # check1
+master_recipe_num_logfits = 0    # check1
 num_logfits_QCfalse = 0          # check4
 num_logfits_ENDEDfalse = 0       # check5
 
@@ -108,24 +109,40 @@ for i in range(len(reduced_nights)):
         index_recipe = (
                 logfits.recipe == 'cal_badpix_{0}'.format(instrument.lower())
                 )
-        recipe_num_logfits += sum(index_recipe)  # check1
+        tot_recipe_num_logfits += sum(index_recipe)  # check1
 
         # checking for missing output
         if sum(index_recipe) > 0 and len(output1_list_files) == 0:
-            night_output1_missing.extend(reduced_nights[i])
-            output1_missing.extend(output_list[0])
+            night_output1_missing.append(reduced_nights[i])
+            output1_missing.append(output_list[0])
         if sum(index_recipe) > 0 and len(output2_list_files) == 0:
-            night_output2_missing.extend(reduced_nights[i])
-            output2_missing.extend(output_list[1])
+            night_output2_missing.append(reduced_nights[i])
+            output2_missing.append(output_list[1])
 
         # checking for duplicates
-        if sum(index_recipe) > 2 and len(output1_list_files) == 2:
-            night_output1_dup.extend([reduced_nights[i], reduced_nights[i]])
-            output1_dup.extend(output1_list_files)
-        if sum(index_recipe) > 2 and len(output2_list_files) == 2:
-            night_output2_dup.extend([reduced_nights[i], reduced_nights[i]])
-            output2_dup.extend(output2_list_files)
+        if sum(index_recipe) > len(output1_list_files):
+            
+            #checking if it is the master directory
+            for j in range(sum(index_recipe)):
+                if '--master=True' in logfits.runstr[index_recipe][j]:
+                    master_recipe_num_logfits += 1
+                    comments_check1 = ('An additional {0} recipe with '
+                            '--master=True was called in the master '
+                            'directory {1}.'.format(master_recipe_num_logfits,
+                            reduced_nights[i]))
+            
+            non_dup_num = sum(index_recipe) - master_recipe_num_logfits
 
+            if non_dup_num == len(output1_list_files):
+                pass
+            else:
+                night_output1_dup.append(reduced_nights[i])
+                output1_dup.append(output_list[0])
+            if non_dup_num == len(output2_list_files):
+                pass
+            else:
+                night_output2_dup.append(reduced_nights[i])
+                output2_dup.append(output_list[1])
 
         indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe)  # QC false + correct recipe
         indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe)  # ENDED false + correct recipe
@@ -146,11 +163,12 @@ for i in range(len(reduced_nights)):
         missing_logfits.append('{0}/{1}/log.fits'.format(reduced_path,
                                                          reduced_nights[i])
                                )
-
+recipe_num_logfits = tot_recipe_num_logfits-master_recipe_num_logfits  # check1
 output1_num = len(output1)                    # check2
 output1_num_unique = len(np.unique(output1))  # check3
 output2_num = len(output2)                    # check2
 output2_num_unique = len(np.unique(output2))  # check3
+
 
 # check4
 if num_logfits_QCfalse == 0:
@@ -212,8 +230,8 @@ elif (output1_num_unique < recipe_num_logfits
                                           )
     # if duplicates
     else:
-        comment_stop1 = ('Recipe called 3 times or more in the same '
-                         'night directory.')
+        comment_stop1 = ('Recipe called multiple times producing the same '
+                         'outputs.')
         data_dict_stop1 = {'Night': np.concatenate((night_output1_dup,
                                                     night_output2_dup)),
                            'File name': np.concatenate((output1_dup,
@@ -223,39 +241,101 @@ elif (output1_num_unique < recipe_num_logfits
                 'badpixel_test1',
                 'stop1',
                 data_dict_stop1,
-                ('Bad Pixel Recipe Called 3 Times or More '
-                 'While Producing the Same Two Outputs in '
-                 '{0}').format(reduced_path)
+                ('Same Bad Pixel Correction Recipe Called Twice or More '
+                 'Producing the Same Outputs in {0}'
+                 ).format(reduced_path)
                 )
 
 else:
     color_stop1 = 'Red'
     result_stop1 = 'No'
     comment_stop1 = ('The number of unique output files should always be '
-                     'equal or smaller than the number of recipe called.')
+                     'smaller or equal to the number of recipe called.')
     inspect_stop1 = ''
+
 
 # Inspect calibDB
 f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
 master_calib_txt = f.read()
 nprocessed = master_calib_txt.index('# DRS processed')
 index_start = master_calib_txt[:nprocessed].count('\n')
-entry_col, night_col, file_col = np.genfromtxt(
+key_col, master_col, night_col, file_col = np.genfromtxt(
         "{0}/master_calib_{1}.txt".format(calibDB_path, instrument),
         delimiter=' ',
         unpack=True,
-        usecols=(0, 2, 3),
+        usecols=(0, 1, 2, 3),
         skip_header=index_start,
         dtype=str)
+master_col = master_col.astype(dtype = bool) # str to bool
 
-output1_num_entry = master_calib_txt.count(calibDB_entry_list[0])  # check6
+index_key_output1 = key_col == calibDB_entry_list[0]
+index_key_output2 = key_col == calibDB_entry_list[1]
+
+tot_output1_num_entry = len(key_col[index_key_output1]) # check6
+master_output1_num_entry = np.sum(master_col[index_key_output1])
+output1_num_entry = tot_output1_num_entry - master_output1_num_entry
 output1_calibDB = atf.list_files("{0}".format(calibDB_path),
                                  files=output_list[0][1:])
 output1_num_calibDB = len(output1_calibDB)  # check7
-output2_num_entry = master_calib_txt.count(calibDB_entry_list[1])  # check6
+
+tot_output2_num_entry = len(key_col[index_key_output2]) # check6
+master_output2_num_entry = np.sum(master_col[index_key_output2])
+output2_num_entry = tot_output2_num_entry - master_output2_num_entry
 output2_calibDB = atf.list_files("{0}".format(calibDB_path),
                                  files=output_list[1][1:])
-output2_num_calibDB = len(output1_calibDB)  # check7
+output2_num_calibDB = len(output2_calibDB)  # check7
+
+comments_check6 = ('An additional {0} {1} and {2} {3} with master = 1 '
+        'are in the master_calibDB_{4}.'.format(master_output1_num_entry,
+        calibDB_entry_list[0], master_output2_num_entry,
+        calibDB_entry_list[1], instrument))
+
+
+# checking for missing output
+
+output1_missing_calibDB = []
+output2_missing_calibDB = []
+if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1]) 
+        or sum(np.in1d(file_col[index_key_output2], output2_calibDB)) < len(file_col[index_key_output2])):
+
+    index_output1_missing = ~np.in1d(
+            file_col[index_key_output1],
+            output1_calibDB)
+    index_output2_missing = ~np.in1d(
+            file_col[index_key_output2],
+            output2_calibDB)
+
+    night_output1_missing_calibDB = night_col[index_key_output1][index_output1_missing]
+    output1_missing_calibDB = file_col[index_key_output1][index_output1_missing]
+    night_output2_missing_calibDB = night_col[index_key_output2][index_output2_missing]
+    output2_missing_calibDB = file_col[index_key_output2][index_output2_missing]
+
+
+# checking for duplicates
+
+if (len(output1_calibDB) < output1_num_entry 
+        or len(output2_calibDB) < output2_num_entry):
+
+    file_col_output1_unique, index_output1_dup, return_counts_output1 = np.unique(
+                 file_col[index_key_output1][~master_col[index_key_output1]],
+                 return_index=True,
+                 return_counts=True
+                 )
+    file_col_output2_unique, index_output2_dup, return_counts_output2 = np.unique(
+                 file_col[index_key_output2][~master_col[index_key_output2]],
+                 return_index=True,
+                 return_counts=True
+                 )
+
+    count_mask1 = return_counts_output1 > 1
+    count_mask2 = return_counts_output2 > 1
+
+    night_output1_dup_calibDB = night_col[index_key_output1][~master_col
+            [index_key_output1]][index_output1_dup][count_mask1]
+    output1_dup_calibDB = file_col_output1_unique[count_mask1]
+    night_output2_dup_calibDB = night_col[index_key_output2][~master_col
+            [index_key_output2]][index_output2_dup][count_mask2]
+    output2_dup_calibDB = file_col_output2_unique[count_mask2]
 
 
 # stop2
@@ -272,26 +352,14 @@ elif (output1_num_calibDB < output1_num_entry
     color_stop2 = 'Yellow'
     result_stop2 = 'No'
 
-    # check for missing output
-    if sum(np.in1d(file_col[entry_col == calibDB_entry_list[0]], output1_calibDB)) < len(file_col[entry_col == calibDB_entry_list[0]]) or sum(np.in1d(file_col[entry_col == calibDB_entry_list[1]], output2_calibDB)) < len(file_col[entry_col == calibDB_entry_list[1]]):
+    # if missing output
+    if len(output1_missing_calibDB) > 0 or len(output2_missing_calibDB) > 0:
 
-        index_output1_missing = ~np.in1d(
-                file_col[entry_col == calibDB_entry_list[0]],
-                output1_calibDB)
-        index_output2_missing = ~np.in1d(
-                file_col[entry_col == calibDB_entry_list[1]],
-                output2_calibDB)
-
-        night_output1_missing = night_col[entry_col == calibDB_entry_list[0]][index_output1_missing]
-        output1_missing = file_col[entry_col == calibDB_entry_list[0]][index_output1_missing]
-        night_output2_missing = night_col[entry_col == calibDB_entry_list[1]][index_output2_missing]
-        output2_missing = file_col[entry_col == calibDB_entry_list[1]][index_output2_missing]
-
-        comment_stop2 = 'One or more output are not in the calibDB.'
-        data_dict_stop2 = {'Night': np.concatenate((night_output1_missing,
-                                                    night_output2_missing)),
-                           'File name': np.concatenate((output1_missing,
-                                                        output2_missing)),
+        comment_stop2 = 'One or more outputs are not in the calibDB.'
+        data_dict_stop2 = {'Night': np.concatenate((night_output1_missing_calibDB,
+                                                    night_output2_missing_calibDB)),
+                           'File name': np.concatenate((output1_missing_calibDB,
+                                                        output2_missing_calibDB)),
                            }
         inspect_stop2 = atf.inspect_table('badpixel_test1',
                                           'stop2',
@@ -299,38 +367,15 @@ elif (output1_num_calibDB < output1_num_entry
                                           'Missing Output in {0}'.format(
                                               calibDB_path)
                                           )
-
-    # check for duplicates
+    # if duplicates
     else:
-
-        (file_col_output1_unique,
-         index_output1_dup,
-         return_counts_output1) = np.unique(
-                 file_col[entry_col == calibDB_entry_list[0]],
-                 return_index=True,
-                 return_counts=True
-                 )
-        (file_col_output2_unique,
-         index_output2_dup,
-         return_counts_output2) = np.unique(
-                 file_col[entry_col == calibDB_entry_list[1]],
-                 return_index=True,
-                 return_counts=True
-                 )
-
-        night_output1_dup = night_col[entry_col == calibDB_entry_list[0]][index_output1_dup][return_counts_output1 > 1]
-        output1_dup = file_col_output1_unique[return_counts_output1 > 1]
-        night_output2_dup = night_col[entry_col == calibDB_entry_list[1]][index_output2_dup][return_counts_output2 > 1]
-        output2_dup = file_col_output2_unique[return_counts_output2 > 1]
 
         comment_stop2 = ('Some entries in master_calib_{0}.txt are '
                          'identical.').format(instrument)
-        count_mask1 = return_counts_output1 > 1
-        count_mask2 = return_counts_output2 > 1
-        data_dict_stop2 = {'Night': np.concatenate((night_output1_dup,
-                                                    night_output2_dup)),
-                           'File name': np.concatenate((output1_dup,
-                                                        output2_dup)),
+        data_dict_stop2 = {'Night': np.concatenate((night_output1_dup_calibDB,
+                                                    night_output2_dup_calibDB)),
+                           'File name': np.concatenate((output1_dup_calibDB,
+                                                        output2_dup_calibDB)),
                            'Occurrence': np.concatenate((
                                return_counts_output1[count_mask1],
                                return_counts_output2[count_mask2]
@@ -417,7 +462,7 @@ th, td {{
     <td>1</td>
     <td># of time cal_badpix_{instrument.lower()}.py was called</td>
     <td>{recipe_num_logfits}</td>
-    <td></td>
+    <td>{comments_check1}</td>
     <td></td>
   </tr>
   <tr>
@@ -459,12 +504,12 @@ th, td {{
     <td>6</td>
     <td># of {', '.join(calibDB_entry_list)} entry in {calibDB_path}/master_calib_{instrument}.txt</td>
     <td>{calibDB_entry_list[0]}: {output1_num_entry}<br>{calibDB_entry_list[1]}: {output2_num_entry}</td>
-    <td></td>
+    <td>{comments_check6}</td>
     <td></td>
   </tr>
   <tr>
     <td>7</td>
-    <td># of {', '.join(output_list)} in {calibDB_path}</td>
+    <td># of outputs in {calibDB_path}</td>
     <td>{output_list[0]}: {output1_num_calibDB}<br>{output_list[1]}: {output2_num_calibDB}</td>
     <td></td>
     <td></td>

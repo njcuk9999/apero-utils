@@ -34,7 +34,7 @@ th, td {
 <h3>Bad Pixel Correction Recipe Test #1</h3>
 <p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
 <p><b>Instrument: SPIROU</b><br>
-<p><b>Date: 2020-12-17 16:07:52</b><br>
+<p><b>Date: 2020-12-18 17:10:51</b><br>
 <br>
 <p>Script: cal_badpix_spirou.py<br>
 <p>Output files: *_pp_badpixel.fits, *_pp_bmap.fits<br>
@@ -55,64 +55,64 @@ th, td {
     <th>Check</th>
     <th>Description</th>
     <th>Result</th>
-    <th>Comments</th> 
-    <th>Details</th> 
+    <th>Comments</th>
+    <th>Details</th>
   </tr>
   <tr>
     <td>1</td>
     <td># of time cal_badpix_spirou.py was called</td>
-    <td>484</td>
-    <td></td> 
-    <td></td> 
+    <td>483</td>
+    <td>An additional 1 recipe with --master=True was called in the master directory 2019-04-20.</td>
+    <td></td>
   </tr>
   <tr>
     <td>2</td>
     <td># of outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
     <td>*_pp_badpixel.fits: 518<br>*_pp_bmap.fits: 518</td>
-    <td></td> 
-    <td></td> 
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>3</td>
     <td># of unique outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
     <td>*_pp_badpixel.fits: 481<br>*_pp_bmap.fits: 481</td>
-    <td></td> 
-    <td></td> 
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td></td>
     <td>Check 3 == Check 1?</td>
     <td bgcolor=Yellow>No</td>
-    <td>Recipe called 3 times or more in the same night directory.</td>
+    <td>Recipe called multiple times producing the same outputs.</td>
     <td><a href='stop1/stop1.html'>Inspect</a></td>
   </tr>
   <tr>
     <td>4</td>
     <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed one or more QC</td>
     <td>0</td>
-    <td></td> 
-    <td></td> 
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td>5</td>
     <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed to finish</td>
     <td>0</td>
-    <td></td> 
+    <td></td>
     <td></td>
   </tr>
   <tr>
     <td>6</td>
     <td># of BADPIX, BKGRDMAP entry in /spirou/cfht_nights/cfht_sept1/calibDB/master_calib_SPIROU.txt</td>
-    <td>BADPIX: 484<br>BKGRDMAP: 484</td>
-    <td></td> 
-    <td></td> 
+    <td>BADPIX: 483<br>BKGRDMAP: 483</td>
+    <td>An additional 1 BADPIX and 1 BKGRDMAP with master = 1 are in the master_calibDB_SPIROU.</td>
+    <td></td>
   </tr>
   <tr>
     <td>7</td>
-    <td># of *_pp_badpixel.fits, *_pp_bmap.fits in /spirou/cfht_nights/cfht_sept1/calibDB</td>
+    <td># of outputs in /spirou/cfht_nights/cfht_sept1/calibDB</td>
     <td>*_pp_badpixel.fits: 481<br>*_pp_bmap.fits: 481</td>
-    <td></td> 
-    <td></td> 
+    <td></td>
+    <td></td>
   </tr>
   <tr>
     <td></td>

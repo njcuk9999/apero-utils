@@ -205,6 +205,7 @@ class log_fits:
         self.indexENDEDfalse = ~tbl['ENDED']
 
         self.nights = tbl['DIRECTORY']
+        self.runstr = tbl['RUNSTRING']
         self.args = tbl['ARGS']
 
         self.QCstr = tbl['QC_STRING']

@@ -79,12 +79,12 @@ if os.path.isfile('{0}/other/log.fits'.format(reduced_path)):
     index_recipe = logfits.recipe == 'cal_dark_master_{0}'.format(
                                                             instrument.lower()
                                                             )
-    recipe_num_logfits = sum(index_recipe)  # Check1
+    recipe_num_logfits = sum(index_recipe)  # check1
 
     # checking for missing output
     if (recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) > len(np.unique(nights_output1))):
         night_output1_missing = logfits.nights[index_recipe][np.in1d(logfits.nights[index_recipe], ~np.unique(nights_output1))]
-        output1_missing = output_list[0] * len(night_output1_missing)
+        output1_missing = output_list * len(night_output1_missing)
 
     # checking for duplicates
     if recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) == len(np.unique(nights_output1)):
@@ -92,7 +92,7 @@ if os.path.isfile('{0}/other/log.fits'.format(reduced_path)):
         nights_logfits_unique, return_counts_output1 = np.unique(logfits.nights[index_recipe], return_counts=True)
 
         night_output1_dup = nights_logfits_unique[return_counts_output1 > 1]
-        output1_dup = output_list[0] * len(night_output1_dup)
+        output1_dup = output_list * len(night_output1_dup)
 
     indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe)  # QC false + correct recipe
     indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe)  # ENDED false + correct recipe
@@ -169,8 +169,8 @@ elif output1_num_unique < recipe_num_logfits:
                                           )
     # if duplicates
     else:
-        comment_stop1 = ('Recipe called 2 times or more in the same '
-                         'night directory.')
+        comment_stop1 = ('Recipe called multiple times producing the same '
+                         'outputs.')
         data_dict_stop1 = {'Night': night_output1_dup,
                            'File name': output1_dup,
                            }
@@ -178,15 +178,15 @@ elif output1_num_unique < recipe_num_logfits:
                 'darkmaster_test1',
                 'stop1',
                 data_dict_stop1,
-                ('Dark Master Recipe Called 2 Times or '
-                 'More While Producing the Same Outputs '
-                 'in {0}').format(reduced_path),
-                )
+                ('Same Dark Master Recipe Called Twice or More '
+                 'Producing the Same Outputs in {0}'
+                 ).format(reduced_path)
+                 )
 else:
     color_stop1 = 'Red'
     result_stop1 = 'No'
     comment_stop1 = ('The number of unique output files should always be '
-                     'equal or smaller than the number of recipe called.'
+                     'smaller or equal to the number of recipe called.'
                      )
     inspect_stop1 = ''
 
@@ -196,18 +196,53 @@ f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
 master_calib_txt = f.read()
 nprocessed = master_calib_txt.index('# DRS processed')
 index_start = master_calib_txt[:nprocessed].count('\n')
-entry_col, night_col, file_col = np.genfromtxt(
+key_col, master_col, night_col, file_col = np.genfromtxt(
         "{0}/master_calib_{1}.txt".format(calibDB_path, instrument),
         delimiter=' ',
         unpack=True,
-        usecols=(0, 2, 3),
+        usecols=(0, 1, 2, 3),
         skip_header=index_start,
         dtype=str)
+master_col = master_col.astype(dtype = bool) # str to bool
 
-output1_num_entry = master_calib_txt.count(calibDB_entry_list[0])  # check6
+index_key_output1 = key_col == calibDB_entry_list[0]
+
+output1_num_entry = len(key_col[index_key_output1]) # check6
+
 output1_calibDB = atf.list_files("{0}".format(calibDB_path),
                                  files=output_list[0][1:])
 output1_num_calibDB = len(output1_calibDB)  # check7
+
+
+# checking for missing output
+
+output1_missing_calibDB = []
+
+if sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1]): 
+
+    index_output1_missing = ~np.in1d(
+            file_col[index_key_output1],
+            output1_calibDB)
+
+    night_output1_missing_calibDB = night_col[index_key_output1][index_output1_missing]
+    output1_missing_calibDB = file_col[index_key_output1][index_output1_missing]
+
+
+# checking for duplicates
+
+if len(output1_calibDB) < output1_num_entry: 
+
+    file_col_output1_unique, index_output1_dup, return_counts_output1 = np.unique(
+                 file_col[index_key_output1],
+                 return_index=True,
+                 return_counts=True
+                 )
+
+    count_mask1 = return_counts_output1 > 1
+
+    night_output1_dup_calibDB = night_col[index_key_output1][index_output1_dup][count_mask1]
+    output1_dup_calibDB = file_col_output1_unique[count_mask1]
+
 
 # stop2
 if output1_num_calibDB == output1_num_entry:
@@ -215,56 +250,36 @@ if output1_num_calibDB == output1_num_entry:
     result_stop2 = 'Yes'
     comment_stop2 = ''
     inspect_stop2 = ''
+
 elif output1_num_calibDB < output1_num_entry:
 
     color_stop2 = 'Yellow'
     result_stop2 = 'No'
 
-    # check for missing output
-    if sum(np.in1d(file_col[entry_col == calibDB_entry_list[0]], output1_calibDB)) < len(file_col[entry_col == calibDB_entry_list[0]]):
+    # if missing output
+    if len(output1_missing_calibDB) > 0:
 
-        index_output1_missing = ~np.in1d(
-                file_col[entry_col == calibDB_entry_list[0]], output1_calibDB
-                )
-
-        night_output1_missing = night_col[entry_col == calibDB_entry_list[0]][index_output1_missing]
-        output1_missing = file_col[entry_col == calibDB_entry_list[0]][index_output1_missing]
-
-        comment_stop2 = 'One or more output are not in the calibDB.'
-        data_dict_stop2 = {'Night': night_output1_missing,
-                           'File name': output1_missing,
+        comment_stop2 = 'One or more outputs are not in the calibDB.'
+        data_dict_stop2 = {'Night': night_output1_missing_calibDB,
+                           'File name': output1_missing_calibDB,
                            }
         inspect_stop2 = atf.inspect_table('darkmaster_test1',
                                           'stop2',
                                           data_dict_stop2,
                                           'Missing Output in {0}'.format(
-                                              calibDB_path
-                                              ),
+                                              calibDB_path)
                                           )
-
-    # check for duplicates
+    # if duplicates
     else:
-
-        (file_col_output1_unique,
-         index_output1_dup,
-         return_counts_output1) = np.unique(
-                 file_col[entry_col == calibDB_entry_list[0]],
-                 return_index=True,
-                 return_counts=True
-                 )
-
-        night_output1_dup = night_col[entry_col == calibDB_entry_list[0]][index_output1_dup][return_counts_output1 > 1]
-        output1_dup = file_col_output1_unique[return_counts_output1 > 1]
 
         comment_stop2 = ('Some entries in master_calib_{0}.txt are '
                          'identical.').format(instrument)
-        count_mask = return_counts_output1 > 1
-        data_dict_stop2 = {'Night': night_output1_dup,
-                           'File name': output1_dup,
-                           'Occurrence': return_counts_output1[count_mask]
-                           }
+        data_dict_stop2 = {'Night': night_output1_dup_calibDB,
+                           'File name': output1_dup_calibDB,
+                           'Occurrence': return_counts_output1[count_mask1]
+                          }
         inspect_stop2 = atf.inspect_table(
-                'darkmaster_test1',
+                'darkmaster',
                 'stop2',
                 data_dict_stop2,
                 ('Duplicate Entries in '
@@ -274,8 +289,8 @@ elif output1_num_calibDB < output1_num_entry:
 else:
     color_stop2 = 'Red'
     result_stop2 = 'No'
-    comment_stop2 = ('The calibDB should not have more output files than '
-                     'what was produced.')
+    comment_stop2 = ('The calibDB should not have more output files than what '
+                     'was produced.')
     inspect_stop2 = ''
 
 
@@ -391,8 +406,8 @@ th, td {{
   </tr>
   <tr>
     <td>7</td>
-    <td># of {output_list[0]} in {calibDB_path}</td>
-    <td>{output1_num_calibDB}</td>
+    <td># of outputs in {calibDB_path}</td>
+    <td>{output_list[0]}: {output1_num_calibDB}</td>
     <td></td>
     <td></td>
   </tr>
