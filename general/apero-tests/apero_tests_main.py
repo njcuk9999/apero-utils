@@ -7,7 +7,7 @@ import os
 from pathlib import Path
 from datetime import datetime
 
-from apero_tests import TESTDICT, get_test
+from apero_test_factory import TESTDICT, get_test
 from apero_tests_func import summary
 from apero.core import constants
 
