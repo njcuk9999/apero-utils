@@ -59,12 +59,14 @@ for i, testid in enumerate(test_list_short):
     p.mkdir(exist_ok=True)
 
     print('test {0}/{1}'.format(i+1, n))
-    print('running {0}.py\n'.format(test_list_short[i]))
+    print('running {0}.py'.format(test_list_short[i]))
 
     if test is not None:
         test.runtest()
     else:
         print('test {} not implemented'.format(testid))
+
+    print()
 
 print('all tests done')
 
