@@ -55,7 +55,8 @@ for i, testid in enumerate(test_list_short):
     test = get_test(testid)
 
     # Create dir only if not exist (ignore error auto if it's there)
-    Path.mkdir(testid, exist_ok=True)
+    p = Path(testid)
+    p.mkdir(exist_ok=True)
 
     print('test {0}/{1}'.format(i+1, n))
     print('running {0}.py\n'.format(test_list_short[i]))
