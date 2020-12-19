@@ -1,5 +1,7 @@
 # APERO tests
 
+The code is in `checks` and the html summary is in `out`.
+
 Call apero_tests_main.py to perform a series of tests:
 
 1. Preprocessing Recipe Test #1
