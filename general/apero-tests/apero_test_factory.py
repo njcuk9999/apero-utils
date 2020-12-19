@@ -53,4 +53,4 @@ def get_test(testid: str) -> Test:
 
     test = TESTDICT.get(testid)
 
-    return test()
+    return test() if test is not None else test
