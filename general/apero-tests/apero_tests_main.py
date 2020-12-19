@@ -4,8 +4,10 @@ Main script to run apero tests
 @author: charles
 """
 import os
+from pathlib import Path
 from datetime import datetime
 
+from apero_tests import TESTDICT, get_test
 from apero_tests_func import summary
 from apero.core import constants
 
@@ -17,33 +19,6 @@ params = constants.load('SPIROU')
 setup = os.environ['DRS_UCONFIG']  # setup
 instrument = params['INSTRUMENT']  # instrument
 date_ini = datetime.now()          # initial date
-
-test_list_short = [
-        # Preprocessing
-        'preprocessing_test1',
-
-        # Calibration
-        'darkmaster_test1',
-        'badpixel_test1',
-        'localisation_test1',
-        'shapemaster_test1',
-        'shape_test1',
-        'flat_test1',
-        'thermal_test1',
-        'masterleak_test1',
-        'leak_test1',
-        'masterwavelength_test1',
-        'wavelength_test1',
-        'extraction_test1',
-        'extraction_test2',
-        'extraction_test3',
-
-        # Science
-        'maketellu_test1',
-        'fittellu_test1',
-        'maketemplate_test1',
-        'ccf_test1'
-                   ]
 
 test_list_long = [
         'Preprocessing Recipe Test #1',
@@ -67,22 +42,28 @@ test_list_long = [
         'CCF Recipe Test #1'
         ]
 
+
+test_list_short = list(TESTDICT)
+
 # =============================================================================
 # Run the tests
 # =============================================================================
 n = len(test_list_short)  # number of tests
-for i in range(n):
+for i, testid in enumerate(test_list_short):
 
-    if not os.path.isdir(test_list_short[i]):
-        os.system('mkdir {0}'.format(test_list_short[i]))
+    # Generate test object
+    test = get_test(testid)
+
+    # Create dir only if not exist (ignore error auto if it's there)
+    Path.mkdir(testid, exist_ok=True)
 
     print('test {0}/{1}'.format(i+1, n))
     print('running {0}.py\n'.format(test_list_short[i]))
 
-    try:
-        os.system('python {0}.py'.format(test_list_short[i]))
-    except:
-        pass
+    if test is not None:
+        test.runtest()
+    else:
+        print('test {} not implemented'.format(testid))
 
 print('all tests done')
 
