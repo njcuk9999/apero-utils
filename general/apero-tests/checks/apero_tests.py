@@ -171,43 +171,47 @@ class CalibTest(Test):
         """
         return self._logdirs
 
-    def _get_output_df(self) -> pd.DataFrame:
-        """Get output df
-        Generate dataframe of output nights, and a full column with all files.
+    def _get_output_files(self) -> pd.Series:
+        """Get output files
+        Organize output files by output type and night using two indexing
+        levels in pandas
 
-        :return: Output dataframe with output patterns as indices and
-                 nights as columns
-        :rtype: pd.DataFrame
+        :return: Output series of all output files. Each file has two indices
+                 (output pattern, night date)
+        :rtype: pd.Series
         """
-        df = pd.DataFrame([],
-                          index=self.output_list,
-                          columns=self.reduced_nights)
-        df = df.apply(
-                lambda x: self.reduced_path + os.path.sep + x.name
-                                            + os.path.sep + x.index)
-        df = df.applymap(glob.glob)  # Get list of files per night
-        df['full'] = df.values.tolist()
-        df.full = df.full.apply(np.concatenate)  # Full list of files per row
 
-        return df
+        inds = pd.MultiIndex.from_product(  # multi-index output and night
+                [self.output_list, self.reduced_nights],
+                names=['output', 'night'],
+                )
+        sep = os.path.sep
+        paths = pd.Series(self.reduced_path  # Series of path per night+output
+                          + sep + inds.get_level_values('night')
+                          + sep + inds.get_level_values('output'),
+                          index=inds
+                          )
+        files = paths.apply(glob.glob)  # Get file list for each pattern
+        files = files.explode()         # Pop lists in individual cells
+
+        return files
 
     def _get_log_df(self) -> pd.Dataframe:
         """_get_log_df.
 
-        Generate DataFrame of logobjects.Log with log infomation.
-        Initialized with only one column containing Log objects for each night.
+        Generate a dataframe with log for each directory, with two index
+        levels:
+            - DIRECTORY
+            - RECIPE
 
         :return: log_df
         :rtype: pd.DataFrame
         """
         # TODO: Will need safety check for the missing logs...
-        inds = pd.Index(self.logdirs)
-        logpaths = (self.reduced_path
-                    + os.path.sep + inds
-                    + os.path.sep + 'log.fits')
-        logs = pd.Series(logpaths, index=inds)
-        logs = logs.apply(Log)
-        log_df = pd.Dataframe(logs, index=inds, columns=['log'])
+        paths = [os.path.join(self.reduced_path, ld, 'log.fits')
+                 for ld in self.logdirs]
+        dfs = [pd.DataFrame(fits.getdata(f)) for fo in paths]
+        log_df = pd.concat(dfs).set_index(['DIRECTORY', 'RECIPE'])
 
         return log_df
 

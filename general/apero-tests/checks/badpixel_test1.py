@@ -84,7 +84,7 @@ class BadPixTest(Test):
         missing_logfits = []
 
         # =====================================================================
-        # Gather all outputs in reduced night dirs
+        # LOOP NIGHTS: Gather all outputs in reduced night dirs
         # =====================================================================
         for i in range(len(reduced_nights)):
 
@@ -103,6 +103,7 @@ class BadPixTest(Test):
             # Load logfits info per night
             # =================================================================
             # inspect log.fits if the file exists
+            # Check that log fits exists and do some checks
             if os.path.isfile('{0}/{1}/log.fits'.format(reduced_path,
                               reduced_nights[i])
                               ):
@@ -110,12 +111,16 @@ class BadPixTest(Test):
                                                                  reduced_nights[i])
                                        )
 
+                # Get indicies where recipe under tests was used
+                # Also sum number of times recipe was used total
                 index_recipe = (
                         logfits.recipe == 'cal_badpix_{0}'.format(instrument.lower())
                         )
                 tot_recipe_num_logfits += sum(index_recipe)  # check1
 
                 # checking for missing output
+                # For each output make sure not 0 while log has > 0
+                # Flag nights where missing and also patterns
                 if sum(index_recipe) > 0 and len(output1_list_files) == 0:
                     night_output1_missing.append(reduced_nights[i])
                     output1_missing.append(output_list[0])
@@ -124,9 +129,12 @@ class BadPixTest(Test):
                     output2_missing.append(output_list[1])
 
                 # checking for duplicates
+                # For each output check if length smaller than number in log
                 if sum(index_recipe) > len(output1_list_files):
 
                     # checking if it is the master directory
+                    # Check number of extra recipes in master sequence
+                    # and save in comment
                     for j in range(sum(index_recipe)):
                         if '--master=True' in logfits.runstr[index_recipe][j]:
                             master_recipe_num_logfits += 1
@@ -137,6 +145,7 @@ class BadPixTest(Test):
                     
                     non_dup_num = sum(index_recipe) - master_recipe_num_logfits
 
+                    # For each input  save duplicate nights and outputs
                     if non_dup_num == len(output1_list_files):
                         pass
                     else:
@@ -148,33 +157,47 @@ class BadPixTest(Test):
                         night_output2_dup.append(reduced_nights[i])
                         output2_dup.append(output_list[1])
 
+                # When recipe is the one we want, check if QC and ended are
+                # false
                 indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe)  # QC false + correct recipe
                 indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe)  # ENDED false + correct recipe
 
                 num_logfits_QCfalse += sum(indexQCfalse)        # check4
                 num_logfits_ENDEDfalse += sum(indexENDEDfalse)  # check5
 
-                nights_logfits_QCfalse.extend(logfits.nights[indexQCfalse])  # check4
-                QCstr_logfits_QCfalse.extend(logfits.QCstr[indexQCfalse])    # check4
+                # Check 4
+                # Store nights and Str where QC failed
+                nights_logfits_QCfalse.extend(logfits.nights[indexQCfalse])
+                QCstr_logfits_QCfalse.extend(logfits.QCstr[indexQCfalse])
 
                 # Check 5
+                # Store nights and Str where not ended
                 nights_logfits_ENDEDfalse.extend(logfits.nights[indexENDEDfalse])
                 ERRORS_logfits_ENDEDfalse.extend(logfits.ERRORS[indexENDEDfalse])
                 LOGFILE_logfits_ENDEDfalse.extend(logfits.LOGFILE[indexENDEDfalse])
 
             # missing log.fits
+            # Flag nights with missing log.fits
             else:
                 missing_logfits.append('{0}/{1}/log.fits'.format(reduced_path,
                                                                  reduced_nights[i])
                                        )
+
+        # =====================================================================
+        # NIGHT LOOP OVER
+        # =====================================================================
+
+        # Get number of files in:
+        # - logfits (minus master number)
+        # - Number of output (all and unique) for each pattern
         recipe_num_logfits = tot_recipe_num_logfits-master_recipe_num_logfits  # check1
-        # TODO: Get from df #
         output1_num = len(output1)                    # check2
         output1_num_unique = len(np.unique(output1))  # check3
         output2_num = len(output2)                    # check2
         output2_num_unique = len(np.unique(output2))  # check3
 
         # check4
+        # Report how many and which QC failed
         if num_logfits_QCfalse == 0:
             comments_check4 = ''
             inspect_check4 = ''
@@ -189,6 +212,7 @@ class BadPixTest(Test):
                                                'Nights that Failed Quality Control')
 
         # check5
+        # Report how many and which did not end
         if num_logfits_ENDEDfalse == 0:
             comments_check5 = ''
             inspect_check5 = ''
@@ -207,6 +231,7 @@ class BadPixTest(Test):
         # =====================================================================
         # stop1: Example stop here
         # =====================================================================
+        # Check if number of unique outputs equals number in logs
         if (output1_num_unique == recipe_num_logfits
                 and output2_num_unique == recipe_num_logfits):
             color_stop1 = 'Lime'
@@ -262,6 +287,10 @@ class BadPixTest(Test):
         # =====================================================================
         # Inspect calibDB
         # =====================================================================
+        # TODO
+        # Load numpy array from text file, rmoving '# DRS processed' and above
+        # Can load in pandas dataframe to stay consistent
+        # Can also keep only relevant entries and structure per-entry for tests
         f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
         master_calib_txt = f.read()
         nprocessed = master_calib_txt.index('# DRS processed')
@@ -275,9 +304,11 @@ class BadPixTest(Test):
                 dtype=str)
         master_col = master_col.astype(dtype = bool)  # str to bool
 
+        # Check if key matches one of our entries
         index_key_output1 = key_col == calibDB_entry_list[0]
         index_key_output2 = key_col == calibDB_entry_list[1]
 
+        # Get total number of entries and of files for output 1 in calibd
         tot_output1_num_entry = len(key_col[index_key_output1])  # check6
         master_output1_num_entry = np.sum(master_col[index_key_output1])
         output1_num_entry = tot_output1_num_entry - master_output1_num_entry
@@ -285,13 +316,13 @@ class BadPixTest(Test):
                                          files=output_list[0][1:])
         output1_num_calibDB = len(output1_calibDB)  # check7
 
+        # Get total number of entries and of files for output 2 in calibd
         tot_output2_num_entry = len(key_col[index_key_output2])  # check6
         master_output2_num_entry = np.sum(master_col[index_key_output2])
         output2_num_entry = tot_output2_num_entry - master_output2_num_entry
         output2_calibDB = atf.list_files("{0}".format(calibDB_path),
                                          files=output_list[1][1:])
-        output2_num_calibDB = len(output2_calibDB)  # check7
-
+        output2_num_calibDB = len(output2_calibDB)  # check7 
         comments_check6 = ('An additional {0} {1} and {2} {3} with master = 1 '
                            'are in the master_calibDB_{4}.'.format(
                                master_output1_num_entry,
@@ -302,6 +333,7 @@ class BadPixTest(Test):
 
 
         # checking for missing output
+        # i.e. check if files from txt file are missing in db
         output1_missing_calibDB = []
         output2_missing_calibDB = []
         if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1]) 
@@ -321,7 +353,7 @@ class BadPixTest(Test):
 
 
         # checking for duplicates
-
+        # Check if some files have duplicaltes in db
         if (len(output1_calibDB) < output1_num_entry
                 or len(output2_calibDB) < output2_num_entry):
 
