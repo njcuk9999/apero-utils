@@ -1,128 +1,129 @@
 
-<html>
+        <html>
 
 
-<head>
-<title>APERO Tests</title>
-<style>
-table {
-  width:75%;
-}
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
-th, td {
-  padding: 15px;
-  text-align: left;
-}
-#t01 tr:nth-child(even) {
-  background-color: #eee;
-}
-#t01 tr:nth-child(odd) {
- background-color: #fff;
-}
-#t01 th {
-  background-color: white;
-  color: black;
-}
-</style>
-</head>
+        <head>
+        <title>APERO Tests</title>
+        <style>
+        table {
+          width:75%;
+        }
+        table, th, td {
+          border: 1px solid black;
+          border-collapse: collapse;
+        }
+        th, td {
+          padding: 15px;
+          text-align: left;
+        }
+        #t01 tr:nth-child(even) {
+          background-color: #eee;
+        }
+        #t01 tr:nth-child(odd) {
+         background-color: #fff;
+        }
+        #t01 th {
+          background-color: white;
+          color: black;
+        }
+        </style>
+        </head>
 
-<body>
+        <body>
 
-<h3>Dark Master Recipe Test #1</h3>
-<p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
-<p><b>Instrument: SPIROU</b><br>
-<p><b>Date: 2020-12-18 17:13:00</b><br>
-<br>
-<p>Script: cal_dark_master_spirou.py<br>
-<p>Output files: ['*_pp_dark_master.fits']<br>
-<p>Calibration database entry: ['DARKM']<br>
-<p><a href='https://github.com/njcuk9999/apero-drs#82-dark-master-recipe'>Link</a> to Dark Master Recipe description</p>
-<br></br>
+        <h3>Dark Master Recipe Test #1</h3>
+        <p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
+        <p><b>Instrument: SPIROU</b><br>
+        <p><b>Date: 2020-12-21 15:15:40</b><br>
+        <br>
+        <p>Script: cal_dark_master_spirou.py<br>
+        <p>Output files: ['*_pp_dark_master.fits']<br>
+        <p>Calibration database entry: ['DARKM']<br>
+        <p><a href='https://github.com/njcuk9999/apero-drs#82-dark-master-recipe'>Link</a> to Dark Master Recipe description</p>
+        <br></br>
 
-<table id="t01">
+        <table id="t01">
 
-  <colgroup>
-     <col span="1" style="width: 5%;">
-     <col span="1" style="width: 55%;">
-     <col span="1" style="width: 15%;">
-     <col span="1" style="width: 20%;">
-     <col span="1" style="width: 5%;">
-  </colgroup>
-  <tr>
-    <th>Check</th>
-    <th>Description</th>
-    <th>Result</th>
-    <th>Comments</th>
-    <th>Details</th>
-  </tr>
-  <tr>
-    <td>1</td>
-    <td># of time cal_dark_master_spirou.py was called</td>
-    <td>3</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>2</td>
-    <td># of outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
-    <td>*_pp_dark_master.fits: 248</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>3</td>
-    <td># of unique outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
-    <td>*_pp_dark_master.fits: 3</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td></td>
-    <td>Check 3 == Check 1?</td>
-    <td bgcolor=Lime>Yes</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>4</td>
-    <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/other/log.fits that failed one or more QC</td>
-    <td>0</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>5</td>
-    <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/other/log.fits that failed to finish</td>
-    <td>0</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>6</td>
-    <td># of DARKM entry in /spirou/cfht_nights/cfht_sept1/calibDB/master_calib_SPIROU.txt</td>
-    <td>3</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>7</td>
-    <td># of outputs in /spirou/cfht_nights/cfht_sept1/calibDB</td>
-    <td>*_pp_dark_master.fits: 3</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td></td>
-    <td>Check 7 == Check 6?</td>
-    <td bgcolor=Lime>Yes</td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>
+          <colgroup>
+             <col span="1" style="width: 5%;">
+             <col span="1" style="width: 55%;">
+             <col span="1" style="width: 15%;">
+             <col span="1" style="width: 20%;">
+             <col span="1" style="width: 5%;">
+          </colgroup>
+          <tr>
+            <th>Check</th>
+            <th>Description</th>
+            <th>Result</th>
+            <th>Comments</th>
+            <th>Details</th>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td># of time cal_dark_master_spirou.py was called</td>
+            <td>3</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td># of outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
+            <td>*_pp_dark_master.fits: 248</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td># of unique outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
+            <td>*_pp_dark_master.fits: 3</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>Check 3 == Check 1?</td>
+            <td bgcolor=Lime>Yes</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/other/log.fits that failed one or more QC</td>
+            <td>0</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/other/log.fits that failed to finish</td>
+            <td>0</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td># of DARKM entry in /spirou/cfht_nights/cfht_sept1/calibDB/master_calib_SPIROU.txt</td>
+            <td>3</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td># of outputs in /spirou/cfht_nights/cfht_sept1/calibDB</td>
+            <td>*_pp_dark_master.fits: 3</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>Check 7 == Check 6?</td>
+            <td bgcolor=Lime>Yes</td>
+            <td></td>
+            <td></td>
+          </tr>
+        </table>
 
 
-</body>
-</html>
+        </body>
+        </html>
+        

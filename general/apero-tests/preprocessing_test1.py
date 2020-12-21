@@ -98,7 +98,7 @@ class PPTest(Test):
             color_stop1 = 'Red'
             result_stop1 = 'No'
             comment_stop1 = ('The number of pp files should always be '
-                             'smaller than the number of raw files.')
+                             'smaller than or equal to the number of raw files.')
             inspect_stop1 = ''
 
 
@@ -223,7 +223,7 @@ class PPTest(Test):
         inspect_check6 = atf.inspect_table('preprocessing_test1',
                                            'check6',
                                            data_dict_check6,
-                                           ('Odometers that Failed One or More'
+                                           ('Odometers that Failed One or More '
                                             'Quality Control')
                                            )
 

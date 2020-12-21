@@ -206,7 +206,7 @@ class DarkMTest(Test):
             color_stop1 = 'Red'
             result_stop1 = 'No'
             comment_stop1 = ('The number of unique output files should always be '
-                             'smaller or equal to the number of recipe called.'
+                             'smaller than or equal to the number of recipe called.'
                              )
             inspect_stop1 = ''
 

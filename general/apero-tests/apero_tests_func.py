@@ -5,13 +5,16 @@ Utility functions for APERO tests
 """
 import os
 import glob
+import pandas as pd
 from datetime import datetime
 from astropy.io import fits
+from bokeh.plotting import figure
 from bokeh.io.saving import save
 from bokeh.io.output import output_file
 from bokeh.models import ColumnDataSource, DataTable, DateFormatter, TableColumn
-from bokeh.models.widgets import Div
-from bokeh.layouts import column
+from bokeh.models import LinearAxis, BasicTicker, CustomJS
+from bokeh.models.widgets import Div, Select
+from bokeh.layouts import row, column
 
 
 def intersection(lst1, lst2):
@@ -53,7 +56,7 @@ def list_files(path, files='all'):
     flist = [x for x in os.listdir(path) if x.endswith(f)]
 
     if len(flist) == 0:
-        print(path)
+        print('No ', f, 'in', path)
     return flist
 
 
@@ -209,18 +212,20 @@ class log_fits:
         self.args = tbl['ARGS']
 
         self.QCstr = tbl['QC_STRING']
-        self.QCvalue = tbl['QC_VALUES']
+        self.QCnames = tbl['QC_NAMES']
+        self.QCvalues = tbl['QC_VALUES']
+        self.QClogic = tbl['QC_LOGIC']
         self.ERRORS = tbl['ERRORS']
         self.LOGFILE = tbl['LOGFILE']
 
 
-def inspect_table(test, check, data_dict, title):
+def inspect_table(test, subtest, data_dict, title):
     """
-    Write an 'inspect' html element.
+    Write an html table from a data set in a dictionary.
     """
 
-    if not os.path.isdir('{0}/{1}'.format(test, check)):
-        os.system('mkdir {0}/{1}'.format(test, check))
+    if not os.path.isdir('{0}/{1}'.format(test, subtest)):
+        os.system('mkdir {0}/{1}'.format(test, subtest))
 
     source = ColumnDataSource(data_dict)
 
@@ -238,71 +243,127 @@ def inspect_table(test, check, data_dict, title):
             columns=columns,
             autosize_mode='fit_columns',
             min_width=1000,
-            max_width=1500,
+            max_width=1600,
             width_policy='min',
             height=600,
             editable=True)
     layout = column(table_title, data_table)
 
     output_file(
-            "{0}/{1}/{1}.html".format(test, check),
-            title="{0}".format(check))
+            "{0}/{1}/{1}.html".format(test, subtest),
+            title="{0}".format(subtest))
     save(layout)
 
-    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(check)
+    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(subtest)
 
     return html_str
 
 
-def inspect_plot(test, check, data_dict, title):
+def inspect_plot(test, subtest, data_dict, title, order = False):
     """
-    WIP
+    Write an html interactive plot from a data set in a dictionary.
     """
 
-    if not os.path.isdir('{0}/{1}'.format(test, check)):
-        os.system('mkdir {0}/{1}'.format(test, check))
+    if not os.path.isdir('{0}/{1}'.format(test, subtest)):
+        os.system('mkdir {0}/{1}'.format(test, subtest))
 
-    # y variable list
-    axis_map = data_dict
-    axis_map_list = list(axis_map.keys())
+    if order == True:
 
-    # create widget
-    y_axis = Select(title="Quality Control",
-                    options=axis_map_list,
-                    width=260)
+        # y variable list
+        axis_map = data_dict.copy()
+        axis_map.pop('Order')
 
-    # data sets
-    source = ColumnDataSource(data_dict)
+        axis_map_list = list(axis_map.keys())
+
+        # create widget
+        y_axis_widget = Select(title="Quality Control",
+                        options=axis_map_list,
+                        value = axis_map_list[0],
+                        width=260)
+
+        # data set
+        data_dict['x'] = data_dict['Order']
+        data_dict['y'] = data_dict[axis_map_list[0]]
+        source_visible = ColumnDataSource(data_dict)
+    
+    else:
+
+        # Night to datetime
+        for i in range(len(data_dict['Night'])):
+            if '_persi' in data_dict['Night'][i]:
+                data_dict['Night'][i] = data_dict['Night'][i][:10]
+        data_dict['Night'] = pd.to_datetime(data_dict['Night'])
+
+        # y variable list
+        axis_map = data_dict.copy()
+        axis_map.pop('Night')
+
+        axis_map_list = list(axis_map.keys())
+
+        # create widget
+        y_axis_widget = Select(title="Quality Control",
+                        options=axis_map_list,
+                        value = axis_map_list[0],
+                        width=260)
+
+        # data set
+        data_dict['x'] = data_dict['Night']
+        data_dict['y'] = data_dict[axis_map_list[0]]
+        source_visible = ColumnDataSource(data_dict)
 
     # bokeh tools
     TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
              "save", "tap"]
 
-    # titles
-    titlestr = title
-
-    p = figure(plot_width=1200, plot_height=700, tools=TOOLS,
-               tooltips=TOOLTIPS, title = titlestr)
+    # plot
+    p = figure(plot_width=1200, 
+               plot_height=700, 
+               tools=TOOLS,
+               toolbar_location = "left",
+               x_axis_label = 'Night',
+               x_axis_type="datetime",
+               title = title)
     p.title.text_font_size = '12pt'
+    p.xaxis.axis_label_text_font_size = '12pt'
+    p.yaxis.visible = False
 
-    plot = p.circle('Night',
-                    axis_map_list[0],
-                    source=source
-                    )
+    p.circle('x',
+           'y',
+           source = source_visible,
+           line_width=2
+           )
+    
+    y_axis = LinearAxis(axis_label = y_axis_widget.value,
+                  axis_label_text_font_size = '12pt')
+    p.add_layout(y_axis, 'left')
 
-    table_title = Div(text="""<font size="+1"> <b>{0}</b> </font>""".format(title), height=50)
-    data_table = DataTable(source=source, columns=columns,
-                           autosize_mode='fit_columns', min_width=1000,
-                           max_width=1500, width_policy='min', height=600,
-                           editable=True)
-    layout = column(table_title, data_table)
+    # javascript callback
+    callback_y_axis = CustomJS(args=dict(source_visible = source_visible,
+                                         y_axis = y_axis, 
+                                         p = p),
+                      code="""
+                      var selected_y_axis = cb_obj.value
+                      var data_visible = source_visible.data
+
+                      data_visible.y = data_visible[selected_y_axis]
+                      source_visible.change.emit()
+                      y_axis.axis_label = selected_y_axis
+                      y_axis.change.emit()
+
+                      p.reset.emit()
+                           """)
+
+    y_axis_widget.js_on_change('value', callback_y_axis)
+
+    #html doc
+    layout = row(y_axis_widget, p)
 
     output_file(
-            "{0}/{1}/{1}.html".format(test, check), title="{0}".format(check)
+            "{0}/{1}/{1}.html".format(test, subtest), title="{0}".format(subtest)
             )
     save(layout)
 
-    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(check)
+    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(subtest)
 
     return html_str
 
