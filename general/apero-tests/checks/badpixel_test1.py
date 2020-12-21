@@ -25,6 +25,7 @@ Tests preformed
 import os
 from datetime import datetime
 import numpy as np
+import typing
 
 from apero_tests import Test
 import apero_tests_func as atf
