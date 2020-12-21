@@ -7,7 +7,7 @@ import os
 import glob
 from datetime import datetime
 from abc import ABC, abstractmethod
-from typing import Optional, Union
+from typing import Optional, Union, List
 
 import numpy as np
 import pandas as pd
@@ -145,11 +145,11 @@ class CalibTest(Test):
         return self._calibdb_path
 
     @property
-    def reduced_nights(self) -> list[str]:
+    def reduced_nights(self) -> List[str]:
         """List of reduced night directories
 
         :return: reduced_nights
-        :rtype: list[str]
+        :rtype: List[str]
         """
         return self._reduced_nights
 
@@ -163,7 +163,7 @@ class CalibTest(Test):
         return self._log_df
 
     @property
-    def logdirs(self) -> list[str]:
+    def logdirs(self) -> List[str]:
         """List of directories where log files are expected for this test
 
         Currently supported:
@@ -171,7 +171,7 @@ class CalibTest(Test):
             - One log dir per night (typically the same as night)
 
         :return: logdirs
-        :rtype: list[str]
+        :rtype: List[str]
         """
         return self._logdirs
 
@@ -248,20 +248,20 @@ class CalibTest(Test):
     # =========================================================================
     @property
     @abstractmethod
-    def output_list(self) -> list[str]:
+    def output_list(self) -> List[str]:
         """List of output string patterns
 
         :return: output_list
-        :rtype: list[str]
+        :rtype: List[str]
         """
 
     @property
     @abstractmethod
-    def calibdb_list(self) -> list[str]:
+    def calibdb_list(self) -> List[str]:
         """List of calibDB entries
 
         :return: calibdb_list
-        :rtype: list[str]
+        :rtype: List[str]
         """
     @property
     @abstractmethod
