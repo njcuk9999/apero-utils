@@ -68,6 +68,11 @@ class Test(ABC):
 
     @property
     @abstractmethod
+    def recipe(self):
+        """Recipe checked by the tests"""
+
+    @property
+    @abstractmethod
     def outdict(self):
         """outdict."""
 
@@ -95,8 +100,6 @@ class CalibTest(Test):
         :type setup: Optional[str]
         :param logdir:
         :type logdir: str
-
-        :return: __init__
         """
 
         super().__init__(inst=inst, setup=setup)
@@ -104,7 +107,7 @@ class CalibTest(Test):
         # Paths without end separator if any
         sep = os.path.sep
         self._reduced_path = self._params['DRS_DATA_REDUC'].rstrip(sep)
-        self._calib_db_path = self._params['DRS_CALIB_REDUC'].rstrip(sep)
+        self._calibdb_path = self._params['DRS_CALIB_REDUC'].rstrip(sep)
 
         # List of all reduced nights
         self._reduced_nights = atf.list_nights(self.reduced_path)
@@ -119,8 +122,9 @@ class CalibTest(Test):
         else:
             raise TypeError('logdir must be a list or a string')
 
-        # Log dataframe
-        self._log_df = self._get_log_df()
+        # Handle logs (this creates log_df and missing_logfits properties)
+        self._gen_log_df()
+        
 
     @property
     def reduced_path(self) -> str:
@@ -132,13 +136,13 @@ class CalibTest(Test):
         return self._reduced_path
 
     @property
-    def calib_db_path(self) -> str:
+    def calibdb_path(self) -> str:
         """Path do calibDB directory.
 
-        :return: calib_db_path
+        :return: calibdb_path
         :rtype: str
         """
-        return self._calib_db_path
+        return self._calibdb_path
 
     @property
     def reduced_nights(self) -> list[str]:
@@ -171,7 +175,21 @@ class CalibTest(Test):
         """
         return self._logdirs
 
-    def _get_output_files(self) -> pd.Series:
+    @property
+    @abstractmethod
+    def output_files(self) -> pd.Series:
+        """output_files.
+
+        :return: output_files
+        :rtype: pd.Series
+        """
+
+    @property
+    @abstractmethod
+    def recipe(self) -> str:
+        """Name of the reof the recipe"""
+
+    def _gen_output_files(self) -> pd.Series:
         """Get output files
         Organize output files by output type and night using two indexing
         levels in pandas
@@ -196,24 +214,25 @@ class CalibTest(Test):
 
         return files
 
-    def _get_log_df(self) -> pd.Dataframe:
-        """_get_log_df.
+    def _gen_log_df(self):
+        """_gen_log_df.
 
         Generate a dataframe with log for each directory, with two index
         levels:
             - DIRECTORY
             - RECIPE
-
-        :return: log_df
-        :rtype: pd.DataFrame
         """
-        # TODO: Will need safety check for the missing logs...
-        paths = [os.path.join(self.reduced_path, ld, 'log.fits')
-                 for ld in self.logdirs]
-        dfs = [pd.DataFrame(fits.getdata(f)) for fo in paths]
-        log_df = pd.concat(dfs).set_index(['DIRECTORY', 'RECIPE'])
+        # Get all logs in a dataframe
+        allpaths = [os.path.join(self.reduced_path, ld, 'log.fits')
+                    for ld in self.logdirs]
+        paths = [p for p in allpaths if os.path.isfile(p)]
+        dfs = [pd.DataFrame(fits.getdata(f)) for f in paths]
+        log_df = pd.concat(dfs).set_index(['DIRECTORY'])
+        log_df = log_df.loc[log_df.RECIPE == self.recipe]
+        self._log_df = log_df
 
-        return log_df
+        # Store missing logs in another list
+        self._missing_logs = [p for p in allpaths if not os.path.isfile(p)]
 
     def do_stop(self):
         """Do stop comparison for two inputs"""

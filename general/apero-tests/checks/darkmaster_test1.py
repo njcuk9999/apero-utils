@@ -50,7 +50,7 @@ class DarkMTest(Test):
         self._output_df = self._get_output_df()
 
         # calibDB entries list
-        self._calibdb_path = ['DARKM']
+        self._calibdb_list = ['DARKM']
 
     @property
     def name(self) -> str:
@@ -77,7 +77,7 @@ class DarkMTest(Test):
         :return: calibdb_list
         :rtype: list[str]
         """
-        return self._calibdb_path
+        return self._calibdb_list
 
     def runtest(self):
         """runtest."""

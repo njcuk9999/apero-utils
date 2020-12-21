@@ -31,73 +31,128 @@ import apero_tests_func as atf
 from apero.core import constants
 
 
-class BadPixTest(Test):
+class BadPixTest(CalibTest):
     """BadPixTest."""
 
-    def __init__(self):
-        """__init__."""
+    def __init__(self,
+                 inst: str = 'SPIROU',
+                 setup: Optional[str] = None,
+                 logdir: Union[str, list] = 'night'):
+        """__init__.
+
+        :param inst:
+        :type inst: str
+        :param setup:
+        :type setup: Optional[str]
+        :param logdir:
+        :type logdir: Union[str, list]
+        """
+
+        super().__init__(inst=inst, setup=setup, logdir=logdir)
 
         self._name = 'Bad Pixel Correction Recipe Test #1'
+
+        self._output_list = ['*_pp_badpixel.fits', '*_pp_bmap.fits']
+
+        # calibDB entries list
+        self._calbidb_list = ['BADPIX', 'BKGRDMAP']
+
+        # private pd.Series of output files
+        self._output_files = self._gen_output_files()
+
+        self._recipe = 'cal_badpix_{}'.format(self.instrument.lower())
 
     @property
     def name(self):
         """name."""
         return self._name
 
+    @property
+    def output_list(self) -> list[str]:
+        """List of output string patterns
+
+        :return: output_list
+        :rtype: list[str]
+        """
+        return self._output_list
+
+    @property
+    def calibdb_list(self) -> list[str]:
+        """List of calibDB entries
+
+        :return: calibdb_list
+        :rtype: list[str]
+        """
+        return self._calibdb_list
+    
+    @property
+    def output_files(self) -> pd.Series:
+        """output_files.
+
+        :return: output_files
+        :rtype: pd.Series
+        """
+        return self._output_files
+
+
+
     def runtest(self):
         """runtest."""
 
         print(self.name)
         # output list
-        output_list = ['*_pp_badpixel.fits', '*_pp_bmap.fits']
-
-        # calibDB entries list
-        calibDB_entry_list = ['BADPIX', 'BKGRDMAP']
 
         # inspect all reduced_nights and other/log.fits
 
-        tot_recipe_num_logfits = 0       # check1
-        master_recipe_num_logfits = 0    # check1
-        num_logfits_QCfalse = 0          # check4
-        num_logfits_ENDEDfalse = 0       # check5
+        # tot_recipe_num_logfits = 0       # check1
+        # master_recipe_num_logfits = 0    # check1
+        # num_logfits_QCfalse = 0          # check4
+        # num_logfits_ENDEDfalse = 0       # check5
 
-        nights_logfits_QCfalse = []      # check4
-        QCstr_logfits_QCfalse = []       # check4
+        # nights_logfits_QCfalse = []      # check4
+        # QCstr_logfits_QCfalse = []       # check4
 
-        nights_logfits_ENDEDfalse = []   # check5
-        ERRORS_logfits_ENDEDfalse = []   # check5
-        LOGFILE_logfits_ENDEDfalse = []  # check5
+        # nights_logfits_ENDEDfalse = []   # check5
+        # ERRORS_logfits_ENDEDfalse = []   # check5
+        # LOGFILE_logfits_ENDEDfalse = []  # check5
 
-        output1 = []
-        output2 = []
+        # output1 = []
+        # output2 = []
 
-        night_output1_missing = []
-        output1_missing = []
-        night_output2_missing = []
-        output2_missing = []
+        # night_output1_missing = []
+        # output1_missing = []
+        # night_output2_missing = []
+        # output2_missing = []
 
-        night_output1_dup = []
-        output1_dup = []
-        night_output2_dup = []
-        output2_dup = []
+        # night_output1_dup = []
+        # output1_dup = []
+        # night_output2_dup = []
+        # output2_dup = []
 
-        missing_logfits = []
+
+        # Total number of log entries for this recipe
+        night_recipe_num_logfits = self.log_df.groupby('DIRECTORY').size()
+        tot_recipe_num_logfits = self.log_df.shape[0]  # Check 1
+
+        # Number of outputs for each night for each output pattern
+        output_files_num = output_files.groupby(['output', 'night']).size()
+
 
         # =====================================================================
         # LOOP NIGHTS: Gather all outputs in reduced night dirs
         # =====================================================================
         for i in range(len(reduced_nights)):
 
-            # Get files {ODO}*outputpattern in directory
-            output1_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
-                                                reduced_nights[i]),
-                                                files=output_list[0][1:])
-            output2_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
-                                                reduced_nights[i]),
-                                                files=output_list[1][1:])
+            # # Get files {ODO}*outputpattern in directory
+            # output1_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
+            #                                     reduced_nights[i]),
+            #                                     files=output_list[0][1:])
+            # output2_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
+            #                                     reduced_nights[i]),
+            #                                     files=output_list[1][1:])
 
-            output1.extend(output1_list_files)
-            output2.extend(output2_list_files)
+            # output1.extend(output1_list_files)
+            # output2.extend(output2_list_files)
 
             # =================================================================
             # Load logfits info per night
@@ -110,13 +165,6 @@ class BadPixTest(Test):
                 logfits = atf.log_fits('{0}/{1}/log.fits'.format(reduced_path,
                                                                  reduced_nights[i])
                                        )
-
-                # Get indicies where recipe under tests was used
-                # Also sum number of times recipe was used total
-                index_recipe = (
-                        logfits.recipe == 'cal_badpix_{0}'.format(instrument.lower())
-                        )
-                tot_recipe_num_logfits += sum(index_recipe)  # check1
 
                 # checking for missing output
                 # For each output make sure not 0 while log has > 0
@@ -175,13 +223,6 @@ class BadPixTest(Test):
                 nights_logfits_ENDEDfalse.extend(logfits.nights[indexENDEDfalse])
                 ERRORS_logfits_ENDEDfalse.extend(logfits.ERRORS[indexENDEDfalse])
                 LOGFILE_logfits_ENDEDfalse.extend(logfits.LOGFILE[indexENDEDfalse])
-
-            # missing log.fits
-            # Flag nights with missing log.fits
-            else:
-                missing_logfits.append('{0}/{1}/log.fits'.format(reduced_path,
-                                                                 reduced_nights[i])
-                                       )
 
         # =====================================================================
         # NIGHT LOOP OVER
