@@ -267,6 +267,10 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
     if not os.path.isdir('{0}/{1}'.format(test, subtest)):
         os.system('mkdir {0}/{1}'.format(test, subtest))
 
+    # bokeh tools
+    TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
+             "save", "tap"]
+
     if order == True:
 
         # y variable list
@@ -285,6 +289,17 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         data_dict['x'] = data_dict['Order']
         data_dict['y'] = data_dict[axis_map_list[0]]
         source_visible = ColumnDataSource(data_dict)
+
+        # plot
+        p = figure(plot_width=1200, 
+                   plot_height=700, 
+                   tools=TOOLS,
+                   toolbar_location = "left",
+                   x_axis_label = 'Order',
+                   title = title)
+        p.title.text_font_size = '12pt'
+        p.xaxis.axis_label_text_font_size = '12pt'
+        p.yaxis.visible = False
     
     else:
 
@@ -311,21 +326,18 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         data_dict['y'] = data_dict[axis_map_list[0]]
         source_visible = ColumnDataSource(data_dict)
 
-    # bokeh tools
-    TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
-             "save", "tap"]
+        # plot
+        p = figure(plot_width=1200, 
+                   plot_height=700, 
+                   tools=TOOLS,
+                   toolbar_location = "left",
+                   x_axis_label = 'Night',
+                   x_axis_type="datetime",
+                   title = title)
+        p.title.text_font_size = '12pt'
+        p.xaxis.axis_label_text_font_size = '12pt'
+        p.yaxis.visible = False
 
-    # plot
-    p = figure(plot_width=1200, 
-               plot_height=700, 
-               tools=TOOLS,
-               toolbar_location = "left",
-               x_axis_label = 'Night',
-               x_axis_type="datetime",
-               title = title)
-    p.title.text_font_size = '12pt'
-    p.xaxis.axis_label_text_font_size = '12pt'
-    p.yaxis.visible = False
 
     p.circle('x',
            'y',

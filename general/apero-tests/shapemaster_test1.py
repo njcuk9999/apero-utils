@@ -240,7 +240,7 @@ class ShapeMTest(Test):
         split_QCvalues = np.array(QCvalues[0].split('||'))
         split_QCvalues = split_QCvalues.astype(dtype=float)
 
-        data_dict_check5 = {'Order': np.arange(49),
+        data_dict_check5 = {'Order': np.arange(1,50),
                 split_QCnames: split_QCvalues
                 }
         inspect_check5 = atf.inspect_plot('shapemaster_test1',
