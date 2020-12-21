@@ -24,10 +24,12 @@ Tests preformed
 """
 import os
 from datetime import datetime
-import numpy as np
-import typing
+from typing import List, Optional, Union
 
-from apero_tests import Test
+import numpy as np
+import pandas as pd
+
+from apero_tests import Test, CalibTest
 import apero_tests_func as atf
 from apero.core import constants
 
@@ -56,8 +58,7 @@ class BadPixTest(CalibTest):
         self._output_list = ['*_pp_badpixel.fits', '*_pp_bmap.fits']
 
         # calibDB entries list
-        self._calbidb_list = ['BADPIX', 'BKGRDMAP']
-
+        self._calbidb_list = ['BADPIX', 'BKGRDMAP'] 
         # private pd.Series of output files
         self._output_files = self._gen_output_files()
 
@@ -69,7 +70,7 @@ class BadPixTest(CalibTest):
         return self._name
 
     @property
-    def output_list(self) -> list[str]:
+    def output_list(self) -> List[str]:
         """List of output string patterns
 
         :return: output_list
@@ -78,7 +79,25 @@ class BadPixTest(CalibTest):
         return self._output_list
 
     @property
-    def calibdb_list(self) -> list[str]:
+    def recipe(self) -> List[str]:
+        """Recipe name
+
+        :return: output_list
+        :rtype: list[str]
+        """
+        return self._recipe
+
+    @property
+    def output_files(self) -> pd.DataFrame:
+        """Dataframe with output files per night and cumulated
+
+        :return: output_df
+        :rtype: pd.DataFrame
+        """
+        return self._output_files
+
+    @property
+    def calibdb_list(self) -> List[str]:
         """List of calibDB entries
 
         :return: calibdb_list
@@ -94,7 +113,6 @@ class BadPixTest(CalibTest):
         :rtype: pd.Series
         """
         return self._output_files
-
 
 
     def runtest(self):

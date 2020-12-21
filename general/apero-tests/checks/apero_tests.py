@@ -71,18 +71,18 @@ class Test(ABC):
     def recipe(self):
         """Recipe checked by the tests"""
 
-    @property
-    @abstractmethod
-    def outdict(self):
-        """outdict."""
+    # @property
+    # @abstractmethod
+    # def outdict(self):
+    #     """outdict."""
 
     @abstractmethod
     def runtest(self):
         """Method called to run the tests on APERO products"""
 
-    @abstractmethod
-    def htmlgen(self):
-        """htmlgen."""
+    # @abstractmethod
+    # def htmlgen(self):
+    #     """htmlgen."""
 
 
 class CalibTest(Test):
@@ -263,12 +263,12 @@ class CalibTest(Test):
         :return: calibdb_list
         :rtype: List[str]
         """
+
     @property
     @abstractmethod
-    def output_df(self) -> pd.DataFrame:
+    def output_files(self) -> pd.DataFrame:
         """Dataframe with output files per night and cumulated
 
         :return: output_df
         :rtype: pd.DataFrame
         """
-        return self._output_df
