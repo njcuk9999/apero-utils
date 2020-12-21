@@ -33,6 +33,9 @@ def list_nights(path):
              for x in os.listdir(path)
              if os.path.isdir(os.path.join(path, x))
              ]
+    # TODO: Make this safer and keep only strings with a date-compatible fmt
+    # or use a reject_dir list to allow various darte formats, maybe this can
+    # be checked by datetime
     if 'other' in nlist:
         nlist.remove('other')
     nlist.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
@@ -176,42 +179,6 @@ def list_raw_odometers(path, files='all'):
     return odometers
 
 
-class index_fits:
-
-    def __init__(self, path):
-
-        tbl = fits.getdata(path)
-        self.tbl = tbl
-        self.len = len(tbl)
-        self.filename = tbl['FILENAME']
-        self.nights = tbl['NIGHTNAME']
-        self.object = tbl['KW_OBJNAME']
-
-
-class log_fits:
-
-    def __init__(self, path):
-
-        tbl = fits.getdata(path)
-        self.tbl = tbl
-        self.len = len(tbl)
-        self.recipe = tbl['RECIPE']
-        self.QC = tbl['PASSED_ALL_QC']
-        self.ENDED = tbl['ENDED']
-
-        self.indexQCtrue = tbl['PASSED_ALL_QC']
-        self.indexQCfalse = ~tbl['PASSED_ALL_QC']
-        self.indexENDEDtrue = tbl['ENDED']
-        self.indexENDEDfalse = ~tbl['ENDED']
-
-        self.nights = tbl['DIRECTORY']
-        self.runstr = tbl['RUNSTRING']
-        self.args = tbl['ARGS']
-
-        self.QCstr = tbl['QC_STRING']
-        self.QCvalue = tbl['QC_VALUES']
-        self.ERRORS = tbl['ERRORS']
-        self.LOGFILE = tbl['LOGFILE']
 
 
 def inspect_table(test, check, data_dict, title):

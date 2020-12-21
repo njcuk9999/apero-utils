@@ -23,7 +23,7 @@ import os
 from datetime import datetime
 import numpy as np
 
-from apero_tests import Test
+from checks.apero_tests import Test
 import apero_tests_func as atf
 from apero.core import constants
 
@@ -33,29 +33,10 @@ class PPTest(Test):
 
     def __init__(self):
         """__init__."""
+        
+        # TODO: Call parent init
 
         self._name = 'Preprocessing Recipe Test #1'
-
-    @property
-    def name(self):
-        """name."""
-        return self._name
-
-    def runtest(self):
-        """runtest."""
-
-        print(self.name)
-
-        # =============================================================================
-        # Define Constants
-        # =============================================================================
-
-        params = constants.load('SPIROU')
-
-        setup = os.environ['DRS_UCONFIG']  # setup
-        instrument = params['INSTRUMENT']  # instrument
-        date = datetime.now()
-        date = date.strftime("%Y-%m-%d %H:%M:%S")  # date
 
         raw_path = params['DRS_DATA_RAW']
         if raw_path[-1] == '/':
@@ -69,6 +50,17 @@ class PPTest(Test):
 
         # output list
         output_list = ['*_pp.fits']
+
+
+    @property
+    def name(self):
+        """name."""
+        return self._name
+
+    def runtest(self):
+        """runtest."""
+
+        print(self.name)
 
         # =============================================================================
         # TESTS

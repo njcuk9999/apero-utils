@@ -48,36 +48,12 @@ class BadPixTest(Test):
         """runtest."""
 
         print(self.name)
-
-        # =============================================================================
-        # Define Constants
-        # =============================================================================
-        params = constants.load('SPIROU')
-
-        setup = os.environ['DRS_UCONFIG']  # setup
-        instrument = params['INSTRUMENT']  # instrument
-        date = datetime.now()
-        date = date.strftime("%Y-%m-%d %H:%M:%S")  # date
-
-        reduced_path = params['DRS_DATA_REDUC']
-        if reduced_path[-1] == '/':
-            reduced_path = reduced_path[:-1]        # reduced path without / at the end
-        reduced_nights = atf.list_nights(reduced_path)  # list reduced night dirs
-
-        calibDB_path = params['DRS_CALIB_DB']  # calibDB path
-        if calibDB_path[-1] == '/':
-            calibDB_path = calibDB_path[:-1]   # calibDB path without / at the end
-
         # output list
         output_list = ['*_pp_badpixel.fits', '*_pp_bmap.fits']
 
         # calibDB entries list
         calibDB_entry_list = ['BADPIX', 'BKGRDMAP']
 
-
-        # =============================================================================
-        # TESTS
-        # =============================================================================
         # inspect all reduced_nights and other/log.fits
 
         tot_recipe_num_logfits = 0       # check1
@@ -107,8 +83,12 @@ class BadPixTest(Test):
 
         missing_logfits = []
 
+        # =====================================================================
+        # Gather all outputs in reduced night dirs
+        # =====================================================================
         for i in range(len(reduced_nights)):
 
+            # Get files {ODO}*outputpattern in directory
             output1_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
                                                 reduced_nights[i]),
                                                 files=output_list[0][1:])
@@ -119,6 +99,9 @@ class BadPixTest(Test):
             output1.extend(output1_list_files)
             output2.extend(output2_list_files)
 
+            # =================================================================
+            # Load logfits info per night
+            # =================================================================
             # inspect log.fits if the file exists
             if os.path.isfile('{0}/{1}/log.fits'.format(reduced_path,
                               reduced_nights[i])
@@ -142,8 +125,8 @@ class BadPixTest(Test):
 
                 # checking for duplicates
                 if sum(index_recipe) > len(output1_list_files):
-                    
-                    #checking if it is the master directory
+
+                    # checking if it is the master directory
                     for j in range(sum(index_recipe)):
                         if '--master=True' in logfits.runstr[index_recipe][j]:
                             master_recipe_num_logfits += 1
@@ -185,11 +168,11 @@ class BadPixTest(Test):
                                                                  reduced_nights[i])
                                        )
         recipe_num_logfits = tot_recipe_num_logfits-master_recipe_num_logfits  # check1
+        # TODO: Get from df #
         output1_num = len(output1)                    # check2
         output1_num_unique = len(np.unique(output1))  # check3
         output2_num = len(output2)                    # check2
         output2_num_unique = len(np.unique(output2))  # check3
-
 
         # check4
         if num_logfits_QCfalse == 0:
@@ -221,7 +204,9 @@ class BadPixTest(Test):
                                                'Nights that Failed to Finish')
 
 
-        # stop1
+        # =====================================================================
+        # stop1: Example stop here
+        # =====================================================================
         if (output1_num_unique == recipe_num_logfits
                 and output2_num_unique == recipe_num_logfits):
             color_stop1 = 'Lime'
@@ -274,8 +259,9 @@ class BadPixTest(Test):
                              'smaller or equal to the number of recipe called.')
             inspect_stop1 = ''
 
-
+        # =====================================================================
         # Inspect calibDB
+        # =====================================================================
         f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
         master_calib_txt = f.read()
         nprocessed = master_calib_txt.index('# DRS processed')

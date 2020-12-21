@@ -56,41 +56,16 @@ class LocTest(Test):
         """runtest."""
 
         print(self.name)
-        # =============================================================================
-        # Define Constants
-        # =============================================================================
-        params = constants.load('SPIROU')
-
-        setup = os.environ['DRS_UCONFIG']  # setup
-        instrument = params['INSTRUMENT']  # instrument
-        date = datetime.now()
-        date = date.strftime("%Y-%m-%d %H:%M:%S")  # date
-
-        reduced_path = params['DRS_DATA_REDUC']
-        if reduced_path[-1] == '/':
-            reduced_path = reduced_path[:-1]        # reduced path without / at the end
-        reduced_nights = atf.list_nights(reduced_path)  # list reduced night dirs
-
-        calibDB_path = params['DRS_CALIB_DB']  # calibDB path
-        if calibDB_path[-1] == '/':
-            calibDB_path = calibDB_path[:-1]   # calibDB path without / at the end
-
         # output list
         output_list = ['*_pp_order_profile_{FIBER}.fits',
                        '*_pp_loco_{FIBER}.fits',
                        '*_pp_fwhm-order_{FIBER}.fits',
                        '*_pp_with-order_{FIBER}.fits']
 
-
         # calibDB entries list
         calibDB_entry_list = ['ORDER_PROFILE_{FIBER}', 'LOC_{FIBER}']
 
-
-        # =============================================================================
-        # TESTS
-        # =============================================================================
         # inspect all reduced_nights log.fits
-
         tot_recipe_num_logfits = 0       # check1
         master_recipe_num_logfits = 0    # check1
         num_logfits_QCfalse = 0          # check4

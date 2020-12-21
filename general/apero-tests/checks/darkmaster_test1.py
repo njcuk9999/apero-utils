@@ -20,67 +20,75 @@ Tests performed:
 @author: charles
 """
 import os
-from datetime import datetime
+from typing import Optional
 import numpy as np
 
-from apero_tests import Test
+from checks.apero_tests import Test
 import apero_tests_func as atf
-from apero.core import constants
 
 
 class DarkMTest(Test):
     """DarkMTest."""
 
-    def __init__(self):
-        """__init__."""
+    def __init__(self, inst: str = 'SPIROU', setup: Optional[str] = None):
+        """__init__.
+
+        :param inst:
+        :type inst: str
+        :param setup:
+        :type setup: Optional[str]
+        """
+
+        super().__init__(inst=inst, setup=setup)
 
         self._name = 'Dark Master Recipe Test #1'
 
+        # output list
+        self._output_list = ['*_pp_dark_master.fits']
+
+        # dataframe of all outputs
+        self._output_df = self._get_output_df()
+
+        # calibDB entries list
+        self._calibdb_path = ['DARKM']
+
     @property
-    def name(self):
-        """name."""
+    def name(self) -> str:
+        """name.
+
+        :return: name
+        :rtype: str
+        """
         return self._name
+
+    @property
+    def output_list(self) -> list[str]:
+        """List of output string patterns
+
+        :return: output_list
+        :rtype: list[str]
+        """
+        return self._output_list
+
+    @property
+    def calibdb_list(self) -> list[str]:
+        """List of calibDB entries
+
+        :return: calibdb_list
+        :rtype: list[str]
+        """
+        return self._calibdb_path
 
     def runtest(self):
         """runtest."""
 
-        print(self.name)
-
-        # =============================================================================
-        # Define Constants
-        # =============================================================================
-        params = constants.load('SPIROU')
-
-        setup = os.environ['DRS_UCONFIG']  # setup
-        instrument = params['INSTRUMENT']  # instrument
-        date = datetime.now()
-        date = date.strftime("%Y-%m-%d %H:%M:%S")  # date
-
-        reduced_path = params['DRS_DATA_REDUC']
-        if reduced_path[-1] == '/':
-            reduced_path = reduced_path[:-1]  # reduced path without / at the end
-        reduced_nights = atf.list_nights(reduced_path)  # list reduced night dirs
-
-        other_path = reduced_path + '/other'  # other directory path
-
-        calibDB_path = params['DRS_CALIB_DB']  # calibDB path
-        if calibDB_path[-1] == '/':
-            calibDB_path = calibDB_path[:-1]   # calibDB path without / at the end
-
-        # output list
-        output_list = ['*_pp_dark_master.fits']
-
-        # calibDB entries list
-        calibDB_entry_list = ['DARKM']
-
-        # =============================================================================
-        # TESTS
-        # =============================================================================
         # inspect all reduced_nights and other/log.fits
-
         output1 = []  # Check 2
         nights_output1 = []
 
+        # =====================================================================
+        # Gather all outputs in reduced night dirs
+        # =====================================================================
         for i in range(len(reduced_nights)):
 
             output1_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
@@ -90,9 +98,13 @@ class DarkMTest(Test):
             output1.extend(output1_list_files)
             nights_output1.extend(reduced_nights[i] * len(output1_list_files))
 
+        # TODO: get from output df
         output1_num = len(output1)  # check2
         output1_num_unique = len(np.unique(output1))  # check3
 
+        # =====================================================================
+        # Load logfits info (single file in other)
+        # =====================================================================
         if os.path.isfile('{0}/other/log.fits'.format(reduced_path)):
             logfits = atf.log_fits('{0}/other/log.fits'.format(reduced_path))
 
@@ -209,7 +221,6 @@ class DarkMTest(Test):
                              'smaller or equal to the number of recipe called.'
                              )
             inspect_stop1 = ''
-
 
         # Inspect calibDB
         f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
