@@ -147,6 +147,11 @@ class BadPixTest(CalibTest):
         # Number of outputs for each night for each output pattern
         output_files_num = output_files.groupby(['output', 'night']).size()
 
+        # NOTE: when filtering nights in log df end up with some nights removed
+        # (if only one run)
+        # Might be ok but keep in mind. Will yield nans in pandas comparisons
+        # or broadcasts at least
+
 # =====================================================================
         # LOOP NIGHTS: Gather all outputs in reduced night dirs
         # =====================================================================
