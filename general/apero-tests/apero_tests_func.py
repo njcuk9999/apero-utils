@@ -199,6 +199,7 @@ class log_fits:
         self.tbl = tbl
         self.len = len(tbl)
         self.recipe = tbl['RECIPE']
+        self.PID = tbl['PID']
         self.QC = tbl['PASSED_ALL_QC']
         self.ENDED = tbl['ENDED']
 

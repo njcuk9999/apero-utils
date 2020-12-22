@@ -21,15 +21,17 @@ check7: how many entry SHAPEX, SHAPEY and FPMASTER in
         master_calib_{INSTRUMENT}.txt?
 check8: for each calib entry how many are in the calibDB?
 stop2: check8 == check7?
-check9: which bad pixel calibrations were used for each file? Was it the one
-        from this night? How far away is the calibration obs time from the loc
-        input file obs time?
+check9: which bad pixel/localisation calibrations were used for each file? 
+        Was it the one from this night? How far away is the calibration obs 
+        time from the shape master input file obs time?
 
 @author: charles
 """
 import os
+import glob
 from datetime import datetime
 import numpy as np
+from astropy.io import fits
 
 from apero_tests import Test
 import apero_tests_func as atf
@@ -101,6 +103,10 @@ class ShapeMTest(Test):
         nights_logfits_ENDEDfalse = []   # check6
         ERRORS_logfits_ENDEDfalse = []   # check6
         LOGFILE_logfits_ENDEDfalse = []  # check6
+
+        calibration_night_missing = []   # check9
+        calibration_missing = []         # check9
+        calibration_night = []           # check9
 
         output1 = []
         output2 = []
@@ -203,6 +209,39 @@ class ShapeMTest(Test):
                 nights_logfits_ENDEDfalse.extend(logfits.nights[indexENDEDfalse])
                 ERRORS_logfits_ENDEDfalse.extend(logfits.ERRORS[indexENDEDfalse])
                 LOGFILE_logfits_ENDEDfalse.extend(logfits.LOGFILE[indexENDEDfalse])
+
+                # check9
+                PID = logfits.PID[index_recipe]
+                for k in range(len(output1_list_files)):
+                    hdul = fits.open('{0}/{1}/{2}'.format(reduced_path,
+                            reduced_nights[i], output1_list_files[k]))
+                    if hdul[0].header['DRSPID'] in PID:
+                        if 'CDBBAD' in hdul[0].header:
+                            if not (hdul[0].header['CDBBAD'] == 'None' or 
+                                    os.path.isfile('{0}/{1}/{2}'.format(reduced_path,
+                                    reduced_nights[i], hdul[0].header['CDBBAD']))):
+                                calibration_night_missing.append(reduced_nights[i])
+                                calibration_missing.append(hdul[0].header['CDBBAD'])
+                        if 'CDBBACK' in hdul[0].header:    
+                            if not (hdul[0].header['CDBBACK'] == 'None' or 
+                                    os.path.isfile('{0}/{1}/{2}'.format(reduced_path,
+                                    reduced_nights[i], hdul[0].header['CDBBACK']))):
+                                calibration_night_missing.append(reduced_nights[i])
+                                calibration_missing.append(hdul[0].header['CDBBACK'])
+                        if 'CDBORDP' in hdul[0].header:     
+                            if not (hdul[0].header['CDBORDP'] == 'None' or 
+                                    os.path.isfile('{0}/{1}/{2}'.format(reduced_path,
+                                    reduced_nights[i], hdul[0].header['CDBORDP']))):
+                                calibration_night_missing.append(reduced_nights[i])
+                                calibration_missing.append(hdul[0].header['CDBORDP'])
+                        if 'CDBLOCO' in hdul[0].header:      
+                            if not (hdul[0].header['CDBLOCO'] == 'None' or 
+                                    os.path.isfile('{0}/{1}/{2}'.format(reduced_path,
+                                    reduced_nights[i], hdul[0].header['CDBLOCO']))):
+                                calibration_night_missing.append(reduced_nights[i])
+                                calibration_missing.append(hdul[0].header['CDBLOCO'])
+                    else:
+                        continue
 
             # missing log.fits
             else:
@@ -513,6 +552,33 @@ class ShapeMTest(Test):
             inspect_stop2 = ''
 
 
+        # check9
+        for i in range(len(calibration_missing)):
+            path = glob.glob('{0}/*/{1}'.format(reduced_path,
+                    calibration_missing[i]))
+            path = path[0].replace('{0}/'.format(reduced_path), '')
+            calibration_night.append(path[:path.index('/')])
+           
+
+        if len(calibration_missing) == 0:
+            comments_check9 = ''
+            inspect_check9 = ''
+        else:
+            comments_check9 = ('One or more shape master recipe outputs used '
+                               'the bad pixel/localisation calibrations from '
+                               'another night')
+            data_dict_check9 = {'Shape Master Night':calibration_night_missing,
+                                'Calibration file name': calibration_missing,
+                                'Calibration Night': calibration_night
+                                }
+            inspect_check9 = atf.inspect_table(
+                        'shapemaster_test1',
+                        'check9',
+                        data_dict_check9,
+                        ('Night where the Shape Master Recipe Output '
+                         'used Calibrations from Another Night')
+                        )    
+
         # Build shapemaster_test1.html
 
         html_text = f"""
@@ -647,10 +713,10 @@ class ShapeMTest(Test):
           </tr>
           <tr>
             <td>9</td>
-            <td></td>
-            <td></td>
-            <td></td>
-            <td></td>
+            <td># of outputs in {reduced_path} that used the bad pixel/localisation calibration files from another night</td>
+            <td>{len(calibration_missing)}</td>
+            <td>{comments_check9}</td>
+            <td>{inspect_check9}</td>
           </tr>
         </table>
 
