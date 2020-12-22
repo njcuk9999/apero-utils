@@ -9,11 +9,10 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from typing import Optional, Union, List
 
-import numpy as np
 import pandas as pd
+from astropy.io import fits
 
 import apero_tests_func as atf
-from logobjects import Log
 from apero.core import constants
 
 
@@ -107,7 +106,7 @@ class CalibTest(Test):
         # Paths without end separator if any
         sep = os.path.sep
         self._reduced_path = self._params['DRS_DATA_REDUC'].rstrip(sep)
-        self._calibdb_path = self._params['DRS_CALIB_REDUC'].rstrip(sep)
+        self._calibdb_path = self._params['DRS_CALIB_DB'].rstrip(sep)
 
         # List of all reduced nights
         self._reduced_nights = atf.list_nights(self.reduced_path)
@@ -121,10 +120,6 @@ class CalibTest(Test):
             self._logdirs = logdir
         else:
             raise TypeError('logdir must be a list or a string')
-
-        # Handle logs (this creates log_df and missing_logfits properties)
-        self._gen_log_df()
-        
 
     @property
     def reduced_path(self) -> str:
@@ -262,13 +257,4 @@ class CalibTest(Test):
 
         :return: calibdb_list
         :rtype: List[str]
-        """
-
-    @property
-    @abstractmethod
-    def output_files(self) -> pd.DataFrame:
-        """Dataframe with output files per night and cumulated
-
-        :return: output_df
-        :rtype: pd.DataFrame
         """

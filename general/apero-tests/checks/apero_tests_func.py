@@ -175,10 +175,7 @@ def list_raw_odometers(path, files='all'):
             if files_list[i][7] == 'o':
                 odometers.append(files_list[i][:8])
 
-
     return odometers
-
-
 
 
 def inspect_table(test, check, data_dict, title):

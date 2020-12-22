@@ -23,7 +23,6 @@ Tests preformed
 @author: charles
 """
 import os
-from datetime import datetime
 from typing import List, Optional, Union
 
 import numpy as np
@@ -31,7 +30,6 @@ import pandas as pd
 
 from apero_tests import Test, CalibTest
 import apero_tests_func as atf
-from apero.core import constants
 
 
 class BadPixTest(CalibTest):
@@ -58,11 +56,14 @@ class BadPixTest(CalibTest):
         self._output_list = ['*_pp_badpixel.fits', '*_pp_bmap.fits']
 
         # calibDB entries list
-        self._calbidb_list = ['BADPIX', 'BKGRDMAP'] 
+        self._calbidb_list = ['BADPIX', 'BKGRDMAP']
         # private pd.Series of output files
         self._output_files = self._gen_output_files()
 
         self._recipe = 'cal_badpix_{}'.format(self.instrument.lower())
+
+        # Handle logs (this creates log_df and missing_logfits properties)
+        self._gen_log_df()
 
     @property
     def name(self):
@@ -88,15 +89,6 @@ class BadPixTest(CalibTest):
         return self._recipe
 
     @property
-    def output_files(self) -> pd.DataFrame:
-        """Dataframe with output files per night and cumulated
-
-        :return: output_df
-        :rtype: pd.DataFrame
-        """
-        return self._output_files
-
-    @property
     def calibdb_list(self) -> List[str]:
         """List of calibDB entries
 
@@ -104,7 +96,7 @@ class BadPixTest(CalibTest):
         :rtype: list[str]
         """
         return self._calibdb_list
-    
+
     @property
     def output_files(self) -> pd.Series:
         """output_files.
@@ -113,7 +105,6 @@ class BadPixTest(CalibTest):
         :rtype: pd.Series
         """
         return self._output_files
-
 
     def runtest(self):
         """runtest."""
@@ -156,8 +147,7 @@ class BadPixTest(CalibTest):
         # Number of outputs for each night for each output pattern
         output_files_num = output_files.groupby(['output', 'night']).size()
 
-
-        # =====================================================================
+# =====================================================================
         # LOOP NIGHTS: Gather all outputs in reduced night dirs
         # =====================================================================
         for i in range(len(reduced_nights)):
