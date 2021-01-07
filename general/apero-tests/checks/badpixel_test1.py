@@ -28,7 +28,7 @@ from typing import List, Optional, Union
 import numpy as np
 import pandas as pd
 
-from apero_tests import Test, CalibTest
+from .apero_tests import Test, CalibTest
 import apero_tests_func as atf
 
 
@@ -112,175 +112,113 @@ class BadPixTest(CalibTest):
         print(self.name)
         # output list
 
-        # inspect all reduced_nights and other/log.fits
-
-        # tot_recipe_num_logfits = 0       # check1
-        # master_recipe_num_logfits = 0    # check1
-        # num_logfits_QCfalse = 0          # check4
-        # num_logfits_ENDEDfalse = 0       # check5
-
-        # nights_logfits_QCfalse = []      # check4
-        # QCstr_logfits_QCfalse = []       # check4
-
-        # nights_logfits_ENDEDfalse = []   # check5
-        # ERRORS_logfits_ENDEDfalse = []   # check5
-        # LOGFILE_logfits_ENDEDfalse = []  # check5
-
-        # output1 = []
-        # output2 = []
-
-        # night_output1_missing = []
-        # output1_missing = []
-        # night_output2_missing = []
-        # output2_missing = []
-
-        # night_output1_dup = []
-        # output1_dup = []
-        # night_output2_dup = []
-        # output2_dup = []
-
-
-        # Total number of log entries for this recipe
+        # Total number of log entries for this recipe, and per night
         night_recipe_num_logfits = self.log_df.groupby('DIRECTORY').size()
         tot_recipe_num_logfits = self.log_df.shape[0]  # Check 1
+        log_recipe_num = self.log_df.groupby('DIRECTORY').size()
 
         # Number of outputs for each night for each output pattern
-        output_files_num = output_files.groupby(['output', 'night']).size()
+        output_files_num = self.output_files.groupby(['output', 'night']).size()
 
-        # NOTE: when filtering nights in log df end up with some nights removed
-        # (if only one run)
-        # Might be ok but keep in mind. Will yield nans in pandas comparisons
-        # or broadcasts at least
+        # Align count from log and output (duplicate log on patterns and add
+        # missing nights with 0)
+        log_num_align, output_num_align = log_recipe_num.align(output_files_num,
+                                                               fill_value=0)
+        # Filling might switch to float
+        log_align = log_align.astype(int)
+        output_align = output_align.astype(int)
 
-# =====================================================================
-        # LOOP NIGHTS: Gather all outputs in reduced night dirs
-        # =====================================================================
-        for i in range(len(reduced_nights)):
+        # Check for missing output (present in log), index with output pattern
+        # NOTE: this might leave empty series or no outputs for some outputs
+        # Could raise KeyError later
+        output_missing = (log_num_align > 0) & (output_num_align == 0)
+        output_missing = output_missing[output_missing].reset_index('DIRECTORY')
 
-            # # Get files {ODO}*outputpattern in directory
-            # output1_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
-            #                                     reduced_nights[i]),
-            #                                     files=output_list[0][1:])
-            # output2_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
-            #                                     reduced_nights[i]),
-            #                                     files=output_list[1][1:])
+        # Checking duplicates
+        output_dup_mask = log_num_align > output_num_align
+        if output_dup_mask.any():
 
-            # output1.extend(output1_list_files)
-            # output2.extend(output2_list_files)
+            output_dup_ind = output_dup_mask[output_dup_mask]
+            output_dup_ind = output_dup_ind.index .get_level_values(
+                                                                'DIRECTORY'
+                                                                ).unique()
+            # Check if '--master' in runstring
+            master_mask = self.log_df.loc[output_dup_ind,
+                                          'RUNSTRING'
+                                          ].str.contains('--master')
+            master_nights = master_mask[master_mask].index.values
+            master_recipe_num_logfits = master_nights.size
+            if master_recipe_num_logfits:
+                comments_check1 = ('An additional {0} recipe with '
+                        '--master=True was called in the master '
+                        'directory {1}.'.format(master_recipe_num_logfits,
+                                                master_nights)
+                        )
 
-            # =================================================================
-            # Load logfits info per night
-            # =================================================================
-            # inspect log.fits if the file exists
-            # Check that log fits exists and do some checks
-            if os.path.isfile('{0}/{1}/log.fits'.format(reduced_path,
-                              reduced_nights[i])
-                              ):
-                logfits = atf.log_fits('{0}/{1}/log.fits'.format(reduced_path,
-                                                                 reduced_nights[i])
-                                       )
+            # Check for non-master duplicates for each pattern
+            # NOTE: This replaces [night_]output{N}_dup and
+            master_mask_group = master_mask.astype(int).groupby('DIRECTORY')
+            master_num_night = master_mask_group.sum()
+            dup_num_night = master_mask_group.size()
+            dup_not_master = dup_num_night - master_num_night
+            log_dup_align, output_dup_align = dup_not_master.align(
+                                                output_align[output_dup_mask]
+                                                )
+            true_dup = log_dup_align - output_dup_align  # number of dups
+            true_dup = true_dup[true_dup > 0]  # Keep only non-zero
 
-                # checking for missing output
-                # For each output make sure not 0 while log has > 0
-                # Flag nights where missing and also patterns
-                if sum(index_recipe) > 0 and len(output1_list_files) == 0:
-                    night_output1_missing.append(reduced_nights[i])
-                    output1_missing.append(output_list[0])
-                if sum(index_recipe) > 0 and len(output2_list_files) == 0:
-                    night_output2_missing.append(reduced_nights[i])
-                    output2_missing.append(output_list[1])
+        # Check passed QC and ENDED, can then access easily later
+        # NOTE: both are empty if all when well
+        log_qc_failed = self.log_df[~self.log_df.PASSED_ALL_QC]
+        log_ended_false = self.log_df[~self.log_df.ENDED]
+        num_logfits_qc_failed = log_qc_failed.size
+        num_logfits_ended_false = log_ended_false.size
 
-                # checking for duplicates
-                # For each output check if length smaller than number in log
-                if sum(index_recipe) > len(output1_list_files):
-
-                    # checking if it is the master directory
-                    # Check number of extra recipes in master sequence
-                    # and save in comment
-                    for j in range(sum(index_recipe)):
-                        if '--master=True' in logfits.runstr[index_recipe][j]:
-                            master_recipe_num_logfits += 1
-                            comments_check1 = ('An additional {0} recipe with '
-                                    '--master=True was called in the master '
-                                    'directory {1}.'.format(master_recipe_num_logfits,
-                                    reduced_nights[i]))
-                    
-                    non_dup_num = sum(index_recipe) - master_recipe_num_logfits
-
-                    # For each input  save duplicate nights and outputs
-                    if non_dup_num == len(output1_list_files):
-                        pass
-                    else:
-                        night_output1_dup.append(reduced_nights[i])
-                        output1_dup.append(output_list[0])
-                    if non_dup_num == len(output2_list_files):
-                        pass
-                    else:
-                        night_output2_dup.append(reduced_nights[i])
-                        output2_dup.append(output_list[1])
-
-                # When recipe is the one we want, check if QC and ended are
-                # false
-                indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe)  # QC false + correct recipe
-                indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe)  # ENDED false + correct recipe
-
-                num_logfits_QCfalse += sum(indexQCfalse)        # check4
-                num_logfits_ENDEDfalse += sum(indexENDEDfalse)  # check5
-
-                # Check 4
-                # Store nights and Str where QC failed
-                nights_logfits_QCfalse.extend(logfits.nights[indexQCfalse])
-                QCstr_logfits_QCfalse.extend(logfits.QCstr[indexQCfalse])
-
-                # Check 5
-                # Store nights and Str where not ended
-                nights_logfits_ENDEDfalse.extend(logfits.nights[indexENDEDfalse])
-                ERRORS_logfits_ENDEDfalse.extend(logfits.ERRORS[indexENDEDfalse])
-                LOGFILE_logfits_ENDEDfalse.extend(logfits.LOGFILE[indexENDEDfalse])
-
-        # =====================================================================
-        # NIGHT LOOP OVER
-        # =====================================================================
 
         # Get number of files in:
-        # - logfits (minus master number)
-        # - Number of output (all and unique) for each pattern
-        recipe_num_logfits = tot_recipe_num_logfits-master_recipe_num_logfits  # check1
-        output1_num = len(output1)                    # check2
-        output1_num_unique = len(np.unique(output1))  # check3
-        output2_num = len(output2)                    # check2
-        output2_num_unique = len(np.unique(output2))  # check3
+        # - logfits (minus master number), check 1
+        # - Number of output (all and unique) for each pattern, check 2 and 3
+        recipe_num_logfits = tot_recipe_num_logfits - master_recipe_num_logfits
+        output_num_all = self.output_files.groupby('PATTERN').size()
+        output_base = self.output_files.apply(os.path.basename)
+        output_num_unique = output_base.groupby('PATTERN').nunique()
 
         # check4
         # Report how many and which QC failed
-        if num_logfits_QCfalse == 0:
+        if num_logfits_qc_failed == 0:
             comments_check4 = ''
             inspect_check4 = ''
         else:
             comments_check4 = 'One or more recipe have failed QC.'
-            data_dict_check4 = {'Night': nights_logfits_QCfalse,
-                                'QC_STRING': QCstr_logfits_QCfalse,
+            data_dict_check4 = {
+                    'Night': log_qc_failed.reset_index().DIRECTORY.tolist,
+                    'QC_STRING': log_qc_failed.QC_STRING,
                                 }
-            inspect_check4 = atf.inspect_table('badpixel_test1',
-                                               'check4',
-                                               data_dict_check4,
-                                               'Nights that Failed Quality Control')
+            inspect_check4 = atf.inspect_table(
+                    'badpixel_test1',
+                    'check4',
+                    data_dict_check4,
+                    'Nights that Failed Quality Control'
+                    )
 
         # check5
         # Report how many and which did not end
-        if num_logfits_ENDEDfalse == 0:
+        if num_logfits_ended_false == 0:
             comments_check5 = ''
             inspect_check5 = ''
         else:
             comments_check5 = 'One or more recipe have failed to finish.'
-            data_dict_check5 = {'Night': nights_logfits_ENDEDfalse,
-                                'ERRORS': ERRORS_logfits_ENDEDfalse,
-                                'LOGFILE': LOGFILE_logfits_ENDEDfalse,
+            data_dict_check5 = {
+                    'Night': log_ended_false.reset_index().DIRECTORY.tolist,
+                    'ERRORS': log_ended_false.ERRORS,
+                    'LOGFILE': log_ended_false.LOGFILE,
                                 }
-            inspect_check5 = atf.inspect_table('badpixel_test1',
-                                               'check5',
-                                               data_dict_check5,
-                                               'Nights that Failed to Finish')
+            inspect_check5 = atf.inspect_table(
+                    'badpixel_test1',
+                    'check5',
+                    data_dict_check5,
+                    'Nights that Failed to Finish'
+                    )
 
 
         # =====================================================================
@@ -303,40 +241,49 @@ class BadPixTest(CalibTest):
             if len(output1_missing) > 0 or len(output2_missing) > 0:
 
                 comment_stop1 = 'One or more output were not produced.'
-                data_dict_stop1 = {'Night': np.concatenate((night_output1_missing,
-                                                            night_output2_missing)),
-                                   'File name': np.concatenate((output1_missing,
-                                                                output2_missing)),
-                                   }
-                inspect_stop1 = atf.inspect_table('badpixel_test1',
-                                                  'stop1',
-                                                  data_dict_stop1,
-                                                  'Missing Outputs in {0}'.format(
-                                                      reduced_path)
-                                                  )
-            # if duplicates
-            else:
-                comment_stop1 = ('Recipe called multiple times producing the same '
-                                 'outputs.')
-                data_dict_stop1 = {'Night': np.concatenate((night_output1_dup,
-                                                            night_output2_dup)),
-                                   'File name': np.concatenate((output1_dup,
-                                                                output2_dup)),
+                data_dict_stop1 = {
+                        'Night': np.concatenate((night_output1_missing,
+                                                 night_output2_missing)
+                                                ),
+                        'File name': np.concatenate((output1_missing,
+                                                     output2_missing)
+                                                    ),
                                    }
                 inspect_stop1 = atf.inspect_table(
                         'badpixel_test1',
                         'stop1',
                         data_dict_stop1,
-                        ('Same Bad Pixel Correction Recipe Called Twice or More '
-                         'Producing the Same Outputs in {0}'
-                         ).format(reduced_path)
+                        'Missing Outputs in {0}'.format(reduced_path)
+                        )
+            # if duplicates
+            else:
+                comment_stop1 = ('Recipe called multiple times producing the '
+                                 'same outputs.')
+                data_dict_stop1 = {
+                        'Night': np.concatenate((night_output1_dup,
+                                                 night_output2_dup)
+                                                ),
+                        'File name': np.concatenate((output1_dup,
+                                                     output2_dup)
+                                                    ),
+                                   }
+
+                inspect_msg = ('Same Bad Pixel Correction Recipe Called Twice '
+                               'or More Producing the Same Outputs in {0}'
+                               ).format(reduced_path)
+                inspect_stop1 = atf.inspect_table(
+                        'badpixel_test1',
+                        'stop1',
+                        data_dict_stop1,
+                        inspect_msg
                         )
 
         else:
             color_stop1 = 'Red'
             result_stop1 = 'No'
-            comment_stop1 = ('The number of unique output files should always be '
-                             'smaller or equal to the number of recipe called.')
+            comment_stop1 = ('The number of unique output files should always '
+                             'be smaller or equal to the number of recipe '
+                             'called.')
             inspect_stop1 = ''
 
         # =====================================================================
@@ -377,7 +324,7 @@ class BadPixTest(CalibTest):
         output2_num_entry = tot_output2_num_entry - master_output2_num_entry
         output2_calibDB = atf.list_files("{0}".format(calibDB_path),
                                          files=output_list[1][1:])
-        output2_num_calibDB = len(output2_calibDB)  # check7 
+        output2_num_calibDB = len(output2_calibDB)  # check7
         comments_check6 = ('An additional {0} {1} and {2} {3} with master = 1 '
                            'are in the master_calibDB_{4}.'.format(
                                master_output1_num_entry,
@@ -391,7 +338,7 @@ class BadPixTest(CalibTest):
         # i.e. check if files from txt file are missing in db
         output1_missing_calibDB = []
         output2_missing_calibDB = []
-        if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1]) 
+        if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1])
                 or sum(np.in1d(file_col[index_key_output2], output2_calibDB)) < len(file_col[index_key_output2])):
 
             index_output1_missing = ~np.in1d(
@@ -590,14 +537,14 @@ class BadPixTest(CalibTest):
           <tr>
             <td>4</td>
             <td># of entry in {reduced_path}/log.fits that failed one or more QC</td>
-            <td>{num_logfits_QCfalse}</td>
+            <td>{num_logfits_qc_failed}</td>
             <td>{comments_check4}</td>
             <td></td>
           </tr>
           <tr>
             <td>5</td>
             <td># of entry in {reduced_path}/log.fits that failed to finish</td>
-            <td>{num_logfits_ENDEDfalse}</td>
+            <td>{num_logfits_ended_false}</td>
             <td>{comments_check5}</td>
             <td></td>
           </tr>

@@ -158,13 +158,15 @@ class LocTest(Test):
                     night_output4_missing.append(reduced_nights[i])
                     output4_missing.append(output_list[3])
 
-                # checking for duplicates
+                # checking for duplicates (ONE NIGHT both)
                 if sum(index_recipe) > len(output1_list_files):
 
                     # checking if it is the master directory
+                    # Loop over log rows with this recipe (ONE NIGHT)
+                    master_recipe_num_logfits_night = 0
                     for j in range(sum(index_recipe)):
                         if '--master=True' in logfits.runstr[index_recipe][j]:
-                            master_recipe_num_logfits += 1
+                            master_recipe_num_logfits_night += 1
                             comments_check1 = (
                                     'An additional {0} recipes with '
                                     '--master=True were called in the master '
@@ -172,6 +174,7 @@ class LocTest(Test):
                                                             reduced_nights[i])
                                     )
 
+                    master_recipe_num_logfits += master_recipe_num_logfits_night
                     non_dup_num = sum(index_recipe) - master_recipe_num_logfits
 
                     if non_dup_num == len(output1_list_files):

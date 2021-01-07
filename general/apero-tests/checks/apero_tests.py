@@ -196,12 +196,12 @@ class CalibTest(Test):
 
         inds = pd.MultiIndex.from_product(  # multi-index output and night
                 [self.output_list, self.reduced_nights],
-                names=['output', 'night'],
+                names=['PATTERN', 'DIRECTORY'],
                 )
         sep = os.path.sep
         paths = pd.Series(self.reduced_path  # Series of path per night+output
-                          + sep + inds.get_level_values('night')
-                          + sep + inds.get_level_values('output'),
+                          + sep + inds.get_level_values('PATTERN')
+                          + sep + inds.get_level_values('DIRECTORY'),
                           index=inds
                           )
         files = paths.apply(glob.glob)  # Get file list for each pattern
@@ -212,10 +212,8 @@ class CalibTest(Test):
     def _gen_log_df(self):
         """_gen_log_df.
 
-        Generate a dataframe with log for each directory, with two index
-        levels:
-            - DIRECTORY
-            - RECIPE
+        Generate a dataframe with log for each directory, with DIRECTORY as
+        index. Only logs of the recipe being tested are kept.
         """
         # Get all logs in a dataframe
         allpaths = [os.path.join(self.reduced_path, ld, 'log.fits')
