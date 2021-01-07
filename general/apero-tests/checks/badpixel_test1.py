@@ -25,6 +25,7 @@ Tests preformed
 import os
 from typing import List, Optional, Union
 
+import glob
 import numpy as np
 import pandas as pd
 
@@ -56,7 +57,7 @@ class BadPixTest(CalibTest):
         self._output_list = ['*_pp_badpixel.fits', '*_pp_bmap.fits']
 
         # calibDB entries list
-        self._calbidb_list = ['BADPIX', 'BKGRDMAP']
+        self._calibdb_list = ['BADPIX', 'BKGRDMAP']
         # private pd.Series of output files
         self._output_files = self._gen_output_files()
 
@@ -221,9 +222,7 @@ class BadPixTest(CalibTest):
                     )
 
 
-        # =====================================================================
-        # stop1: Example stop here
-        # =====================================================================
+        # TODO: This check
         # Check if number of unique outputs equals number in logs
         if (output1_num_unique == recipe_num_logfits
                 and output2_num_unique == recipe_num_logfits):
@@ -289,114 +288,93 @@ class BadPixTest(CalibTest):
         # =====================================================================
         # Inspect calibDB
         # =====================================================================
-        # TODO
-        # Load numpy array from text file, rmoving '# DRS processed' and above
-        # Can load in pandas dataframe to stay consistent
-        # Can also keep only relevant entries and structure per-entry for tests
-        f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
+        # Read master_calib_{instument}.txt
+        master_calib_path = os.path.join(  # Full path: dir and file
+                                self.calibdb_path,
+                                'master_calib {}.txt'.format(self.instrument)
+                                )
+        f = open(master_calib_path, "r")
         master_calib_txt = f.read()
+
+        # Find where DRS processed starts
         nprocessed = master_calib_txt.index('# DRS processed')
         index_start = master_calib_txt[:nprocessed].count('\n')
-        key_col, master_col, night_col, file_col = np.genfromtxt(
-                "{0}/master_calib_{1}.txt".format(calibDB_path, instrument),
+
+        # Load dataframe and keep only badpix entries
+        master_calib_df = pd.read_csv(
+                master_calib_path,
+                header=index_start-1,  # Keep first entry with -1
                 delimiter=' ',
-                unpack=True,
-                usecols=(0, 1, 2, 3),
-                skip_header=index_start,
-                dtype=str)
-        master_col = master_col.astype(dtype = bool)  # str to bool
+                usecols=[0, 1, 2, 3],
+                names=['KEY', 'MASTER', 'NIGHT', 'FILE'],
+                index_col=0,  # Use KEY as index
+                )
+        master_calib_df.MASTER = master_calib_df.MASTER.astype(bool)
+        master_calib_df = master_calib_df.loc[self.calibdb_list]
 
-        # Check if key matches one of our entries
-        index_key_output1 = key_col == calibDB_entry_list[0]
-        index_key_output2 = key_col == calibDB_entry_list[1]
+        # Get total number of entries and of files per output in calibd
+        tot_num_entry = master_calib_df.groupby('KEY').size()  # check 6
+        master_calib_mask = master_calib_df.MASTER
+        master_calib_group = master_calib_df[master_calib_mask].groupby('KEY')
+        master_num_entry = master_calib_group.size()
+        output_num_entry = tot_num_entry - master_num_entry
+        out_patterns = pd.Series(self.output_list)
+        sep = os.path.sep
+        calib_ind = pd.Index(self.calibdb_list, name='KEY')
+        output_calib_paths = pd.Series(self.calibdb_path + sep + out_patterns,
+                                       index=calib_ind
+                                       )
+        output_calibdb = output_calib_paths.apply(glob.glob).explode()
+        output_num_calibdb = output_calibdb.groupby('KEY').size()  # check 7
 
-        # Get total number of entries and of files for output 1 in calibd
-        tot_output1_num_entry = len(key_col[index_key_output1])  # check6
-        master_output1_num_entry = np.sum(master_col[index_key_output1])
-        output1_num_entry = tot_output1_num_entry - master_output1_num_entry
-        output1_calibDB = atf.list_files("{0}".format(calibDB_path),
-                                         files=output_list[0][1:])
-        output1_num_calibDB = len(output1_calibDB)  # check7
-
-        # Get total number of entries and of files for output 2 in calibd
-        tot_output2_num_entry = len(key_col[index_key_output2])  # check6
-        master_output2_num_entry = np.sum(master_col[index_key_output2])
-        output2_num_entry = tot_output2_num_entry - master_output2_num_entry
-        output2_calibDB = atf.list_files("{0}".format(calibDB_path),
-                                         files=output_list[1][1:])
-        output2_num_calibDB = len(output2_calibDB)  # check7
+        # Generate comment on extra master entries
         comments_check6 = ('An additional {0} {1} and {2} {3} with master = 1 '
                            'are in the master_calibDB_{4}.'.format(
-                               master_output1_num_entry,
-                               calibDB_entry_list[0],
-                               master_output2_num_entry,
-                               calibDB_entry_list[1], instrument)
+                               master_num_entry[self.calibdb_list[0]],
+                               self._calibdb_list[0],
+                               master_num_entry[self.calibdb_list[1]],
+                               self._calibdb_list[1],
+                               self.instrument)
                            )
 
 
-        # checking for missing output
-        # i.e. check if files from txt file are missing in db
-        output1_missing_calibDB = []
-        output2_missing_calibDB = []
-        if (sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1])
-                or sum(np.in1d(file_col[index_key_output2], output2_calibDB)) < len(file_col[index_key_output2])):
+        # Checking for missing output for any pattern
+        # i.e. files in db entries but not output
+        output_calibdb_nopath = output_calibdb.apply(os.path.basename)
+        missing_mask = ~master_calib_df.FILE.isin(output_calibdb_nopath)
+        if missing_mask.any():
 
-            index_output1_missing = ~np.in1d(
-                    file_col[index_key_output1],
-                    output1_calibDB)
-            index_output2_missing = ~np.in1d(
-                    file_col[index_key_output2],
-                    output2_calibDB)
+            # NOTE: replaces {night,day}_output{1,2}_missing
+            missing_calibdb_output = master_calib_df[missing_mask]
 
-            night_output1_missing_calibDB = night_col[index_key_output1][index_output1_missing]
-            output1_missing_calibDB = file_col[index_key_output1][index_output1_missing]
-            night_output2_missing_calibDB = night_col[index_key_output2][index_output2_missing]
-            output2_missing_calibDB = file_col[index_key_output2][index_output2_missing]
-
-
-        # checking for duplicates
         # Check if some files have duplicaltes in db
-        if (len(output1_calibDB) < output1_num_entry
-                or len(output2_calibDB) < output2_num_entry):
+        if (output_num_calibdb < output_num_entry).any():
 
-            file_col_output1_unique, index_output1_dup, return_counts_output1 = np.unique(
-                         file_col[index_key_output1][~master_col[index_key_output1]],
-                         return_index=True,
-                         return_counts=True
-                         )
-            file_col_output2_unique, index_output2_dup, return_counts_output2 = np.unique(
-                         file_col[index_key_output2][~master_col[index_key_output2]],
-                         return_index=True,
-                         return_counts=True
-                         )
+            # Get all duplicates
+            calib_dup_mask = master_calib_df.duplicate(keep=False)
+            master_calib_dup = master_calib_df[calib_dup_mask]
+            master_calib_dup = master_calib_dup.set_index('FILE', append=True)
+            master_calib_dup['COUNT'] = master_calib_dup.groupby(
+                                                            ['KEY', 'FILE']
+                                                            ).size()
+            master_calib_dup = master_calib_dup.reset_index('FILE')
+            master_calib_dup = master_calib_dup.drop_duplicates()
 
-            count_mask1 = return_counts_output1 > 1
-            count_mask2 = return_counts_output2 > 1
-
-            night_output1_dup_calibDB = night_col[index_key_output1][~master_col
-                    [index_key_output1]][index_output1_dup][count_mask1]
-            output1_dup_calibDB = file_col_output1_unique[count_mask1]
-            night_output2_dup_calibDB = night_col[index_key_output2][~master_col
-                    [index_key_output2]][index_output2_dup][count_mask2]
-            output2_dup_calibDB = file_col_output2_unique[count_mask2]
-
-
+        # TODO: This stop
         # stop2
-        if (output1_num_calibDB == output1_num_entry
-                and output2_num_calibDB == output2_num_entry):
+        if (output_num_calibdb == output_num_entry).all():
             color_stop2 = 'Lime'
             result_stop2 = 'Yes'
             comment_stop2 = ''
             inspect_stop2 = ''
 
-        elif (output1_num_calibDB < output1_num_entry
-                or output2_num_calibDB < output2_num_entry):
+        elif (output_num_calibdb < output_num_entry).any():
 
             color_stop2 = 'Yellow'
             result_stop2 = 'No'
 
             # if missing output
-            if len(output1_missing_calibDB) > 0 or len(output2_missing_calibDB) > 0:
+            if missing_mask.any():
 
                 comment_stop2 = 'One or more outputs are not in the calibDB.'
                 data_dict_stop2 = {'Night': np.concatenate(
