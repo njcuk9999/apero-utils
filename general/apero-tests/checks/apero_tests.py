@@ -7,7 +7,7 @@ import os
 import glob
 from datetime import datetime
 from abc import ABC, abstractmethod
-from typing import Optional, Union, List
+from typing import Optional, Union, List, Tuple
 
 import pandas as pd
 from astropy.io import fits
@@ -184,25 +184,38 @@ class CalibTest(Test):
     def recipe(self) -> str:
         """Name of the reof the recipe"""
 
-    def _gen_output_files(self) -> pd.Series:
+    def _gen_output_files(
+                        self,
+                        fibers: Optional[Union[List[str],str]] = None,
+                        ) -> pd.Series:
         """Get output files
         Organize output files by output type and night using two indexing
         levels in pandas
+
+        :param fibers: Fiber name(s) (str or list) to iterate files over
+        :type fibers: Optional[Union[list,str]]
 
         :return: Output series of all output files. Each file has two indices
                  (output pattern, night date)
         :rtype: pd.Series
         """
 
-        def fiberglob(pattern: str) -> list:
-            """List equivalent of glob but iterrating over two fibers
+        # NOTE: Maybe move this to a utils module
+        def fiberglob(pattern: str,
+                      fibers: Union[List[str], Tuple[str]] = ('AB', 'C'),
+                      ) -> list:
+            """Equivalent of glob but iterating over multiple fibers
 
             :param pattern:
             :type pattern: str
+            :param fibers:
+            :type fibers: Union[List[str], Tuple[str]]
 
+            :returns: Nested list of glob outputs (one per fiber).
             :rtype: list
             """
-            return [glob.glob(pattern.format(FIBER=f)) for f in ['AB', 'C']]
+
+            return [glob.glob(pattern.format(FIBER=f)) for f in fibers]
 
         inds = pd.MultiIndex.from_product(  # multi-index output and night
                 [self.output_list, self.reduced_nights],
@@ -214,8 +227,15 @@ class CalibTest(Test):
                           + sep + inds.get_level_values('DIRECTORY'),
                           index=inds
                           )
-        files = paths.apply(glob.glob)  # Get file list for each pattern
-        files = files.explode()         # Pop lists in individual cells
+
+        # Expand patterns
+        if fibers is None:
+            files = paths.apply(glob.glob)  # Get file list for each pattern
+            files = files.explode()         # Pop lists in individual cells
+        else:
+            files = paths.apply(fiberglob, fibers=fibers)
+            for _ in fibers:
+                files = files.explode()  # Nested lists so explode Nfiber times
 
         return files
 
