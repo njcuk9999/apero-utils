@@ -65,44 +65,6 @@ class LocTest(Test):
         # calibDB entries list
         calibDB_entry_list = ['ORDER_PROFILE_{FIBER}', 'LOC_{FIBER}']
 
-        # inspect all reduced_nights log.fits
-        tot_recipe_num_logfits = 0       # check1
-        master_recipe_num_logfits = 0    # check1
-        num_logfits_QCfalse = 0          # check4
-        num_logfits_ENDEDfalse = 0       # check5
-
-        nights_logfits_QCfalse = []      # check4
-        QCstr_logfits_QCfalse = []       # check4
-
-        nights_logfits_ENDEDfalse = []   # check5
-        ERRORS_logfits_ENDEDfalse = []   # check5
-        LOGFILE_logfits_ENDEDfalse = []  # check5
-
-        output1 = []
-        output2 = []
-        output3 = []
-        output4 = []
-
-        night_output1_missing = []
-        output1_missing = []
-        night_output2_missing = []
-        output2_missing = []
-        night_output3_missing = []
-        output3_missing = []
-        night_output4_missing = []
-        output4_missing = []
-
-        night_output1_dup = []
-        output1_dup = []
-        night_output2_dup = []
-        output2_dup = []
-        night_output3_dup = []
-        output3_dup = []
-        night_output4_dup = []
-        output4_dup = []
-
-        missing_logfits = []
-
         for i in range(len(reduced_nights)):
 
             output1_list_files = atf.list_files(

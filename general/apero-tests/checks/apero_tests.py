@@ -194,6 +194,16 @@ class CalibTest(Test):
         :rtype: pd.Series
         """
 
+        def fiberglob(pattern: str) -> list:
+            """List equivalent of glob but iterrating over two fibers
+
+            :param pattern:
+            :type pattern: str
+
+            :rtype: list
+            """
+            return [glob.glob(pattern.format(FIBER=f)) for f in ['AB', 'C']]
+
         inds = pd.MultiIndex.from_product(  # multi-index output and night
                 [self.output_list, self.reduced_nights],
                 names=['PATTERN', 'DIRECTORY'],
@@ -222,10 +232,11 @@ class CalibTest(Test):
         dfs = [pd.DataFrame(fits.getdata(f)) for f in paths]
         log_df = pd.concat(dfs).set_index(['DIRECTORY'])
         log_df = log_df.loc[log_df.RECIPE == self.recipe]
-        self._log_df = log_df
 
         # Store missing logs in another list
-        self._missing_logs = [p for p in allpaths if not os.path.isfile(p)]
+        missing_logs = [p for p in allpaths if not os.path.isfile(p)]
+
+        return log_df, missing_logs
 
     def do_stop(self):
         """Do stop comparison for two inputs"""

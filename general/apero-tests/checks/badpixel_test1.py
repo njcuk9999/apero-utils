@@ -64,7 +64,7 @@ class BadPixTest(CalibTest):
         self._recipe = 'cal_badpix_{}'.format(self.instrument.lower())
 
         # Handle logs (this creates log_df and missing_logfits properties)
-        self._gen_log_df()
+        self._log_df, self._missing_logs = self._gen_log_df()
 
     @property
     def name(self):
@@ -119,21 +119,20 @@ class BadPixTest(CalibTest):
         log_recipe_num = self.log_df.groupby('DIRECTORY').size()
 
         # Number of outputs for each night for each output pattern
-        output_files_num = self.output_files.groupby(['output', 'night']).size()
+        ind_name = ['PATTERN', 'DIRECTORY']
+        output_files_num = self.output_files.groupby(ind_name).size()
 
         # Align count from log and output (duplicate log on patterns and add
         # missing nights with 0)
         log_num_align, output_num_align = log_recipe_num.align(output_files_num,
                                                                fill_value=0)
         # Filling might switch to float
-        log_align = log_align.astype(int)
-        output_align = output_align.astype(int)
+        log_num_align = log_num_align.astype(int)
+        output_num_align = output_num_align.astype(int)
 
-        # Check for missing output (present in log), index with output pattern
-        # NOTE: this might leave empty series or no outputs for some outputs
-        # Could raise KeyError later
-        output_missing = (log_num_align > 0) & (output_num_align == 0)
-        output_missing = output_missing[output_missing].reset_index('DIRECTORY')
+        out_missing_mask = (log_num_align > 0) & (output_num_align == 0)
+        output_missing = output_num_align.index.to_frame()[out_missing_mask]
+        output_missing = output_missing.reset_index(drop=True)
 
         # Checking duplicates
         output_dup_mask = log_num_align > output_num_align
@@ -149,7 +148,7 @@ class BadPixTest(CalibTest):
                                           ].str.contains('--master')
             master_nights = master_mask[master_mask].index.values
             master_recipe_num_logfits = master_nights.size
-            if master_recipe_num_logfits:
+            if master_recipe_num_logfits > 0:
                 comments_check1 = ('An additional {0} recipe with '
                         '--master=True was called in the master '
                         'directory {1}.'.format(master_recipe_num_logfits,
@@ -163,10 +162,12 @@ class BadPixTest(CalibTest):
             dup_num_night = master_mask_group.size()
             dup_not_master = dup_num_night - master_num_night
             log_dup_align, output_dup_align = dup_not_master.align(
-                                                output_align[output_dup_mask]
-                                                )
+                                            output_num_align[output_dup_mask]
+                                            )
             true_dup = log_dup_align - output_dup_align  # number of dups
             true_dup = true_dup[true_dup > 0]  # Keep only non-zero
+            true_dup.name = 'COUNT'
+            trued_dup = true_dup.reset_index()
 
         # Check passed QC and ENDED, can then access easily later
         # NOTE: both are empty if all when well
@@ -222,31 +223,26 @@ class BadPixTest(CalibTest):
                     )
 
 
-        # TODO: This check
         # Check if number of unique outputs equals number in logs
-        if (output1_num_unique == recipe_num_logfits
-                and output2_num_unique == recipe_num_logfits):
+        if (output_num_unique == recipe_num_logfits).all():
             color_stop1 = 'Lime'
             result_stop1 = 'Yes'
             comment_stop1 = ''
             inspect_stop1 = ''
-        elif (output1_num_unique < recipe_num_logfits
-                or output2_num_unique < recipe_num_logfits):
+        elif (output_num_unique < recipe_num_logfits).any():
 
             color_stop1 = 'Yellow'
             result_stop1 = 'No'
 
             # if missing output
-            if len(output1_missing) > 0 or len(output2_missing) > 0:
+            # NOTE: could there be both missing output and duplicate?
+            if output_missing.shape[0] > 0:
 
                 comment_stop1 = 'One or more output were not produced.'
+                # NOTE: might need arrays instead of list
                 data_dict_stop1 = {
-                        'Night': np.concatenate((night_output1_missing,
-                                                 night_output2_missing)
-                                                ),
-                        'File name': np.concatenate((output1_missing,
-                                                     output2_missing)
-                                                    ),
+                        'Night': output.DIRECTORY.tolist(),
+                        'File name': output.PATTERN.tolist(),
                                    }
                 inspect_stop1 = atf.inspect_table(
                         'badpixel_test1',
@@ -259,12 +255,9 @@ class BadPixTest(CalibTest):
                 comment_stop1 = ('Recipe called multiple times producing the '
                                  'same outputs.')
                 data_dict_stop1 = {
-                        'Night': np.concatenate((night_output1_dup,
-                                                 night_output2_dup)
-                                                ),
-                        'File name': np.concatenate((output1_dup,
-                                                     output2_dup)
-                                                    ),
+                        'Night': true_dup.DIRECTORY.tolist(),
+                        'File name': true_dup.PATTERN.tolist(),
+                        'Occurrence': true_dup.COUNT.tolist(),
                                    }
 
                 inspect_msg = ('Same Bad Pixel Correction Recipe Called Twice '
@@ -341,26 +334,25 @@ class BadPixTest(CalibTest):
         # Checking for missing output for any pattern
         # i.e. files in db entries but not output
         output_calibdb_nopath = output_calibdb.apply(os.path.basename)
-        missing_mask = ~master_calib_df.FILE.isin(output_calibdb_nopath)
-        if missing_mask.any():
+        calib_missing_mask = ~master_calib_df.FILE.isin(output_calibdb_nopath)
+        if calib_missing_mask.any():
 
             # NOTE: replaces {night,day}_output{1,2}_missing
-            missing_calibdb_output = master_calib_df[missing_mask]
+            missing_calibdb_output = master_calib_df[calib_missing_mask]
 
         # Check if some files have duplicaltes in db
         if (output_num_calibdb < output_num_entry).any():
 
             # Get all duplicates
-            calib_dup_mask = master_calib_df.duplicate(keep=False)
-            master_calib_dup = master_calib_df[calib_dup_mask]
-            master_calib_dup = master_calib_dup.set_index('FILE', append=True)
-            master_calib_dup['COUNT'] = master_calib_dup.groupby(
-                                                            ['KEY', 'FILE']
-                                                            ).size()
-            master_calib_dup = master_calib_dup.reset_index('FILE')
-            master_calib_dup = master_calib_dup.drop_duplicates()
+            calib_dup_mask = master_calib_df.duplicated(keep=False)
+            master_mask = master_calib_df.MASTER
+            calib_dup = master_calib_df[calib_dup_mask & ~master_mask]
+            calib_dup = calib_dup.set_index('FILE', append=True)
+            ind_names = calib_dup.index.names  # get file and key to count
+            calib_dup['COUNT'] = calib_dup.groupby(ind_names).size()
+            calib_dup = calib_dup.reset_index('FILE')
+            calib_dup = calib_dup.drop_duplicates()
 
-        # TODO: This stop
         # stop2
         if (output_num_calibdb == output_num_entry).all():
             color_stop2 = 'Lime'
@@ -374,52 +366,43 @@ class BadPixTest(CalibTest):
             result_stop2 = 'No'
 
             # if missing output
-            if missing_mask.any():
+            # NOTE: Could we have both missing and dup?
+            if calib_missing_mask.any():
 
                 comment_stop2 = 'One or more outputs are not in the calibDB.'
-                data_dict_stop2 = {'Night': np.concatenate(
-                                                (night_output1_missing_calibDB,
-                                                 night_output2_missing_calibDB)
-                                                ),
-                                   'File name': np.concatenate(
-                                                (output1_missing_calibDB,
-                                                 output2_missing_calibDB)
-                                                ),
+                data_dict_stop2 = {
+                        'Night': missing_calibdb_output.NIGHT.tolist(),
+                        'File name': missing_calibdb_output.FILE.tolist(),
                                    }
-                inspect_stop2 = atf.inspect_table('badpixel_test1',
-                                                  'stop2',
-                                                  data_dict_stop2,
-                                                  'Missing Output in {0}'.format(
-                                                      calibDB_path)
-                                                  )
+                inspect_stop2 = atf.inspect_table(
+                                'badpixel_test1',
+                                'stop2',
+                                data_dict_stop2,
+                                'Missing Output in {0}'.format(calibDB_path)
+                                )
             # if duplicates
             else:
 
                 comment_stop2 = ('Some entries in master_calib_{0}.txt are '
-                                 'identical.').format(instrument)
-                data_dict_stop2 = {'Night': np.concatenate((night_output1_dup_calibDB,
-                                                            night_output2_dup_calibDB)
-                                                           ),
-                                   'File name': np.concatenate((output1_dup_calibDB,
-                                                                output2_dup_calibDB)),
-                                   'Occurrence': np.concatenate((
-                                       return_counts_output1[count_mask1],
-                                       return_counts_output2[count_mask2]
-                                       ))
+                                 'identical.').format(self.instrument)
+                data_dict_stop2 = {
+                        'Night': calib_dup.NIGHT.tolist(),
+                        'File name': calib_dup.FILE.tolist(),
+                        'Occurrence': calib_dup.COUNT.tolist(),
                                    }
                 inspect_stop2 = atf.inspect_table(
                         'badpixel_test1',
                         'stop2',
                         data_dict_stop2,
                         ('Duplicate Entries in '
-                         'master_calib_{0}.txt').format(instrument)
+                         'master_calib_{0}.txt').format(self.instrument)
                         )
 
         else:
             color_stop2 = 'Red'
             result_stop2 = 'No'
-            comment_stop2 = ('The calibDB should not have more output files than what '
-                             'was produced.')
+            comment_stop2 = ('The calibDB should not have more output files '
+                             'than what was produced.')
             inspect_stop2 = ''
 
 
