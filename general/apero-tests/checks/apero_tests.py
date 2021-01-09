@@ -223,8 +223,8 @@ class CalibTest(Test):
                 )
         sep = os.path.sep
         paths = pd.Series(self.reduced_path  # Series of path per night+output
-                          + sep + inds.get_level_values('PATTERN')
-                          + sep + inds.get_level_values('DIRECTORY'),
+                          + sep + inds.get_level_values('DIRECTORY')
+                          + sep + inds.get_level_values('PATTERN'),
                           index=inds
                           )
 
