@@ -10,7 +10,7 @@ from abc import ABC, abstractmethod
 from typing import Optional, Union, List, Tuple
 
 import pandas as pd
-from astropy.io import fits
+from astropy.table import Table
 
 import apero_tests_func as atf
 from apero.core import constants
@@ -249,8 +249,19 @@ class CalibTest(Test):
         allpaths = [os.path.join(self.reduced_path, ld, 'log.fits')
                     for ld in self.logdirs]
         paths = [p for p in allpaths if os.path.isfile(p)]
-        dfs = [pd.DataFrame(fits.getdata(f)) for f in paths]
-        log_df = pd.concat(dfs).set_index(['DIRECTORY'])
+        dfs = [Table.read(f).to_pandas() for f in paths]
+        log_df = pd.concat(dfs)
+
+        # Decode strings (fits from astropy are encoded)
+        for col in log_df.columns:
+            # try/except for non-string columns
+            try:
+                log_df[col] = log_df[col].str.decode('utf-8')
+            except AttributeError:
+                pass
+
+        # Use DIRECTORY as index and keep onl relevant entries
+        log_df = log_df.set_index(['DIRECTORY'])
         log_df = log_df.loc[log_df.RECIPE == self.recipe]
 
         # Store missing logs in another list

@@ -26,7 +26,7 @@ import numpy as np
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from checks.apero_tests import Test
+from apero_tests import Test, CalibTest
 import apero_tests_func as atf
 
 
@@ -71,7 +71,7 @@ class DarkMTest(CalibTest):
         return self._name
 
     @property
-    def output_list(self) -> list[str]:
+    def output_list(self) -> List[str]:
         """List of output string patterns
 
         :return: output_list
@@ -80,7 +80,7 @@ class DarkMTest(CalibTest):
         return self._output_list
 
     @property
-    def calibdb_list(self) -> list[str]:
+    def calibdb_list(self) -> List[str]:
         """List of calibDB entries
 
         :return: calibdb_list

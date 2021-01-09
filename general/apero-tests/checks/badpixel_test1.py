@@ -26,11 +26,10 @@ import os
 from typing import List, Optional, Union
 
 import glob
-import numpy as np
 import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from .apero_tests import Test, CalibTest
+from apero_tests import Test, CalibTest
 import apero_tests_func as atf
 
 
