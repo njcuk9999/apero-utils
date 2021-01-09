@@ -1,6 +1,6 @@
 # APERO tests
 
-The code is in `checks` and the html summary is in `out`.
+The code is in `checks` and the html summary is in `out`. Jinja2 templates for html pages are in `templates`.
 
 Call apero_tests_main.py to perform a series of tests:
 
