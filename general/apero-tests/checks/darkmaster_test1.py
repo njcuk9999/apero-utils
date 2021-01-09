@@ -20,47 +20,54 @@ Tests performed:
 @author: charles
 """
 import os
-from typing import Optional
+from typing import Optional, Union, List
 
 import numpy as np
+import pandas as pd
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from checks.apero_tests import Test
 import apero_tests_func as atf
 
 
-class DarkMTest(Test):
+class DarkMTest(CalibTest):
     """DarkMTest."""
 
-    def __init__(self, inst: str = 'SPIROU', setup: Optional[str] = None):
+    def __init__(self,
+                 inst: str = 'SPIROU',
+                 setup: Optional[str] = None,
+                 logdir: Union[str, list] = 'other'):
         """__init__.
 
         :param inst:
         :type inst: str
         :param setup:
         :type setup: Optional[str]
+        :param logdir:
+        :type logdir: Union[str, list]
         """
 
-        super().__init__(inst=inst, setup=setup)
+        super().__init__(inst=inst, setup=setup, logdir=logdir)
 
         self._name = 'Dark Master Recipe Test #1'
 
-        # output list
+        # list of output patterns
         self._output_list = ['*_pp_dark_master.fits']
-
-        # dataframe of all outputs
-        self._output_df = self._get_output_df()
 
         # calibDB entries list
         self._calibdb_list = ['DARKM']
 
+        # Series of output files
+        self._output_files = self._gen_output_files()
+
+        self._recipe = 'cal_dark_master_{}'.format(self.instrument.lower())
+
+        # Get log files and missing log nights or directories
+        self._log_df, self._missing_logs = self._gen_log_df()
+
     @property
     def name(self) -> str:
-        """name.
-
-        :return: name
-        :rtype: str
-        """
+        """name."""
         return self._name
 
     @property
@@ -80,6 +87,33 @@ class DarkMTest(Test):
         :rtype: list[str]
         """
         return self._calibdb_list
+
+    @property
+    def recipe(self) -> List[str]:
+        """Recipe name
+
+        :return: output_list
+        :rtype: list[str]
+        """
+        return self._recipe
+
+    @property
+    def output_files(self) -> pd.Series:
+        """output_files.
+
+        :return: output_files
+        :rtype: pd.Series
+        """
+        return self._output_files
+
+    @property
+    def log_df(self) -> pd.DataFrame:
+        """Dataframe with log information
+
+        :return: log_df
+        :rtype: pd.DataFrame
+        """
+        return self._log_df
 
     def runtest(self):
         """runtest."""

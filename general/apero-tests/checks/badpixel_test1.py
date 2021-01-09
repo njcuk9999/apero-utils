@@ -55,11 +55,13 @@ class BadPixTest(CalibTest):
 
         self._name = 'Bad Pixel Correction Recipe Test #1'
 
+        # list of output patterns
         self._output_list = ['*_pp_badpixel.fits', '*_pp_bmap.fits']
 
         # calibDB entries list
         self._calibdb_list = ['BADPIX', 'BKGRDMAP']
-        # private pd.Series of output files
+
+        # Series of output files
         self._output_files = self._gen_output_files()
 
         self._recipe = 'cal_badpix_{}'.format(self.instrument.lower())
@@ -82,15 +84,6 @@ class BadPixTest(CalibTest):
         return self._output_list
 
     @property
-    def recipe(self) -> List[str]:
-        """Recipe name
-
-        :return: output_list
-        :rtype: list[str]
-        """
-        return self._recipe
-
-    @property
     def calibdb_list(self) -> List[str]:
         """List of calibDB entries
 
@@ -98,6 +91,15 @@ class BadPixTest(CalibTest):
         :rtype: list[str]
         """
         return self._calibdb_list
+
+    @property
+    def recipe(self) -> List[str]:
+        """Recipe name
+
+        :return: output_list
+        :rtype: list[str]
+        """
+        return self._recipe
 
     @property
     def output_files(self) -> pd.Series:
@@ -108,11 +110,17 @@ class BadPixTest(CalibTest):
         """
         return self._output_files
 
+    @property
+    def log_df(self) -> pd.DataFrame:
+        """Dataframe with log information
+
+        :return: log_df
+        :rtype: pd.DataFrame
+        """
+        return self._log_df
+
     def runtest(self):
         """runtest."""
-
-        print(self.name)
-        # output list
 
         # Total number of log entries for this recipe, and per night
         night_recipe_num_logfits = self.log_df.groupby('DIRECTORY').size()

@@ -149,15 +149,6 @@ class CalibTest(Test):
         return self._reduced_nights
 
     @property
-    def log_df(self) -> pd.DataFrame:
-        """Dataframe with log information
-
-        :return: log_df
-        :rtype: pd.DataFrame
-        """
-        return self._log_df
-
-    @property
     def logdirs(self) -> List[str]:
         """List of directories where log files are expected for this test
 
@@ -177,6 +168,15 @@ class CalibTest(Test):
 
         :return: output_files
         :rtype: pd.Series
+        """
+
+    @property
+    @abstractmethod
+    def log_df(self) -> pd.DataFrame:
+        """Dataframe with log information
+
+        :return: log_df
+        :rtype: pd.DataFrame
         """
 
     @property
@@ -204,7 +204,7 @@ class CalibTest(Test):
         def fiberglob(pattern: str,
                       fibers: Union[List[str], Tuple[str]] = ('AB', 'C'),
                       ) -> list:
-            """Equivalent of glob but iterating over multiple fibers
+            """Equivalent of glob but iterating over multiple fibers:
 
             :param pattern:
             :type pattern: str
