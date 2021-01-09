@@ -7,6 +7,8 @@ import os
 from pathlib import Path
 from datetime import datetime
 
+from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 from apero_test_factory import TESTDICT, get_test
 from apero_tests_func import summary
 from apero.core import constants
@@ -74,10 +76,9 @@ print('all tests done')
 # Write html summary
 # =============================================================================
 # build table element
+# TODO: Move this to jinja2 template if not too complicated
 html_table = []
-
 for i in range(n):
-
     if os.path.isfile("{0}/{0}.html".format(test_list_short[i])):
         html_str, color = summary(test_list_short[i])
         html_table.append("""
@@ -87,7 +88,6 @@ for i in range(n):
           <td bgcolor={3}><a href='{0}/{0}.html'>Inspect</a></td>
         </tr>
         """.format(test_list_short[i], test_list_long[i], html_str, color))
-
     else:
         html_table.append("""
         <tr>
@@ -105,72 +105,24 @@ delta_date = date_final - date_ini
 
 date_final = date_final.strftime("%Y-%m-%d %H:%M:%S")
 
+html_dict = {
+        'setup': setup,
+        'instrument': instrument,
+        'date_final': date_final,
+        'delta_date': delta_date,
+        'html_table': html_table,
+        }
+
 # build main .html doc
+# TODO: Use package or define path in a main/init file?
+env = Environment(
+    loader=FileSystemLoader('../templates'),
+    autoescape=select_autoescape(['html', 'xml'])
+)
 
-html_text = f"""
-<html>
+template = env.get_template('summary.html')
 
-<head>
-<title>APERO Tests</title>
-<style>
-table {{
-  width:50%;
-}}
-table, th, td {{
-  border: 1px solid black;
-  border-collapse: collapse;
-}}
-th, td {{
-  padding: 15px;
-  text-align: left;
-}}
-#t01 tr:nth-child(even) {{
-  background-color: #eee;
-}}
-#t01 tr:nth-child(odd) {{
- background-color: #fff;
-}}
-#t01 th {{
-  background-color: white;
-  color: black;
-}}
-</style>
+html_text = template.render(html_dict)
 
-</head>
-
-<body>
-
-<img src='images/apero_logo.png' alt='APERO'>
-
-<font size="-1">A PipelinE to Reduce Observations</font>
-
-<h3>APERO Tests Summary Page</h3>
-<p><b>Setup: {setup}</b><br>
-<p><b>Instrument: {instrument}</b><br>
-<p><b>Date: {date_final}</b><br>
-<p><b>Running Time: {delta_date}</b></p>
-<br></br>
-
-<table id="t01">
-
-  <colgroup>
-     <col span="1" style="width: 50%;">
-     <col span="1" style="width: 40%;">
-     <col span="1" style="width: 10%;">
-  </colgroup>
-
-  <tr>
-    <th>Recipe Test</th>
-    <th>Summary</th>
-    <th>Details</th>
-  </tr>
-{html_table}
-</table>
-
-</body>
-</html>
-"""
-
-
-with open('apero_tests.html', 'w') as f:
+with open(os.path.join('out', 'summary.html'), 'w') as f:
     f.write(html_text)

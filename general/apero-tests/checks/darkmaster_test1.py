@@ -21,7 +21,9 @@ Tests performed:
 """
 import os
 from typing import Optional
+
 import numpy as np
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from checks.apero_tests import Test
 import apero_tests_func as atf
@@ -327,137 +329,8 @@ class DarkMTest(Test):
             inspect_stop2 = ''
 
 
-        # Build darkmaster_test1.html
-        html_text = f"""
-        <html>
-
-
-        <head>
-        <title>APERO Tests</title>
-        <style>
-        table {{
-          width:75%;
-        }}
-        table, th, td {{
-          border: 1px solid black;
-          border-collapse: collapse;
-        }}
-        th, td {{
-          padding: 15px;
-          text-align: left;
-        }}
-        #t01 tr:nth-child(even) {{
-          background-color: #eee;
-        }}
-        #t01 tr:nth-child(odd) {{
-         background-color: #fff;
-        }}
-        #t01 th {{
-          background-color: white;
-          color: black;
-        }}
-        </style>
-        </head>
-
-        <body>
-
-        <h3>Dark Master Recipe Test #1</h3>
-        <p><b>Setup: {setup}</b><br>
-        <p><b>Instrument: {instrument}</b><br>
-        <p><b>Date: {date}</b><br>
-        <br>
-        <p>Script: cal_dark_master_{instrument.lower()}.py<br>
-        <p>Output files: {output_list}<br>
-        <p>Calibration database entry: {calibDB_entry_list}<br>
-        <p><a href='https://github.com/njcuk9999/apero-drs#82-dark-master-recipe'>Link</a> to Dark Master Recipe description</p>
-        <br></br>
-
-        <table id="t01">
-
-          <colgroup>
-             <col span="1" style="width: 5%;">
-             <col span="1" style="width: 55%;">
-             <col span="1" style="width: 15%;">
-             <col span="1" style="width: 20%;">
-             <col span="1" style="width: 5%;">
-          </colgroup>
-          <tr>
-            <th>Check</th>
-            <th>Description</th>
-            <th>Result</th>
-            <th>Comments</th>
-            <th>Details</th>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td># of time cal_dark_master_{instrument.lower()}.py was called</td>
-            <td>{recipe_num_logfits}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td># of outputs in {reduced_path}</td>
-            <td>{output_list[0]}: {output1_num}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td># of unique outputs in {reduced_path}</td>
-            <td>{output_list[0]}: {output1_num_unique}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>Check 3 == Check 1?</td>
-            <td bgcolor={color_stop1}>{result_stop1}</td>
-            <td>{comment_stop1}</td>
-            <td>{inspect_stop1}</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td># of entry in {reduced_path}/other/log.fits that failed one or more QC</td>
-            <td>{num_logfits_QCfalse}</td>
-            <td>{comments_check4}</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td># of entry in {reduced_path}/other/log.fits that failed to finish</td>
-            <td>{num_logfits_ENDEDfalse}</td>
-            <td>{comments_check5}</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td># of {calibDB_entry_list[0]} entry in {calibDB_path}/master_calib_{instrument}.txt</td>
-            <td>{output1_num_entry}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td># of outputs in {calibDB_path}</td>
-            <td>{output_list[0]}: {output1_num_calibDB}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>Check 7 == Check 6?</td>
-            <td bgcolor={color_stop2}>{result_stop2}</td>
-            <td>{comment_stop2}</td>
-            <td>{inspect_stop2}</td>
-          </tr>
-        </table>
-
-
-        </body>
-        </html>
-        """
-
+        # TODO: fill template
+        html_text = ''
         with open('darkmaster_test1/darkmaster_test1.html', 'w') as f:
             f.write(html_text)
 

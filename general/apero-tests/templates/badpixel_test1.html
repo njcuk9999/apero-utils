@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>APERO Tests</title>
+    <style>
+      table {
+        width:75%;
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+      th, td {
+        padding: 15px;
+        text-align: left;
+      }
+      #t01 tr:nth-child(even) {
+        background-color: #eee;
+      }
+      #t01 tr:nth-child(odd) {
+       background-color: #fff;
+      }
+      #t01 th {
+        background-color: white;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <h3>Bad Pixel Correction Recipe Test #1</h3>
+    <p><b>Setup: {{ setup }}</b><br>
+    <p><b>Instrument: {{ instrument }}</b><br>
+    <p><b>Date: {{ date }}</b><br>
+    <br>
+    <p>Script: cal_badpix_{{ instrument.lower() }}.py<br>
+    <p>Output files: {{ ', '.join(output_list) }}<br>
+    <p>Calibration database entry: {{ ', '.join(calibDB_entry_list) }}<br>
+    <p><a href='https://github.com/njcuk9999/apero-drs#83-bad-pixel-correction-recipe'>Link</a> to Bad Pixel Correction Recipe description</p>
+    <br></br>
+
+    <table id="t01">
+      <colgroup>
+         <col span="1" style="width: 5%;">
+         <col span="1" style="width: 55%;">
+         <col span="1" style="width: 15%;">
+         <col span="1" style="width: 20%;">
+         <col span="1" style="width: 5%;">
+      </colgroup>
+      <!-- Header column -->
+      <tr>
+        <th>Check</th>
+        <th>Description</th>
+        <th>Result</th>
+        <th>Comments</th>
+        <th>Details</th>
+      </tr>
+      <!-- Check 1 -->
+      <tr>
+        <td>1</td>
+        <td># of time cal_badpix_{{ instrument.lower() }}.py was called</td>
+        <td>{{ recipe_num_logfits }}</td>
+        <td>{{ comments_check1 }}</td>
+        <td></td>
+      </tr>
+      <!-- Check 2 -->
+      <tr>
+        <td>2</td>
+        <td># of outputs in {{ reduced_path }}</td>
+        <td>{{ output_list[0] }}: {{ output1_num }}<br>{{ output_list[1] }}: {{ output2_num }}</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <!-- Check 3 -->
+      <tr>
+        <td>3</td>
+        <td># of unique outputs in {{ reduced_path }}</td>
+        <td>{{ output_list[0] }}: {{ output1_num_unique }}<br>{{ output_list[1] }}: {{ output2_num_unique }}</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <!-- Stop 1 -->
+      <tr>
+        <td></td>
+        <td>Check 3 == Check 1?</td>
+        <td bgcolor={{ color_stop1 }}>{{ result_stop1 }}</td>
+        <td>{{ comment_stop1 }}</td>
+        <td>{{ inspect_stop1 }}</td>
+      </tr>
+      <!-- Check 4 -->
+      <tr>
+        <td>4</td>
+        <td># of entry in {{ reduced_path }}/log.fits that failed one or more QC</td>
+        <td>{{ num_logfits_qc_failed }}</td>
+        <td>{{ comments_check4 }}</td>
+        <td></td>
+      </tr>
+      <!-- Check 5 -->
+      <tr>
+        <td>5</td>
+        <td># of entry in {{ reduced_path }}/log.fits that failed to finish</td>
+        <td>{{ num_logfits_ended_false }}</td>
+        <td>{{ comments_check5 }}</td>
+        <td></td>
+      </tr>
+      <!-- Check 6 -->
+      <tr>
+        <td>6</td>
+        <td># of {{ ', '.join(calibDB_entry_list) }} entry in {{ calibDB_path }}/master_calib_{{ instrument }}.txt</td>
+        <td>{{ calibDB_entry_list[0] }}: {{ output1_num_entry }}<br>{{ calibDB_entry_list[1] }}: {{ output2_num_entry }}</td>
+        <td>{{ comments_check6 }}</td>
+        <td></td>
+      </tr>
+      <!-- Check 7 -->
+      <tr>
+        <td>7</td>
+        <td># of outputs in {{ calibDB_path }}</td>
+        <td>{{ output_list[0] }}: {{ output1_num_calibDB }}<br>{{ output_list[1] }}: {{ output2_num_calibDB }}</td>
+        <td></td>
+        <td></td>
+      </tr>
+      <!-- Stop 2 -->
+      <tr>
+        <td></td>
+        <td>Check 7 == Check 6?</td>
+        <td bgcolor={{ color_stop2 }}>{{ result_stop2 }}</td>
+        <td>{{ comment_stop2 }}</td>
+        <td>{{ inspect_stop2 }}</td>
+      </tr>
+    </table>
+  </body>
+</html>

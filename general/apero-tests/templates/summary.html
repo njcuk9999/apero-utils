@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<!-- jinja2 template for APERO Tests summary -->
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>APERO Tests</title>
+    <style>
+      table {
+        width:50%;
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+      th, td {
+        padding: 15px;
+        text-align: left;
+      }
+      #t01 tr:nth-child(even) {
+        background-color: #eee;
+      }
+      #t01 tr:nth-child(odd) {
+       background-color: #fff;
+      }
+      #t01 th {
+        background-color: white;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <img src='images/apero_logo.png' alt='APERO'>
+    <font size="-1">A PipelinE to Reduce Observations</font>
+
+    <h3>APERO Tests Summary Page</h3>
+    <p><b>Setup: {{ setup }}</b><br>
+    <p><b>Instrument: {{ instrument }}</b><br>
+    <p><b>Date: {{ date_final }}</b><br>
+    <p><b>Running Time: {{ delta_date }}</b></p>
+    <br></br>
+
+    <table id="t01">
+      <colgroup>
+         <col span="1" style="width: 50%;">
+         <col span="1" style="width: 40%;">
+         <col span="1" style="width: 10%;">
+      </colgroup>
+      <tr>
+        <th>Recipe Test</th>
+        <th>Summary</th>
+        <th>Details</th>
+      </tr>
+      {{ html_table }}
+    </table>
+
+  </body>
+</html>
