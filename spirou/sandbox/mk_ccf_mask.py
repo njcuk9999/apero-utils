@@ -148,7 +148,7 @@ for ite in range(2):
     cc = np.zeros_like(dvs)
     for i in range(len(dvs)):
         corrv = np.sqrt((1 + dvs[i] / c) / (1 - dvs[i] / c))
-        cc[i] = np.sum(model(wavelines / corrv))
+        cc[i] = np.sum(weight*model(wavelines / corrv))
 
     # just centering the cc around one and removing low-f trends
     mini = np.argmin(cc / medfilt(cc, 21))
