@@ -19,6 +19,10 @@ import os as os
 # Provide a template file, needs to be a _s1d_v file
 template = 'Template_s1d_Gl846_sc1d_v_file_AB.fits'
 
+# CSV table to contain systemic velocities. Will replace the entry of the same object if it is already present
+# in the table, will create the table if it does not exist
+systemic_velocity_table = 'systemic_velo.csv'
+
 # Path where models are saved
 path_to_models = 'HiResFITS'
 
@@ -168,6 +172,12 @@ hdr['SYSVELO'] = systemic_velocity, 'meas. systemic velocity (km/s)'
 hdr['VELOFILE'] = outname, 'model used for SYSVEL cc'
 
 print('\n\tsystemic velocity : {0:.2f}km/s\n'.format(systemic_velocity))
+
+if os.path.isfile(systemic_velocity_table) == False:
+    tbl = Table()
+    tbl['OBJECT'] = hdr['OBJECT']
+    tbl['VELOFILE'] = hdr['OBJECT']
+
 
 plt.plot(w,f, 'g-',label = 'input spectrum')
 plt.vlines(tbl[tbl['w_mask'] < 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'k',alpha = 0.2,label = 'positive feature')
