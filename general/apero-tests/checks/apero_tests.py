@@ -9,6 +9,7 @@ from datetime import datetime
 from abc import ABC, abstractmethod
 from typing import Optional, Union, List, Tuple
 
+import numpy as np
 import pandas as pd
 from astropy.table import Table
 
@@ -43,18 +44,27 @@ class Test(ABC):
     # Properties
     # =========================================================================
     @property
-    def setup(self):
-        """setup."""
+    def setup(self) -> str:
+        """setup.
+
+        :rtype: str
+        """
         return self._setup
 
     @property
-    def instrument(self):
-        """instrument."""
+    def instrument(self) -> str:
+        """instrument.
+
+        :rtype: str
+        """
         return self._instrument
 
     @property
-    def date(self):
-        """date."""
+    def date(self) -> str:
+        """date.
+
+        :rtype: str
+        """
         return self._date
 
     # =========================================================================
@@ -62,27 +72,27 @@ class Test(ABC):
     # =========================================================================
     @property
     @abstractmethod
-    def name(self):
+    def name(self) -> str:
         """Test full unique name."""
 
     @property
     @abstractmethod
-    def recipe(self):
+    def test_id(self) -> str:
+        """Test short name (ID)."""
+
+    @property
+    @abstractmethod
+    def recipe(self) -> str:
         """Recipe checked by the tests"""
 
-    # @property
-    # @abstractmethod
-    # def outdict(self):
-    #     """outdict."""
+    @property
+    @abstractmethod
+    def fibers(self):
+        """Fibers to search in outputs"""
 
     @abstractmethod
     def runtest(self):
         """Method called to run the tests on APERO products"""
-
-    # @abstractmethod
-    # def htmlgen(self):
-    #     """htmlgen."""
-
 
 class CalibTest(Test):
     """CalibTest."""
@@ -103,24 +113,35 @@ class CalibTest(Test):
 
         super().__init__(inst=inst, setup=setup)
 
-        # Paths without end separator if any
-        sep = os.path.sep
-        self._reduced_path = self._params['DRS_DATA_REDUC'].rstrip(sep)
-        self._calibdb_path = self._params['DRS_CALIB_DB'].rstrip(sep)
-
         # List of all reduced nights
-        self._reduced_nights = atf.list_nights(self.reduced_path)
 
         # Where logs can be found
         if logdir == 'night':
-            self._logdirs = self.reduced_nights.copy()
+            logdirs = self.reduced_nights.copy()
         elif isinstance(logdir, str):
-            self._logdirs = [logdir]
+            logdirs = [logdir]
         elif isinstance(logdir, list):
-            self._logdirs = logdir
+            logdirs = logdir
         else:
             raise TypeError('logdir must be a list or a string')
 
+        # Series of output files
+        self._output_files = self._load_output()
+
+        # Handle logs (this creates log_df and missing_logfits properties)
+        self._log_df, self._missing_logs = self._load_log(logdirs)
+
+
+        # Get aligned counts for logs
+        self._output_num_align, self._log_num_align = self._align_counts()
+
+        # Load calib db
+        self._master_calib_df = self._load_calibdb_entries()
+        self._output_calibdb = self._load_calibdb_output()
+
+    # =========================================================================
+    # General properties
+    # =========================================================================
     @property
     def reduced_path(self) -> str:
         """Path to reduced directory
@@ -128,7 +149,7 @@ class CalibTest(Test):
         :return: reduced_path
         :rtype: str
         """
-        return self._reduced_path
+        return self._params['DRS_DATA_REDUC'].rstrip(os.path.sep)
 
     @property
     def calibdb_path(self) -> str:
@@ -137,7 +158,7 @@ class CalibTest(Test):
         :return: calibdb_path
         :rtype: str
         """
-        return self._calibdb_path
+        return self._params['DRS_CALIB_DB'].rstrip(os.path.sep)
 
     @property
     def reduced_nights(self) -> List[str]:
@@ -146,48 +167,228 @@ class CalibTest(Test):
         :return: reduced_nights
         :rtype: List[str]
         """
-        return self._reduced_nights
+        return atf.list_nights(self.reduced_path)
 
     @property
-    def logdirs(self) -> List[str]:
-        """List of directories where log files are expected for this test
-
-        Currently supported:
-            - single dir (e.g. other or master ight)
-            - One log dir per night (typically the same as night)
-
-        :return: logdirs
-        :rtype: List[str]
-        """
-        return self._logdirs
-
-    @property
-    @abstractmethod
     def output_files(self) -> pd.Series:
         """output_files.
 
         :return: output_files
         :rtype: pd.Series
         """
+        return self._output_files
 
     @property
-    @abstractmethod
     def log_df(self) -> pd.DataFrame:
         """Dataframe with log information
 
         :return: log_df
         :rtype: pd.DataFrame
         """
+        return self._log_df
 
     @property
-    @abstractmethod
-    def recipe(self) -> str:
-        """Name of the reof the recipe"""
+    def master_calib_df(self) -> pd.DataFrame:
+        """master_calib_df.
 
-    def _gen_output_files(
-                        self,
-                        fibers: Optional[Union[List[str],str]] = None,
-                        ) -> pd.Series:
+        :rtype: pd.DataFrame
+        """
+        return self._master_calib_df
+
+    @property
+    def calib_output_dict(self) -> dict:
+        return dict(zip(self.calibdb_list, self.output_list))
+
+    # =========================================================================
+    # Properties derived form outputs
+    # =========================================================================
+    @property
+    def output_night_num(self) -> pd.Series:
+        """output_night_num.
+
+        :returns: multi-index series with count of each output per night
+        :rtype: pd.Series
+        """
+        ind_name = self.output_files.index.names
+        return self.output_files.groupby(ind_name).size()
+
+    @property
+    def output_num_total(self) -> pd.Series:
+        """Total umber of outputs for each pattern.
+
+        :rtype: pd.Series
+        """
+        return self.output_files.groupby('PATTERN').size()
+
+    @property
+    def output_num_unique(self) -> pd.Series:
+        """output_unique_num.
+
+        :returns: series with total unique count of each output
+        :rtype: pd.Series
+        """
+        return self.output_files.groupby('PATTERN').nunique()
+
+    @property
+    def log_num_night(self) -> pd.Series:
+        """Number of log entries per night.
+
+        :rtype: pd.Series
+        """
+        return self.log_df.groupby('DIRECTORY').size()
+
+    @property
+    def log_tot_num(self) -> int:
+        """Total number of log entries.
+
+        :rtype: int
+        """
+        return self.log_df.shape[0]
+
+    @property
+    def log_num_align(self) -> pd.Series:
+        """log_num_align.
+
+        emtpy nights fille with zeros
+
+        :returns: series of log count with indexes aligned to MultiIndex output
+        :rtype: pd.Series
+        """
+        return self._log_num_align
+
+    @property
+    def output_num_align(self) -> pd.Series:
+        """log_num_align.
+
+         series of log count with indexes aligned with logs
+        (empty filled with 0)
+
+        :rtype: pd.Series
+        """
+        return self._output_num_align
+
+    @property
+    def master_mask(self) -> pd.Series:
+        return self.log_df['RUNSTRING'].str.contains('--master')
+
+    @property
+    def master_nights(self) -> np.ndarray:
+        return self.master_mask[self.master_mask].index.values
+
+    @property
+    def master_recipe_num_logfits(self) -> int:
+        return  self.master_nights.size
+
+    @property
+    def recipe_num_logfits(self) -> int:
+        return self.log_tot_num - self.master_recipe_num_logfits
+
+    @property
+    def output_missing(self):
+        """get_missing_output."""
+
+        # Get missing outputs that are in log
+        log_mask = self.log_num_align > 0
+        output_mask = self.output_num_align == 0
+        out_missing_mask = log_mask & output_mask
+        output_missing = output_num.index.to_frame()[out_missing_mask]
+        output_missing = output_missing.reset_index(drop=True)
+
+        return output_missing
+
+    @property
+    def tot_num_entry(self) -> pd.Series:
+        """Total number of entries in calibdb.
+
+        :rtype: pd.Series
+        """
+        return self.master_calib_df.groupby('KEY').size()
+
+    @property
+    def master_num_entry(self) -> pd.Series:
+        """Number of 'master' entries in calibdb.
+
+        :rtype: pd.Series
+        """
+        master_mask = self.master_calib_df.MASTER
+        master_calib_group = self.master_calib_df[master_mask].groupby('KEY')
+
+        return master_calib_group.size()
+
+    @property
+    def output_num_entry(self) -> pd.Series:
+        """Total number of entries per output in calibdb (minus 'master' ones).
+
+        :rtype: pd.Series
+        """
+        return self.tot_num_entry - self.master_num_entry
+
+    @property
+    def output_num_calibdb(self) -> pd.Series:
+        """Number of outputs in calibdb.
+
+        :rtype: pd.Series
+        """
+        return output_calibdb.groupby('KEY').size()
+
+    @property
+    def calib_missing_mask(self) -> pd.Series:
+        """calib_missing_mask.
+
+        :rtype: pd.Series
+        """
+        return ~master_calib_df.FILE.isin(self.output_num_calibdb)
+
+    @property
+    def log_qc_failed(self) -> pd.DataFrame:
+        """log_qc_failed.
+
+        :rtype: pd.DataFrame
+        """
+        return self.log_df[~self.log_df.PASSED_ALL_QC]
+
+    @property
+    def log_ended_false(self) -> pd.DataFrame:
+        """log_ended_false.
+
+        :rtype: pd.DataFrame
+        """
+        return self.log_df[~self.log_df.ENDED]
+
+    # =========================================================================
+    # Public methods
+    # =========================================================================
+    def gen_html(self, html_dict: dict):
+        """Generate HTML summary from jinja2 template.
+
+        :param html_dict: dict with all values used in html template
+        :type html_dict: dict
+        """
+
+        # Jinja2 env
+        # TODO: Use package or define path in a main/init file?
+        env = Environment(
+            loader=FileSystemLoader('../templates'),
+            autoescape=select_autoescape(['html', 'xml'])
+        )
+
+        # Create template for test
+        template = env.get_template('.'.join([self.test_id, 'html']))
+
+        html_text = template.render(html_dict)
+
+        output_path = os.path.join('..',
+                                   'out',
+                                   self.test_id,
+                                   '.'.join([self.test_id, 'html']),
+                                   )
+        with open(output_path, 'w') as f:
+            f.write(html_text)
+
+    # =========================================================================
+    # Generators methods to derive things that are too heavy to calculate time
+    # =========================================================================
+    def _load_output(self) -> pd.Series:
         """Get output files
         Organize output files by output type and night using two indexing
         levels in pandas
@@ -199,23 +400,6 @@ class CalibTest(Test):
                  (output pattern, night date)
         :rtype: pd.Series
         """
-
-        # NOTE: Maybe move this to a utils module
-        def fiberglob(pattern: str,
-                      fibers: Union[List[str], Tuple[str]] = ('AB', 'C'),
-                      ) -> list:
-            """Equivalent of glob but iterating over multiple fibers:
-
-            :param pattern:
-            :type pattern: str
-            :param fibers:
-            :type fibers: Union[List[str], Tuple[str]]
-
-            :returns: Nested list of glob outputs (one per fiber).
-            :rtype: list
-            """
-
-            return [glob.glob(pattern.format(FIBER=f)) for f in fibers]
 
         inds = pd.MultiIndex.from_product(  # multi-index output and night
                 [self.output_list, self.reduced_nights],
@@ -229,17 +413,36 @@ class CalibTest(Test):
                           )
 
         # Expand patterns
-        if fibers is None:
+        if self.fibers is None:
             files = paths.apply(glob.glob)  # Get file list for each pattern
             files = files.explode()         # Pop lists in individual cells
         else:
-            files = paths.apply(fiberglob, fibers=fibers)
+            files = paths.apply(CalibTest._fiberglob, fibers=self.fibers)
             for _ in fibers:
                 files = files.explode()  # Nested lists so explode Nfiber times
 
+        # Keep filename without path
+        files = files.apply(os.path.basename)
+
         return files
 
-    def _gen_log_df(self):
+    @staticmethod
+    def _fiberglob(pattern: str,
+                   fibers: Union[List[str], Tuple[str]] = ('AB', 'C'),
+                   ) -> list:
+        """Equivalent of glob but iterating over multiple fibers:
+
+        :param pattern:
+        :type pattern: str
+        :param fibers:
+        :type fibers: Union[List[str], Tuple[str]]
+
+        :returns: Nested list of glob outputs (one per fiber).
+        :rtype: list
+        """
+        return [glob.glob(pattern.format(FIBER=f)) for f in fibers]
+
+    def _load_log(self, logdirs: List[str]) -> Tuple[pd.DataFrame, list]:
         """_gen_log_df.
 
         Generate a dataframe with log for each directory, with DIRECTORY as
@@ -247,7 +450,7 @@ class CalibTest(Test):
         """
         # Get all logs in a dataframe
         allpaths = [os.path.join(self.reduced_path, ld, 'log.fits')
-                    for ld in self.logdirs]
+                    for ld in logdirs]
         paths = [p for p in allpaths if os.path.isfile(p)]
         dfs = [Table.read(f).to_pandas() for f in paths]
         log_df = pd.concat(dfs)
@@ -269,14 +472,97 @@ class CalibTest(Test):
 
         return log_df, missing_logs
 
-    def do_stop(self):
-        """Do stop comparison for two inputs"""
+    def _load_calibdb_entries(self) -> pd.DataFrame:
+        """_load_calibdb.
 
-    def get_outputs(self):
-        """Get list of output files for each directory in reduced_nights"""
+        :rtype: pd.DataFrame
+        """
+        # Read master_calib_{instument}.txt
+        master_calib_path = os.path.join(  # Full path: dir and file
+                                self.calibdb_path,
+                                'master_calib {}.txt'.format(self.instrument)
+                                )
+        f = open(master_calib_path, "r")
+        master_calib_txt = f.read()
 
-    def check_logs(self):
-        """Check logs in directories, either by night, master, or other"""
+        # Find where DRS processed starts (keep first entry with -1)
+        nprocessed = master_calib_txt.index('# DRS processed')
+        index_start = master_calib_txt[:nprocessed].count('\n') - 1
+
+        # Load dataframe and keep only badpix entries
+        master_calib_df = pd.read_csv(
+                master_calib_path,
+                header=index_start-1,
+                delimiter=' ',
+                usecols=[0, 1, 2, 3],
+                names=['KEY', 'MASTER', 'NIGHT', 'FILE'],
+                index_col=0,  # Use KEY as index
+                )
+        if self.fibers is not None:
+            calib_inds = [k.format(FIBER=f)
+                          for k in self.calibdb_list
+                          for f in self.fibers
+                          ]
+        else:
+            calib_inds = self.calibdb_list
+
+        master_calib_df.MASTER = master_calib_df.MASTER.astype(bool)
+        master_calib_df = master_calib_df.loc[calib_inds]
+
+        # Replace fibers by {FIBER} to match other tests
+        # NOTE: Assumes fibers are at the end with \\b
+        if self.fibers is not None:
+            master_calib_df.index = master_calib_df.index.str.replace(
+                    '_('+'|'.join(self.fibers)+')\\b',
+                    '_{FIBER}'
+                    )
+
+        return master_calib_df
+
+    def _load_calibdb_output(self) -> pd.Series:
+        """_load_calibdb_output.
+
+        :rtype: pd.Series
+        """
+        calib_ind = pd.Index(self.calibdb_list, name='KEY')
+        out_patterns = pd.Series(self.output_list, index=calib_ind)
+        sep = os.path.sep
+        output_calib_paths = pd.Series(self.calibdb_path + sep + out_patterns,
+                                       index=calib_ind
+                                       )
+
+        # Expand patterns
+        if self.fibers is None:
+            files = outupt_calib_paths.apply(glob.glob)  # Get file list for each pattern
+            files = files.explode()         # Pop lists in individual cells
+        else:
+            files = paths.apply(CalibTest._fiberglob, fibers=self.fibers)
+            for _ in fibers:
+                files = files.explode()  # Nested lists so explode Nfiber times
+
+        output_calibdb = files.apply(os.path.basename)
+
+        return output_calibdb
+
+
+    def _align_counts(self) -> Tuple[pd.DataFrame]:
+        """Align output and log, fill with zeros where not intersecting.
+
+        :param output_num: output counts per night and output
+        :param log_num: log counts per night
+
+        :returns: aligned output and log counts, in this order
+        :rtype: Tuple[pd.DataFrame]
+        """
+        log_num_align, output_num_align = self.log_num_night.align(
+                                                        self.output_night_num,
+                                                        fill_value=0,
+                                                        )
+        # Filling might switch to float
+        log_num_align = log_num_align.astype(int)
+        output_num_align = output_num_align.astype(int)
+
+        return (output_num_align, log_num_align)
 
     # =========================================================================
     # Abstract methods common to all calib tests

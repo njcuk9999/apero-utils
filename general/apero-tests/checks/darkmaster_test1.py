@@ -46,29 +46,26 @@ class DarkMTest(CalibTest):
         :param logdir:
         :type logdir: Union[str, list]
         """
-
         super().__init__(inst=inst, setup=setup, logdir=logdir)
 
-        self._name = 'Dark Master Recipe Test #1'
-
-        # list of output patterns
-        self._output_list = ['*_pp_dark_master.fits']
-
-        # calibDB entries list
-        self._calibdb_list = ['DARKM']
-
-        # Series of output files
-        self._output_files = self._gen_output_files()
-
-        self._recipe = 'cal_dark_master_{}'.format(self.instrument.lower())
-
-        # Get log files and missing log nights or directories
-        self._log_df, self._missing_logs = self._gen_log_df()
-
+    # =========================================================================
+    # Specific properties
+    # =========================================================================
     @property
     def name(self) -> str:
-        """name."""
-        return self._name
+        """name.
+
+        :rtype: str
+        """
+        return 'Dark Master Recipe Test #1'
+
+    @property
+    def test_id(self) -> str:
+        """test_id.
+
+        :rtype: str
+        """
+        return 'darkmaster_test1'
 
     @property
     def output_list(self) -> List[str]:
@@ -77,7 +74,7 @@ class DarkMTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return self._output_list
+        return ['*_pp_dark_master.fits']
 
     @property
     def calibdb_list(self) -> List[str]:
@@ -86,7 +83,7 @@ class DarkMTest(CalibTest):
         :return: calibdb_list
         :rtype: list[str]
         """
-        return self._calibdb_list
+        return ['DARKM']
 
     @property
     def recipe(self) -> List[str]:
@@ -95,89 +92,41 @@ class DarkMTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return self._recipe
-
-    @property
-    def output_files(self) -> pd.Series:
-        """output_files.
-
-        :return: output_files
-        :rtype: pd.Series
-        """
-        return self._output_files
-
-    @property
-    def log_df(self) -> pd.DataFrame:
-        """Dataframe with log information
-
-        :return: log_df
-        :rtype: pd.DataFrame
-        """
-        return self._log_df
+        return 'cal_dark_master_{}'.format(self.instrument.lower())
 
     def runtest(self):
         """runtest."""
 
-        # inspect all reduced_nights and other/log.fits
-        output1 = []  # Check 2
-        nights_output1 = []
+        # TODO: overwrite counting to include master (is a master recipe)
+        # Either ismaster property in calib parent or just reimplement
 
-        # =====================================================================
-        # Gather all outputs in reduced night dirs
-        # =====================================================================
-        for i in range(len(reduced_nights)):
+        # TODO: properly re-align log (other dir) with output (nights)
 
-            output1_list_files = atf.list_files('{0}/{1}'.format(reduced_path,
-                                                reduced_nights[i]),
-                                                files=output_list[0][1:])
+        # checking for missing output
+        if (recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) > len(np.unique(nights_output1))):
+            night_output1_missing = logfits.nights[index_recipe][np.in1d(logfits.nights[index_recipe], ~np.unique(nights_output1))]
+            output1_missing = output_list * len(night_output1_missing)
 
-            output1.extend(output1_list_files)
-            nights_output1.extend(reduced_nights[i] * len(output1_list_files))
+        # checking for duplicates
+        if recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) == len(np.unique(nights_output1)):
 
-        # TODO: get from output df
-        output1_num = len(output1)  # check2
-        output1_num_unique = len(np.unique(output1))  # check3
+            nights_logfits_unique, return_counts_output1 = np.unique(logfits.nights[index_recipe], return_counts=True)
 
-        # =====================================================================
-        # Load logfits info (single file in other)
-        # =====================================================================
-        if os.path.isfile('{0}/other/log.fits'.format(reduced_path)):
-            logfits = atf.log_fits('{0}/other/log.fits'.format(reduced_path))
+            night_output1_dup = nights_logfits_unique[return_counts_output1 > 1]
+            output1_dup = output_list * len(night_output1_dup)
 
-            index_recipe = logfits.recipe == 'cal_dark_master_{0}'.format(
-                                                                    instrument.lower()
-                                                                    )
-            recipe_num_logfits = sum(index_recipe)  # check1
+        indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe)  # QC false + correct recipe
+        indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe)  # ENDED false + correct recipe
 
-            # checking for missing output
-            if (recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) > len(np.unique(nights_output1))):
-                night_output1_missing = logfits.nights[index_recipe][np.in1d(logfits.nights[index_recipe], ~np.unique(nights_output1))]
-                output1_missing = output_list * len(night_output1_missing)
+        num_logfits_QCfalse = sum(indexQCfalse)  # check4
+        num_logfits_ENDEDfalse = sum(indexENDEDfalse)  # check5
 
-            # checking for duplicates
-            if recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) == len(np.unique(nights_output1)):
+        nights_logfits_QCfalse = logfits.nights[indexQCfalse]  # check4
+        QCstr_logfits_QCfalse = logfits.QCstr[indexQCfalse]    # check4
 
-                nights_logfits_unique, return_counts_output1 = np.unique(logfits.nights[index_recipe], return_counts=True)
-
-                night_output1_dup = nights_logfits_unique[return_counts_output1 > 1]
-                output1_dup = output_list * len(night_output1_dup)
-
-            indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe)  # QC false + correct recipe
-            indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe)  # ENDED false + correct recipe
-
-            num_logfits_QCfalse = sum(indexQCfalse)  # check4
-            num_logfits_ENDEDfalse = sum(indexENDEDfalse)  # check5
-
-            nights_logfits_QCfalse = logfits.nights[indexQCfalse]  # check4
-            QCstr_logfits_QCfalse = logfits.QCstr[indexQCfalse]    # check4
-
-            nights_logfits_ENDEDfalse = logfits.nights[indexENDEDfalse]    # check5
-            ERRORS_logfits_ENDEDfalse = logfits.ERRORS[indexENDEDfalse]    # check5
-            LOGFILE_logfits_ENDEDfalse = logfits.LOGFILE[indexENDEDfalse]  # check5
-
-        # missing log.fits
-        else:
-            missing_logfits = '{0}/other/log.fits'.format(reduced_path)
+        nights_logfits_ENDEDfalse = logfits.nights[indexENDEDfalse]    # check5
+        ERRORS_logfits_ENDEDfalse = logfits.ERRORS[indexENDEDfalse]    # check5
+        LOGFILE_logfits_ENDEDfalse = logfits.LOGFILE[indexENDEDfalse]  # check5
 
 
         # check4
