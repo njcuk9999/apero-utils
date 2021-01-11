@@ -11,6 +11,7 @@ import numpy as np
 import glob
 from astropy.io import fits
 import os
+from scipy.stats import pearsonr
 
 # =============================================================================
 # Define variables
@@ -24,12 +25,15 @@ import os
 files = glob.glob('qc_check/*f_pp.fits')
 i1 = 0
 im1, hdr = fits.getdata(files[i1], header=True)
+im1 = im1.ravel()
 print(hdr['UTC-OBS'],hdr['DPRTYPE'],files[i1])
-im1 /= np.sqrt(np.nansum(im1 ** 2))
+
 for i2 in range(1,len(files)):
     im2,hdr = fits.getdata(files[i2],header = True)
-    im2 /= np.sqrt(np.nansum(im2**2))
-    print(i1,i2,np.nansum(im1*im2),hdr['UTC-OBS'],hdr['DPRTYPE'],files[i2])
+    im2 = im2.ravel()
+    good = np.isfinite(im1) * np.isfinite(im2)
+    metric, _ = pearsonr(im1[good], im2[good])
+    print(i1,i2,metric,hdr['UTC-OBS'],hdr['DPRTYPE'],files[i2])
 
 
 # =============================================================================
