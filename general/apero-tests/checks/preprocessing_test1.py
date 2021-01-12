@@ -21,9 +21,11 @@ Tests performed:
 """
 import os
 from datetime import datetime
+from typing import Optional, List
+
 import numpy as np
 
-from checks.apero_tests import Test
+from apero_tests import Test
 import apero_tests_func as atf
 from apero.core import constants
 
@@ -31,32 +33,95 @@ from apero.core import constants
 class PPTest(Test):
     """PPTEST."""
 
-    def __init__(self):
-        """__init__."""
-        
-        # TODO: Call parent init
+    def __init__(self, inst: str = 'SPIROU', setup: Optional[str] = None):
+        """__init__.
 
-        self._name = 'Preprocessing Recipe Test #1'
+        :param inst: instrument used
+        :type inst: str
+        :param setup: APERO setup
+        :type setup: Optional[str]
+        """
+        super().__init(inst=inst, setup=setup)
 
-        raw_path = params['DRS_DATA_RAW']
-        if raw_path[-1] == '/':
-            raw_path = raw_path[:-1]            # raw path without / at the end
-        raw_nights = atf.list_nights(raw_path)  # list raw night directories
+        # list raw night directories
+        self._raw_nights = atf.list_nights(self.raw_path)
 
-        pp_path = params['DRS_DATA_WORKING']
-        if pp_path[-1] == '/':
-            pp_path = pp_path[:-1]  # pp path without / at the end
-        pp_nights = atf.list_nights(pp_path)  # list PP data night directories
+        # list PP data night directories
+        self._pp_nights = atf.list_nights(self.pp_path)
 
-        # output list
-        output_list = ['*_pp.fits']
+    # =========================================================================
+    # Abstract properties from parent Test
+    # =========================================================================
+    @property
+    def name(self) -> str:
+        """Test full unique name."""
+        return 'Preprocessing Recipe Test #1'
 
 
     @property
-    def name(self):
-        """name."""
-        return self._name
+    def test_id(self) -> str:
+        """Test short name (ID)."""
+        return 'preprocessing_test1'
 
+    @property
+    def recipe(self) -> str:
+        return f'cal_preprocess_{self.instrument.lower()}'
+
+    @property
+    def fibers(self):
+        """Fibers to search in outputs
+        No fibers for PP
+        """
+
+    @property
+    def output_list(self) -> List[str]:
+        """List of output string patterns
+
+        :return: output_list
+        :rtype: List[str]
+        """
+        return ['*_pp.fits']
+
+    # =========================================================================
+    # Properties specific to PP
+    # =========================================================================
+    @property
+    def raw_path(self) -> str:
+        """Path to raw directory
+
+        :return: reduced_path
+        :rtype: str
+        """
+        return self.params['DRS_DATA_RAW'].rstrip(os.path.sep)
+
+    @property
+    def pp_path(self) -> str:
+        """Path to PP directory
+
+        :return: reduced_path
+        :rtype: str
+        """
+        return self.params['DRS_DATA_WORKING'].rstrip(os.path.sep)
+
+    @property
+    def raw_nights(self) -> List[str]:
+        """raw_nights.
+
+        :rtype: List[str]
+        """
+        return self._raw_nights
+
+    @property
+    def pp_nights(self) -> List[str]:
+        """pp_nights.
+
+        :rtype: List[str]
+        """
+        return self._pp_nights
+
+    # =========================================================================
+    # Running the test
+    # =========================================================================
     def runtest(self):
         """runtest."""
 

@@ -36,7 +36,7 @@ class Test(ABC):
         else:
             self._setup = setup
 
-        self._instrument = self._params['INSTRUMENT']  # instrument
+        self._instrument = self.params['INSTRUMENT']  # instrument
 
         self._date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # test date
 
@@ -58,6 +58,14 @@ class Test(ABC):
         :rtype: str
         """
         return self._instrument
+
+    @property
+    def params(self) -> constants.param_functions.ParamDict:
+        """params.
+
+        :rtype: constants.param_functions.ParamDict
+        """
+        return self._params
 
     @property
     def date(self) -> str:
@@ -84,6 +92,15 @@ class Test(ABC):
     @abstractmethod
     def recipe(self) -> str:
         """Recipe checked by the tests"""
+
+    @property
+    @abstractmethod
+    def output_list(self) -> List[str]:
+        """List of output string patterns
+
+        :return: output_list
+        :rtype: List[str]
+        """
 
     @property
     @abstractmethod
@@ -149,7 +166,7 @@ class CalibTest(Test):
         :return: reduced_path
         :rtype: str
         """
-        return self._params['DRS_DATA_REDUC'].rstrip(os.path.sep)
+        return self.params['DRS_DATA_REDUC'].rstrip(os.path.sep)
 
     @property
     def calibdb_path(self) -> str:
@@ -158,7 +175,7 @@ class CalibTest(Test):
         :return: calibdb_path
         :rtype: str
         """
-        return self._params['DRS_CALIB_DB'].rstrip(os.path.sep)
+        return self.params['DRS_CALIB_DB'].rstrip(os.path.sep)
 
     @property
     def reduced_nights(self) -> List[str]:
@@ -194,6 +211,14 @@ class CalibTest(Test):
         :rtype: pd.DataFrame
         """
         return self._master_calib_df
+
+    @property
+    def output_calibdb(self) -> pd.Series:
+        """output_calibdb.
+
+        :rtype: pd.Series
+        """
+        return self._output_calibdb
 
     @property
     def calib_output_dict(self) -> dict:
@@ -284,14 +309,14 @@ class CalibTest(Test):
         return self.log_tot_num - self.master_recipe_num_logfits
 
     @property
-    def output_missing(self):
+    def output_missing(self) -> pd.DataFrame:
         """get_missing_output."""
 
         # Get missing outputs that are in log
         log_mask = self.log_num_align > 0
         output_mask = self.output_num_align == 0
-        out_missing_mask = log_mask & output_mask
-        output_missing = output_num.index.to_frame()[out_missing_mask]
+        missing_mask = log_mask & output_mask
+        output_missing = self.output_num_align.index.to_frame()[missing_mask]
         output_missing = output_missing.reset_index(drop=True)
 
         return output_missing
@@ -329,7 +354,7 @@ class CalibTest(Test):
 
         :rtype: pd.Series
         """
-        return output_calibdb.groupby('KEY').size()
+        return self.output_calibdb.groupby('KEY').size()
 
     @property
     def calib_missing_mask(self) -> pd.Series:
@@ -337,7 +362,7 @@ class CalibTest(Test):
 
         :rtype: pd.Series
         """
-        return ~master_calib_df.FILE.isin(self.output_num_calibdb)
+        return ~self.master_calib_df.FILE.isin(self.output_calibdb)
 
     @property
     def log_qc_failed(self) -> pd.DataFrame:
@@ -418,10 +443,11 @@ class CalibTest(Test):
             files = files.explode()         # Pop lists in individual cells
         else:
             files = paths.apply(CalibTest._fiberglob, fibers=self.fibers)
-            for _ in fibers:
+            for _ in self.fibers:
                 files = files.explode()  # Nested lists so explode Nfiber times
 
         # Keep filename without path
+        files = files.dropna()
         files = files.apply(os.path.basename)
 
         return files
@@ -480,7 +506,7 @@ class CalibTest(Test):
         # Read master_calib_{instument}.txt
         master_calib_path = os.path.join(  # Full path: dir and file
                                 self.calibdb_path,
-                                'master_calib {}.txt'.format(self.instrument)
+                                'master_calib_{}.txt'.format(self.instrument)
                                 )
         f = open(master_calib_path, "r")
         master_calib_txt = f.read()
@@ -524,8 +550,10 @@ class CalibTest(Test):
 
         :rtype: pd.Series
         """
+        # Load output patterns that are in calibdb
         calib_ind = pd.Index(self.calibdb_list, name='KEY')
-        out_patterns = pd.Series(self.output_list, index=calib_ind)
+        out_patterns = pd.Series(self.output_list[:len(self.calibdb_list)],
+                                 index=calib_ind)
         sep = os.path.sep
         output_calib_paths = pd.Series(self.calibdb_path + sep + out_patterns,
                                        index=calib_ind
@@ -533,11 +561,12 @@ class CalibTest(Test):
 
         # Expand patterns
         if self.fibers is None:
-            files = outupt_calib_paths.apply(glob.glob)  # Get file list for each pattern
+            files = output_calib_paths.apply(glob.glob)  # Get file list for each pattern
             files = files.explode()         # Pop lists in individual cells
         else:
-            files = paths.apply(CalibTest._fiberglob, fibers=self.fibers)
-            for _ in fibers:
+            files = output_calib_paths.apply(CalibTest._fiberglob,
+                                             fibers=self.fibers)
+            for _ in self.fibers:
                 files = files.explode()  # Nested lists so explode Nfiber times
 
         output_calibdb = files.apply(os.path.basename)
@@ -567,14 +596,6 @@ class CalibTest(Test):
     # =========================================================================
     # Abstract methods common to all calib tests
     # =========================================================================
-    @property
-    @abstractmethod
-    def output_list(self) -> List[str]:
-        """List of output string patterns
-
-        :return: output_list
-        :rtype: List[str]
-        """
 
     @property
     @abstractmethod

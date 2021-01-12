@@ -92,230 +92,323 @@ class DarkMTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return 'cal_dark_master_{}'.format(self.instrument.lower())
+        return 'cal_dark_master_{self.instrument.lower()}'
 
-    def runtest(self):
-        """runtest."""
+    @property
+    def fibers(self) -> None:
+        """fibers.
+        No fibers for darkmaster
+        """
 
-        # TODO: overwrite counting to include master (is a master recipe)
-        # Either ismaster property in calib parent or just reimplement
+    # =========================================================================
+    # Overwritten parent methods
+    # =========================================================================
+    @property
+    def output_missing(self) -> pd.DataFrame:
+        """Overwrite output_missing for specific case of dark master.
 
-        # TODO: properly re-align log (other dir) with output (nights)
+        Missing outputs defined as every night without a dark master calib
 
-        # checking for missing output
-        if (recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) > len(np.unique(nights_output1))):
-            night_output1_missing = logfits.nights[index_recipe][np.in1d(logfits.nights[index_recipe], ~np.unique(nights_output1))]
-            output1_missing = output_list * len(night_output1_missing)
+        :rtype: pd.DataFrame
+        """
+        # NOTE: should change in APERO v0.7
+        output_frame = self.output_fiels.index.to_frame(drop=True)
+        night_comb = [(p, n)
+                      for p in self.output_list
+                      for n in self.reduced_nights]
+        all_nights = pd.DataFrame(night_comb, columns=['PATTERN', 'DIRECTORY'])
+        output_missing = all_nights[~all_nights.isin(output_frame).all(axis=1)]
 
-        # checking for duplicates
-        if recipe_num_logfits > output1_num_unique and len(np.unique(logfits.nights[index_recipe])) == len(np.unique(nights_output1)):
+        return output_missing
 
-            nights_logfits_unique, return_counts_output1 = np.unique(logfits.nights[index_recipe], return_counts=True)
+    # =========================================================================
+    # Checks and stops
+    # =========================================================================
+    def check_duplicates(self) -> pd.DataFrame:
+        """check_duplicates.
 
-            night_output1_dup = nights_logfits_unique[return_counts_output1 > 1]
-            output1_dup = output_list * len(night_output1_dup)
+        Duplicate defined as every night with more than one dark master calib
 
-        indexQCfalse = np.array(logfits.indexQCfalse) * np.array(index_recipe)  # QC false + correct recipe
-        indexENDEDfalse = np.array(logfits.indexENDEDfalse) * np.array(index_recipe)  # ENDED false + correct recipe
+        :rtype: pd.DataFrame
+        """
+        # NOTE: should change in APERO v0.7
+        dup = self.output_night_num[self.output_night_num > 1]
+        dup.name = 'COUNT'
+        dup = dup.reset_index()
 
-        num_logfits_QCfalse = sum(indexQCfalse)  # check4
-        num_logfits_ENDEDfalse = sum(indexENDEDfalse)  # check5
+        return dup
 
-        nights_logfits_QCfalse = logfits.nights[indexQCfalse]  # check4
-        QCstr_logfits_QCfalse = logfits.QCstr[indexQCfalse]    # check4
+    def check_qc(self, ncheck: int = 0) -> dict:
+        """check_qc."""
 
-        nights_logfits_ENDEDfalse = logfits.nights[indexENDEDfalse]    # check5
-        ERRORS_logfits_ENDEDfalse = logfits.ERRORS[indexENDEDfalse]    # check5
-        LOGFILE_logfits_ENDEDfalse = logfits.LOGFILE[indexENDEDfalse]  # check5
+        # Check passed QC and ENDED, can then access easily later
+        num_logfits_qc_failed = self.log_qc_failed.shape[0]
 
-
-        # check4
-        if num_logfits_QCfalse == 0:
-            comments_check4 = ''
-            inspect_check4 = ''
+        # check: QC
+        if num_logfits_qc_failed == 0:
+            comments_check_qc = ''
+            inspect_check_qc = ''
         else:
-            comments_check4 = 'One or more recipe have failed QC.'
-            data_dict_check4 = {'Night': nights_logfits_QCfalse,
-                                'QC_STRING': QCstr_logfits_QCfalse,
+            comments_check_qc = 'One or more recipe have failed QC.'
+            log_reset = self.log_qc_failed.reset_index()
+            data_dict_check_qc = {
+                    'Night': log_reset.DIRECTORY.values,
+                    'QC_STRING': self.log_qc_failed.QC_STRING.values,
                                 }
-            inspect_check4 = atf.inspect_table('darkmaster_test1',
-                                               'check4',
-                                               data_dict_check4,
-                                               'Nights that Failed Quality Control'
-                                               )
+            inspect_check_qc = atf.inspect_table(
+                    'badpixel_test1',
+                    f'check{ncheck}',
+                    data_dict_check_qc,
+                    'Nights that Failed Quality Control'
+                    )
 
-        # check5
-        if num_logfits_ENDEDfalse == 0:
-            comments_check5 = ''
-            inspect_check5 = ''
+        return comments_check_qc, inspect_check_qc
+
+    def check_ended(self, ncheck: int = 0) -> dict:
+        """check_ended."""
+        num_logfits_ended_false = self.log_ended_false.shape[0]
+
+        # check: ENDED
+        if num_logfits_ended_false == 0:
+            comments_check_ended = ''
+            inspect_check_ended = ''
         else:
-            comments_check5 = 'One or more recipe have failed to finish.'
-            data_dict_check5 = {'Night': nights_logfits_ENDEDfalse,
-                                'ERRORS': ERRORS_logfits_ENDEDfalse,
-                                'LOGFILE': LOGFILE_logfits_ENDEDfalse,
+            comments_check_ended = 'One or more recipe have failed to finish.'
+            log_reset = self.log_ended_false.reset_index()
+            data_dict_check_ended = {
+                    'Night': log_reset.DIRECTORY.values,
+                    'ERRORS': self.log_ended_false.ERRORS.values,
+                    'LOGFILE': self.log_ended_false.LOGFILE.values,
                                 }
-            inspect_check5 = atf.inspect_table('darkmaster_test1',
-                                               'check5',
-                                               data_dict_check5,
-                                               'Nights that Failed to Finish')
+            inspect_check_ended = atf.inspect_table(
+                    'badpixel_test1',
+                    f'check{ncheck}',
+                    data_dict_check_ended,
+                    'Nights that Failed to Finish'
+                    )
 
+        return comments_check_ended, inspect_check_ended
 
-        # stop1
-        if output1_num_unique == recipe_num_logfits:
-            color_stop1 = 'Lime'
-            result_stop1 = 'Yes'
-            comment_stop1 = ''
-            inspect_stop1 = ''
-        elif output1_num_unique < recipe_num_logfits:
+    def stop_output_log(self, dup: pd.DataFrame, nstop: int = 0) -> dict:
+        """stop_output_log.
 
-            color_stop1 = 'Yellow'
-            result_stop1 = 'No'
+        :param dup: df of true duplicate output
+
+        :rtype: dict
+        """
+
+        if (self.output_unique_num == self.log_tot_num).all():
+            color = 'Lime'
+            result = 'Yes'
+            comment = ''
+            inspect = ''
+
+        elif (self.output_unique_num < self.log_tot_num).any():
+
+            color = 'Yellow'
+            result = 'No'
+
+        else:
+            color = 'Red'
+            result = 'No'
+            comment = ('The number of unique output files should always be '
+                       'smaller or equal to the number of recipe called.'
+                       )
+            inspect = ''
+
+        # if missing output
+        # NOTE: moved out because can have missing or duplicates in a night
+        # even if match overall
+        # NOTE: could there be both missing output and duplicate?
+        if self.output_missing.shape[0] > 0:
+            comment = 'One or more output were not produced.'
+            data_dict = {'Night': self.output_missing.DIRECTORY.values,
+                         'File name': self.output_missing.PATTERN.values,
+                         }
+            inspect = atf.inspect_table('darkmaster_test1',
+                                        f'stop{nstop}',
+                                        data_dict,
+                                        'Missing Outputs in {0}'.format(
+                                            self.reduced_path
+                                            ),
+                                        )
+        # if duplicates
+        else:
+            comment = ('Recipe called multiple times producing the same '
+                       'outputs.')
+            data_dict = {'Night': dup.DIRECTORY.values,
+                         'File name': dup.PATTERN.values,
+                         'Occurrence': dup.COUNT.values,
+                         }
+            inspect = atf.inspect_table('darkmaster_test1',
+                            f'stop{nstop}',
+                            data_dict,
+                            ('Same Dark Master Recipe Called Twice or More '
+                             'Producing the Same Outputs in {0}'
+                             ).format(self.reduced_path)
+                            )
+
+        stop_dict = {
+                'data': data_dict,
+                'comment': comment,
+                'inspect': inspect,
+                'color': color,
+                'result': result,
+                }
+
+        return stop_dict
+
+    def stop_calibdb(self, calib_dup: pd.DataFrame, nstop: int = 0) -> dict:
+        """stop_calibdb.
+
+        :param calib_dup: duplicates in calibdb
+        :type calib_dup: pd.DataFrame
+        :param nstop: stop id number
+        :type nstop: int
+        :rtype: dict
+        """
+        if (self.output_num_calibdb == self.output_num_entry).all():
+            color = 'Lime'
+            result = 'Yes'
+            comment = ''
+            inspect = ''
+
+        elif (self.output_num_calibdb < self.tot_num_entry).any():
+
+            color = 'Yellow'
+            result = 'No'
+
 
             # if missing output
-            if len(output1_missing) > 0:
-                comment_stop1 = 'One or more output were not produced.'
-                data_dict_stop1 = {'Night': night_output1_missing,
-                                   'File name': output1_missing,
-                                   }
-                inspect_stop1 = atf.inspect_table('darkmaster_test1',
-                                                  'stop1',
-                                                  data_dict_stop1,
-                                                  'Missing Outputs in {0}'.format(
-                                                      reduced_path
-                                                      ),
-                                                  )
-            # if duplicates
-            else:
-                comment_stop1 = ('Recipe called multiple times producing the same '
-                                 'outputs.')
-                data_dict_stop1 = {'Night': night_output1_dup,
-                                   'File name': output1_dup,
-                                   }
-                inspect_stop1 = atf.inspect_table(
-                        'darkmaster_test1',
-                        'stop1',
-                        data_dict_stop1,
-                        ('Same Dark Master Recipe Called Twice or More '
-                         'Producing the Same Outputs in {0}'
-                         ).format(reduced_path)
-                         )
-        else:
-            color_stop1 = 'Red'
-            result_stop1 = 'No'
-            comment_stop1 = ('The number of unique output files should always be '
-                             'smaller or equal to the number of recipe called.'
-                             )
-            inspect_stop1 = ''
+            # NOTE: Could we have both missing and dup?
+            if self.calib_missing_mask.any():
 
-        # Inspect calibDB
-        f = open("{0}/master_calib_{1}.txt".format(calibDB_path, instrument), "r")
-        master_calib_txt = f.read()
-        nprocessed = master_calib_txt.index('# DRS processed')
-        index_start = master_calib_txt[:nprocessed].count('\n')
-        key_col, master_col, night_col, file_col = np.genfromtxt(
-                "{0}/master_calib_{1}.txt".format(calibDB_path, instrument),
-                delimiter=' ',
-                unpack=True,
-                usecols=(0, 1, 2, 3),
-                skip_header=index_start,
-                dtype=str)
-        master_col = master_col.astype(dtype = bool) # str to bool
-
-        index_key_output1 = key_col == calibDB_entry_list[0]
-
-        output1_num_entry = len(key_col[index_key_output1]) # check6
-
-        output1_calibDB = atf.list_files("{0}".format(calibDB_path),
-                                         files=output_list[0][1:])
-        output1_num_calibDB = len(output1_calibDB)  # check7
-
-
-        # checking for missing output
-
-        output1_missing_calibDB = []
-
-        if sum(np.in1d(file_col[index_key_output1], output1_calibDB)) < len(file_col[index_key_output1]): 
-
-            index_output1_missing = ~np.in1d(
-                    file_col[index_key_output1],
-                    output1_calibDB)
-
-            night_output1_missing_calibDB = night_col[index_key_output1][index_output1_missing]
-            output1_missing_calibDB = file_col[index_key_output1][index_output1_missing]
-
-
-        # checking for duplicates
-
-        if len(output1_calibDB) < output1_num_entry:
-
-            (file_col_output1_unique,
-             index_output1_dup,
-             return_counts_output1) = np.unique(
-                         file_col[index_key_output1],
-                         return_index=True,
-                         return_counts=True
-                         )
-
-            count_mask1 = return_counts_output1 > 1
-
-            night_output1_dup_calibDB = night_col[index_key_output1][index_output1_dup][count_mask1]
-            output1_dup_calibDB = file_col_output1_unique[count_mask1]
-
-
-        # stop2
-        if output1_num_calibDB == output1_num_entry:
-            color_stop2 = 'Lime'
-            result_stop2 = 'Yes'
-            comment_stop2 = ''
-            inspect_stop2 = ''
-
-        elif output1_num_calibDB < output1_num_entry:
-
-            color_stop2 = 'Yellow'
-            result_stop2 = 'No'
-
-            # if missing output
-            if len(output1_missing_calibDB) > 0:
-
-                comment_stop2 = 'One or more outputs are not in the calibDB.'
-                data_dict_stop2 = {'Night': night_output1_missing_calibDB,
-                                   'File name': output1_missing_calibDB,
-                                   }
-                inspect_stop2 = atf.inspect_table('darkmaster_test1',
-                                                  'stop2',
-                                                  data_dict_stop2,
-                                                  'Missing Output in {0}'.format(
-                                                      calibDB_path)
-                                                  )
+                comment = 'One or more outputs are not in the calibDB.'
+                missing_mask = self.calib_missing_mask
+                missing_calibdb_output = self.master_calib_df[missing_mask]
+                data_dict = {
+                        'Night': missing_calibdb_output.NIGHT.values,
+                        'File name': missing_calibdb_output.FILE.values,
+                        }
+                inspect = atf.inspect_table(
+                                'badpixel_test1',
+                                f'stop{nstop}',
+                                data_dict,
+                                f'Missing Output in {self.calibDB_path}'
+                                )
             # if duplicates
             else:
 
-                comment_stop2 = ('Some entries in master_calib_{0}.txt are '
-                                 'identical.').format(instrument)
-                data_dict_stop2 = {'Night': night_output1_dup_calibDB,
-                                   'File name': output1_dup_calibDB,
-                                   'Occurrence': return_counts_output1[count_mask1]
-                                   }
-                inspect_stop2 = atf.inspect_table(
-                        'darkmaster',
-                        'stop2',
-                        data_dict_stop2,
+                comment = ('Some entries in'
+                           f'master_calib_{self.instrument}.txt'
+                           'are identical.')
+                data_dict = {
+                        'Night': calib_dup.NIGHT.values,
+                        'File name': calib_dup.FILE.values,
+                        'Occurrence': calib_dup.COUNT.values,
+                         }
+                inspect = atf.inspect_table(
+                        'badpixel_test1',
+                        f'stop{nstop}',
+                        data_dict,
                         ('Duplicate Entries in '
-                         'master_calib_{0}.txt').format(instrument)
+                         'master_calib_{0}.txt').format(self.instrument)
                         )
 
         else:
-            color_stop2 = 'Red'
-            result_stop2 = 'No'
-            comment_stop2 = ('The calibDB should not have more output files than what '
-                             'was produced.')
-            inspect_stop2 = ''
+            color = 'Red'
+            result = 'No'
+            comment = ('The calibDB should not have more output files '
+                             'than what was produced.')
+            inspect = ''
 
+        stop_dict = {
+                'data': data_dict,
+                'comment': comment,
+                'inspect': inspect,
+                'color': color,
+                'result': result,
+                }
 
-        # TODO: fill template
-        html_text = ''
-        with open('darkmaster_test1/darkmaster_test1.html', 'w') as f:
-            f.write(html_text)
+        return stop_dict
+
+    # =========================================================================
+    # Running the test
+    # =========================================================================
+    def runtest(self):
+        """runtest."""
+
+        # =====================================================================
+        # Inspect outputs
+        # =====================================================================
+        # Checking for duplicates
+        dup = self.check_duplicates()
+
+        # QC/ENDED
+        comments_check4, inspect_check4 = self.check_qc()
+        comments_check5, inspect_check5 = self.check_ended()
+
+        dict_stop1 = self.stop_output_log(dup)
+
+        # =====================================================================
+        # Inspect calibDB
+        # =====================================================================
+        # Check if some files have duplicaltes in db (empty if none)
+        # Use tot_num_entry for dark MASTER recipe (i.e. not remove masters)
+        calib_dup_mask = self.master_calib_df.duplicated(keep=False)
+        master_mask = self.master_calib_df.MASTER
+        calib_dup = self.master_calib_df[calib_dup_mask & ~master_mask]
+        calib_dup = calib_dup.set_index('FILE', append=True)
+        ind_names = calib_dup.index.names  # get file and key to count
+        calib_dup['COUNT'] = calib_dup.groupby(ind_names).size()
+        calib_dup = calib_dup.reset_index('FILE')
+        calib_dup = calib_dup.drop_duplicates()
+
+        dict_stop2 = self.stop_calibdb(calib_dup)
+
+        html_dict = {
+                # Summary header info
+                'setup': self.setup,
+                'instrument': self.instrument,
+                'date': self.date,
+                'output_list': self.output_list,
+                'calibdb_list': self.calibdb_list,
+
+                # Check 1: number of calls in logfits
+                'recipe_num_logfits': self.log_tot_num,  # Master recipe
+
+                # Check 2 number of outputs
+                'output_num_total': self.output_num_total,
+
+                # Check 3 number of unique outputs
+                'output_num_unique': self.output_num_unique,
+
+                # Stop 1
+                'dict_stop1': dict_stop1,
+
+                # Check 4: QC failed
+                'log_qc_failed': self.log_qc_failed,
+                'comments_check4': comments_check4,
+                'inspect_check4': inspect_check4,
+
+                # check 5: not ended
+                'log_ended_false': self.log_ended_false,
+                'comments_check5': comments_check5,
+                'inspect_check5': inspect_check5,
+
+                # Check 6: calibdb entries
+                'output_num_entry': self.tot_num_entry,  # Master recipe
+                # 'comments_check6': comments_check6,
+
+                # Check 7: calibdb outputs
+                'output_num_calibdb': self.output_num_calibdb,
+                'output_dict': self.calib_output_dict,
+
+                # Stop 2: calib output == entries
+                'dict_stop2': dict_stop2,
+                }
+        
+        self.gen_html(html_dict)
 
 
 if __name__ == '__main__':
