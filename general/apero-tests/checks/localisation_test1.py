@@ -202,14 +202,14 @@ class LocTest(CalibTest):
         """
 
         # STOP 1: Unique output == log?
-        if (self.output_unique_num == self.recipe_num_logfits).all():
+        if (self.output_num_unique == self.recipe_num_logfits).all():
             color = 'Lime'
             result = 'Yes'
             comment = ''
             inspect = ''
             data_dict = {}
 
-        elif (self.output_unique_num < self.recipe_num_logfits).any():
+        elif (self.output_num_unique < self.recipe_num_logfits).any():
 
             color = 'Yellow'
             result = 'No'
