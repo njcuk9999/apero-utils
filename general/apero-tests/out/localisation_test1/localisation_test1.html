@@ -1,128 +1,143 @@
 
-<html>
+        <html>
 
 
-<head>
-<title>APERO Tests</title>
-<style>
-table {
-  width:75%;
-}
-table, th, td {
-  border: 1px solid black;
-  border-collapse: collapse;
-}
-th, td {
-  padding: 15px;
-  text-align: left;
-}
-#t01 tr:nth-child(even) {
-  background-color: #eee;
-}
-#t01 tr:nth-child(odd) {
- background-color: #fff;
-}
-#t01 th {
-  background-color: white;
-  color: black;
-}
-</style>
-</head>
+        <head>
+        <title>APERO Tests</title>
+        <style>
+        table {
+          width:75%;
+        }
+        table, th, td {
+          border: 1px solid black;
+          border-collapse: collapse;
+        }
+        th, td {
+          padding: 15px;
+          text-align: left;
+        }
+        #t01 tr:nth-child(even) {
+          background-color: #eee;
+        }
+        #t01 tr:nth-child(odd) {
+         background-color: #fff;
+        }
+        #t01 th {
+          background-color: white;
+          color: black;
+        }
+        </style>
+        </head>
 
-<body>
+        <body>
 
-<h3>Localisation Recipe Test #1</h3>
-<p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
-<p><b>Instrument: SPIROU</b><br>
-<p><b>Date: 2020-12-18 17:11:08</b><br>
-<br>
-<p>Script: cal_loc_spirou.py<br>
-<p>Output files: *_pp_order_profile_{FIBER}.fits, *_pp_loco_{FIBER}.fits, *_pp_fwhm-order_{FIBER}.fits, *_pp_with-order_{FIBER}.fits<br>
-<p>Calibration database entry: ORDER_PROFILE_{FIBER}, LOC_{FIBER}<br>
-<p><a href='https://github.com/njcuk9999/apero-drs#84-localisation-recipe'>Link</a> to Localisation Recipe description</p>
-<br></br>
+        <h3>Localisation Recipe Test #1</h3>
+        <p><b>Setup: /spirou/drs/setup/setup_sept1/</b><br>
+        <p><b>Instrument: SPIROU</b><br>
+        <p><b>Date: 2020-12-22 12:23:11</b><br>
+        <br>
+        <p>Script: cal_loc_spirou.py<br>
+        <p>Output files: *_pp_order_profile_{FIBER}.fits, *_pp_loco_{FIBER}.fits, *_pp_fwhm-order_{FIBER}.fits, *_pp_with-order_{FIBER}.fits<br>
+        <p>Calibration database entry: ORDER_PROFILE_{FIBER}, LOC_{FIBER}<br>
+        <p><a href='https://github.com/njcuk9999/apero-drs#84-localisation-recipe'>Link</a> to Localisation Recipe description</p>
+        <br></br>
 
-<table id="t01">
+        <table id="t01">
 
-  <colgroup>
-     <col span="1" style="width: 5%;">
-     <col span="1" style="width: 45%;">
-     <col span="1" style="width: 21%;">
-     <col span="1" style="width: 24%;">
-     <col span="1" style="width: 5%;">
-  </colgroup>
-  <tr>
-    <th>Check</th>
-    <th>Description</th>
-    <th>Result</th>
-    <th>Comments</th>
-    <th>Details</th>
-  </tr>
-  <tr>
-    <td>1</td>
-    <td># of time cal_loc_spirou.py was called</td>
-    <td>967</td>
-    <td>An additional 2 recipes with --master=True were called in the master directory 2019-04-20.</td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>2</td>
-    <td># of outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
-    <td>*_pp_order_profile_{FIBER}.fits: 1649<br>*_pp_loco_{FIBER}.fits: 1649<br>*_pp_fwhm-order_{FIBER}.fits: 967<br>*_pp_with-order_{FIBER}.fits: 967</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>3</td>
-    <td># of unique outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
-    <td>*_pp_order_profile_{FIBER}.fits: 967<br>*_pp_loco_{FIBER}.fits: 967<br>*_pp_fwhm-order_{FIBER}.fits: 967<br>*_pp_with-order_{FIBER}.fits: 967</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td></td>
-    <td>Check 3 == Check 1?</td>
-    <td bgcolor=Lime>Yes</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>4</td>
-    <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed one or more QC</td>
-    <td>0</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>5</td>
-    <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed to finish</td>
-    <td>0</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>6</td>
-    <td># of ORDER_PROFILE_{FIBER}, LOC_{FIBER} entry in /spirou/cfht_nights/cfht_sept1/calibDB/master_calib_SPIROU.txt</td>
-    <td>ORDER_PROFILE_{FIBER}: 967<br>LOC_{FIBER}: 967</td>
-    <td>An additional 2 ORDER_PROFILE_{FIBER} and 2 LOC_{FIBER} with master = 1 are in the master_calibDB_SPIROU.</td>
-    <td></td>
-  </tr>
-  <tr>
-    <td>7</td>
-    <td># of outputs in /spirou/cfht_nights/cfht_sept1/calibDB</td>
-    <td>*_pp_order_profile_{FIBER}.fits: 967<br>*_pp_loco_{FIBER}.fits: 967</td>
-    <td></td>
-    <td></td>
-  </tr>
-  <tr>
-    <td></td>
-    <td>Check 7 == Check 6?</td>
-    <td bgcolor=Lime>Yes</td>
-    <td></td>
-    <td></td>
-  </tr>
-</table>
+          <colgroup>
+             <col span="1" style="width: 5%;">
+             <col span="1" style="width: 45%;">
+             <col span="1" style="width: 21%;">
+             <col span="1" style="width: 24%;">
+             <col span="1" style="width: 5%;">
+          </colgroup>
+          <tr>
+            <th>Check</th>
+            <th>Description</th>
+            <th>Result</th>
+            <th>Comments</th>
+            <th>Details</th>
+          </tr>
+          <tr>
+            <td>1</td>
+            <td># of time cal_loc_spirou.py was called</td>
+            <td>967</td>
+            <td>An additional 2 recipes with --master=True were called in the master directory 2019-04-20.</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td># of outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
+            <td>*_pp_order_profile_{FIBER}.fits: 1649<br>*_pp_loco_{FIBER}.fits: 1649<br>*_pp_fwhm-order_{FIBER}.fits: 967<br>*_pp_with-order_{FIBER}.fits: 967</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td># of unique outputs in /spirou/cfht_nights/cfht_sept1/reduced</td>
+            <td>*_pp_order_profile_{FIBER}.fits: 967<br>*_pp_loco_{FIBER}.fits: 967<br>*_pp_fwhm-order_{FIBER}.fits: 967<br>*_pp_with-order_{FIBER}.fits: 967</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>Check 3 == Check 1?</td>
+            <td bgcolor=Lime>Yes</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed one or more QC</td>
+            <td>0</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Plot the different QCs as a function of time</td>
+            <td><a href='check5/check5.html'>Inspect</a></td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td># of entry in /spirou/cfht_nights/cfht_sept1/reduced/log.fits that failed to finish</td>
+            <td>0</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td># of ORDER_PROFILE_{FIBER}, LOC_{FIBER} entry in /spirou/cfht_nights/cfht_sept1/calibDB/master_calib_SPIROU.txt</td>
+            <td>ORDER_PROFILE_{FIBER}: 967<br>LOC_{FIBER}: 967</td>
+            <td>An additional 2 ORDER_PROFILE_{FIBER} and 2 LOC_{FIBER} with master = 1 are in the master_calibDB_SPIROU.</td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>8</td>
+            <td># of outputs in /spirou/cfht_nights/cfht_sept1/calibDB</td>
+            <td>*_pp_order_profile_{FIBER}.fits: 967<br>*_pp_loco_{FIBER}.fits: 967</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td></td>
+            <td>Check 8 == Check 7?</td>
+            <td bgcolor=Lime>Yes</td>
+            <td></td>
+            <td></td>
+          </tr>
+          <tr>
+            <td>9</td>
+            <td># of outputs in /spirou/cfht_nights/cfht_sept1/reduced that used the bad pixel calibration files from another night</td>
+            <td>0</td>
+            <td></td>
+            <td></td>
+          </tr>
+        </table>
 
 
-</body>
-</html>
+        </body>
+        </html>
+        

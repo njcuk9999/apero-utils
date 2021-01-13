@@ -9,6 +9,7 @@ from preprocessing_test1 import PPTest
 from darkmaster_test1 import DarkMTest
 from badpixel_test1 import BadPixTest
 from localisation_test1 import LocTest
+from shapemaster_test1 import ShapeMTest
 
 
 TESTDICT = {
@@ -19,7 +20,7 @@ TESTDICT = {
         'darkmaster_test1': DarkMTest,
         'badpixel_test1': BadPixTest,
         'localisation_test1': LocTest,
-        'shapemaster_test1': None,
+        'shapemaster_test1': ShapeMTest,
         'shape_test1': None,
         'flat_test1': None,
         'thermal_test1': None,

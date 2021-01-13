@@ -5,15 +5,15 @@ Tests preformed
 check1: how many recipes were run (cal_loc_{instrument} in log.fits)?
         how many in the master directory?
 check2: how many of each output do we have?
-        output1: {ODOMETER_CODE}_pp_order_profile_C.fits
-        output2: {ODOMETER_CODE}_pp_loco_C.fits
-        output3: {ODOMETER_CODE}_pp_fwhm-order_C.fits
-        output4: {ODOMETER_CODE}_pp_with-order_C.fits
+        output1: {ODOMETER_CODE}_pp_order_profile_{FIBER}.fits
+        output2: {ODOMETER_CODE}_pp_loco_{FIBER}.fits
+        output3: {ODOMETER_CODE}_pp_fwhm-order_{FIBER}.fits
+        output4: {ODOMETER_CODE}_pp_with-order_{FIBER}.fits
 check3: how many of each unique output do we have?
-        output1: {ODOMETER_CODE}_pp_order_profile_C.fits
-        output2: {ODOMETER_CODE}_pp_loco_C.fits
-        output3: {ODOMETER_CODE}_pp_fwhm-order_C.fits
-        output4: {ODOMETER_CODE}_pp_with-order_C.fits
+        output1: {ODOMETER_CODE}_pp_order_profile_{FIBER}.fits
+        output2: {ODOMETER_CODE}_pp_loco_{FIBER}.fits
+        output3: {ODOMETER_CODE}_pp_fwhm-order_{FIBER}.fits
+        output4: {ODOMETER_CODE}_pp_with-order_{FIBER}.fits
 stop1: check3 == check1?
 check4: using the log.fits how many files failed one or more QC?
         Which odometers? Which nights? Which QC?
@@ -23,7 +23,7 @@ check6: using the log.fits how many files failed to finish? Which odometers?
 check7: how many entry ORDER_PROFILE_{FIBER} and LOC_{FIBER} in
         master_calib_{INSTRUMENT}.txt?
 check8: for each calib entry how many are in the calibDB?
-stop2: check7 == check8?
+stop2: check8 == check7?
 check9: which bad pixel calibrations were used for each file? Was it the one
         from this night? How far away is the calibration obs time from the loc
         input file obs time?
@@ -291,7 +291,7 @@ class LocTest(CalibTest):
             color = 'Red'
             result = 'No'
             comment = ('The number of unique output files should always '
-                       'be smaller or equal to the number of recipe '
+                       'be smaller than or equal to the number of recipes '
                        'called.')
             inspect = ''
             data_dict = {}

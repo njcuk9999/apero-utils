@@ -252,7 +252,7 @@ class BadPixTest(CalibTest):
             color = 'Red'
             result = 'No'
             comment = ('The number of unique output files should always '
-                       'be smaller or equal to the number of recipe '
+                       'be smaller than or equal to the number of recipe '
                        'called.')
             inspect = ''
             data_dict = {}

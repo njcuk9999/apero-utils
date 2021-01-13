@@ -300,7 +300,7 @@ class PPTest(Test):
             color = 'Red'
             result = 'No'
             comment = ('The number of pp files should always be '
-                       'smaller than the number of raw files.')
+                       'smaller than or equal to the number of raw files.')
             inspect = ''
 
         stop_dict = {
