@@ -66,11 +66,11 @@ def count_files(path, files='all'):
     """
 
     if files == 'all':
-        f = '*'
+        fpattern = '*'
     else:
-        f = files
+        fpattern = files
 
-    return len(glob.glob('{0}/{1}'.format(path, f)))
+    return len(glob.glob(os.path.join(path, fpattern)))
 
 
 def count_files_subdir(path, subdir='all', files='all'):
@@ -79,16 +79,16 @@ def count_files_subdir(path, subdir='all', files='all'):
     """
 
     if subdir == 'all':
-        s = '*'
+        spattern = '*'
     else:
-        s = subdir
+        spattern = subdir
 
     if files == 'all':
-        f = '*'
+        fpattern = '*'
     else:
-        f = files
+        fpattern = files
 
-    return len(glob.glob('{0}/{1}/{2}'.format(path, s, f)))
+    return len(glob.glob(os.path.join(path, spattern, fpattern)))
 
 
 def list_raw_odometers(path, files='all'):

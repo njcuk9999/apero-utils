@@ -21,9 +21,11 @@ Tests performed:
 """
 import os
 from datetime import datetime
-from typing import Optional, List
+from typing import Optional, List, Tuple
 
 import numpy as np
+import pandas as pd
+from astropy.table import Table
 
 from apero_tests import Test
 import apero_tests_func as atf
@@ -33,6 +35,11 @@ from apero.core import constants
 class PPTest(Test):
     """PPTEST."""
 
+    # pylint: disable=too-many-public-methods
+    # A few more (20+5=5) here to keep same logic as other tests even though
+    # inherits directly from Test (no intermediate in between)
+
+
     def __init__(self, inst: str = 'SPIROU', setup: Optional[str] = None):
         """__init__.
 
@@ -41,13 +48,28 @@ class PPTest(Test):
         :param setup: APERO setup
         :type setup: Optional[str]
         """
-        super().__init(inst=inst, setup=setup)
+        super().__init__(inst=inst, setup=setup)
 
         # list raw night directories
         self._raw_nights = atf.list_nights(self.raw_path)
 
         # list PP data night directories
         self._pp_nights = atf.list_nights(self.pp_path)
+
+        # Counts directly from glob (done here to avoid parsing each time)
+        self._raw_num = atf.count_files_subdir(self.raw_path,
+                                               subdir='all',
+                                               files='*.fits')
+        self._pp_num = atf.count_files_subdir(self.pp_path,
+                                              subdir='all',
+                                              files=self.output_list[0])
+
+
+        # NOTE: Load index and log, discard missing with _ for now (not used)
+        dirs = self.pp_nights.copy()
+        self._log_df, _ = self._load_log_index('log', dirs)
+        self._index_df, _ = self._load_log_index('index', dirs)
+
 
     # =========================================================================
     # Abstract properties from parent Test
@@ -65,6 +87,10 @@ class PPTest(Test):
 
     @property
     def recipe(self) -> str:
+        """recipe.
+
+        :rtype: str
+        """
         return f'cal_preprocess_{self.instrument.lower()}'
 
     @property
@@ -119,187 +145,348 @@ class PPTest(Test):
         """
         return self._pp_nights
 
+    @property
+    def log_df(self) -> pd.DataFrame:
+        """Dataframe with log information
+
+        :return: log_df
+        :rtype: pd.DataFrame
+        """
+        return self._log_df
+
+    @property
+    def index_df(self) -> pd.DataFrame:
+        """Dataframe with index information
+
+        :return: index_df
+        :rtype: pd.DataFrame
+        """
+        return self._index_df
+
+    @property
+    def log_df_unique(self) -> pd.DataFrame:
+        """log_df_unique.
+
+        :rtype: pd.DataFrame
+        """
+        return self.log_df.drop_duplicates(subset='ODOMETER')
+
+    # =========================================================================
+    # Properties derived from outputs
+    # =========================================================================
+    @property
+    def raw_num(self) -> int:
+        """raw_num.
+
+        :rtype: int
+        """
+        return self._raw_num
+
+    @property
+    def pp_num(self) -> int:
+        """pp_num.
+
+        :rtype: int
+        """
+        return self._pp_num
+
+    @property
+    def pp_num_index(self) -> int:
+        """pp_num_indexfits.
+
+        :rtype: int
+        """
+        return self.index_df.shape[0]
+
+    @property
+    def pp_num_log(self) -> int:
+        """pp_num_log.
+
+        :rtype: int
+        """
+        return self.log_df.shape[0]
+
+    @property
+    def pp_num_log_unique(self) -> int:
+        """pp_num_log_unique.
+
+        :rtype: int
+        """
+        return self.log_df_unique.shape[0]
+
+    @property
+    def log_qc_failed(self) -> pd.DataFrame:
+        """log_qc_failed.
+
+        :rtype: pd.DataFrame
+        """
+        return self.log_df_unique[~self.log_df_unique.PASSED_ALL_QC]
+
+    @property
+    def log_ended_false(self) -> pd.DataFrame:
+        """log_ended_false.
+
+        :rtype: pd.DataFrame
+        """
+        return self.log_df_unique[~self.log_df_unique.ENDED]
+
+    # =========================================================================
+    # Utility methods
+    # =========================================================================
+    def _load_log_index(self,
+                        ftype: str,
+                        dirs: List[str]) -> Tuple[pd.DataFrame, list]:
+        """_load_log_index.
+        Generate a dataframe with log for each directory, with DIRECTORY as
+        index. Only logs of the recipe being tested are kept.
+
+        :param ftype: file type (log)
+        :type ftype: str
+        :param dirs:
+        :type dirs: List[str]
+        :rtype: Tuple[pd.DataFrame, list]
+        """
+        if ftype not in ['log', 'index']:
+            raise ValueError('ftype should be log or index')
+
+        # Get all logs in a dataframe
+        allpaths = [os.path.join(self.pp_path, d, f'{ftype}.fits')
+                    for d in dirs]
+        paths = [p for p in allpaths if os.path.isfile(p)]
+        dfs = [Table.read(f).to_pandas() for f in paths]
+        df = pd.concat(dfs)
+
+        # Decode strings (fits from astropy are encoded)
+        for col in df.columns:
+            # try/except for non-string columns (no .str attribute)
+            try:
+                df[col] = df[col].str.decode('utf-8')
+            except AttributeError:
+                pass
+
+        # Use DIRECTORY/NIGHTNAME as index (all entries should be PP)
+        night_label = 'DIRECTORY' if ftype == 'log' else 'NIGHTNAME'
+        df = df.set_index([night_label])
+
+        # Store missing logs in another list
+        missing_logs = [p for p in allpaths if not os.path.isfile(p)]
+
+        # Some extra formatting for logs
+        if ftype == 'log':
+            df['ARGS'] = df.ARGS.str.replace('persi_', '')
+            df['ODOMETER'] = df.ARGS.str.split('.fits').str[0].str[-8:]
+
+        return df, missing_logs
+
+    # =========================================================================
+    # Checks and stops
+    # =========================================================================
+    def stop_raw_pp(self) -> dict:
+        """stop_raw_pp.
+
+        :rtype: dict
+        """
+        # Stop 1
+        if self.pp_num == self.raw_num:
+            color = 'Lime'
+            result = 'Yes'
+            comment = ''
+            inspect = ''
+        elif self.pp_num < self.raw_num:
+            color = 'Yellow'
+            result = 'No'
+            comment = 'Not all available raw files were reduced.'
+            inspect = ''
+        else:
+            color = 'Red'
+            result = 'No'
+            comment = ('The number of pp files should always be '
+                       'smaller than the number of raw files.')
+            inspect = ''
+
+        stop_dict = {
+                'comment': comment,
+                'inspect': inspect,
+                'color': color,
+                'result': result,
+                }
+
+        return stop_dict
+
+    def stop_index_pp(self) -> dict:
+        """stop_index_pp.
+
+        :rtype: dict
+        """
+        # Stop2
+        if self.pp_num_index == self.pp_num:
+            color = 'Lime'
+            result = 'Yes'
+            comment = ''
+            inspect = ''
+        else:
+            color = 'Red'
+            result = 'No'
+            comment = ''
+            inspect = ''
+
+        stop_dict = {
+                'comment': comment,
+                'inspect': inspect,
+                'color': color,
+                'result': result,
+                }
+
+        return stop_dict
+
+    def stop_log_pp(self) -> dict:
+        """stop_log_pp.
+
+        :rtype: dict
+        """
+        # Stop 3
+        if self.pp_num_log_unique == self.pp_num:
+            color = 'Lime'
+            result = 'Yes'
+            comment = ''
+            inspect = ''
+        elif self.pp_num_log_unique > self.pp_num:
+            color = 'Yellow'
+            result = 'No'
+            comment = 'Some files were processed more than once.'
+            inspect = ''
+        else:
+            color = 'Red'
+            result = 'No'
+            comment = ''
+            inspect = ''
+
+        stop_dict = {
+                'comment': comment,
+                'inspect': inspect,
+                'color': color,
+                'result': result,
+                }
+
+        return stop_dict
+
+    def check_qc(self, ncheck: int = 0) -> dict:
+        """check_qc."""
+
+        # Check passed QC and ENDED, can then access easily later
+        num_logfits_qc_failed = self.log_qc_failed.shape[0]
+
+        # check: QC
+        if num_logfits_qc_failed == 0:
+            comments_check_qc = ''
+            inspect_check_qc = ''
+        else:
+            comments_check_qc = 'One or more recipe have failed QC.'
+            log_reset = self.log_qc_failed.reset_index()
+            data_dict_check_qc = {
+                    'Night': log_reset.DIRECTORY.values,
+                    'Odometer': self.log_qc_failed.ODOMETER.values,
+                    'QC_STRING': self.log_qc_failed.QC_STRING.values,
+                    }
+            inspect_check_qc = atf.inspect_table(
+                    'preprocessing_test1',
+                    f'check{ncheck}',
+                    data_dict_check_qc,
+                    'Odometers that Failed One or More Quality Control'
+                    )
+
+        return comments_check_qc, inspect_check_qc
+
+    def check_ended(self, ncheck: int = 0) -> dict:
+        """check_ended."""
+        num_logfits_ended_false = self.log_ended_false.shape[0]
+
+        # check: ENDED
+        if num_logfits_ended_false == 0:
+            comments_check_ended = ''
+            inspect_check_ended = ''
+        else:
+            comments_check_ended = 'One or more recipe have failed to finish.'
+            log_reset = self.log_ended_false.reset_index()
+            data_dict_check_ended = {
+                    'Night': log_reset.DIRECTORY.values,
+                    'Odometer': self.log_ended_false.ODOMETER.values,
+                    'ERRORS': self.log_ended_false.ERRORS.values,
+                    'LOGFILE': self.log_ended_false.LOGFILE.values,
+                                }
+            inspect_check_ended = atf.inspect_table(
+                    'badpixel_test1',
+                    f'check{ncheck}',
+                    data_dict_check_ended,
+                    'Odometers that Failed to Finish'
+                    )
+
+        return comments_check_ended, inspect_check_ended
+
     # =========================================================================
     # Running the test
     # =========================================================================
     def runtest(self):
         """runtest."""
 
-        print(self.name)
+        # Stop 1: raw == pp?
+        dict_stop1 = self.stop_raw_pp()
 
-        # =============================================================================
-        # TESTS
-        # =============================================================================
-        # Check 1
-        raw_num = atf.count_files_subdir(raw_path,
-                                         subdir='all',
-                                         files='*.fits')
+        # Stops for index and log == PP ?
+        dict_stop2 = self.stop_index_pp()
+        dict_stop3 = self.stop_log_pp()
 
-        # Check 2
-        pp_num = atf.count_files_subdir(pp_path,
-                                        subdir='all',
-                                        files=output_list[0])
+        # QC/ENDED
+        comments_check6, inspect_check6 = self.check_qc(ncheck=6)
+        comments_check7, inspect_check7 = self.check_ended(ncheck=7)
 
-        # Stop 1
-        if pp_num == raw_num:
-            color_stop1 = 'Lime'
-            result_stop1 = 'Yes'
-            comment_stop1 = ''
-            inspect_stop1 = ''
-        elif pp_num < raw_num:
-            color_stop1 = 'Yellow'
-            result_stop1 = 'No'
-            comment_stop1 = 'Not all available raw files were reduced.'
-            inspect_stop1 = ''
-        else:
-            color_stop1 = 'Red'
-            result_stop1 = 'No'
-            comment_stop1 = ('The number of pp files should always be '
-                             'smaller than the number of raw files.')
-            inspect_stop1 = ''
+        html_dict = {
+                # Summary header info
+                'setup:': self.setup,
+                'instrument': self.instrument,
+                'data': self.date,
+                'output_list': self.output_list,
 
+                # Check 1: raw
+                'raw_path': self.raw_path,
+                'raw_num': self.raw_num,
 
-        # Inspect all pp_nights index.fits and log.fits
-        pp_num_indexfits = 0                  # Check 3
-        pp_num_logfits = 0                    # Check 4
-        pp_num_logfits_unique = 0             # Check 5
-        pp_num_logfits_unique_QCfalse = 0     # Check 6
-        pp_num_logfits_unique_ENDEDfalse = 0  # Check 7
+                # Check 2: PP
+                'pp_path': self.pp_path,
+                'pp_num': self.pp_num,
 
-        odometers_logfits_QCfalse = []        # Check 6
-        nights_logfits_QCfalse = []           # Check 6
-        QCstr_logfits_QCfalse = []            # Check 6
+                # Stop 1: PP == raw
+                'dict_stop1': dict_stop1,
 
-        odometers_logfits_ENDEDfalse = []     # Check 7
-        nights_logfits_ENDEDfalse = []        # Check 7
-        ERRORS_logfits_ENDEDfalse = []        # Check 7
-        LOGFILE_logfits_ENDEDfalse = []       # Check 7
+                # Check 3: number of entries index.fits files
+                'pp_num_index': self.pp_num_index,
 
-        missing_indexfits = []
-        missing_logfits = []
+                # Stop 2: PP == index
+                'dict_stop2': dict_stop2,
 
-        for i in range(len(pp_nights)):
+                # Check 4: number of calls in logs
+                'pp_num_log': self.pp_num_log,
 
-            # Inspect index.fits if the file exists
-            if os.path.isfile('{0}/{1}/index.fits'.format(pp_path, pp_nights[i])):
+                # Check 5: number of unique odometers in logs
+                'pp_num_log_unique': self.pp_num_log_unique,
 
-                indexfits = atf.index_fits('{0}/{1}/index.fits'.format(pp_path,
-                                                                       pp_nights[i])
-                                           )
-                pp_num_indexfits += indexfits.len  # Check 3
+                # Stop 3: log_unique == PP
+                'dict_stop3': dict_stop3,
 
-            # Missing index.fits
-            else:
-                missing_indexfits.append('{0}/{1}/index.fits'.format(pp_path,
-                                                                     pp_nights[i])
-                                         )
+                # Check 6: QC failed
+                'pp_num_qc_failed': self.log_qc_failed.size[0],
+                'comments_check6': comments_check6,
+                'inspect_check6': inspect_check6,
 
-            # Inspect log.fits if the file exists
-            if os.path.isfile('{0}/{1}/log.fits'.format(pp_path, pp_nights[i])):
-
-                logfits = atf.log_fits('{0}/{1}/log.fits'.format(pp_path,
-                                                                 pp_nights[i])
-                                       )
-                pp_num_logfits += logfits.len  # Check 4
-
-                # Don't consider duplicates pp files
-                args = logfits.args
-
-                odometers = []
-
-                for j in range(len(args)):
-                    if 'persi_' in args[j]:
-                        args[j].replace('persi_', '')
-                    index = args[j].index('.fits')
-                    odometers.append(args[j][index-8:index])
-
-                odometers, index_unique = np.unique(odometers, return_index=True)
-
-                tbl_unique = logfits.tbl[index_unique]
-                pp_num_logfits_unique += len(tbl_unique)  # Check 5
-
-                indexQCfalse = ~tbl_unique['PASSED_ALL_QC']
-                indexENDEDfalse = ~tbl_unique['ENDED']
-
-                # Check 6
-                pp_num_logfits_unique_QCfalse += sum(indexQCfalse)
-                odometers_logfits_QCfalse.extend(odometers[indexQCfalse])
-                nights_logfits_QCfalse.extend(tbl_unique['DIRECTORY'][indexQCfalse])
-                QCstr_logfits_QCfalse.extend(tbl_unique['QC_STRING'][indexQCfalse])
-
-                # Check 7
-                pp_num_logfits_unique_ENDEDfalse += sum(indexENDEDfalse)
-                odometers_logfits_ENDEDfalse.extend(odometers[indexENDEDfalse])
-                nights_logfits_ENDEDfalse.extend(
-                        tbl_unique['DIRECTORY'][indexENDEDfalse]
-                        )
-                ERRORS_logfits_ENDEDfalse.extend(tbl_unique['ERRORS'][indexENDEDfalse])
-                LOGFILE_logfits_ENDEDfalse.extend(
-                        tbl_unique['LOGFILE'][indexENDEDfalse]
-                        )
-
-            # Missing log.fits
-            else:
-                missing_logfits.append('{0}/{1}/log.fits'.format(pp_path, pp_nights[i]))
+                # Check 6: QC failed
+                'pp_num_ended_false': self.log_ended_false.size[0],
+                'comments_check7': comments_check7,
+                'inspect_check7': inspect_check7,
 
 
-        # Stop2
-        if pp_num_indexfits == pp_num:
-            color_stop2 = 'Lime'
-            result_stop2 = 'Yes'
-            comment_stop2 = ''
-            inspect_stop2 = ''
-        else:
-            color_stop2 = 'Red'
-            result_stop2 = 'No'
-            comment_stop2 = ''
-            inspect_stop2 = ''
+                }
 
-        # Stop 3
-        if pp_num_logfits_unique == pp_num:
-            color_stop3 = 'Lime'
-            result_stop3 = 'Yes'
-            comment_stop3 = ''
-            inspect_stop3 = ''
-        elif pp_num_logfits_unique > pp_num:
-            color_stop3 = 'Yellow'
-            result_stop3 = 'No'
-            comment_stop3 = 'Some files were processed more than once.'
-            inspect_stop3 = ''
-        else:
-            color_stop3 = 'Red'
-            result_stop3 = 'No'
-            comment_stop3 = ''
-            inspect_stop3 = ''
-
-
-        data_dict_check6 = {'Night': nights_logfits_QCfalse,
-                            'Odometer': odometers_logfits_QCfalse,
-                            'QC_STRING': QCstr_logfits_QCfalse,
-                            }
-        inspect_check6 = atf.inspect_table('preprocessing_test1',
-                                           'check6',
-                                           data_dict_check6,
-                                           ('Odometers that Failed One or More'
-                                            'Quality Control')
-                                           )
-
-        data_dict_check7 = {'Night': nights_logfits_ENDEDfalse,
-                            'Odometer': odometers_logfits_ENDEDfalse,
-                            'ERRORS': ERRORS_logfits_ENDEDfalse,
-                            'LOGFILE': LOGFILE_logfits_ENDEDfalse,
-                            }
-        inspect_check7 = atf.inspect_table('preprocessing_test1',
-                                           'check7',
-                                           data_dict_check7,
-                                           'Odometers that Failed to Finish'
-                                           )
-
-
-        # TODO: use jinja template
-        html_text = ''
-        with open('preprocessing_test1/preprocessing_test1.html', 'w') as f:
-            f.write(html_text)
+        self.gen_html(html_dict)
 
 
 if __name__ == '__main__':

@@ -158,7 +158,7 @@ class BadPixTest(CalibTest):
             data_dict_check_qc = {
                     'Night': log_reset.DIRECTORY.values,
                     'QC_STRING': self.log_qc_failed.QC_STRING.values,
-                                }
+                    }
             inspect_check_qc = atf.inspect_table(
                     'badpixel_test1',
                     f'check{ncheck}',
@@ -351,10 +351,10 @@ class BadPixTest(CalibTest):
         comments_check1, true_dup = self.check_duplicates()
 
         # QC/ENDED
-        comments_check4, inspect_check4 = self.check_qc()
-        comments_check5, inspect_check5 = self.check_ended()
+        comments_check4, inspect_check4 = self.check_qc(ncheck=4)
+        comments_check5, inspect_check5 = self.check_ended(ncheck=5)
 
-        dict_stop1 = self.stop_output_log(true_dup)
+        dict_stop1 = self.stop_output_log(true_dup, nstop=1)
 
         # =====================================================================
         # Inspect calibDB
@@ -381,7 +381,7 @@ class BadPixTest(CalibTest):
         calib_dup = calib_dup.drop_duplicates()
 
 
-        dict_stop2 = self.stop_calibdb(calib_dup)
+        dict_stop2 = self.stop_calibdb(calib_dup, nstop=2)
 
         html_dict = {
                 # Summary header info

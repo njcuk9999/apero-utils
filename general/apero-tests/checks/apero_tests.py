@@ -76,6 +76,36 @@ class Test(ABC):
         return self._date
 
     # =========================================================================
+    # Public methods
+    # =========================================================================
+    def gen_html(self, html_dict: dict):
+        """Generate HTML summary from jinja2 template.
+
+        :param html_dict: dict with all values used in html template
+        :type html_dict: dict
+        """
+
+        # Jinja2 env
+        # TODO: Use package or define path in a main/init file?
+        env = Environment(
+            loader=FileSystemLoader('../templates'),
+            autoescape=select_autoescape(['html', 'xml'])
+        )
+
+        # Create template for test
+        template = env.get_template('.'.join([self.test_id, 'html']))
+
+        html_text = template.render(html_dict)
+
+        output_path = os.path.join('..',
+                                   'out',
+                                   self.test_id,
+                                   '.'.join([self.test_id, 'html']),
+                                   )
+        with open(output_path, 'w') as f:
+            f.write(html_text)
+
+    # =========================================================================
     # Abstract methods common to all tests
     # =========================================================================
     @property
@@ -110,6 +140,7 @@ class Test(ABC):
     @abstractmethod
     def runtest(self):
         """Method called to run the tests on APERO products"""
+
 
 class CalibTest(Test):
     """CalibTest."""
@@ -379,36 +410,6 @@ class CalibTest(Test):
         :rtype: pd.DataFrame
         """
         return self.log_df[~self.log_df.ENDED]
-
-    # =========================================================================
-    # Public methods
-    # =========================================================================
-    def gen_html(self, html_dict: dict):
-        """Generate HTML summary from jinja2 template.
-
-        :param html_dict: dict with all values used in html template
-        :type html_dict: dict
-        """
-
-        # Jinja2 env
-        # TODO: Use package or define path in a main/init file?
-        env = Environment(
-            loader=FileSystemLoader('../templates'),
-            autoescape=select_autoescape(['html', 'xml'])
-        )
-
-        # Create template for test
-        template = env.get_template('.'.join([self.test_id, 'html']))
-
-        html_text = template.render(html_dict)
-
-        output_path = os.path.join('..',
-                                   'out',
-                                   self.test_id,
-                                   '.'.join([self.test_id, 'html']),
-                                   )
-        with open(output_path, 'w') as f:
-            f.write(html_text)
 
     # =========================================================================
     # Generators methods to derive things that are too heavy to calculate time
