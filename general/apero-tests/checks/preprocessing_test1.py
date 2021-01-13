@@ -20,7 +20,6 @@ Tests performed:
 @author: charles
 """
 import os
-from datetime import datetime
 from typing import Optional, List, Tuple
 
 import numpy as np
@@ -36,7 +35,7 @@ class PPTest(Test):
     """PPTEST."""
 
     # pylint: disable=too-many-public-methods
-    # A few more (20+5=5) here to keep same logic as other tests even though
+    # A few more (20+5=25) here to keep same logic as other tests even though
     # inherits directly from Test (no intermediate in between)
 
 
@@ -482,8 +481,6 @@ class PPTest(Test):
                 'pp_num_ended_false': self.log_ended_false.shape[0],
                 'comments_check7': comments_check7,
                 'inspect_check7': inspect_check7,
-
-
                 }
 
         self.gen_html(html_dict)

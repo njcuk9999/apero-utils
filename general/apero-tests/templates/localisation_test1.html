@@ -134,7 +134,7 @@
         <td>7</td>
         <td># of {{ ', '.join(calibdb_list) }} entry in {{ calibdb_path }}/master_calib_{{ instrument }}.txt</td>
         <td>
-        {% for key, num in output_num_entry.iteritems()%}
+        {% for key, num in output_num_entry.iteritems() %}
           {{ key }}: {{ num }}<br>
         {% endfor %}
         </td>

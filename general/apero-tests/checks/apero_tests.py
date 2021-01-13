@@ -257,7 +257,7 @@ class CalibTest(Test):
         return dict(zip(self.calibdb_list, self.output_list))
 
     # =========================================================================
-    # Properties derived form outputs
+    # Properties derived from outputs
     # =========================================================================
     @property
     def output_night_num(self) -> pd.Series:
@@ -598,7 +598,6 @@ class CalibTest(Test):
     # =========================================================================
     # Abstract methods common to all calib tests
     # =========================================================================
-
     @property
     @abstractmethod
     def calibdb_list(self) -> List[str]:
