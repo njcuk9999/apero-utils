@@ -183,8 +183,9 @@ def inspect_table(test, check, data_dict, title):
     Write an 'inspect' html element.
     """
 
-    if not os.path.isdir('{0}/{1}'.format(test, check)):
-        os.system('mkdir {0}/{1}'.format(test, check))
+    # TODO: handle path better and use os.path.join
+    if not os.path.isdir('../out/{0}/{1}'.format(test, check)):
+        os.system('mkdir ../out/{0}/{1}'.format(test, check))
 
     source = ColumnDataSource(data_dict)
 
@@ -209,7 +210,7 @@ def inspect_table(test, check, data_dict, title):
     layout = column(table_title, data_table)
 
     output_file(
-            "{0}/{1}/{1}.html".format(test, check),
+            "../out/{0}/{1}/{1}.html".format(test, check),
             title="{0}".format(check))
     save(layout)
 
@@ -223,8 +224,8 @@ def inspect_plot(test, check, data_dict, title):
     WIP
     """
 
-    if not os.path.isdir('{0}/{1}'.format(test, check)):
-        os.system('mkdir {0}/{1}'.format(test, check))
+    if not os.path.isdir('../out/{0}/{1}'.format(test, check)):
+        os.system('mkdir ./out/{0}/{1}'.format(test, check))
 
     # y variable list
     axis_map = data_dict
@@ -262,7 +263,7 @@ def inspect_plot(test, check, data_dict, title):
     layout = column(table_title, data_table)
 
     output_file(
-            "{0}/{1}/{1}.html".format(test, check), title="{0}".format(check)
+            "../out/{0}/{1}/{1}.html".format(test, check), title="{0}".format(check)
             )
     save(layout)
 
@@ -276,7 +277,7 @@ def summary(test):
     Write the html summary.
     """
 
-    f = open("{0}/{0}.html".format(test), "r")
+    f = open("../out/{0}/{0}.html".format(test), "r")
     html = f.read()
 
     passed = html.count('Lime')
