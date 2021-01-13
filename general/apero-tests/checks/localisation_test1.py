@@ -207,6 +207,8 @@ class LocTest(CalibTest):
             result = 'Yes'
             comment = ''
             inspect = ''
+            data_dict = {}
+
         elif (self.output_unique_num < self.recipe_num_logfits).any():
 
             color = 'Yellow'
@@ -254,6 +256,7 @@ class LocTest(CalibTest):
                        'be smaller or equal to the number of recipe '
                        'called.')
             inspect = ''
+            data_dict = {}
 
         stop_dict = {
                 'data': data_dict,
@@ -276,6 +279,7 @@ class LocTest(CalibTest):
             result = 'Yes'
             comment = ''
             inspect = ''
+            data_dict = {}
 
         elif (self.output_num_calibdb < self.output_num_entry).any():
 
@@ -324,6 +328,7 @@ class LocTest(CalibTest):
             comment = ('The calibDB should not have more output files '
                              'than what was produced.')
             inspect = ''
+            data_dict = {}
 
         stop_dict = {
                 'data': data_dict,

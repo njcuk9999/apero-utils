@@ -474,12 +474,12 @@ class PPTest(Test):
                 'dict_stop3': dict_stop3,
 
                 # Check 6: QC failed
-                'pp_num_qc_failed': self.log_qc_failed.size[0],
+                'pp_num_qc_failed': self.log_qc_failed.shape[0],
                 'comments_check6': comments_check6,
                 'inspect_check6': inspect_check6,
 
                 # Check 6: QC failed
-                'pp_num_ended_false': self.log_ended_false.size[0],
+                'pp_num_ended_false': self.log_ended_false.shape[0],
                 'comments_check7': comments_check7,
                 'inspect_check7': inspect_check7,
 

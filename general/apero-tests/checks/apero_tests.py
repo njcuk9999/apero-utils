@@ -12,6 +12,7 @@ from typing import Optional, Union, List, Tuple
 import numpy as np
 import pandas as pd
 from astropy.table import Table
+from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 import apero_tests_func as atf
 from apero.core import constants
@@ -278,7 +279,7 @@ class CalibTest(Test):
 
     @property
     def output_num_unique(self) -> pd.Series:
-        """output_unique_num.
+        """output_num_unique.
 
         :returns: series with total unique count of each output
         :rtype: pd.Series

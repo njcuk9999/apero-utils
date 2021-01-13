@@ -112,7 +112,7 @@ class DarkMTest(CalibTest):
         :rtype: pd.DataFrame
         """
         # NOTE: should change in APERO v0.7
-        output_frame = self.output_fiels.index.to_frame(drop=True)
+        output_frame = self.output_files.index.to_frame().reset_index(drop=True)
         night_comb = [(p, n)
                       for p in self.output_list
                       for n in self.reduced_nights]
@@ -197,16 +197,18 @@ class DarkMTest(CalibTest):
         :rtype: dict
         """
 
-        if (self.output_unique_num == self.log_tot_num).all():
+        if (self.output_num_unique == self.log_tot_num).all():
             color = 'Lime'
             result = 'Yes'
             comment = ''
             inspect = ''
+            data_dict = {}
 
-        elif (self.output_unique_num < self.log_tot_num).any():
+        elif (self.output_num_unique < self.log_tot_num).any():
 
             color = 'Yellow'
             result = 'No'
+            data_dict = {}
 
         else:
             color = 'Red'
@@ -215,6 +217,7 @@ class DarkMTest(CalibTest):
                        'smaller or equal to the number of recipe called.'
                        )
             inspect = ''
+            data_dict = {}
 
         # if missing output
         # NOTE: moved out because can have missing or duplicates in a night
@@ -272,6 +275,7 @@ class DarkMTest(CalibTest):
             result = 'Yes'
             comment = ''
             inspect = ''
+            data_dict = {}
 
         elif (self.output_num_calibdb < self.tot_num_entry).any():
 
@@ -321,6 +325,7 @@ class DarkMTest(CalibTest):
             comment = ('The calibDB should not have more output files '
                              'than what was produced.')
             inspect = ''
+            data_dict = {}
 
         stop_dict = {
                 'data': data_dict,
