@@ -116,6 +116,44 @@ class LocTest(CalibTest):
     # =========================================================================
     # Checks and stops
     # =========================================================================
+    def check_duplicates(self):
+        """check_duplicates."""
+
+        output_dup_mask = self.log_num_align > self.output_num_align
+        if output_dup_mask.any():
+            output_dup_ind = output_dup_mask[output_dup_mask]
+            output_dup_ind = output_dup_ind.index.get_level_values(
+                                                                'DIRECTORY'
+                                                                ).unique()
+
+            # Check if '--master' in runstring
+            # Get subset of master in output_dup_ind
+            if self.master_recipe_num_logfits > 0:
+                comments_check_dup = ('An additional {0} recipe with '
+                        '--master=True was called in the master '
+                        'directory {1}.'.format(self.master_recipe_num_logfits,
+                                                self.master_nights)
+                        )
+
+            # Check for non-master duplicates for each pattern
+            dir_kwd = 'DIRECTORY'
+            master_mask_group = self.master_mask.astype(int).groupby(dir_kwd)
+            master_num_night = master_mask_group.sum()
+            dup_num_night = master_mask_group.size()
+            dup_not_master = dup_num_night - master_num_night
+            log_dup_align, output_dup_align = dup_not_master.align(
+                                        self.output_num_align[output_dup_mask]
+                                            )
+            true_dup = log_dup_align - output_dup_align  # number of dups
+            true_dup = true_dup[true_dup > 0]  # Keep only non-zero
+            true_dup.name = 'COUNT'
+            true_dup = true_dup.reset_index()
+
+        else:
+            comments_check_dup = ''
+
+        return comments_check_dup, true_dup
+
     def check_qc(self, ncheck: int = 0) -> dict:
         """check_qc."""
 
