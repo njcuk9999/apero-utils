@@ -18,7 +18,7 @@ from scipy import constants
 #
 
 # Provide a template file, needs to be a _s1d_v file
-template = 'Template_s1d_GL536_sc1d_v_file_AB.fits'
+template = 'Template_s1d_GL699_sc1d_v_file_AB.fits'
 
 # CSV table to contain systemic velocities. Will replace the entry of the same object if it is already present
 # in the table, will create the table if it does not exist
@@ -138,33 +138,57 @@ model = InterpolatedUnivariateSpline(wave_phoenix, flux_phoenix)
 # assume a 0 velocity and search
 dv0 = 0
 scale = 1.0
-for ite in range(2):
+
+systemic_velocity = 0
+
+tbl0 = Table(tbl)
+
+for ite in range(3):
+    corrv = np.sqrt((1 + systemic_velocity / c) / (1 - systemic_velocity / c))
+    tbl['ll_mask_s'] = tbl0['ll_mask_s'] / corrv
+    tbl['ll_mask_e'] = tbl0['ll_mask_e'] / corrv
+
+    wavelines = (tbl['ll_mask_s']+tbl['ll_mask_e'])/2.0
+
     dvs = np.arange(400, dtype=float)
     dvs -= np.mean(dvs)
 
     dvs *= scale
-    dvs += dv0
+    #dvs += systemic_velocity
+
+    neg_mask = weight > 0
+
+    weight_tmp = weight[neg_mask]
+    wave_tmp = wavelines[neg_mask]
 
     cc = np.zeros_like(dvs)
     for i in range(len(dvs)):
         corrv = np.sqrt((1 + dvs[i] / c) / (1 - dvs[i] / c))
-        cc[i] = np.sum(weight*model(wavelines / corrv))
+
+
+        cc[i] = np.sum(weight_tmp*model(wave_tmp / corrv))
 
     # just centering the cc around one and removing low-f trends
-    mini = np.argmin(cc / medfilt(cc, 21))
-    dv0 = dvs[mini]
-    scale /= 10.0
+    #cc = (cc / medfilt(cc, 21))
 
-    plt.plot(dvs, cc)
-    plt.title('CCF of model SP with target''s line list\nThis gets you the systemic velocity')
-    plt.xlabel('Velocity')
-    plt.ylabel('Abritrary flux')
-    plt.show()
+    minpos = np.argmin(cc)
+    fit = np.polyfit(dvs[minpos - 1:minpos + 2], cc[minpos - 1:minpos + 2], 2)
 
-minpos = np.argmin(cc)
-fit = np.polyfit(dvs[minpos - 1:minpos + 2], cc[minpos - 1:minpos + 2], 2)
+    plt.plot(dvs+systemic_velocity, cc,alpha = 0.5)
 
-systemic_velocity = -.5 * fit[1] / fit[0]
+
+    systemic_velocity += (-.5 * fit[1] / fit[0])
+    print(systemic_velocity)
+    scale /= 5.0
+
+plt.title('CCF of model SP with target''s line list\nThis gets you the systemic velocity')
+plt.xlabel('Velocity')
+plt.ylabel('Abritrary flux')
+plt.show()
+
+
+
+
 
 hdr['SYSVELO'] = systemic_velocity, 'meas. systemic velocity (km/s)'
 hdr['VELOFILE'] = outname, 'model used for SYSVEL cc'
@@ -200,11 +224,6 @@ plt.ylabel('Arbitrary flux')
 plt.show()
 
 
-corrv = np.sqrt((1 + systemic_velocity / c) / (1 - systemic_velocity / c))
-
-# updating the table to account for systemic velocity of star
-tbl['ll_mask_s'] = tbl['ll_mask_s'] / corrv
-tbl['ll_mask_e'] = tbl['ll_mask_e'] / corrv
 
 # write the output table
 fits.writeto(hdr['OBJECT'] + '.fits', tbl, hdr, overwrite=True)
