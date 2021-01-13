@@ -520,7 +520,7 @@ class CalibTest(Test):
         # Load dataframe and keep only badpix entries
         master_calib_df = pd.read_csv(
                 master_calib_path,
-                header=index_start-1,
+                header=index_start,
                 delimiter=' ',
                 usecols=[0, 1, 2, 3],
                 names=['KEY', 'MASTER', 'NIGHT', 'FILE'],

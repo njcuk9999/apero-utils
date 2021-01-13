@@ -415,7 +415,7 @@ class PPTest(Test):
                     'LOGFILE': self.log_ended_false.LOGFILE.values,
                                 }
             inspect_check_ended = atf.inspect_table(
-                    'badpixel_test1',
+                    'preprocessing_test1',
                     f'check{ncheck}',
                     data_dict_check_ended,
                     'Odometers that Failed to Finish'
@@ -444,7 +444,7 @@ class PPTest(Test):
                 # Summary header info
                 'setup:': self.setup,
                 'instrument': self.instrument,
-                'data': self.date,
+                'date': self.date,
                 'output_list': self.output_list,
 
                 # Check 1: raw

@@ -172,7 +172,7 @@ class LocTest(CalibTest):
                     'QC_STRING': self.log_qc_failed.QC_STRING,
                                 }
             inspect_check_qc = atf.inspect_table(
-                    'badpixel_test1',
+                    'localisation_test1',
                     f'check{ncheck}',
                     data_dict_check_qc,
                     'Nights that Failed Quality Control'
@@ -197,7 +197,7 @@ class LocTest(CalibTest):
                     'LOGFILE': self.log_ended_false.LOGFILE,
                                 }
             inspect_check_ended = atf.inspect_table(
-                    'badpixel_test1',
+                    'localisation_test1',
                     f'check{ncheck}',
                     data_dict_check_ended,
                     'Nights that Failed to Finish'
@@ -262,7 +262,7 @@ class LocTest(CalibTest):
                         'File name': self.output_missing.PATTERN.tolist(),
                          }
                 inspect = atf.inspect_table(
-                        'badpixel_test1',
+                        'localisation_test1',
                         f'stop{nstop}',
                         data_dict,
                         'Missing Outputs in {0}'.format(self.reduced_path)
@@ -281,7 +281,7 @@ class LocTest(CalibTest):
                                'or More Producing the Same Outputs in {0}'
                                ).format(self.reduced_path)
                 inspect = atf.inspect_table(
-                        'badpixel_test1',
+                        'localisation_test1',
                         f'stop{nstop}',
                         data_dict,
                         inspect_msg
@@ -336,7 +336,7 @@ class LocTest(CalibTest):
                         'File name': missing_calibdb_output.FILE.tolist(),
                         }
                 inspect = atf.inspect_table(
-                                'badpixel_test1',
+                                'localisation_test1',
                                 f'stop{nstop}',
                                 data_dict,
                                 f'Missing Output in {self.calibDB_path}'
@@ -353,7 +353,7 @@ class LocTest(CalibTest):
                         'Occurrence': calib_dup.COUNT.tolist(),
                          }
                 inspect = atf.inspect_table(
-                        'badpixel_test1',
+                        'localisation_test1',
                         f'stop{nstop}',
                         data_dict,
                         ('Duplicate Entries in '
@@ -446,7 +446,7 @@ class LocTest(CalibTest):
 
         # QC/ENDED
         comments_check4, inspect_check4 = self.check_qc()
-        inspect_check5 = self.check_qc_plot()
+        # inspect_check5 = self.check_qc_plot()
         comments_check6, inspect_check6 = self.check_ended()
 
         dict_stop1 = self.stop_output_log(true_dup)
@@ -462,18 +462,15 @@ class LocTest(CalibTest):
                            )
 
 
-        # Check if some files have duplicaltes in db
-        if (self.output_num_calibdb < self.output_num_entry).any():
-
-            # Get all duplicates
-            calib_dup_mask = self.master_calib_df.duplicated(keep=False)
-            master_mask = self.master_calib_df.MASTER
-            calib_dup = self.master_calib_df[calib_dup_mask & ~master_mask]
-            calib_dup = calib_dup.set_index('FILE', append=True)
-            ind_names = calib_dup.index.names  # get file and key to count
-            calib_dup['COUNT'] = calib_dup.groupby(ind_names).size()
-            calib_dup = calib_dup.reset_index('FILE')
-            calib_dup = calib_dup.drop_duplicates()
+        # Get all duplicates
+        calib_dup_mask = self.master_calib_df.duplicated(keep=False)
+        master_mask = self.master_calib_df.MASTER
+        calib_dup = self.master_calib_df[calib_dup_mask & ~master_mask]
+        calib_dup = calib_dup.set_index('FILE', append=True)
+        ind_names = calib_dup.index.names  # get file and key to count
+        calib_dup['COUNT'] = calib_dup.groupby(ind_names).size()
+        calib_dup = calib_dup.reset_index('FILE')
+        calib_dup = calib_dup.drop_duplicates()
 
         dict_stop2 = self.stop_calibdb(calib_dup)
 
@@ -507,7 +504,8 @@ class LocTest(CalibTest):
                 'inspect_check4': inspect_check4,
 
                 # check 5: QC Plot
-                'inspect_check5': inspect_check5,
+                # TODO: finalize function
+                # 'inspect_check5': inspect_check5,
 
                 # check 6: not ended
                 'log_ended_false': self.log_ended_false,

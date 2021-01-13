@@ -4,11 +4,11 @@ Factory function for test
 @author: vandal
 """
 
-from checks.apero_tests import Test
-from checks.preprocessing_test1 import PPTest
-from checks.darkmaster_test1 import DarkMTest
-from checks.badpixel_test1 import BadPixTest
-from checks.localisation_test1 import LocTest
+from apero_tests import Test
+from preprocessing_test1 import PPTest
+from darkmaster_test1 import DarkMTest
+from badpixel_test1 import BadPixTest
+from localisation_test1 import LocTest
 
 
 TESTDICT = {

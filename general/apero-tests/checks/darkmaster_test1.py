@@ -156,7 +156,7 @@ class DarkMTest(CalibTest):
                     'QC_STRING': self.log_qc_failed.QC_STRING.values,
                                 }
             inspect_check_qc = atf.inspect_table(
-                    'badpixel_test1',
+                    'darkmaster_test1',
                     f'check{ncheck}',
                     data_dict_check_qc,
                     'Nights that Failed Quality Control'
@@ -181,7 +181,7 @@ class DarkMTest(CalibTest):
                     'LOGFILE': self.log_ended_false.LOGFILE.values,
                                 }
             inspect_check_ended = atf.inspect_table(
-                    'badpixel_test1',
+                    'darkmaster_test1',
                     f'check{ncheck}',
                     data_dict_check_ended,
                     'Nights that Failed to Finish'
@@ -295,7 +295,7 @@ class DarkMTest(CalibTest):
                         'File name': missing_calibdb_output.FILE.values,
                         }
                 inspect = atf.inspect_table(
-                                'badpixel_test1',
+                                'darkmaster_test1',
                                 f'stop{nstop}',
                                 data_dict,
                                 f'Missing Output in {self.calibDB_path}'
@@ -312,7 +312,7 @@ class DarkMTest(CalibTest):
                         'Occurrence': calib_dup.COUNT.values,
                          }
                 inspect = atf.inspect_table(
-                        'badpixel_test1',
+                        'darkmaster_test1',
                         f'stop{nstop}',
                         data_dict,
                         ('Duplicate Entries in '
