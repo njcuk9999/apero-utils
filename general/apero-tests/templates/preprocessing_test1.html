@@ -47,6 +47,8 @@
          <col span="1" style="width: 30%;">
          <col span="1" style="width: 5%;">
       </colgroup>
+
+      <!-- Header row -->
       <tr>
         <th>Check</th>
         <th>Description</th>
@@ -54,6 +56,8 @@
         <th>Comments</th>
         <th>Details</th>
       </tr>
+      
+      <!-- Check 1 -->
       <tr>
         <td>1</td>
         <td># of raw files in {{ raw_path }}</td>
@@ -61,6 +65,8 @@
         <td></td>
         <td></td>
       </tr>
+
+      <!-- Check 2 -->
       <tr>
         <td>2</td>
         <td># of pp files in {{ pp_path }}</td>
@@ -68,62 +74,78 @@
         <td></td>
         <td></td>
       </tr>
+
+      <!-- Stop 1 -->
       <tr>
         <td> </td>
         <td>Check 2 == Check 1?</td>
-        <td bgcolor={{ color_stop1 }}>{{ result_stop1 }}</td>
-        <td>{{ comment_stop1 }}</td>
-        <td>{{ inspect_stop1 }}</td>
+        <td bgcolor={{ dict_stop1.color }}>{{ dict_stop1.result }}</td>
+        <td>{{ dict_stop1.comment }}</td>
+        <td>{{ dict_stop1.inspect }}</td>
       </tr>
+
+      <!-- Check 3 -->
       <tr>
         <td>3</td>
         <td># of pp files in {{ pp_path }}/*/index.fits </td>
-        <td>{{ pp_num_indexfits }}</td>
+        <td>{{ pp_num_index }}</td>
         <td></td>
         <td></td>
       </tr>
+<!-- Stop 2 -->
       <tr>
         <td> </td>
         <td>Check 3 == Check 2?</td>
-        <td bgcolor={{ color_stop2 }}>{{ result_stop2 }}</td>
-        <td>{{ comment_stop2 }}</td>
-        <td>{{ inspect_stop2 }}</td>
+        <td bgcolor={{ dict_stop2.color }}>{{ dict_stop2.result }}</td>
+        <td>{{ dict_stop2.comment }}</td>
+        <td>{{ dict_stop2.inspect }}</td>
       </tr>
+
+      <!-- Check 4 -->
       <tr>
         <td>4</td>
         <td># of time cal_preprocess_{{ instrument.lower() }}.py was called</td>
-        <td>{{ pp_num_logfits }}</td>
+        <td>{{ pp_num_log }}</td>
         <td></td>
         <td></td>
       </tr>
+
+      <!-- Check 5 -->
       <tr>
         <td>5</td>
         <td># of unique odometers preprocessed according to {{ pp_path }}/*/log.fits</td>
-        <td>{{ pp_num_logfits_unique }}</td>
+        <td>{{ pp_num_log_unique }}</td>
         <td></td>
         <td></td>
       </tr>
+
+      <!-- Stop 3 -->
       <tr>
         <td> </td>
         <td>Check 5 == Check 2?</td>
-        <td bgcolor={{ color_stop3 }}>{{ result_stop3 }}</td>
-        <td>{{ comment_stop3 }}</td>
-        <td>{{ inspect_stop3 }}</td>
+        <td bgcolor={{ dict_stop2.color }}>{{ dict_stop2.result }}</td>
+        <td>{{ dict_stop2.comment }}</td>
+        <td>{{ dict_stop2.inspect }}</td>
       </tr>
+
+      <!-- Check 6 -->
       <tr>
         <td>6</td>
         <td># of unique odometers in {{ pp_path }}/*/log.fits that failed one or more QC</td>
-        <td>{{ pp_num_logfits_unique_QCfalse }}</td>
+        <td>{{ pp_num_qc_failed }}</td>
         <td></td>
         <td>{{ inspect_check6 }}</td>
       </tr>
+
+      <!-- Check 7 -->
       <tr>
         <td>7</td>
         <td># of unique odometers in {{ pp_path }}/*/log.fits that failed to finish</td>
-        <td>{{ pp_num_logfits_unique_ENDEDfalse }}</td>
+        <td>{{ pp_num_ended_false }}</td>
         <td></td>
         <td>{{ inspect_check7 }}</td>
       </tr>
+
     </table>
   </body>
 </html>
