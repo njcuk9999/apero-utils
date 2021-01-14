@@ -38,7 +38,7 @@ def list_nights(path):
              if os.path.isdir(os.path.join(path, x))
              ]
     # TODO: Make this safer and keep only strings with a date-compatible fmt
-    # or use a reject_dir list to allow various darte formats, maybe this can
+    # or use a reject_dir list to allow various date formats, maybe this can
     # be checked by datetime
     if 'other' in nlist:
         nlist.remove('other')
@@ -297,8 +297,8 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         source_visible = ColumnDataSource(data_dict)
 
         # plot
-        p = figure(plot_width=1200, 
-                   plot_height=700, 
+        p = figure(plot_width=1200,
+                   plot_height=700,
                    tools=TOOLS,
                    toolbar_location = "left",
                    x_axis_label = 'Order',
@@ -306,7 +306,7 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         p.title.text_font_size = '12pt'
         p.xaxis.axis_label_text_font_size = '12pt'
         p.yaxis.visible = False
-    
+
     else:
 
         # Night to datetime
@@ -333,8 +333,8 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         source_visible = ColumnDataSource(data_dict)
 
         # plot
-        p = figure(plot_width=1200, 
-                   plot_height=700, 
+        p = figure(plot_width=1200,
+                   plot_height=700,
                    tools=TOOLS,
                    toolbar_location = "left",
                    x_axis_label = 'Night',
@@ -350,15 +350,15 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
            source = source_visible,
            line_width=2
            )
-    
+
     y_axis = LinearAxis(axis_label = y_axis_widget.value,
                   axis_label_text_font_size = '12pt')
     p.add_layout(y_axis, 'left')
 
     # javascript callback
-    callback_y_axis = CustomJS(args=dict(source_visible = source_visible,
-                                         y_axis = y_axis, 
-                                         p = p),
+    callback_y_axis = CustomJS(args=dict(source_visible=source_visible,
+                                         y_axis=y_axis,
+                                         p=p),
                       code="""
                       var selected_y_axis = cb_obj.value
                       var data_visible = source_visible.data

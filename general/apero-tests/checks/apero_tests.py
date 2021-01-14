@@ -178,8 +178,8 @@ class CalibTest(Test):
         self._output_files = self._load_output()
 
         # Handle logs (this creates log_df and missing_logfits properties)
-        self._log_df, self._missing_logs = self._load_log(logdirs)
-
+        # Missing logs to _ because not used
+        self._log_df, _ = self._load_log(logdirs)
 
         # Get aligned counts for logs
         self._output_num_align, self._log_num_align = self._align_counts()
@@ -604,5 +604,13 @@ class CalibTest(Test):
         """List of calibDB entries
 
         :return: calibdb_list
+        :rtype: List[str]
+        """
+
+    @property
+    @abstractmethod
+    def previous_calibs(self) -> List[str]:
+        """List of previous calib entries.
+
         :rtype: List[str]
         """

@@ -30,9 +30,12 @@ check9: which bad pixel calibrations were used for each file? Was it the one
 
 @author: charles
 """
+import os
 from typing import List, Optional, Union
 
+import glob
 import pandas as pd
+from astropy.io import fits
 
 from apero_tests import CalibTest
 import apero_tests_func as atf
@@ -378,65 +381,89 @@ class LocTest(CalibTest):
 
         return stop_dict
 
-    def check_previous_calib(self) -> dict:
+
+    def get_missing_previous_calib(self) -> pd.DataFrame:
+        """get_missing_calib.
+
+        :rtype: pd.DataFrame
+        """
+
+        # Load header of all output files (one output pattern only)
+        full_paths = (self.reduced_path
+                      + os.path.sep
+                      + self.output_files.index.get_level_values('DIRECTORY')
+                      + os.path.sep
+                      + self.output_files)
+        headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
+        header_df = pd.DataFrame(headers.tolist(), index=headers.index)
+
+        # Keep only matching PIDs
+        # Not good: header_df = header_df[header_df.DRSPID.isin(self.log_df.PID)]
+        log_pid_dir = self.log_df.reset_index().set_index('PID').DIRECTORY
+        log_nights = log_pid_dir.loc[header_df.DRSPID]  # log nights for PIDs
+        header_df = header_df[(log_nights == header_df.index).values]
+
+        # Keep only calib columns
+        header_df = header_df[self.previous_calibs]  # Keep calibs
+
+        # Get masks (used and exists) and project condition on nights (axis=1)
+        none_mask = (header_df == 'None')  # calib not used
+        prefix = (self.reduced_path + os.path.sep
+                  + header_df.index + os.path.sep)
+        isfile_mask = header_df.radd(prefix, axis=0).applymap(os.path.isfile)
+        missing_mask = ~(isfile_mask | none_mask)
+
+        # Check nights where 1) used and 2) does not exists for each output
+        missing_calib_all = header_df[missing_mask]
+        missing_calib_list = [missing_calib_all[k]
+                              for k in missing_calib_all.columns]
+        missing_calib = pd.concat(missing_calib_list).sort_index()
+        missing_calib = missing_calib.dropna()  # 2D mask yields NaNs if false
+        missing_calib.name = 'FILE'
+        missing_calib = missing_calib.reset_index()
+        missing_calib = missing_calib.rename(columns={'DIRECTORY': 'LOC_DIR'})
+
+        # Find calibration nights used
+        pattern = (self.reduced_path
+                   + os.path.sep + '*'
+                   + os.path.sep + missing_calib.FILE)
+        calib_path = pattern.apply(glob.glob).str[0]  # First glob for each
+        calib_dir = calib_path.str.split(os.path.sep).str[-2]
+        missing_calib['CALIB_DIR'] = calib_dir
+
+        return missing_calib
+
+    @staticmethod
+    def check_previous_calib(missing_calib, ncheck: int = 0) -> dict:
         """check_previous_calib.
 
+        :param missing_calib:
+        :param ncheck:
+        :type ncheck: int
         :rtype: dict
         """
 
-        # TODO: check9
-        # check9
-        # NOTE: can probably get paths from output files df.
-        # Then need to open fits one by one still with apply or loop through
-        # files
+        if missing_calib.shape[0]:
+            comments_missing_calib = ''
+            inspect_missing_calib = ''
+        else:
+            comments_missing_calib = ('One or more localisation recipe outputs'
+                                      ' used the bad pixel calibrations from'
+                                      ' another night')
+            data_dict_missing_calib = {
+                    'Localisation Night': missing_calib.LOC_DIR.values,
+                    'Calibration file name': missing_calib.FILE.values,
+                    'Calibration Night': missing_calib.CALIB_DIR.values,
+                    }
+            inspect_missing_calib = atf.inspect_table(
+                        'localisation_test1',
+                        f'check{ncheck}',
+                        data_dict_missing_calib,
+                        ('Night where the Localisation Recipe Output '
+                         'used Calibrations from Another Night')
+                        )
 
-        # check9
-        # PID = logfits.PID[index_recipe]
-        # for k in range(len(output1_list_files)):
-        #     hdul = fits.open('{0}/{1}/{2}'.format(reduced_path,
-        #             reduced_nights[i], output1_list_files[k]))
-        #     if hdul[0].header['DRSPID'] in PID:
-        #         if 'CDBBAD' in hdul[0].header:
-        #             if not (hdul[0].header['CDBBAD'] == 'None' or 
-        #                     os.path.isfile('{0}/{1}/{2}'.format(reduced_path,
-        #                     reduced_nights[i], hdul[0].header['CDBBAD']))):
-        #                 calibration_night_missing.append(reduced_nights[i])
-        #                 calibration_missing.append(hdul[0].header['CDBBAD'])
-        #         if 'CDBBACK' in hdul[0].header:      
-        #             if not (hdul[0].header['CDBBACK'] == 'None' or 
-        #                     os.path.isfile('{0}/{1}/{2}'.format(reduced_path,
-        #                     reduced_nights[i], hdul[0].header['CDBBACK']))):
-        #                 calibration_night_missing.append(reduced_nights[i])
-        #                 calibration_missing.append(hdul[0].header['CDBBACK'])
-        #     else:
-        #         continue
-
-        # check9
-        # for i in range(len(calibration_missing)):
-        #     path = glob.glob('{0}/*/{1}'.format(reduced_path,
-        #             calibration_missing[i]))
-        #     path = path[0].replace('{0}/'.format(reduced_path), '')
-        #     calibration_night.append(path[:path.index('/')])
-
-
-        # check9
-        # if len(calibration_missing) == 0:
-        #     comments_check9 = ''
-        #     inspect_check9 = ''
-        # else:
-        #     comments_check9 = ('One or more localisation recipe outputs used '
-        #                        'the bad pixel calibrations from another night')
-        #     data_dict_check9 = {'Localisation Night':calibration_night_missing,
-        #                         'Calibration file name': calibration_missing,
-        #                         'Calibration Night': calibration_night
-        #                         }
-        #     inspect_check9 = atf.inspect_table(
-        #                 'localisation_test1',
-        #                 'check9',
-        #                 data_dict_check9,
-        #                 ('Night where the Localisation Recipe Output '
-        #                  'used Calibrations from Another Night')
-        #                 )
+        return comments_missing_calib, inspect_missing_calib
 
     def runtest(self):
         """runtest."""
@@ -446,7 +473,7 @@ class LocTest(CalibTest):
 
         # QC/ENDED
         comments_check4, inspect_check4 = self.check_qc()
-        # inspect_check5 = self.check_qc_plot()
+        inspect_check5 = self.check_qc_plot()
         comments_check6, inspect_check6 = self.check_ended()
 
         dict_stop1 = self.stop_output_log(true_dup)
@@ -474,8 +501,11 @@ class LocTest(CalibTest):
 
         dict_stop2 = self.stop_calibdb(calib_dup)
 
-        # TODO: check9 returns
-        # dict_check9 = self.check_previous_calib()
+        # Check previous calibs to see if missing any
+        missing_previous = self.get_missing_previous_calib()
+        comments_check9, inspect_check9 = self.check_previous_calib(
+                                                            missing_previous,
+                                                            ncheck=9)
 
         html_dict = {
                 # Summary header info
@@ -504,8 +534,7 @@ class LocTest(CalibTest):
                 'inspect_check4': inspect_check4,
 
                 # check 5: QC Plot
-                # TODO: finalize function
-                # 'inspect_check5': inspect_check5,
+                'inspect_check5': inspect_check5,
 
                 # check 6: not ended
                 'log_ended_false': self.log_ended_false,
@@ -523,7 +552,10 @@ class LocTest(CalibTest):
                 # Stop 2: calib output == entries
                 'dict_stop2': dict_stop2,
 
-                # TODO: Check9: previous calibrations (here and in template)
+                # Check9: previous calibrations
+                'missing_previous': missing_previous,
+                'comments_check9': comments_check9,
+                'inspect_check9': inspect_check9,
                 }
 
         self.gen_html(html_dict)
