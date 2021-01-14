@@ -412,7 +412,10 @@ class LocTest(CalibTest):
         header_df = header_df[(log_nights == header_df.index).values]
 
         # Keep only calib columns
-        header_df = header_df[self.previous_calibs]  # Keep calibs
+        used_calibs = [p
+                       for p in self.previous_calibs
+                       if p in header_df.columns]
+        header_df = header_df[used_calibs]  # Keep calibs
 
         # Get masks (used and exists) and project condition on nights (axis=1)
         none_mask = (header_df == 'None')  # calib not used

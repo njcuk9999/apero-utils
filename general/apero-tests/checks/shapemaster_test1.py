@@ -396,7 +396,10 @@ class ShapeMTest(CalibTest):
         header_df = header_df[(log_nights == header_df.index).values]
 
         # Keep only calib columns
-        header_df = header_df[self.previous_calibs]  # Keep calibs
+        used_calibs = [p
+                       for p in self.previous_calibs
+                       if p in header_df.columns]
+        header_df = header_df[used_calibs]  # Keep calibs
 
         # Get masks (used and exists) and project condition on nights (axis=1)
         none_mask = (header_df == 'None')  # calib not used
@@ -471,7 +474,7 @@ class ShapeMTest(CalibTest):
         comments_check6, inspect_check6 = self.check_ended(ncheck=6)
 
 
-        dict_stop1 = self.stop_output_log(nstop=1)
+        dict_stop1 = self.stop_output_log(dup, nstop=1)
 
         # Check for duplicates in calibdb
         calib_dup_mask = self.master_calib_df.duplicated(keep=False)
@@ -483,7 +486,7 @@ class ShapeMTest(CalibTest):
         calib_dup = calib_dup.reset_index('FILE')
         calib_dup = calib_dup.drop_duplicates()
 
-        dict_stop2 = self.stop_calibdb(nstop=2)
+        dict_stop2 = self.stop_calibdb(calib_dup, nstop=2)
 
         # Check previous calibs to see if missing any
         missing_previous = self.get_missing_previous_calib()
@@ -542,150 +545,6 @@ class ShapeMTest(CalibTest):
                 'comments_check9': comments_check9,
                 'inspect_check9': inspect_check9,
                 }
-
-        html_text = f"""
-        <html>
-
-
-        <head>
-        <title>APERO Tests</title>
-        <style>
-        table {{
-          width:75%;
-        }}
-        table, th, td {{
-          border: 1px solid black;
-          border-collapse: collapse;
-        }}
-        th, td {{
-          padding: 15px;
-          text-align: left;
-        }}
-        #t01 tr:nth-child(even) {{
-          background-color: #eee;
-        }}
-        #t01 tr:nth-child(odd) {{
-         background-color: #fff;
-        }}
-        #t01 th {{
-          background-color: white;
-          color: black;
-        }}
-        </style>
-        </head>
-
-        <body>
-
-        <h3>Shape Master Recipe Test #1</h3>
-        <p><b>Setup: {setup}</b><br>
-        <p><b>Instrument: {instrument}</b><br>
-        <p><b>Date: {date}</b><br>
-        <br>
-        <p>Script: cal_loc_{instrument.lower()}.py<br>
-        <p>Output files: {', '.join(output_list)}<br>
-        <p>Calibration database entry: {', '.join(calibDB_entry_list)}<br>
-        <p><a href='https://github.com/njcuk9999/apero-drs#85-shape-master-recipe'>Link</a> to Shape Master Recipe description</p>
-        <br></br>
-
-        <table id="t01">
-
-          <colgroup>
-             <col span="1" style="width: 5%;">
-             <col span="1" style="width: 45%;">
-             <col span="1" style="width: 21%;">
-             <col span="1" style="width: 24%;">
-             <col span="1" style="width: 5%;">
-          </colgroup>
-          <tr>
-            <th>Check</th>
-            <th>Description</th>
-            <th>Result</th>
-            <th>Comments</th>
-            <th>Details</th>
-          </tr>
-          <tr>
-            <td>1</td>
-            <td># of time cal_shape_master_{instrument.lower()}.py was called</td>
-            <td>{recipe_num_logfits}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>2</td>
-            <td># of outputs in {reduced_path}</td>
-            <td>{output_list[0]}: {output1_num}<br>{output_list[1]}: {output2_num}<br>{output_list[2]}: {output3_num}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>3</td>
-            <td># of unique outputs in {reduced_path}</td>
-            <td>{output_list[0]}: {output1_num_unique}<br>{output_list[1]}: {output2_num_unique}<br>{output_list[2]}: {output3_num_unique}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>Check 3 == Check 1?</td>
-            <td bgcolor={color_stop1}>{result_stop1}</td>
-            <td>{comment_stop1}</td>
-            <td>{inspect_stop1}</td>
-          </tr>
-          <tr>
-            <td>4</td>
-            <td># of entry in {reduced_path}/log.fits that failed one or more QC</td>
-            <td>{num_logfits_QCfalse}</td>
-            <td>{comments_check4}</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>5</td>
-            <td>Plot the different QCs as a function of time</td>
-            <td>{inspect_check5}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>6</td>
-            <td># of entry in {reduced_path}/log.fits that failed to finish</td>
-            <td>{num_logfits_ENDEDfalse}</td>
-            <td>{comments_check6}</td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>7</td>
-            <td># of {', '.join(calibDB_entry_list)} entry in {calibDB_path}/master_calib_{instrument}.txt</td>
-            <td>{calibDB_entry_list[0]}: {output1_num_entry}<br>{calibDB_entry_list[1]}: {output2_num_entry}<br>{calibDB_entry_list[2]}: {output3_num_entry}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td>8</td>
-            <td># of outputs in {calibDB_path}</td>
-            <td>{output_list[0]}: {output1_num_calibDB}<br>{output_list[1]}: {output2_num_calibDB}<br>{output_list[2]}: {output3_num_calibDB}</td>
-            <td></td>
-            <td></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td>Check 8 == Check 7?</td>
-            <td bgcolor={color_stop2}>{result_stop2}</td>
-            <td>{comment_stop2}</td>
-            <td>{inspect_stop2}</td>
-          </tr>
-          <tr>
-            <td>9</td>
-            <td># of outputs in {reduced_path} that used the bad pixel/localisation calibration files from another night</td>
-            <td>{len(calibration_missing)}</td>
-            <td>{comments_check9}</td>
-            <td>{inspect_check9}</td>
-          </tr>
-        </table>
-
-
-        </body>
-        </html>
-        """
 
         self.gen_html(html_dict)
 
