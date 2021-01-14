@@ -100,6 +100,14 @@ class LocTest(CalibTest):
         return ['ORDER_PROFILE_{FIBER}', 'LOC_{FIBER}']
 
     @property
+    def previous_calibs(self) -> List[str]:
+        """previous_calibs.
+
+        :rtype: List[str]
+        """
+        return ['CDBBAD', 'CDBBACK']
+
+    @property
     def recipe(self) -> List[str]:
         """Recipe name
 
@@ -503,7 +511,7 @@ class LocTest(CalibTest):
 
         # Check previous calibs to see if missing any
         missing_previous = self.get_missing_previous_calib()
-        comments_check9, inspect_check9 = self.check_previous_calib(
+        comments_check9, inspect_check9 = LocTest.check_previous_calib(
                                                             missing_previous,
                                                             ncheck=9)
 

@@ -156,7 +156,7 @@ class DarkMTest(CalibTest):
                     'QC_STRING': self.log_qc_failed.QC_STRING.values,
                                 }
             inspect_check_qc = atf.inspect_table(
-                    'darkmaster_test1',
+                    self.test_id,
                     f'check{ncheck}',
                     data_dict_check_qc,
                     'Nights that Failed Quality Control'
@@ -181,7 +181,7 @@ class DarkMTest(CalibTest):
                     'LOGFILE': self.log_ended_false.LOGFILE.values,
                                 }
             inspect_check_ended = atf.inspect_table(
-                    'darkmaster_test1',
+                    self.test_id,
                     f'check{ncheck}',
                     data_dict_check_ended,
                     'Nights that Failed to Finish'
@@ -214,8 +214,7 @@ class DarkMTest(CalibTest):
             color = 'Red'
             result = 'No'
             comment = ('The number of unique output files should always be '
-                       'smaller than or equal to the number of recipe called.'
-                       )
+                       'smaller than or equal to the number of recipe called.')
             inspect = ''
             data_dict = {}
 
@@ -270,7 +269,7 @@ class DarkMTest(CalibTest):
         :type nstop: int
         :rtype: dict
         """
-        if (self.output_num_calibdb == self.output_num_entry).all():
+        if (self.output_num_calibdb == self.tot_num_entry).all():
             color = 'Lime'
             result = 'Yes'
             comment = ''
@@ -361,8 +360,8 @@ class DarkMTest(CalibTest):
         # Check if some files have duplicaltes in db (empty if none)
         # Use tot_num_entry for dark MASTER recipe (i.e. not remove masters)
         calib_dup_mask = self.master_calib_df.duplicated(keep=False)
-        master_mask = self.master_calib_df.MASTER
-        calib_dup = self.master_calib_df[calib_dup_mask & ~master_mask]
+        # master_mask = self.master_calib_df.MASTER  # Master recip
+        calib_dup = self.master_calib_df[calib_dup_mask]
         calib_dup = calib_dup.set_index('FILE', append=True)
         ind_names = calib_dup.index.names  # get file and key to count
         calib_dup['COUNT'] = calib_dup.groupby(ind_names).size()
@@ -396,7 +395,7 @@ class DarkMTest(CalibTest):
                 'comments_check4': comments_check4,
                 'inspect_check4': inspect_check4,
 
-                # check 5: not ended
+                # Check 5: not ended
                 'log_ended_false': self.log_ended_false,
                 'comments_check5': comments_check5,
                 'inspect_check5': inspect_check5,
@@ -412,7 +411,7 @@ class DarkMTest(CalibTest):
                 # Stop 2: calib output == entries
                 'dict_stop2': dict_stop2,
                 }
-        
+
         self.gen_html(html_dict)
 
 
