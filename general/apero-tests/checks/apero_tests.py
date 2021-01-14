@@ -609,7 +609,7 @@ class CalibTest(Test):
 
     @property
     @abstractmethod
-    def previous_calibs(self) -> List[str]:
+    def previous_calibs(self):
         """List of previous calib entries.
 
         :rtype: List[str]

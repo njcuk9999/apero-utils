@@ -86,6 +86,13 @@ class BadPixTest(CalibTest):
         return ['BADPIX', 'BKGRDMAP']
 
     @property
+    def previous_calibs(self) -> None:
+        """previous_calibs.
+
+        :rtype: None
+        """
+
+    @property
     def recipe(self) -> List[str]:
         """Recipe name
 
