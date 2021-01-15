@@ -242,7 +242,7 @@ class DarkMTest(CalibTest):
                                             ),
                                         )
         # if duplicates
-        else:
+        elif dup.shape[0] > 0:
             comment = ('Recipe called multiple times producing the same '
                        'outputs.')
             data_dict = {'Night': dup.DIRECTORY.values,

@@ -273,7 +273,7 @@ class ShapeMTest(CalibTest):
                                             ),
                                         )
         # if duplicates
-        else:
+        else dup.shape[0] > 0:
             comment = ('Recipe called multiple times producing the same '
                        'outputs.')
             data_dict = {'Night': dup.DIRECTORY.values,

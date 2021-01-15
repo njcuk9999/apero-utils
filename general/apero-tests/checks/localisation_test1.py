@@ -454,7 +454,7 @@ class LocTest(CalibTest):
         :rtype: dict
         """
 
-        if missing_calib.shape[0]:
+        if missing_calib.shape[0] == 0:
             comments_missing_calib = ''
             inspect_missing_calib = ''
         else:

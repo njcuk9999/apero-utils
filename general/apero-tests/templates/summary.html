@@ -51,8 +51,8 @@
         <th>Summary</th>
         <th>Details</th>
       </tr>
-      <tr>
       {% for test_dict in summary_list %}
+      <tr>
         <td>{{ test_dict.name }}</td>
         {% if test_dict.ntotal is not none %}
           <td>
@@ -68,8 +68,8 @@
         {% else %}
           <td></td>
         {% endif %}
-      {% endfor %}
       </tr>
+      {% endfor %}
     </table>
 
   </body>
