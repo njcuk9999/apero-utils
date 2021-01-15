@@ -273,7 +273,7 @@ class ShapeMTest(CalibTest):
                                             ),
                                         )
         # if duplicates
-        else dup.shape[0] > 0:
+        elif dup.shape[0] > 0:
             comment = ('Recipe called multiple times producing the same '
                        'outputs.')
             data_dict = {'Night': dup.DIRECTORY.values,
@@ -438,7 +438,7 @@ class ShapeMTest(CalibTest):
         :rtype: dict
         """
 
-        if missing_calib.shape[0]:
+        if missing_calib.shape[0] == 0:
             comments_missing_calib = ''
             inspect_missing_calib = ''
         else:
