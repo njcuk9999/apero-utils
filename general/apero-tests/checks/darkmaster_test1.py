@@ -19,12 +19,9 @@ Tests performed:
 
 @author: charles
 """
-import os
 from typing import Optional, Union, List
 
-import numpy as np
 import pandas as pd
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from apero_tests import Test, CalibTest
 import apero_tests_func as atf
@@ -99,7 +96,7 @@ class DarkMTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return 'cal_dark_master_{self.instrument.lower()}'
+        return f'cal_dark_master_{self.instrument.lower()}'
 
     @property
     def fibers(self) -> None:
@@ -379,8 +376,11 @@ class DarkMTest(CalibTest):
 
         html_dict = {
                 # Summary header info
+                'name': self.name,
                 'setup': self.setup,
                 'instrument': self.instrument,
+                'recipe': self.recipe,
+                'reduced_path': self.reduced_path,
                 'date': self.date,
                 'output_list': self.output_list,
                 'calibdb_list': self.calibdb_list,

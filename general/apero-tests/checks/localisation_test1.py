@@ -520,9 +520,12 @@ class LocTest(CalibTest):
 
         html_dict = {
                 # Summary header info
+                'name': self.name,
                 'setup': self.setup,
                 'instrument': self.instrument,
+                'recipe': self.recipe,
                 'date': self.date,
+                'reduced_path': self.reduced_path,
                 'output_list': self.output_list,
                 'calibdb_list': self.calibdb_list,
 

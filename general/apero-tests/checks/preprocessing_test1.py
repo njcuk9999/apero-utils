@@ -441,13 +441,15 @@ class PPTest(Test):
 
         html_dict = {
                 # Summary header info
+                'name': self.name,
                 'setup:': self.setup,
                 'instrument': self.instrument,
+                'recipe': self.recipe,
                 'date': self.date,
                 'output_list': self.output_list,
+                'raw_path': self.raw_path,
 
                 # Check 1: raw
-                'raw_path': self.raw_path,
                 'raw_num': self.raw_num,
 
                 # Check 2: PP

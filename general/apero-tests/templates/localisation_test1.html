@@ -29,12 +29,12 @@
     </style>
   </head>
   <body>
-    <h3>Localisation Recipe Test #1</h3>
+    <h3>{{ name }}</h3>
     <p><b>Setup: {{ setup }}</b><br>
     <p><b>Instrument: {{ instrument }}</b><br>
     <p><b>Date: {{ date }}</b><br>
     <br>
-    <p>Script: cal_loc_{{ instrument.lower() }}.py<br>
+    <p>Script: {{ recipe }}.py<br>
     <p>Output files: {{ ', '.join(output_list) }}<br>
     <p>Calibration database entry: {{ ', '.join(calibdb_list) }}<br>
     <p><a href='https://github.com/njcuk9999/apero-drs#84-localisation-recipe'>Link</a> to Localisation Recipe description</p>
@@ -61,7 +61,7 @@
       <!-- Check 1 -->
       <tr>
         <td>1</td>
-        <td># of time cal_loc_{{ instrument.lower() }}.py was called</td>
+        <td># of time {{ recipe }}.py was called</td>
         <td>{{ recipe_num_logfits }}</td>
         <td>{{ comments_check1 }}</td>
         <td></td>
@@ -184,7 +184,7 @@
       <tr>
         <td>9</td>
         <td># of outputs in {{ reduced_path }} that used the bad pixel calibration files from another night</td>
-        <td>{{ missing_previous }}</td>
+        <td>{{ missing_previous.size[0] }}</td>
         <td>{{ comments_check9 }}</td>
         {% if inspect_check9 != '' %}
           <td><a href='{{ inspect_check9 }}'>Inspect</a></td>

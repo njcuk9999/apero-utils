@@ -28,15 +28,14 @@
       }
     </style>
   </head>
-  {# TODO: loop outputs with new structure #}
   <body>
-    <h3>Preprocessing Recipe Test #1</h3>
+    <h3>{{ name }}</h3>
     <p><b>Setup: {{ setup }}</b><br>
     <p><b>Instrument: {{ instrument }}</b><br>
     <p><b>Date: {{ date }}</b><br>
     <br>
-    <p>Script: cal_preprocessing_{{ instrument.lower() }}.py<br>
-    <p>Output files: {{ output_list[0] }}<br>
+    <p>Script: {{ recipe }}.py<br>
+    <p>Output files: {{ output_list }}<br>
     <p><a href='https://github.com/njcuk9999/apero-drs#81-preprocessing-recipe'>Link</a> to Preprocessing Recipe description</p>
     <br></br>
     <table id="t01">
@@ -81,6 +80,7 @@
         <td>Check 2 == Check 1?</td>
         <td bgcolor={{ dict_stop1.color }}>{{ dict_stop1.result }}</td>
         <td>{{ dict_stop1.inspect }}</td>
+        <td>{{ dict_stop1.comment }}</td>
         {% if dict_stop1.inspect != '' %}
           <td><a href='{{ dict_stop1.inspect }}'>Inspect</a></td>
         {% else %}

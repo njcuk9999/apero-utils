@@ -396,9 +396,12 @@ class BadPixTest(CalibTest):
 
         html_dict = {
                 # Summary header info
+                'name': self.name,
                 'setup': self.setup,
                 'instrument': self.instrument,
                 'date': self.date,
+                'reduced_path': self.reduced_path,
+                'recipe': self.recipe,
                 'output_list': self.output_list,
                 'calibdb_list': self.calibdb_list,
 

@@ -29,14 +29,14 @@
     </style>
   </head>
   <body>
-    <h3>Dark Master Recipe Test #1</h3>
+    <h3>{{ name }}</h3>
     <p><b>Setup: {{ setup }}</b><br>
     <p><b>Instrument: {{ instrument }}</b><br>
     <p><b>Date: {{ date }}</b><br>
     <br>
-    <p>Script: cal_dark_master_{{ instrument.lower() }}.py<br>
+    <p>Script: {{ recipe }}.py<br>
     <p>Output files: {{ output_list }}<br>
-    <p>Calibration database entry: {{ calibDB_entry_list }}<br>
+    <p>Calibration database entry: {{ calibdb_list }}<br>
     <p><a href='https://github.com/njcuk9999/apero-drs#82-dark-master-recipe'>Link</a> to Dark Master Recipe description</p>
     <br></br>
 

@@ -29,12 +29,12 @@
     </style>
   </head>
   <body>
-    <h3>Bad Pixel Correction Recipe Test #1</h3>
+    <h3>{{ name }}</h3>
     <p><b>Setup: {{ setup }}</b><br>
     <p><b>Instrument: {{ instrument }}</b><br>
     <p><b>Date: {{ date }}</b><br>
     <br>
-    <p>Script: cal_badpix_{{ instrument.lower() }}.py<br>
+    <p>Script: {{ recipe }}.py<br>
     <p>Output files: {{ ', '.join(output_list) }}<br>
     <p>Calibration database entry: {{ ', '.join(calibdb_list) }}<br>
     <p><a href='https://github.com/njcuk9999/apero-drs#83-bad-pixel-correction-recipe'>Link</a> to Bad Pixel Correction Recipe description</p>
@@ -61,7 +61,7 @@
       <!-- Check 1 -->
       <tr>
         <td>1</td>
-        <td># of time cal_badpix_{{ instrument.lower() }}.py was called</td>
+        <td># of time {{ recipe }}.py was called</td>
         <td>{{ recipe_num_logfits }}</td>
         <td>{{ comments_check1 }}</td>
         <td></td>

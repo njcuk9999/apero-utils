@@ -503,6 +503,7 @@ class ShapeMTest(CalibTest):
                 'output_list': self.output_list,
                 'calibdb_list': self.calibdb_list,
                 'recipe': self.recipe,
+                'reduced_path': self.reduced_path,
 
                 # Check 1: number of calls in logfits
                 'recipe_num_logfits': self.log_tot_num,  # Master recipe
