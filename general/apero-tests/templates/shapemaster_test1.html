@@ -72,7 +72,7 @@
         <td>2</td>
         <td># of outputs in {{ reduced_path }}</td>
         <td>
-        {% for pattern, num in output_num_total.iteritems()%}
+        {% for pattern, num in output_num_total.iteritems() %}
           {{ pattern }}: {{ num }}<br>
         {% endfor %}
         </td>
@@ -155,7 +155,7 @@
         <td>8</td>
         <td># of outputs in {{ calibdb_path }}</td>
         <td>
-        {% for key, num in output_num_calibdb.iteritems()%}
+        {% for key, num in output_num_calibdb.iteritems() %}
           {{ output_dict[key] }}: {{ num }}<br>
         {% endfor %}
         </td>

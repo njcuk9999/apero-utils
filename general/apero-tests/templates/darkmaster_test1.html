@@ -72,7 +72,7 @@
         <td>2</td>
         <td># of outputs in {{ reduced_path }}</td>
         <td>
-        {% for pattern, num in output_num_total.iteritems()%}
+        {% for pattern, num in output_num_total.iteritems() %}
           {{ pattern }}: {{ num }}<br>
         {% endfor %}
         </td>
@@ -129,7 +129,7 @@
         <td>6</td>
         <td># of {{ ', '.join(calibdb_list) }} entry in {{ calibdb_path }}/master_calib_{{ instrument }}.txt</td>
         <td>
-        {% for key, num in output_num_entry.iteritems()%}
+        {% for key, num in output_num_entry.iteritems() %}
           {{ key }}: {{ num }}<br>
         {% endfor %}
         </td>
@@ -142,7 +142,7 @@
         <td>7</td>
         <td># of outputs in {{ calibdb_path }}</td>
         <td>
-        {% for key, num in output_num_calibdb.iteritems()%}
+        {% for key, num in output_num_calibdb.iteritems() %}
           {{ output_dict[key] }}: {{ num }}<br>
         {% endfor %}
         </td>
@@ -160,6 +160,7 @@
           <td><a href='{{ dict_stop2.inspect }}'>Inspect</a></td>
         {% else %}
           <td></td>
+        {% endif %}
       </tr>
 
     </table>
