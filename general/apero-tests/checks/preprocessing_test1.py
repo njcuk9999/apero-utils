@@ -56,6 +56,7 @@ class PPTest(Test):
         self._pp_nights = atf.list_nights(self.pp_path)
 
         # Counts directly from glob (done here to avoid parsing each time)
+        # TODO: load file lists instead of just counting
         self._raw_num = atf.count_files_subdir(self.raw_path,
                                                subdir='all',
                                                files='*.fits')
@@ -344,6 +345,8 @@ class PPTest(Test):
         :rtype: dict
         """
         # Stop 3
+        # TODO: check unique files too (to compare with logs)?
+        # TODO: inspect for missing or duplicates
         if self.pp_num_log_unique == self.pp_num:
             color = 'Lime'
             result = 'Yes'
@@ -352,13 +355,19 @@ class PPTest(Test):
         elif self.pp_num_log_unique > self.pp_num:
             color = 'Yellow'
             result = 'No'
-            comment = 'Some files were processed more than once.'
+            comment = 'Some files recipes have missing ouptuts'
             inspect = ''
         else:
-            color = 'Red'
+            color = 'Yellow'
             result = 'No'
-            comment = ''
+            comment = ('There are more outputs than log entries '
+                       '(possibly duplicates)')
             inspect = ''
+        # else:
+        #     color = 'Red'
+        #     result = 'No'
+        #     comment = ''
+        #     inspect = ''
 
         stop_dict = {
                 'comment': comment,
