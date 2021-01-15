@@ -404,6 +404,7 @@ class BadPixTest(CalibTest):
                 'recipe': self.recipe,
                 'output_list': self.output_list,
                 'calibdb_list': self.calibdb_list,
+                'calibdb_path': self.calibdb_path,
 
                 # check 1 for logs
                 'recipe_num_logfits': self.recipe_num_logfits,
