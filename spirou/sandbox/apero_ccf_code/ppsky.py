@@ -39,6 +39,7 @@ for i in tqdm(np.arange(len(files))):
 
     cube[:, i] = im.ravel()
 
+
 # replacing NaNs with zeros
 cube[np.isfinite(cube) == False]=0
 
@@ -75,8 +76,9 @@ out = np.zeros( [cube.shape[0], n_components*4+1])
 out[:,0] = master_wave.ravel()
 
 # loop through bands and fill the big PCA cube
+band_name = ['Y','J','H','K']
 for ite in range(len(cuts)-1):
-    print(ite)
+    print('Currently computing PCAs for {0}'.format(band_name[ite]))
     band = (master_wave.ravel() > cuts[ite]) * (master_wave.ravel() < cuts[ite+1])
 
 
