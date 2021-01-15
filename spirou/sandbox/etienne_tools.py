@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy import constants
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from scipy.optimize import curve_fit
+from astropy.io import fits
 
 def doppler(wave,v):
     # velocity expressed in m/s
@@ -106,3 +107,125 @@ def sigma(tmp):
 
 def gauss(x,cen, ew, amp, zp, slope):
     return np.exp(-0.5*(x-cen)**2/ew**2)*amp+zp+(x-cen)*slope
+
+def lowpassfilter(input_vect,width = 101):
+    # Computes a low-pass filter of an input vector. This is done while properly handling
+    # NaN values, but at the same time being reasonably fast.
+    # Algorithm:
+    #
+    # provide an input vector of an arbtrary length and compute a running NaN median over a
+    # box of a given length (width value). The running median is NOT computed at every pixel
+    # but at steps of 1/4th of the width value. This provides a vector of points where
+    # the nan-median has been computed (ymed) and mean position along the input vector (xmed)
+    # of valid (non-NaN) pixels. This xmed/ymed combination is then used in a spline to
+    # recover a vector for all pixel positions within the input vector.
+    #
+    # When there are no valid pixel in a 'width' domain, the value is skipped in the creation
+    # of xmed and ymed, and the domain is splined over.
+
+    # indices along input vector
+    index = np.arange(len(input_vect))
+
+    # placeholders for x and y position along vector
+    xmed = []
+    ymed = []
+
+    # loop through the lenght of the input vector
+    for i in np.arange(-width//2,len(input_vect)+width//2,width//4):
+
+        # if we are at the start or end of vector, we go 'off the edge' and
+        # define a box that goes beyond it. It will lead to an effectively
+        # smaller 'width' value, but will provide a consistent result at edges.
+        low_bound = i
+        high_bound = i+int(width)
+
+        if low_bound<0:
+            low_bound = 0
+        if high_bound>(len(input_vect)-1):
+            high_bound = (len(input_vect)-1)
+
+        pixval = index[low_bound:high_bound]
+
+        if len(pixval)<3:
+            continue
+
+
+        # if no finite value, skip
+        if np.max(np.isfinite(input_vect[pixval])) == 0:
+            continue
+
+        # mean position along vector and NaN median value of
+        # points at those positions
+        xmed.append(np.nanmean(pixval))
+        ymed.append(np.nanmedian(input_vect[pixval]))
+
+    xmed = np.array(xmed,dtype = float)
+    ymed = np.array(ymed,dtype = float)
+
+    # we need at least 3 valid points to return a
+    # low-passed vector.
+    if len(xmed) < 3:
+        return np.zeros_like(input_vect)+np.nan
+
+    if len(xmed) != len(np.unique(xmed)):
+        xmed2 = np.unique(xmed)
+        ymed2 = np.zeros_like(xmed2)
+        for i in range(len(xmed2)):
+            ymed2[i] = np.mean(ymed[xmed == xmed2[i]])
+        xmed = xmed2
+        ymed = ymed2
+
+    # splining the vector
+    spline = ius(xmed,ymed, k=1, ext=3)
+    lowpass = spline(np.arange(len(input_vect)))
+
+    return lowpass
+
+def fits2wave(file_or_header):
+    info = """
+        Provide a fits header or a fits file
+        and get the corresponding wavelength
+        grid from the header.
+
+        Usage :
+          wave = fits2wave(hdr)
+                  or
+          wave = fits2wave('my_e2ds.fits')
+
+        Output has the same size as the input
+        grid. This is derived from NAXIS 
+        values in the header
+    """
+
+    # check that we have either a fits file or an astropy header
+    if type(file_or_header) == str:
+        hdr = fits.getheader(file_or_header)
+    elif str(type(file_or_header)) == "<class 'astropy.io.fits.header.Header'>":
+        hdr = file_or_header
+    else:
+        print()
+        print('~~~~ wrong type of input ~~~~')
+        print()
+
+        print(info)
+        return []
+
+    # get the keys with the wavelength polynomials
+    wave_hdr = hdr['WAVE0*']
+    # concatenate into a numpy array
+    wave_poly = np.array([wave_hdr[i] for i in range(len(wave_hdr))])
+
+    # get the number of orders
+    nord = hdr['WAVEORDN']
+
+    # get the per-order wavelength solution
+    wave_poly = wave_poly.reshape(nord, len(wave_poly) // nord)
+
+    # get the length of each order (normally that's 4088 pix)
+    npix = hdr['NAXIS1']
+
+    # project polynomial coefficiels
+    wavesol = [np.polyval(wave_poly[i][::-1], np.arange(npix)) for i in range(nord)]
+
+    # return wave grid
+    return np.array(wavesol)
