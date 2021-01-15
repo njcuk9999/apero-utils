@@ -7,12 +7,12 @@ from low_pass_filter  import *
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from fits2wave import *
 from astropy.table import Table
-from scipy.special import erf
+#from scipy.special import erf
 from tqdm import tqdm
 from scipy import constants
 from datetime import datetime
-import warnings
-from scipy.optimize import curve_fit
+#import warnings
+#from scipy.optimize import curve_fit
 import etienne_tools as et
 
 """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -147,7 +147,7 @@ for ifile in range(len(scifiles)):
 
 
     if os.path.isfile(outname) and not force:
-        print('file {0} exists and force = {1}'.format(outname, forrce))
+        print('file {0} exists and force = {1}'.format(outname, force))
         continue
 
     # get the science file info
