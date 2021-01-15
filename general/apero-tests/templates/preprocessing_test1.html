@@ -80,8 +80,12 @@
         <td> </td>
         <td>Check 2 == Check 1?</td>
         <td bgcolor={{ dict_stop1.color }}>{{ dict_stop1.result }}</td>
-        <td>{{ dict_stop1.comment }}</td>
         <td>{{ dict_stop1.inspect }}</td>
+        {% if dict_stop1.inspect != '' %}
+          <td><a href='{{ dict_stop1.inspect }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
       <!-- Check 3 -->
@@ -92,13 +96,18 @@
         <td></td>
         <td></td>
       </tr>
-<!-- Stop 2 -->
+
+      <!-- Stop 2 -->
       <tr>
         <td> </td>
         <td>Check 3 == Check 2?</td>
         <td bgcolor={{ dict_stop2.color }}>{{ dict_stop2.result }}</td>
         <td>{{ dict_stop2.comment }}</td>
-        <td>{{ dict_stop2.inspect }}</td>
+        {% if dict_stop2.inspect != '' %}
+          <td><a href='{{ dict_stop2.inspect }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
       <!-- Check 4 -->
@@ -123,9 +132,13 @@
       <tr>
         <td> </td>
         <td>Check 5 == Check 2?</td>
-        <td bgcolor={{ dict_stop2.color }}>{{ dict_stop2.result }}</td>
-        <td>{{ dict_stop2.comment }}</td>
-        <td>{{ dict_stop2.inspect }}</td>
+        <td bgcolor={{ dict_stop3.color }}>{{ dict_stop3.result }}</td>
+        <td>{{ dict_stop3.comment }}</td>
+        {% if dict_stop3.inspect != '' %}
+          <td><a href='{{ dict_stop3.inspect }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
       <!-- Check 6 -->
@@ -134,7 +147,11 @@
         <td># of unique odometers in {{ pp_path }}/*/log.fits that failed one or more QC</td>
         <td>{{ pp_num_qc_failed }}</td>
         <td></td>
-        <td>{{ inspect_check6 }}</td>
+        {% if inspect_check6 != '' %}
+          <td><a href='{{ inspect_check6 }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
       <!-- Check 7 -->
@@ -143,7 +160,11 @@
         <td># of unique odometers in {{ pp_path }}/*/log.fits that failed to finish</td>
         <td>{{ pp_num_ended_false }}</td>
         <td></td>
-        <td>{{ inspect_check7 }}</td>
+        {% if inspect_check7 != '' %}
+          <td><a href='{{ inspect_check7 }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
     </table>

@@ -99,7 +99,11 @@
         <td>Check 3 == Check 1?</td>
         <td bgcolor={{ dict_stop1.color }}>{{ dict_stop1.result }}</td>
         <td>{{ dict_stop1.comment }}</td>
-        <td>{{ dict_stop1.inspect }}</td>
+        {% if dict_stop1.inspect != '' %}
+          <td><a href='{{ dict_stop1.inspect }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
       <!-- Check 4 -->
@@ -115,7 +119,11 @@
       <tr>
         <td>5</td>
         <td>Plot the different QCs as a function of time</td>
-        <td>{{ inspect_check5 }}</td>
+        {% if inspect_check5 != '' %}
+          <td><a href='{{ inspect_check5 }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
         <td></td>
         <td></td>
       </tr>
@@ -161,16 +169,24 @@
         <td>Check 7 == Check 8?</td>
         <td bgcolor={{ dict_stop2.color }}>{{ dict_stop2.result }}</td>
         <td>{{ dict_stop2.comment }}</td>
-        <td>{{ dict_stop2.inspect }}</td>
+        {% if dict_stop2.inspect != '' %}
+          <td><a href='{{ dict_stop2.inspect }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
       <! -- Check 9 -->
       <tr>
         <td>9</td>
         <td># of outputs in {{ reduced_path }} that used the bad pixel calibration files from another night</td>
-        <td>{{ missing_previous }}</td>
+        <td>{{ missing_previous.shape[0] }}</td>
         <td>{{ comments_check9 }}</td>
-        <td>{{ inspect_check9 }}</td>
+        {% if inspect_check9 != '' %}
+          <td><a href='{{ inspect_check9 }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
     </table>

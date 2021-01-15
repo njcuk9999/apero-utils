@@ -355,8 +355,8 @@ class LocTest(CalibTest):
             # if duplicates
             else:
 
-                comment = ('Some entries in'
-                           f'master_calib_{self.instrument}.txt'
+                comment = ('Some entries in '
+                           f'master_calib_{self.instrument}.txt '
                            'are identical.')
                 data_dict = {
                         'Night': calib_dup.NIGHT.tolist(),

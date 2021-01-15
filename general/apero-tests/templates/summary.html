@@ -51,7 +51,25 @@
         <th>Summary</th>
         <th>Details</th>
       </tr>
-      {{ html_table|e }}
+      <tr>
+      {% for test_dict in summary_list %}
+        <td>{{ test_dict.name }}</td>
+        {% if test_dict.ntotal is not none %}
+          <td>
+            Passed: {{ test_dict.passed }}/{{ test_dict.ntotal }}<br>
+            Passed with conditions: {{ test_dict.ncond }}/{{ test_dict.ntotal }}<br>
+            Failed: {{ test_dict.nfailed }}/{{ test_dict.ntotal }}<br>
+          </td>
+        {% else %}
+          <td></td>
+        {% endif %}
+        {% if test_dict.color is not none %}
+          <td bgcolor={{ test_dict.color }}><a href="{{ test_dict.inspect }}">Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
+      {% endfor %}
+      </tr>
     </table>
 
   </body>

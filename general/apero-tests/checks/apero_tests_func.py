@@ -236,8 +236,8 @@ def inspect_table(test, subtest, data_dict, title):
 
     keys_list = list(data_dict.keys())
     columns = []
-    for i in range(len(keys_list)):
-        columns.append(TableColumn(field=keys_list[i], title=keys_list[i]))
+    for k in keys_list:
+        columns.append(TableColumn(field=k, title=k))
 
     table_title = Div(
             text="""<font size="+1"> <b>{0}</b> </font>""".format(title),
@@ -259,9 +259,9 @@ def inspect_table(test, subtest, data_dict, title):
             title=subtest)
     save(layout)
 
-    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(subtest)
+    path = os.path.join(subtest, subtest+'.html')
 
-    return html_str
+    return path
 
 
 def inspect_plot(test, subtest, data_dict, title, order = False):
@@ -381,9 +381,9 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
             title=subtest)
     save(layout)
 
-    html_str = """<a href='{0}/{0}.html'>Inspect</a>""".format(subtest)
+    path = os.path.join(subtest, subtest+'.html')
 
-    return html_str
+    return path
 
 
 def summary(test):
@@ -391,22 +391,20 @@ def summary(test):
     Write the html summary.
     """
 
-    f = open("../out/{0}/{0}.html".format(test), "r")
+    f = open(os.path.join('..', 'out', test, test+'.html'), 'r')
     html = f.read()
 
-    passed = html.count('Lime')
-    conditional = html.count('Yellow')
-    failed = html.count('Red')
+    npassed = html.count('Lime')
+    ncond = html.count('Yellow')
+    nfailed = html.count('Red')
 
-    n = passed + conditional + failed
+    ntotal = npassed + ncond + nfailed
 
-    if passed == n:
+    if npassed == ntotal:
         color = 'Lime'
-    elif conditional >= 1 and failed == 0:
+    elif ncond >= 1 and nfailed == 0:
         color = 'Yellow'
     else:
         color = 'Red'
 
-    html_str = """Passed: {0}/{3}<br>Passed with conditions: {1}/{3}<br>Failed: {2}/{3} """.format(passed, conditional, failed, n)
-
-    return html_str, color
+    return ntotal, npassed, ncond, nfailed, color

@@ -76,28 +76,25 @@ print('all tests done')
 # Write html summary
 # =============================================================================
 # build table element
-# TODO: Move this to jinja2 template if not too complicated
-html_table = []
+summary_list = []
 for i in range(n):
-    if os.path.isfile("{0}/{0}.html".format(test_list_short[i])):
-        html_str, color = summary(test_list_short[i])
-        html_table.append("""
-        <tr>
-          <td>{1}</td>
-          <td>{2}</td>
-          <td bgcolor={3}><a href='{0}/{0}.html'>Inspect</a></td>
-        </tr>
-        """.format(test_list_short[i], test_list_long[i], html_str, color))
+    test_path = os.path.join('..', 'out', test_list_short[i],
+                             test_list_short[i]+'.html')
+    if os.path.isfile(test_path):
+        ntotal, npassed, ncond, nfailed, color = summary(test_list_short[i])
+        inspect = test_path
     else:
-        html_table.append("""
-        <tr>
-          <td>{0}</td>
-          <td></td>
-          <td></td>
-        </tr>
-        """.format(test_list_long[i]))
-html_table = "".join(html_table)
-
+        ntotal = npassed = ncond = nfailed = color = inspect = None
+    test_dict = {
+            'name': test_list_long[i],
+            'color': color,
+            'ntotal': ntotal,
+            'passed': npassed,
+            'ncond': ncond,
+            'nfailed': nfailed,
+            'inspect': inspect
+            }
+    summary_list.append(test_dict)
 
 date_final = datetime.now()  # final date
 
@@ -110,7 +107,7 @@ html_dict = {
         'instrument': instrument,
         'date_final': date_final,
         'delta_date': delta_date,
-        'html_table': html_table,
+        'summary_list': summary_list,
         }
 
 # build main .html doc
