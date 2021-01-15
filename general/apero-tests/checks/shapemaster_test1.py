@@ -31,6 +31,7 @@ import os
 from typing import List, Optional, Union
 
 import glob
+import numpy as np
 import pandas as pd
 from astropy.io import fits
 
@@ -189,9 +190,9 @@ class ShapeMTest(CalibTest):
         float_mask = ~qc_values.isin(['True', 'False']).any()
         qc_values = qc_values.loc[:, float_mask].astype(float)
 
-        data_dict_check_qc_plot = {'Night': qc_values.index.tolist()}
-        for key, series in qc_values.iteritems():
-            data_dict_check_qc_plot[key] = series.tolist()
+        # Only one value and one night here
+        data_dict_check_qc_plot = {'Order': np.arange(1, 50),
+                                   qc_names[0]: qc_values.values}
 
         inspect_check_qc_plot = atf.inspect_plot(
                     self.test_id,
