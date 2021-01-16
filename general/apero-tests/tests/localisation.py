@@ -128,9 +128,9 @@ class LocTest(CalibTest):
         comments_check1, true_dup = self.check_duplicates()
 
         # QC/ENDED
-        comments_check4, inspect_check4 = self.check_qc()
-        inspect_check5 = self.check_qc_plot()
-        comments_check6, inspect_check6 = self.check_ended()
+        comments_check4, inspect_check4 = self.check_qc(ncheck=4)
+        inspect_check5 = self.check_qc_plot(ncheck=5)
+        comments_check6, inspect_check6 = self.check_ended(ncheck=6)
 
         dict_stop1 = self.stop_output_log(true_dup)
 

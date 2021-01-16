@@ -59,8 +59,8 @@ def inspect_table(test, subtest, data_dict, title):
     Write an html table from a data set in a dictionary.
     """
 
-    p = Path(OUTDIR, test, subtest)
-    p.mkdir(exist_ok=True)
+    save_path = Path(OUTDIR, test, subtest)
+    save_path.mkdir(exist_ok=True)
 
     source = ColumnDataSource(data_dict)
 
@@ -84,11 +84,11 @@ def inspect_table(test, subtest, data_dict, title):
             editable=True)
     layout = column(table_title, data_table)
 
-    output_file(os.path.join(str(p), subtest+'.html'), title=subtest)
+    output_file(os.path.join(str(save_path), subtest+'.html'), title=subtest)
     save(layout)
 
     # Keep only subtest dir and file to put in parent html
-    path = os.path.join(p.parts[-2:])
+    path = os.path.join(save_path.parts[-1], subtest+'.html')
 
     return path
 
@@ -98,8 +98,8 @@ def inspect_plot(test, subtest, data_dict, title):
     Write an html interactive plot from a data set in a dictionary.
     """
 
-    p = Path(OUTDIR, test, subtest)
-    p.mkdir(exist_ok=True)
+    save_path = Path(OUTDIR, test, subtest)
+    save_path.mkdir(exist_ok=True)
 
     # bokeh tools
     TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
@@ -202,11 +202,11 @@ def inspect_plot(test, subtest, data_dict, title):
     #html doc
     layout = row(y_axis_widget, p)
 
-    output_file(os.path.join(str(p), subtest+'.html'), title=subtest)
+    output_file(os.path.join(str(save_path), subtest+'.html'), title=subtest)
     save(layout)
 
     # Keep only subtest dir and file to put in parent html
-    path = os.path.join(p.parts[-2:])
+    path = os.path.join(save_path.parts[-1], subtest+'.html')
 
     return path
 
@@ -216,7 +216,7 @@ def summary(test):
     Write the html summary.
     """
 
-    f = open(os.path.join('..', 'out', test, test+'.html'), 'r')
+    f = open(os.path.join(OUTDIR, test, test+'.html'), 'r')
     html = f.read()
 
     npassed = html.count('Lime')

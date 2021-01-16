@@ -172,8 +172,8 @@ class DarkMTest(CalibTest):
         dup = self.check_duplicates()
 
         # QC/ENDED
-        comments_check4, inspect_check4 = self.check_qc()
-        comments_check5, inspect_check5 = self.check_ended()
+        comments_check4, inspect_check4 = self.check_qc(ncheck=4)
+        comments_check5, inspect_check5 = self.check_ended(ncheck=5)
 
         dict_stop1 = self.stop_output_log(dup)
 

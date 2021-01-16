@@ -79,10 +79,10 @@ print('all tests done')
 # build table element
 summary_list = []
 for i in range(n):
-    test_path = Path(OUTDIR, test_list_short[i], test_list_short[i]+'.hml')
-    if test_path.is_dir():
+    test_path = Path(OUTDIR, test_list_short[i], test_list_short[i]+'.html')
+    if test_path.is_file():
         ntotal, npassed, ncond, nfailed, color = summary(test_list_short[i])
-        inspect = os.path.join(test_path.parts[-2:])  # rel. path for inspect
+        inspect = os.path.join(*test_path.parts[-2:])  # rel. path for inspect
     else:
         ntotal = npassed = ncond = nfailed = color = inspect = None
     test_dict = {
