@@ -23,7 +23,7 @@ from typing import Optional, Union, List
 
 import pandas as pd
 
-from apero_tests import Test, CalibTest
+from tests import Test, CalibTest
 import utils as ut
 
 
@@ -209,7 +209,7 @@ class DarkMTest(CalibTest):
                 'recipe_num_logfits': self.recipe_num_logfits,  # Master recipe
 
                 # Check 2 number of outputs
-                'output_num_total': self.output_num_align.sum(),
+                'output_num_total': self.output_num_total,
 
                 # Check 3 number of unique outputs
                 'output_num_unique': self.output_num_unique,

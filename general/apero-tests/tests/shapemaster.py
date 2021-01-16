@@ -34,7 +34,7 @@ import glob
 import numpy as np
 import pandas as pd
 
-from apero_tests import CalibTest
+from tests import CalibTest
 import utils as ut
 
 
@@ -246,7 +246,7 @@ class ShapeMTest(CalibTest):
                 'recipe_num_logfits': self.log_tot_num,  # Master recipe
 
                 # Check 2 number of outputs
-                'output_num_total': self.output_num_align.sum(),
+                'output_num_total': self.output_num_total,
 
                 # Check 3 number of unique outputs
                 'output_num_unique': self.output_num_unique,

@@ -273,6 +273,13 @@ class CalibTest(Test):
     # Properties derived from outputs
     # =========================================================================
     @property
+    def output_num_total(self) -> pd.Series:
+        """Total umber of outputs for each pattern.
+        :rtype: pd.Series
+        """
+        return self.output_files.groupby('PATTERN').size()
+
+    @property
     def output_num_unique(self) -> pd.Series:
         """output_num_unique.
 

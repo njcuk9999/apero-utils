@@ -24,7 +24,7 @@ Tests preformed
 """
 from typing import List, Optional, Union
 
-from apero_tests import CalibTest
+from tests import CalibTest
 
 
 class BadPixTest(CalibTest):
@@ -166,7 +166,7 @@ class BadPixTest(CalibTest):
                 'comments_check1': comments_check1,
 
                 # check 2 for outputs
-                'output_num_total': self.output_num_align.sum(),
+                'output_num_total': self.output_num_total,
 
                 # check 3
                 'output_num_unique': self.output_num_unique,

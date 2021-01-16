@@ -37,7 +37,7 @@ import glob
 import pandas as pd
 from astropy.io import fits
 
-from apero_tests import CalibTest
+from tests import CalibTest
 import utils as ut
 
 
@@ -186,7 +186,7 @@ class LocTest(CalibTest):
                 'comments_check1': comments_check1,
 
                 # check 2 for outputsl
-                'output_num_total': self.output_num_align.sum(),
+                'output_num_total': self.output_num_total,
 
                 # check 3
                 'output_num_unique': self.output_num_unique,

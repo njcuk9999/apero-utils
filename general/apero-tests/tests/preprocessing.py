@@ -25,7 +25,7 @@ from typing import Optional, List, Tuple
 import pandas as pd
 from astropy.table import Table
 
-from apero_tests import Test
+from tests import Test
 import utils as ut
 
 

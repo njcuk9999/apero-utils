@@ -4,7 +4,7 @@ Factory function for test
 @author: vandal
 """
 
-from apero_tests import Test
+from tests import Test
 from preprocessing import PPTest
 from darkmaster import DarkMTest
 from badpixel import BadPixTest
