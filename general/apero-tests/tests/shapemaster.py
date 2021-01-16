@@ -184,7 +184,7 @@ class ShapeMTest(CalibTest):
 
         # Only one value and one night here
         data_dict_check_qc_plot = {'Order': np.arange(1, 50),
-                                   qc_names[0]: qc_values.values}
+                                   qc_names[0]: qc_values[0].values}
 
         inspect_check_qc_plot = ut.inspect_plot(
                     self.test_id,
