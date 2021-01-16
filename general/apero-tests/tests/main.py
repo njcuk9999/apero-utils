@@ -9,8 +9,8 @@ from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from apero_test_factory import TESTDICT, get_test
-from apero_tests_func import summary
+from factory import TESTDICT, get_test
+from utils import summary
 from apero.core import constants
 
 # =============================================================================

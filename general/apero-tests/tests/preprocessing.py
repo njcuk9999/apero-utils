@@ -22,13 +22,11 @@ Tests performed:
 import os
 from typing import Optional, List, Tuple
 
-import numpy as np
 import pandas as pd
 from astropy.table import Table
 
 from apero_tests import Test
-import apero_tests_func as atf
-from apero.core import constants
+import utils as ut
 
 
 class PPTest(Test):
@@ -37,7 +35,6 @@ class PPTest(Test):
     # pylint: disable=too-many-public-methods
     # A few more (20+5=25) here to keep same logic as other tests even though
     # inherits directly from Test (no intermediate in between)
-
 
     def __init__(self, inst: str = 'SPIROU', setup: Optional[str] = None):
         """__init__.
@@ -50,17 +47,17 @@ class PPTest(Test):
         super().__init__(inst=inst, setup=setup)
 
         # list raw night directories
-        self._raw_nights = atf.list_nights(self.raw_path)
+        self._raw_nights = ut.list_nights(self.raw_path)
 
         # list PP data night directories
-        self._pp_nights = atf.list_nights(self.pp_path)
+        self._pp_nights = ut.list_nights(self.pp_path)
 
         # Counts directly from glob (done here to avoid parsing each time)
         # TODO: load file lists instead of just counting
-        self._raw_num = atf.count_files_subdir(self.raw_path,
+        self._raw_num = ut.count_files_subdir(self.raw_path,
                                                subdir='all',
                                                files='*.fits')
-        self._pp_num = atf.count_files_subdir(self.pp_path,
+        self._pp_num = ut.count_files_subdir(self.pp_path,
                                               subdir='all',
                                               files=self.output_list[0])
 
@@ -396,8 +393,8 @@ class PPTest(Test):
                     'Odometer': self.log_qc_failed.ODOMETER.values,
                     'QC_STRING': self.log_qc_failed.QC_STRING.values,
                     }
-            inspect_check_qc = atf.inspect_table(
-                    'preprocessing_test1',
+            inspect_check_qc = ut.inspect_table(
+                    self.test_id,
                     f'check{ncheck}',
                     data_dict_check_qc,
                     'Odometers that Failed One or More Quality Control'
@@ -422,8 +419,8 @@ class PPTest(Test):
                     'ERRORS': self.log_ended_false.ERRORS.values,
                     'LOGFILE': self.log_ended_false.LOGFILE.values,
                                 }
-            inspect_check_ended = atf.inspect_table(
-                    'preprocessing_test1',
+            inspect_check_ended = ut.inspect_table(
+                    self.test_id,
                     f'check{ncheck}',
                     data_dict_check_ended,
                     'Odometers that Failed to Finish'

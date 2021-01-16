@@ -12,69 +12,26 @@ from astropy.io import fits
 from bokeh.plotting import figure
 from bokeh.io.saving import save
 from bokeh.io.output import output_file
-from bokeh.models import ColumnDataSource, DataTable, DateFormatter, TableColumn
+from bokeh.models import ColumnDataSource, DataTable, TableColumn
 from bokeh.models import LinearAxis, BasicTicker, CustomJS
 from bokeh.models.widgets import Div, Select
 from bokeh.layouts import row, column
-
-
-def intersection(lst1, lst2):
-    """
-    Returns interesection of list
-    """
-
-    # TODO: can probably use numpy for this
-    lst3 = [value for value in lst1 if value in lst2]
-    return lst3
 
 
 def list_nights(path):
     """
     Return a list of datetime objects corresponding to each night
     """
-
     nlist = [x
              for x in os.listdir(path)
              if os.path.isdir(os.path.join(path, x))
              ]
-    # TODO: Make this safer and keep only strings with a date-compatible fmt
-    # or use a reject_dir list to allow various date formats, maybe this can
-    # be checked by datetime
+    # NOTE: may need to change this if statement in v0.7
     if 'other' in nlist:
         nlist.remove('other')
     nlist.sort(key=lambda date: datetime.strptime(date[:10], "%Y-%m-%d"))
 
     return nlist
-
-
-def list_files(path, files='all'):
-    """
-    Get list of files satisfying a pattern.
-    """
-
-    if files == 'all':
-        f = ''
-    else:
-        f = files
-
-    flist = [x for x in os.listdir(path) if x.endswith(f)]
-
-    if len(flist) == 0:
-        print('No ', f, 'in', path)
-    return flist
-
-
-def count_files(path, files='all'):
-    """
-    Count number of files of a give pattern in a directory.
-    """
-
-    if files == 'all':
-        fpattern = '*'
-    else:
-        fpattern = files
-
-    return len(glob.glob(os.path.join(path, fpattern)))
 
 
 def count_files_subdir(path, subdir='all', files='all'):
@@ -93,134 +50,6 @@ def count_files_subdir(path, subdir='all', files='all'):
         fpattern = files
 
     return len(glob.glob(os.path.join(path, spattern, fpattern)))
-
-
-def list_raw_odometers(path, files='all'):
-    """
-    Get a list of raw data odometers
-    """
-
-    # TODO: Simplify structure
-    # files = 'all' => a, c, d, f, and o odometers are listed
-    # files = 'a' => only a files
-    # files = 'c' => only c files
-    # files = 'd' => only d files
-    # files = 'f' => only f files
-    # files = 'o' => only o files
-
-    files_list = os.listdir('{0}'.format(path))
-
-    odometers = []
-
-    if files == 'all':
-
-        for i in range(len(files_list)):
-
-            if 'persi_' in files_list[i]:
-                files_list[i].replace('persi_', '')
-
-            if 'a' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-            elif 'c' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-            elif 'd' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-            elif 'f' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-            elif 'o' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-
-    if files == 'a':
-
-        for i in range(len(files_list)):
-
-            if 'persi_' in files_list[i]:
-                files_list[i].replace('persi_', '')
-
-            if 'a' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-
-    if files == 'c':
-
-        for i in range(len(files_list)):
-
-            if 'persi_' in files_list[i]:
-                files_list[i].replace('persi_', '')
-            if 'c' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-
-    if files == 'd':
-
-        for i in range(len(files_list)):
-
-            if 'persi_' in files_list[i]:
-                files_list[i].replace('persi_', '')
-
-            if 'd' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-
-    if files == 'f':
-
-        for i in range(len(files_list)):
-
-            if 'persi_' in files_list[i]:
-                files_list[i].replace('persi_', '')
-
-            if 'f' in files_list[i][7]:
-                odometers.append(files_list[i][:8])
-
-    if files == 'o':
-
-        for i in range(len(files_list)):
-
-            if 'persi_' in files_list[i]:
-                files_list[i].replace('persi_', '')
-
-            if files_list[i][7] == 'o':
-                odometers.append(files_list[i][:8])
-
-    return odometers
-
-
-class index_fits:
-
-    def __init__(self, path):
-
-        tbl = fits.getdata(path)
-        self.tbl = tbl
-        self.len = len(tbl)
-        self.filename = tbl['FILENAME']
-        self.nights = tbl['NIGHTNAME']
-        self.object = tbl['KW_OBJNAME']
-
-
-class log_fits:
-
-    def __init__(self, path):
-
-        tbl = fits.getdata(path)
-        self.tbl = tbl
-        self.len = len(tbl)
-        self.recipe = tbl['RECIPE']
-        self.PID = tbl['PID']
-        self.QC = tbl['PASSED_ALL_QC']
-        self.ENDED = tbl['ENDED']
-
-        self.indexQCtrue = tbl['PASSED_ALL_QC']
-        self.indexQCfalse = ~tbl['PASSED_ALL_QC']
-        self.indexENDEDtrue = tbl['ENDED']
-        self.indexENDEDfalse = ~tbl['ENDED']
-
-        self.nights = tbl['DIRECTORY']
-        self.runstr = tbl['RUNSTRING']
-        self.args = tbl['ARGS']
-
-        self.QCstr = tbl['QC_STRING']
-        self.QCnames = tbl['QC_NAMES']
-        self.QCvalues = tbl['QC_VALUES']
-        self.QClogic = tbl['QC_LOGIC']
-        self.ERRORS = tbl['ERRORS']
-        self.LOGFILE = tbl['LOGFILE']
 
 
 def inspect_table(test, subtest, data_dict, title):
@@ -277,7 +106,7 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
     TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
              "save", "tap"]
 
-    if order == True:
+    if order:
 
         # y variable list
         axis_map = data_dict.copy()
@@ -288,7 +117,7 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         # create widget
         y_axis_widget = Select(title="Quality Control",
                         options=axis_map_list,
-                        value = axis_map_list[0],
+                        value=axis_map_list[0],
                         width=260)
 
         # data set
@@ -300,9 +129,9 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         p = figure(plot_width=1200,
                    plot_height=700,
                    tools=TOOLS,
-                   toolbar_location = "left",
-                   x_axis_label = 'Order',
-                   title = title)
+                   toolbar_location="left",
+                   x_axis_label='Order',
+                   title=title)
         p.title.text_font_size = '12pt'
         p.xaxis.axis_label_text_font_size = '12pt'
         p.yaxis.visible = False
@@ -345,31 +174,28 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         p.yaxis.visible = False
 
 
-    p.circle('x',
-           'y',
-           source = source_visible,
-           line_width=2
-           )
+    p.circle('x', 'y', source=source_visible, line_width=2)
 
-    y_axis = LinearAxis(axis_label = y_axis_widget.value,
-                  axis_label_text_font_size = '12pt')
+    y_axis = LinearAxis(axis_label=y_axis_widget.value,
+                        axis_label_text_font_size='12pt')
     p.add_layout(y_axis, 'left')
 
     # javascript callback
+    js_code = """
+              var selected_y_axis = cb_obj.value
+              var data_visible = source_visible.data
+
+              data_visible.y = data_visible[selected_y_axis]
+              source_visible.change.emit()
+              y_axis.axis_label = selected_y_axis
+              y_axis.change.emit()
+
+              p.reset.emit()
+              """
     callback_y_axis = CustomJS(args=dict(source_visible=source_visible,
                                          y_axis=y_axis,
                                          p=p),
-                      code="""
-                      var selected_y_axis = cb_obj.value
-                      var data_visible = source_visible.data
-
-                      data_visible.y = data_visible[selected_y_axis]
-                      source_visible.change.emit()
-                      y_axis.axis_label = selected_y_axis
-                      y_axis.change.emit()
-
-                      p.reset.emit()
-                           """)
+                               code=js_code)
 
     y_axis_widget.js_on_change('value', callback_y_axis)
 

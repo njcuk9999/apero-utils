@@ -5,11 +5,11 @@ Factory function for test
 """
 
 from apero_tests import Test
-from preprocessing_test1 import PPTest
-from darkmaster_test1 import DarkMTest
-from badpixel_test1 import BadPixTest
-from localisation_test1 import LocTest
-from shapemaster_test1 import ShapeMTest
+from preprocessing import PPTest
+from darkmaster import DarkMTest
+from badpixel import BadPixTest
+from localisation import LocTest
+from shapemaster import ShapeMTest
 
 
 TESTDICT = {
