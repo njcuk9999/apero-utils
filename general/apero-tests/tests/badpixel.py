@@ -24,7 +24,7 @@ Tests preformed
 """
 from typing import List, Optional, Union
 
-from tests import CalibTest
+from .tests import CalibTest
 
 
 class BadPixTest(CalibTest):

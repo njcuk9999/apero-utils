@@ -8,10 +8,11 @@ from pathlib import Path
 from datetime import datetime
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-
-from factory import TESTDICT, get_test
-from utils import summary
 from apero.core import constants
+
+from tests import TEMPLATEDIR, OUTDIR
+from tests.factory import get_test, TESTDICT
+from tests.utils import summary
 
 # =============================================================================
 # Define constants
@@ -57,7 +58,7 @@ for i, testid in enumerate(test_list_short):
     test = get_test(testid)
 
     # Create dir only if not exist (ignore error auto if it's there)
-    p = Path('..', 'out', testid)
+    p = Path(OUTDIR, testid)
     p.mkdir(exist_ok=True)
 
     print('test {0}/{1}'.format(i+1, n))
@@ -78,11 +79,10 @@ print('all tests done')
 # build table element
 summary_list = []
 for i in range(n):
-    test_path = os.path.join('..', 'out', test_list_short[i],
-                             test_list_short[i]+'.html')
-    if os.path.isfile(test_path):
+    test_path = Path(OUTDIR, test_list_short[i], test_list_short[i]+'.hml')
+    if test_path.is_dir():
         ntotal, npassed, ncond, nfailed, color = summary(test_list_short[i])
-        inspect = test_path
+        inspect = os.path.join(test_path.parts[-2:])  # rel. path for inspect
     else:
         ntotal = npassed = ncond = nfailed = color = inspect = None
     test_dict = {
@@ -111,15 +111,16 @@ html_dict = {
         }
 
 # build main .html doc
-# TODO: Use package or define path in a main/init file?
 env = Environment(
-    loader=FileSystemLoader('../templates'),
+    loader=FileSystemLoader(TEMPLATEDIR),
     autoescape=select_autoescape(['html', 'xml'])
 )
 
-template = env.get_template('summary.html')
+summary_file = 'summary.html'
+
+template = env.get_template(summary_file)
 
 html_text = template.render(html_dict)
 
-with open(os.path.join('../out', 'summary.html'), 'w') as f:
+with open(os.path.join(OUTDIR, summary_file), 'w') as f:
     f.write(html_text)

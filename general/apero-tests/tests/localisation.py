@@ -30,15 +30,9 @@ check9: which bad pixel calibrations were used for each file? Was it the one
 
 @author: charles
 """
-import os
 from typing import List, Optional, Union
 
-import glob
-import pandas as pd
-from astropy.io import fits
-
-from tests import CalibTest
-import utils as ut
+from .tests import CalibTest
 
 
 class LocTest(CalibTest):

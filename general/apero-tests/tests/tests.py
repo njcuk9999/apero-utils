@@ -14,9 +14,10 @@ import pandas as pd
 from astropy.table import Table
 from astropy.io import fits
 from jinja2 import Environment, FileSystemLoader, select_autoescape
-
-import utils as ut
 from apero.core import constants
+
+from . import utils as ut
+from . import TEMPLATEDIR, OUTDIR
 
 
 class Test(ABC):
@@ -88,9 +89,8 @@ class Test(ABC):
         """
 
         # Jinja2 env
-        # TODO: Use package or define path in a main/init file?
         env = Environment(
-            loader=FileSystemLoader('../templates'),
+            loader=FileSystemLoader(TEMPLATEDIR),
             autoescape=select_autoescape(['html', 'xml'])
         )
 
@@ -99,11 +99,9 @@ class Test(ABC):
 
         html_text = template.render(html_dict)
 
-        output_path = os.path.join('..',
-                                   'out',
+        output_path = os.path.join(OUTDIR,
                                    self.test_id,
-                                   '.'.join([self.test_id, 'html']),
-                                   )
+                                   '.'.join([self.test_id, 'html']))
         with open(output_path, 'w') as f:
             f.write(html_text)
 

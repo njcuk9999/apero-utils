@@ -5,17 +5,19 @@ Utility functions for APERO tests
 """
 import os
 from pathlib import Path
+from datetime import datetime
+
 import glob
 import pandas as pd
-from datetime import datetime
-from astropy.io import fits
 from bokeh.plotting import figure
 from bokeh.io.saving import save
 from bokeh.io.output import output_file
 from bokeh.models import ColumnDataSource, DataTable, TableColumn
-from bokeh.models import LinearAxis, BasicTicker, CustomJS
+from bokeh.models import LinearAxis, CustomJS
 from bokeh.models.widgets import Div, Select
 from bokeh.layouts import row, column
+
+from . import OUTDIR
 
 
 def list_nights(path):
@@ -57,9 +59,8 @@ def inspect_table(test, subtest, data_dict, title):
     Write an html table from a data set in a dictionary.
     """
 
-    p = Path('..', 'out', test, subtest)
-    if not p.is_dir():
-        p.mkdir(exist_ok=True)
+    p = Path(OUTDIR, test, subtest)
+    p.mkdir(exist_ok=True)
 
     source = ColumnDataSource(data_dict)
 
@@ -83,30 +84,28 @@ def inspect_table(test, subtest, data_dict, title):
             editable=True)
     layout = column(table_title, data_table)
 
-    output_file(
-            os.path.join('..', 'out', test, subtest, subtest+'.html'),
-            title=subtest)
+    output_file(os.path.join(str(p), subtest+'.html'), title=subtest)
     save(layout)
 
-    path = os.path.join(subtest, subtest+'.html')
+    # Keep only subtest dir and file to put in parent html
+    path = os.path.join(p.parts[-2:])
 
     return path
 
 
-def inspect_plot(test, subtest, data_dict, title, order = False):
+def inspect_plot(test, subtest, data_dict, title):
     """
     Write an html interactive plot from a data set in a dictionary.
     """
 
-    p = Path('..', 'out', test, subtest)
-    if not p.is_dir():
-        p.mkdir(exist_ok=True)
+    p = Path(OUTDIR, test, subtest)
+    p.mkdir(exist_ok=True)
 
     # bokeh tools
     TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
              "save", "tap"]
 
-    if order:
+    if 'Order' in data_dict:
 
         # y variable list
         axis_map = data_dict.copy()
@@ -136,7 +135,7 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         p.xaxis.axis_label_text_font_size = '12pt'
         p.yaxis.visible = False
 
-    else:
+    elif 'Night' in data_dict:
 
         # Night to datetime
         for i in range(len(data_dict['Night'])):
@@ -172,7 +171,8 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
         p.title.text_font_size = '12pt'
         p.xaxis.axis_label_text_font_size = '12pt'
         p.yaxis.visible = False
-
+    else:
+        KeyError('Expected Order or Night key for x axis')
 
     p.circle('x', 'y', source=source_visible, line_width=2)
 
@@ -202,12 +202,11 @@ def inspect_plot(test, subtest, data_dict, title, order = False):
     #html doc
     layout = row(y_axis_widget, p)
 
-    output_file(
-            os.path.join('..', 'out', test, subtest, subtest+'.html'),
-            title=subtest)
+    output_file(os.path.join(str(p), subtest+'.html'), title=subtest)
     save(layout)
 
-    path = os.path.join(subtest, subtest+'.html')
+    # Keep only subtest dir and file to put in parent html
+    path = os.path.join(p.parts[-2:])
 
     return path
 

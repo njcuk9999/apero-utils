@@ -4,14 +4,15 @@ Factory function for test
 @author: vandal
 """
 
-from tests import Test
-from preprocessing import PPTest
-from darkmaster import DarkMTest
-from badpixel import BadPixTest
-from localisation import LocTest
-from shapemaster import ShapeMTest
+from .tests import Test
+from .preprocessing import PPTest
+from .darkmaster import DarkMTest
+from .badpixel import BadPixTest
+from .localisation import LocTest
+from .shapemaster import ShapeMTest
 
 
+# Dictionary of all tests with id and definition
 TESTDICT = {
         # Preprocessing
         'preprocessing_test1': PPTest,
@@ -38,7 +39,6 @@ TESTDICT = {
         'maketemplate_test1': None,
         'ccf_test1': None,
         }
-
 
 def get_test(testid: str) -> Test:
     """get_test

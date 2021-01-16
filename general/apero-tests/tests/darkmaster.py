@@ -23,8 +23,8 @@ from typing import Optional, Union, List
 
 import pandas as pd
 
-from tests import Test, CalibTest
-import utils as ut
+from .tests import Test, CalibTest
+from . import utils as ut
 
 
 class DarkMTest(CalibTest):

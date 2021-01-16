@@ -21,21 +21,19 @@ check7: how many entry SHAPEX, SHAPEY and FPMASTER in
         master_calib_{INSTRUMENT}.txt?
 check8: for each calib entry how many are in the calibDB?
 stop2: check8 == check7?
-check9: which bad pixel/localisation calibrations were used for each file? 
-        Was it the one from this night? How far away is the calibration obs 
+check9: which bad pixel/localisation calibrations were used for each file?
+        Was it the one from this night? How far away is the calibration obs
         time from the shape master input file obs time?
 
 @author: charles
 """
-import os
 from typing import List, Optional, Union
 
-import glob
 import numpy as np
 import pandas as pd
 
-from tests import CalibTest
-import utils as ut
+from .tests import CalibTest
+from . import utils as ut
 
 
 class ShapeMTest(CalibTest):
