@@ -1,9 +1,26 @@
 # APERO tests
 
-The code is in `checks` and the html summary is in `out`. Jinja2 templates for html pages are in `templates`.
+Series of tests to make sure everything was properly reduced by APERO.
 
-Call apero_tests_main.py to perform a series of tests:
+## Structure
+- The `main.py` script runs tests one by one and stores the output.
+- HTML templates created with jinja2 are in `templates`.
+- The code for all tests is in the `tests` directory
+  - Abstract classes are stored in `tests.py`. A general `Test` class defines
+    properties and methods common to all tests and abstract subclasses for types of tests
+    (e.g. calibration or science) are also defined.
+  - There is a file for each recipe with the test objects corresponding to this recipe.
+  - Utility functions are defined in `utils.py`.
+  - A factory function is stored in `factory.py` to facilitate test creation in the main script.
+  - Output and template paths are defined in the `__init__.py` file.
 
+
+## Outputs
+A brief summary is generated in `summary.html` (in the output directory, `out` by default).
+A more detailed overview of each test is accessible from there, including links to interactive
+plots and tables.
+
+## List of Tests
 1. Preprocessing Recipe Test #1
 2. Dark Master Recipe Test #1
 3. Bad Pixel Correction Recipe Test #1
@@ -23,5 +40,3 @@ Call apero_tests_main.py to perform a series of tests:
 17. Fit Telluric Recipe Test #1
 18. Make Template Recipe Test #1
 19. CCF Recipe Test #1
-
-Multiple html documents will be produced to present the tests results, including a main summary page (apero_tests.html).

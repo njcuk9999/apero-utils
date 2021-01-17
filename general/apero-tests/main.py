@@ -59,7 +59,7 @@ for i, testid in enumerate(test_list_short):
 
     # Create dir only if not exist (ignore error auto if it's there)
     p = Path(OUTDIR, testid)
-    p.mkdir(exist_ok=True)
+    p.mkdir(parents=True, exist_ok=True)
 
     print('test {0}/{1}'.format(i+1, n))
     print('running {0}.py'.format(test_list_short[i]))
