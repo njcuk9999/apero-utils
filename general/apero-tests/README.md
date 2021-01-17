@@ -1,4 +1,4 @@
-# APERO tests
+# APERO Tests
 
 Series of tests to make sure everything was properly reduced by APERO.
 
