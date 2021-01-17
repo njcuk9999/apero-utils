@@ -15,7 +15,7 @@ from bokeh.io.output import output_file
 from bokeh.models import ColumnDataSource, DataTable, TableColumn
 from bokeh.models import LinearAxis, CustomJS
 from bokeh.models.widgets import Div, Select
-from bokeh.layouts import row, column
+from bokeh.layouts import column, layout
 
 from . import OUTDIR
 
@@ -69,9 +69,13 @@ def inspect_table(test, subtest, data_dict, title):
     for k in keys_list:
         columns.append(TableColumn(field=k, title=k))
 
+    parent_link = Div(
+            text=f'<a href="../{test}.html">Go back</a>',
+            height=50,
+            )
     table_title = Div(
-            text="""<font size="+1"> <b>{0}</b> </font>""".format(title),
-            height=50
+            text=f'<font size="+1"> <b>{title}</b> </font>',
+            height=50,
             )
     data_table = DataTable(
             source=source,
@@ -82,15 +86,15 @@ def inspect_table(test, subtest, data_dict, title):
             width_policy='min',
             height=600,
             editable=True)
-    layout = column(table_title, data_table)
+    grid_layout = column(parent_link, table_title, data_table)
 
     output_file(os.path.join(str(save_path), subtest+'.html'), title=subtest)
-    save(layout)
+    save(grid_layout)
 
     # Keep only subtest dir and file to put in parent html
-    path = os.path.join(save_path.parts[-1], subtest+'.html')
+    html_path = '/'.join([save_path.parts[-1], subtest+'.html'])
 
-    return path
+    return html_path
 
 
 def inspect_plot(test, subtest, data_dict, title):
@@ -200,15 +204,22 @@ def inspect_plot(test, subtest, data_dict, title):
     y_axis_widget.js_on_change('value', callback_y_axis)
 
     #html doc
-    layout = row(y_axis_widget, p)
+    parent_link = Div(
+            text=f'<a href="../{test}.html">Go back</a>',
+            height=50,
+            )
+    grid_layout = layout([
+        [parent_link],
+        [y_axis_widget, p]
+        ])
 
     output_file(os.path.join(str(save_path), subtest+'.html'), title=subtest)
-    save(layout)
+    save(grid_layout)
 
     # Keep only subtest dir and file to put in parent html
-    path = os.path.join(save_path.parts[-1], subtest+'.html')
+    html_path = '/'.join([save_path.parts[-1], subtest+'.html'])
 
-    return path
+    return html_path
 
 
 def summary(test):
