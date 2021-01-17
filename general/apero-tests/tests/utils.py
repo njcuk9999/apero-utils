@@ -71,7 +71,7 @@ def inspect_table(test, subtest, data_dict, title):
 
     parent_link = Div(
             text=f'<a href="../{test}.html">Go back</a>',
-            height=50,
+            height=25,
             )
     table_title = Div(
             text=f'<font size="+1"> <b>{title}</b> </font>',
@@ -206,7 +206,7 @@ def inspect_plot(test, subtest, data_dict, title):
     #html doc
     parent_link = Div(
             text=f'<a href="../{test}.html">Go back</a>',
-            height=50,
+            height=25,
             )
     grid_layout = layout([
         [parent_link],
