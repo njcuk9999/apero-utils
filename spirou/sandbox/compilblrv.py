@@ -15,7 +15,7 @@ def compilblrv(obj_sci, obj_template, doplot = False, force = False):
 
     # default keywords to be included in the
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
-            'TLPDVH2O','TLPDVOTR']
+            'TLPDVH2O','TLPDVOTR','CDBWAVE']
     keys = np.array(keys)
 
     if (not os.path.isfile(outname)) or force:
