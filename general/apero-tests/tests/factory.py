@@ -10,6 +10,7 @@ from .darkmaster import DarkMTest
 from .badpixel import BadPixTest
 from .localisation import LocTest
 from .shapemaster import ShapeMTest
+from .shape import ShapeTest
 
 
 # Dictionary of all tests with id and definition
@@ -22,7 +23,7 @@ TESTDICT = {
         'badpixel_test1': BadPixTest,
         'localisation_test1': LocTest,
         'shapemaster_test1': ShapeMTest,
-        'shape_test1': None,
+        'shape_test1': ShapeTest,
         'flat_test1': None,
         'thermal_test1': None,
         'masterleak_test1': None,
