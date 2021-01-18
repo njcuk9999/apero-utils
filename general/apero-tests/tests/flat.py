@@ -1,23 +1,28 @@
 """
-Check if shape per night calib worked fine.
+Check if flat/blaze calib worked fine.
 
 Tests preformed
-check1: how many recipes were run (cal_shape_{instrument} in log.fits)?
+check1: how many recipes were run (cal_loc_{instrument} in log.fits)?
         how many in the master directory?
 check2: how many of each output do we have?
+        output1: {ODOMETER_CODE}_pp_blaze_{FIBER}.fits
+        output2: {ODOMETER_CODE}_pp_flat_{FIBER}.fits
 check3: how many of each unique output do we have?
+        output1: {ODOMETER_CODE}_pp_blaze_{FIBER}.fits
+        output2: {ODOMETER_CODE}_pp_flat_{FIBER}.fits
 stop1: check3 == check1?
 check4: using the log.fits how many files failed one or more QC?
         Which odometers? Which nights? Which QC?
 check5: plot the different QCs as a function of time.
 check6: using the log.fits how many files failed to finish? Which odometers?
         Which nights? Why (using the ERRORS and LOGFILE columns)?
-check7: how many entries in master_calib_{INSTRUMENT}.txt?
+check7: how many entry FLAT_{FIBER} and BLAZE_{FIBER} in
+        master_calib_{INSTRUMENT}.txt?
 check8: for each calib entry how many are in the calibDB?
 stop2: check8 == check7?
-check9: which previous calibrations (bad pixel, loc, shape master) were used?
-        Are they from this night? How far away is the calibration obs time
-        from the loc input file obs time?
+check9: which previous calibrations (bad pixel, loc, shape master, shape)
+        were used? Are they from this night? How far away is the calibration
+        obs time from the loc input file obs time?
 
 @author: charles
 """
@@ -26,8 +31,8 @@ from typing import List, Optional, Union
 from .tests import CalibTest
 
 
-class ShapeTest(CalibTest):
-    """ShapeTest."""
+class FlatTest(CalibTest):
+    """FlatTest."""
 
     def __init__(self,
                  inst: str = 'SPIROU',
@@ -53,7 +58,7 @@ class ShapeTest(CalibTest):
 
         :rtype: str
         """
-        return 'Shape (per night) Recipe Test #1'
+        return 'Flat/Blaze Correction Recipe Test #1'
 
     @property
     def test_id(self) -> str:
@@ -61,7 +66,7 @@ class ShapeTest(CalibTest):
 
         :rtype: str
         """
-        return 'shape_test1'
+        return 'flat_test1'
 
     @property
     def output_list(self) -> List[str]:
@@ -70,7 +75,8 @@ class ShapeTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return ['*_pp_shapel.fits']
+        return ['*_pp_flat_{FIBER}.fits',
+                '*_pp_blaze_{FIBER}.fits']
 
     @property
     def calibdb_list(self) -> List[str]:
@@ -79,7 +85,7 @@ class ShapeTest(CalibTest):
         :return: calibdb_list
         :rtype: list[str]
         """
-        return ['SHAPEL']
+        return ['FLAT_{FIBER}', 'BLAZE_{FIBER}']
 
     @property
     def previous_calibs(self) -> List[str]:
@@ -89,7 +95,8 @@ class ShapeTest(CalibTest):
         """
         return ['CDBBAD', 'CDBBACK',
                 'CDBORDP', 'CDBLOCO',
-                'CDBSHAPX', 'CDBSHAPY']
+                'CDBSHAPX', 'CDBSHAPY',
+                'CDBSHAPL']
 
     @property
     def recipe(self) -> List[str]:
@@ -98,7 +105,7 @@ class ShapeTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return 'cal_shape_{}'.format(self.instrument.lower())
+        return 'cal_flat_{}'.format(self.instrument.lower())
 
     @property
     def fibers(self) -> List[str]:
@@ -106,6 +113,7 @@ class ShapeTest(CalibTest):
 
         :rtype: List[str]
         """
+        return ['AB', 'A', 'B', 'C']
 
     # =========================================================================
     # Run the full test
@@ -124,12 +132,13 @@ class ShapeTest(CalibTest):
         dict_stop1 = self.stop_output_log(true_dup)
 
         # Generate comment on extra master entries in calib db
-        count_list = []
-        for entry, num in self.master_num_entry.iteritems():
-            count_list.append(f'{entry} {num}')
-        counts = ', '.join(count_list)
-        comments_check7 = (f'An additional {counts} with master = 1 '
-                           f'are in the master_calibDB_{self.instrument}.'
+        comments_check7 = ('An additional {0} {1} and {2} {3} with master = 1 '
+                           'are in the master_calibDB_{4}.'.format(
+                               self.master_num_entry[self.calibdb_list[0]],
+                               self.calibdb_list[0],
+                               self.master_num_entry[self.calibdb_list[1]],
+                               self.calibdb_list[1],
+                               self.instrument)
                            )
 
 
@@ -147,7 +156,7 @@ class ShapeTest(CalibTest):
 
         # Check previous calibs to see if missing any
         missing_previous = self.get_missing_previous_calib()
-        comments_check9, inspect_check9 = ShapeTest.check_previous_calib(
+        comments_check9, inspect_check9 = LocTest.check_previous_calib(
                                                             missing_previous,
                                                             ncheck=9)
 
@@ -210,5 +219,5 @@ class ShapeTest(CalibTest):
 
 
 if __name__ == '__main__':
-    test = ShapeTest()
+    test = FlatTest()
     test.runtest()

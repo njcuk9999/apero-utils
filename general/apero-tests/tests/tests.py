@@ -272,7 +272,7 @@ class CalibTest(Test):
     # =========================================================================
     @property
     def output_num_total(self) -> pd.Series:
-        """Total umber of outputs for each pattern.
+        """Total number of outputs for each pattern.
         :rtype: pd.Series
         """
         return self.output_files.groupby('PATTERN').size()
@@ -467,7 +467,7 @@ class CalibTest(Test):
 
     @staticmethod
     def _fiberglob(pattern: str,
-                   fibers: Union[List[str], Tuple[str]] = ('AB', 'C'),
+                   fibers: Union[List[str], Tuple[str]] = ('AB', 'A', 'B', 'C'),
                    ) -> list:
         """Equivalent of glob but iterating over multiple fibers:
 
@@ -581,7 +581,6 @@ class CalibTest(Test):
                                              fibers=self.fibers)
             for _ in self.fibers:
                 files = files.explode()  # Nested lists so explode Nfiber times
-
         output_calibdb = files.apply(os.path.basename)
 
         return output_calibdb
@@ -748,13 +747,12 @@ class CalibTest(Test):
             data_dict = {}
 
         elif (self.output_num_unique < self.recipe_num_logfits).any():
-
             color = 'Yellow'
             result = 'No'
             # if missing output
             # NOTE: could there be both missing output and duplicate?
             if self.output_missing.shape[0] > 0:
-
+          
                 comment = 'One or more output were not produced.'
                 # NOTE: might need arrays instead of list
                 data_dict = {
@@ -772,7 +770,7 @@ class CalibTest(Test):
                 comment = ('Recipe called multiple times producing the '
                            'same outputs.')
                 data_dict = {
-                        'Night': self.dup.DIRECTORY.values,
+                        'Night': dup.DIRECTORY.values,
                         'File name': dup.PATTERN.values,
                         'Occurrence': dup.COUNT.values,
                         }
@@ -897,9 +895,9 @@ class CalibTest(Test):
                       + self.output_files.index.get_level_values('DIRECTORY')
                       + os.path.sep
                       + self.output_files)
-        headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
-        header_df = pd.DataFrame(headers.tolist(), index=headers.index)
 
+        headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)      
+        header_df = pd.DataFrame(headers.tolist(), index=headers.index)
         # Keep only matching PIDs
         # Not good: header_df = header_df[header_df.DRSPID.isin(self.log_df.PID)]
         log_pid_dir = self.log_df.reset_index().set_index('PID').DIRECTORY
