@@ -17,29 +17,29 @@ from .flat import FlatTest
 # Dictionary of all tests with id and definition
 TESTDICT = {
         # Preprocessing
-        'preprocessing': PPTest,
+        'preprocessing_test1': PPTest,
 
         # Calibration
-        'darkmaster': DarkMTest,
-        'badpixel': BadPixTest,
-        'localisation': LocTest,
-        'shapemaster': ShapeMTest,
-        'shape': ShapeTest,
-        'flat': FlatTest,
-        'thermal': None,
-        'masterleak': None,
-        'leak': None,
-        'masterwavelength': None,
-        'wavelength': None,
+        'darkmaster_test1': DarkMTest,
+        'badpixel_test1': BadPixTest,
+        'localisation_test1': LocTest,
+        'shapemaster_test1': ShapeMTest,
+        'shape_test1': ShapeTest,
+        'flat_test1': FlatTest,
+        'thermal_test1': None,
+        'masterleak_test1': None,
+        'leak_test1': None,
+        'masterwavelength_test1': None,
+        'wavelength_test1': None,
         'extraction_test1': None,
         'extraction_test2': None,
         'extraction_test3': None,
 
         # Science
-        'maketellu': None,
-        'fittellu': None,
-        'maketemplate': None,
-        'ccf': None,
+        'maketellu_test1': None,
+        'fittellu_test1': None,
+        'maketemplate_test1': None,
+        'ccf_test1': None,
         }
 
 def get_test(testid: str) -> Test:

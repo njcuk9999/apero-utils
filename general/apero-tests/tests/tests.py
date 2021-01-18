@@ -885,7 +885,6 @@ class CalibTest(Test):
 
     def get_missing_previous_calib(self) -> pd.DataFrame:
         """get_missing_calib.
-
         :rtype: pd.DataFrame
         """
 
@@ -895,12 +894,14 @@ class CalibTest(Test):
                       + self.output_files.index.get_level_values('DIRECTORY')
                       + os.path.sep
                       + self.output_files)
-
-        headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)      
+        headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
         header_df = pd.DataFrame(headers.tolist(), index=headers.index)
+
         # Keep only matching PIDs
         # Not good: header_df = header_df[header_df.DRSPID.isin(self.log_df.PID)]
         log_pid_dir = self.log_df.reset_index().set_index('PID').DIRECTORY
+        # make sure no duplicate PID per night
+        log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index('PID').DIRECTORY  
         log_nights = log_pid_dir.loc[header_df.DRSPID]  # log nights for PIDs
         header_df = header_df[(log_nights == header_df.index).values]
 
