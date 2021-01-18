@@ -571,7 +571,6 @@ class CalibTest(Test):
         output_calib_paths = pd.Series(self.calibdb_path + sep + out_patterns,
                                        index=calib_ind
                                        )
-
         # Expand patterns
         if self.fibers is None:
             files = output_calib_paths.apply(glob.glob)  # Get file list for each pattern
@@ -722,7 +721,6 @@ class CalibTest(Test):
             true_dup = true_dup[true_dup > 0]  # Keep only non-zero
             true_dup.name = 'COUNT'
             true_dup = true_dup.reset_index()
-
         else:
             comments_check_dup = ''
 

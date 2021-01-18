@@ -31,7 +31,7 @@ test_list_long = [
         'Shape Master Recipe Test #1',
         'Shape (per night) Recipe Test #1',
         'Flat/Blaze Correction Recipe Test #1',
-        'Thermal Correction Test #1',
+        'Thermal Correction Recipe Test #1',
         'Master Leak Correction Recipe Test #1',
         'Leak (per night) Correction Test #1',
         'Master Wavelength Solution Recipe Test #1',

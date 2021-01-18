@@ -12,6 +12,7 @@ from .localisation import LocTest
 from .shapemaster import ShapeMTest
 from .shape import ShapeTest
 from .flat import FlatTest
+from .thermal import ThermalTest
 
 
 # Dictionary of all tests with id and definition
@@ -26,7 +27,7 @@ TESTDICT = {
         'shapemaster_test1': ShapeMTest,
         'shape_test1': ShapeTest,
         'flat_test1': FlatTest,
-        'thermal_test1': None,
+        'thermal_test1': ThermalTest,
         'masterleak_test1': None,
         'leak_test1': None,
         'masterwavelength_test1': None,
