@@ -18,7 +18,6 @@ def compilblrv(obj_sci, obj_template, doplot = False, force = False):
             'TLPDVH2O','TLPDVOTR']
     keys = np.array(keys)
 
-
     if (not os.path.isfile(outname)) or force:
         # keys to be transfered to the fits table
         scifiles = np.array(glob.glob('xdrv/2*{0}_{1}.xdrv'.format(obj_sci, obj_template)))
