@@ -125,13 +125,12 @@ class ShapeTest(CalibTest):
         dict_stop1 = self.stop_output_log(true_dup)
 
         # Generate comment on extra master entries in calib db
-        comments_check7 = ('An additional {0} {1} and {2} {3} with master = 1 '
-                           'are in the master_calibDB_{4}.'.format(
-                               self.master_num_entry[self.calibdb_list[0]],
-                               self.calibdb_list[0],
-                               self.master_num_entry[self.calibdb_list[1]],
-                               self.calibdb_list[1],
-                               self.instrument)
+        count_list = []
+        for entry, num in self.master_num_entry.iteritems():
+            count_list.append(f'{entry} {num}')
+        counts = ', '.join(count_list)
+        comments_check7 = (f'An additional {counts} with master = 1 '
+                           f'are in the master_calibDB_{self.instrument}.'
                            )
 
 
