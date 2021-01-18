@@ -672,8 +672,11 @@ class CalibTest(Test):
         qc_values = self.log_df.QC_VALUES.str.split(r'\|\|', expand=True)
         qc_values.columns = qc_names
         # NOTE: .convert_dtypes will do in pd versions >= 1.0.0
-        float_mask = ~qc_values.isin(['True', 'False']).any()
-        qc_values = qc_values.loc[:, float_mask].astype(float)
+        for col in qc_values.columns:
+            try:
+                qc_values[col] = qc_values[col].astype(float)
+            except ValueError:
+                del qc_values[col]
 
         data_dict_check_qc_plot = {'Night': qc_values.index.tolist()}
         for key, series in qc_values.iteritems():
