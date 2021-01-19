@@ -11,6 +11,19 @@ from datetime import datetime
 import etienne_tools as et
 
 
+obj_sci = 'FP'
+obj_template = 'FP'
+doplot_ccf = False
+doplot_debug = False
+force = False
+lblrv_path = 'lblrv/'
+mask_path = 'masks/'
+template_path = 'templates/',
+science_path = 'tellurics/'
+ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'
+
+
+
 def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'):
@@ -26,8 +39,12 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
     #science_path = 'tellurics/' # direcory with per-object telluric-corect (tcorr) files are hidden
 
     template = fits.getdata(template_path+'Template_s1d_'+obj_template+'_sc1d_v_file_AB.fits')
-    scifiles = glob.glob(science_path+obj_sci+'/2*tcorr*AB.fits')
-    #ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'
+
+    if 'FP' not in obj_sci:
+        scifiles = glob.glob(science_path+obj_sci+'/2*tcorr*AB.fits')
+    else:
+        scifiles = glob.glob(science_path+obj_sci+'/*C.fits')
+
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     End of inputs to the code
