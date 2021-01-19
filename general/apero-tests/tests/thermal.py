@@ -4,20 +4,24 @@ Check if thermal calib worked fine.
 Tests preformed
 check1: how many recipes were run (cal_thermal_{instrument} in log.fits)?
         how many in the master directory?
-check2: how many of each output do we have?
+check2: how many recipes were run (cal_extract_{instrument} in log.fits)?
+check3: how many of each output do we have?
         output1: {ODOMETER_CODE}_pp_e2ds_{FIBER}.fits
         output2: {ODOMETER_CODE}_pp_e2dsff_{FIBER}.fits
         output3: {ODOMETER_CODE}_pp_s1d_w_{FIBER}.fits
         output4: {ODOMETER_CODE}_pp_s1d_v_{FIBER}.fits
-check3: how many of each unique output do we have?
-        output1: {ODOMETER_CODE}_pp_e2ds_{FIBER}.fits
-        output2: {ODOMETER_CODE}_pp_e2dsff_{FIBER}.fits
-        output3: {ODOMETER_CODE}_pp_s1d_w_{FIBER}.fits
-        output4: {ODOMETER_CODE}_pp_s1d_v_{FIBER}.fits
+        output5: {ODOMETER_CODE}_pp_thermal_e2ds_tel_{FIBER}.fits
+        output6: {ODOMETER_CODE}_pp_thermal_e2ds_int_{FIBER}.fits
+check4: how many of each unique output do we have?
+        output1: {ODOMETER_CODE}d_pp_e2ds_{FIBER}.fits
+        output2: {ODOMETER_CODE}d_pp_e2dsff_{FIBER}.fits
+        output3: {ODOMETER_CODE}d_pp_s1d_w_{FIBER}.fits
+        output4: {ODOMETER_CODE}d_pp_s1d_v_{FIBER}.fits
+        output5: {ODOMETER_CODE}_pp_thermal_e2ds_tel_{FIBER}.fits
+        output6: {ODOMETER_CODE}_pp_thermal_e2ds_int_{FIBER}.fits
 stop1: check3 == check1?
-check4: using the log.fits how many files failed one or more QC?
+check5: using the log.fits how many files failed one or more QC?
         Which odometers? Which nights? Which QC?
-check5: plot the different QCs as a function of time.
 check6: using the log.fits how many files failed to finish? Which odometers?
         Which nights? Why (using the ERRORS and LOGFILE columns)?
 check7: how many entry THERMALT_{FIBER} and THERMALI_{FIBER} in
@@ -79,12 +83,12 @@ class ThermalTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return ['*_pp_thermal_e2ds_tel_{FIBER}.fits',
-                '*_pp_thermal_e2ds_int_{FIBER}.fits',   
-                '*_pp_e2ds_{FIBER}.fits',
-                '*_pp_e2dsff_{FIBER}.fits',
-                '*_pp_s1d_w_{FIBER}.fits',
-                '*_pp_s1d_v_{FIBER}.fits']
+        return ['*_pp_thermal_e2ds_int_{FIBER}.fits',
+                '*_pp_thermal_e2ds_tel_{FIBER}.fits',
+                '*d_pp_e2ds_{FIBER}.fits',
+                '*d_pp_e2dsff_{FIBER}.fits',
+                '*d_pp_s1d_w_{FIBER}.fits',
+                '*d_pp_s1d_v_{FIBER}.fits']
 
     @property
     def calibdb_list(self) -> List[str]:
@@ -93,7 +97,7 @@ class ThermalTest(CalibTest):
         :return: calibdb_list
         :rtype: list[str]
         """
-        return ['THERMALT_{FIBER}', 'THERMALI_{FIBER}']
+        return ['THERMALI_{FIBER}', 'THERMALT_{FIBER}']
 
     @property
     def previous_calibs(self) -> List[str]:
@@ -129,16 +133,15 @@ class ThermalTest(CalibTest):
     # =========================================================================
     def runtest(self):
         """runtest."""
-
+ 
         # Checking duplicates
-        comments_check1, true_dup = self.check_duplicates()
+        comments_check1, true_dup = self.check_duplicates_extract()
 
         # QC/ENDED
-        comments_check4, inspect_check4 = self.check_qc(ncheck=4)
-        inspect_check5 = self.check_qc_plot(ncheck=5)
+        comments_check5, inspect_check5 = self.check_qc(ncheck=5)
         comments_check6, inspect_check6 = self.check_ended(ncheck=6)
 
-        dict_stop1 = self.stop_output_log(true_dup)
+        dict_stop1 = self.stop_output_log_extract(true_dup, nstop=1)
 
         # Generate comment on extra master entries in calib db
         comments_check7 = ('An additional {0} {1} and {2} {3} with master = 1 '
@@ -149,7 +152,6 @@ class ThermalTest(CalibTest):
                                self.calibdb_list[1],
                                self.instrument)
                            )
-
 
         # Get all duplicates
         calib_dup_mask = self.master_calib_df.duplicated(keep=False)
@@ -164,10 +166,11 @@ class ThermalTest(CalibTest):
         dict_stop2 = self.stop_calibdb(calib_dup)
 
         # Check previous calibs to see if missing any
-        missing_previous = self.get_missing_previous_calib()
-        comments_check9, inspect_check9 = ThermalTest.check_previous_calib(
-                                                            missing_previous,
-                                                            ncheck=9)
+        #missing_previous = self.get_missing_previous_calib()
+        #comments_check9, inspect_check9 = ThermalTest.check_previous_calib(
+        #                                                    missing_previous,
+        #                                                    ncheck=9)
+
 
         html_dict = {
                 # Summary header info
@@ -185,21 +188,21 @@ class ThermalTest(CalibTest):
                 'recipe_num_logfits': self.recipe_num_logfits,
                 'comments_check1': comments_check1,
 
-                # check 2 for outputsl
+                # check 2 for logs
+                'recipe_extract_num_logfits': self.recipe_extract_num_logfits,
+
+                # check 3 for outputsl
                 'output_num_total': self.output_num_total,
 
-                # check 3
+                # check 4
                 'output_num_unique': self.output_num_unique,
 
                 # stop 1: output==log
                 'dict_stop1': dict_stop1,
 
-                # check 4: QC failed
+                # check 5: QC failed
                 'log_qc_failed': self.log_qc_failed,
-                'comments_check4': comments_check4,
-                'inspect_check4': inspect_check4,
-
-                # check 5: QC Plot
+                'comments_check5': comments_check5,
                 'inspect_check5': inspect_check5,
 
                 # check 6: not ended
@@ -219,9 +222,9 @@ class ThermalTest(CalibTest):
                 'dict_stop2': dict_stop2,
 
                 # Check9: previous calibrations
-                'missing_previous': missing_previous,
-                'comments_check9': comments_check9,
-                'inspect_check9': inspect_check9,
+                'missing_previous': '',#missing_previous,
+                'comments_check9': '',#comments_check9,
+                'inspect_check9': '',#inspect_check9,
                 }
 
         self.gen_html(html_dict)

@@ -73,6 +73,15 @@
       <!-- Check 2 -->
       <tr>
         <td>2</td>
+        <td># of time cal_extract_{{ instrument.lower() }} was called by {{ recipe }}.py</td>
+        <td>{{ recipe_extract_num_logfits }}</td>
+        <td></td>
+        <td></td>
+      </tr>
+
+      <!-- Check 3 -->
+      <tr>
+        <td>3</td>
         <td># of outputs in {{ reduced_path }}</td>
         <td>
         {% for pattern, num in output_num_total.iteritems() %}
@@ -83,9 +92,9 @@
         <td></td>
       </tr>
 
-      <!-- Check 3 -->
+      <!-- Check 4 -->
       <tr>
-        <td>3</td>
+        <td>4</td>
         <td># of unique outputs in {{ reduced_path }}</td>
         <td>
         {% for pattern, num in output_num_unique.iteritems() %}
@@ -99,7 +108,7 @@
       <!-- Stop 1 -->
       <tr>
         <td></td>
-        <td>Check 3 == Check 1?</td>
+        <td>Check 4 == Check 2?</td>
         <td bgcolor={{ dict_stop1.color }}>{{ dict_stop1.result }}</td>
         <td>{{ dict_stop1.comment }}</td>
         {% if dict_stop1.inspect != '' %}
@@ -109,30 +118,17 @@
         {% endif %}
       </tr>
 
-      <!-- Check 4 -->
-      <tr>
-        <td>4</td>
-        <td># of entry in {{ reduced_path }}/log.fits that failed one or more QC</td>
-        <td>{{ log_qc_failed.shape[0] }}</td>
-        <td>{{ comments_check4 }}</td>
-        {% if inspect_check4 != '' %}
-          <td><a href='{{ inspect_check4 }}'>Inspect</a></td>
-        {% else %}
-          <td></td>
-        {% endif %}
-      </tr>
-
       <!-- Check 5 -->
       <tr>
         <td>5</td>
-        <td>Plot the different QCs as a function of time</td>
+        <td># of entry in {{ reduced_path }}/log.fits that failed one or more QC</td>
+        <td>{{ log_qc_failed.shape[0] }}</td>
+        <td>{{ comments_check5 }}</td>
         {% if inspect_check5 != '' %}
           <td><a href='{{ inspect_check5 }}'>Inspect</a></td>
         {% else %}
           <td></td>
         {% endif %}
-        <td></td>
-        <td></td>
       </tr>
 
       <!-- Check 6 -->
@@ -173,7 +169,7 @@
       <!-- Stop 2 -->
       <tr>
         <td></td>
-        <td>Check 7 == Check 8?</td>
+        <td>Check 8 == Check 7?</td>
         <td bgcolor={{ dict_stop2.color }}>{{ dict_stop2.result }}</td>
         <td>{{ dict_stop2.comment }}</td>
         {% if dict_stop2.inspect != '' %}
@@ -183,17 +179,15 @@
         {% endif %}
       </tr>
 
-      <! -- Check 9 -->
+      <!-- Check 9 -->
       <tr>
         <td>9</td>
-        <td># of outputs in {{ reduced_path }} that used the bad pixel calibration files from another night</td>
-        <td>{{ missing_previous.shape[0] }}</td>
-        <td>{{ comments_check9 }}</td>
-        {% if inspect_check9 != '' %}
-          <td><a href='{{ inspect_check9 }}'>Inspect</a></td>
-        {% else %}
-          <td></td>
-        {% endif %}
+        <td># of outputs in {{ reduced_path }} that used the bad pixel, loc, shape master, shape,
+        flat/blaze calibration files from another night</td>
+        <td></td>
+        <td></td>
+        <td></td>
+
       </tr>
 
     </table>
