@@ -123,3 +123,6 @@ def compilblrv(obj_sci, obj_template, doplot = False, force = False):
                 tbl['per_epoch_err_' + bands[iband]][i] = bulk_error
 
         tbl.write(outname)
+
+
+

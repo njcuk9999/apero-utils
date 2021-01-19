@@ -10,23 +10,9 @@ from scipy import constants
 from datetime import datetime
 import etienne_tools as et
 
-
-obj_sci = 'FP'
-obj_template = 'FP'
-doplot_ccf = False
-doplot_debug = False
-force = False
-lblrv_path = 'lblrv/'
-mask_path = 'masks/'
-template_path = 'templates/',
-science_path = 'tellurics/'
-ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'
-
-
-
 def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
-          science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'):
+          science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits', check_fp = False):
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     Inputs to the code
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
@@ -45,6 +31,14 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
     else:
         scifiles = glob.glob(science_path+obj_sci+'/*C.fits')
 
+        if check_fp:
+            print('Checking if this is OBJ_FP')
+            for i in tqdm(range(len(scifiles))):
+                hdr = fits.getheader(scifiles[i])
+                if hdr['DPRTYPE'] != 'OBJ_FP':
+                    os.system('mv '+scifiles[i]+' '+science_path+obj_sci+'/others/')
+                    scifiles[i] = ''
+            scifiles = scifiles[scifiles != '']
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     End of inputs to the code
@@ -55,6 +49,9 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     # reference table that will always be used afterward as a starting point
     ref_table_name = 'ref_table_{0}.csv'.format(obj_template)
+    maskfile = mask_path+obj_template+'_pos.csv'
+
+
     if not os.path.isfile(ref_table_name):
         print('File {0} will be created, that''s fine but you have been warned!'.format(ref_table_name))
     else:
@@ -87,7 +84,6 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
         print('Direcotry {0} exists, we are happy'.format(science_path+'/'+obj_sci))
 
 
-    maskfile = mask_path+obj_template+'_pos.csv'
     if not os.path.isfile(maskfile):
         raise ValueError('File {0} does not exist, that''s really bad, we exit'.format(maskfile))
     else:
@@ -115,6 +111,7 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
         wave_start = []
         wave_end = []
         order = []
+        xpix = []
         weight_line = [] # used only to get systemic velocity as a starting point
         for i in range(wavegrid.shape[0]):
             gg = (tbl['ll_mask_s']>np.min(wavegrid[i]))*(tbl['ll_mask_s']<np.max(wavegrid[i]))
@@ -123,12 +120,15 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
                 wave_start = np.append(wave_start, np.array(tbl['ll_mask_s'][gg][:-1]))
                 wave_end = np.append(wave_end, np.array(tbl['ll_mask_s'][gg][1:]))
                 weight_line = np.append(weight_line,np.array(tbl['w_mask'][gg][:-1]) )
+                xpix = np.append(xpix, ius(wavegrid[i],np.arange(len(wavegrid[i])))(np.array(tbl['ll_mask_s'][gg][:-1])))
+
 
         tbl = Table()
         tbl['ORDER'] = np.array(order,dtype = int)
         tbl['WAVE_START'] = wave_start #np.array(wave_start*(1 + objrv * 1000 / constants.c))
         tbl['WAVE_END'] = wave_end#np.array(wave_end* (1 + objrv * 1000 / constants.c))
         tbl['WEIGHT_LINE'] = weight_line # from mask
+        tbl['XPIX'] = xpix #pixel position along array
 
         print('We write {0}'.format(ref_table_name))
         tbl.write(ref_table_name)
@@ -142,12 +142,14 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
 
     # we create the spline of the template to be used everywhere further down
     valid = np.isfinite(template['flux'])
-    spline = ius(template['wavelength'][valid],template['flux'][valid],k=3,ext=1)
     bl = fits.getdata(ref_blaze_file)
 
-    # we get an estimate of the model velocity
-    systemic_vel = et.get_rough_ccf_rv(template['wavelength'],template['flux'],wave_start,np.ones_like(weight_line),
-                                       doplot = doplot_ccf)
+    if 'FP' not in obj_sci:
+        # we get an estimate of the model velocity
+        systemic_vel = et.get_rough_ccf_rv(template['wavelength'],template['flux'],wave_start,np.ones_like(weight_line),
+                                           doplot = doplot_ccf)
+    else:
+        systemic_vel = 0
 
     # template removed from its systemic velocity, the spline is redefined for good
     spline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),template['flux'][valid],k=3,ext=1)
@@ -176,7 +178,11 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
         if current_epoch != np.floor(hdr['MJDATE']):
             try:
                 # get CCF rv as a starting point
-                rv = et.get_rough_ccf_rv(wave,sp,wave_start,np.ones_like(weight_line),doplot = doplot_ccf )
+                if 'FP' not in obj_sci:
+                    rv = et.get_rough_ccf_rv(wave,sp,wave_start,np.ones_like(weight_line),doplot = doplot_ccf )
+                else:
+                    rv = 0
+
                 print('For epoch {0}, the system velocity is {1:.2f} km/s'.format(np.floor(hdr['MJDATE']),rv/1000 ))
                 current_epoch =  np.floor(hdr['MJDATE'])
             except:
@@ -219,9 +225,15 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
                     tmp[tmp==0] = np.nan
                     lowf[ii] = tmp
 
+
+
                 # match low frequency of model to that of spectrum
                 model[ii] /= lowf[ii]
                 model1ms[ii] /= lowf[ii]
+
+                #plt.plot(model[ii])
+                #plt.plot(sp[ii])
+                #plt.show()
 
                 # get residuals and running RMS
                 tmp = sp[ii]-model[ii]
@@ -260,6 +272,7 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
                     dd = model_ord - model1ms_ord
                     diff = sp_ord - model_ord
 
+
                     if doplot_debug:
                         if (iord[i] == 35)*(ite_rv == 0):
                             plt.plot(ww_ord,sp_ord, color = 'grey', linewidth=6, alpha = 0.3)
@@ -275,6 +288,11 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
                 # edge points
                 imin = np.min( np.min(np.where(g)))-1 # we offset by 1 to get the edge pixels
                 imax = np.min( np.max(np.where(g)))+1  # we offset by 1 to get the edge pixels
+
+                if imin<0:
+                    continue
+                if imax>( ww_ord.shape[0]-1):
+                    continue
 
                 # get weights at the edge of the domain. Pixels inside have a weight of 1, at the edge, it's proportional
                 # to the overlap
@@ -319,7 +337,11 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
             ite_rv +=1
 
         # update the table
-        tbl['RV'] = -(dv+rv-hdr['BERV']*1000) # express to have sign fine relative to convention
+        if 'FP' not in obj_sci:
+            tbl['RV'] = -(dv+rv-hdr['BERV']*1000) # express to have sign fine relative to convention
+        else:
+            tbl['RV'] = -(dv+rv) # express to have sign fine relative to convention
+
         tbl['DVRMS'] = dvrms
 
         # write the table
@@ -334,3 +356,4 @@ def lblrv(obj_sci,obj_template,doplot_ccf = False,doplot_debug = False, force = 
         hdu2 = fits.BinTableHDU(tbl)
         new_hdul = fits.HDUList([hdu1, hdu2])
         new_hdul.writeto(outname, overwrite=True)
+
