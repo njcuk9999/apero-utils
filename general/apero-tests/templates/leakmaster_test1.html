@@ -40,7 +40,7 @@
     <p>Script: {{ recipe }}.py<br>
     <p>Output files: {{ ', '.join(output_list) }}<br>
     <p>Calibration database entry: {{ ', '.join(calibdb_list) }}<br>
-    <p><a href='https://github.com/njcuk9999/apero-drs#88-thermal-correction-recipe'>Link</a> to Thermal Correction description</p>
+    <p><a href='https://github.com/njcuk9999/apero-drs#89-master-leak-correction-recipe'>Link</a> to Master leak correction description</p>
     <br></br>
 
     <table id="t01">
@@ -149,7 +149,7 @@
           {{ key }}: {{ num }}<br>
         {% endfor %}
         </td>
-        <td>{{ comments_check7 }}</td>
+        <td></td>
         <td></td>
       </tr>
 
@@ -184,13 +184,9 @@
         <td>9</td>
         <td># of outputs in {{ reduced_path }} that used the bad pixel, loc, shape master, shape,
         flat/blaze calibration files from another night</td>
-        <td>{{ missing_previous.shape[0] }}</td>
-        <td>{{ comments_check9 }}</td>
-        {% if inspect_check9 != '' %}
-          <td><a href='{{ inspect_check9 }}'>Inspect</a></td>
-        {% else %}
-          <td></td>
-        {% endif %}
+        <td></td>
+        <td></td>
+
       </tr>
 
     </table>

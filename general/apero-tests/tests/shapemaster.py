@@ -267,7 +267,7 @@ class ShapeMTest(CalibTest):
 
                 # Check 7: calibdb entries
                 'output_num_entry': self.tot_num_entry,  # Master recipe
-                # 'comments_check6': comments_check6,
+                # 'comments_check7': comments_check7,
 
                 # Check 8: calibdb outputs
                 'output_num_calibdb': self.output_num_calibdb,

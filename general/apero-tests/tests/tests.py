@@ -610,8 +610,11 @@ class CalibTest(Test):
             calib_inds = self.calibdb_list
 
         master_calib_df.MASTER = master_calib_df.MASTER.astype(bool)
-        master_calib_df = master_calib_df.loc[calib_inds]
-
+        try:
+            master_calib_df = master_calib_df.loc[calib_inds]
+        except KeyError:
+            master_calib_df = master_calib_df[0:0]
+            
         # Replace fibers by {FIBER} to match other tests
         # NOTE: Assumes fibers are at the end with \\b
         if self.fibers is not None:
@@ -644,7 +647,11 @@ class CalibTest(Test):
                                              fibers=self.fibers)
             for _ in self.fibers:
                 files = files.explode()  # Nested lists so explode Nfiber times
-        output_calibdb = files.apply(os.path.basename)
+
+        try:
+            output_calibdb = files.apply(os.path.basename)
+        except TypeError:
+            output_calibdb = files[0:0]
 
         return output_calibdb
 
@@ -840,26 +847,21 @@ class CalibTest(Test):
                         )
 
             # Check for non-master duplicates for each pattern
-            dir_kwd = 'DIRECTORY'
-            master_mask_group = self.master_mask.astype(int).groupby(dir_kwd)
-            master_num_night = master_mask_group.sum()
-            dup_num_night = master_mask_group.size()
-            dup_not_master = dup_num_night - master_num_night
-            log_dup_align, output_dup_align = dup_not_master.align(
-                                        self.output_num_align[output_dup_mask]
-                                            )
-            true_dup = log_dup_align - output_dup_align  # number of dups
-            true_dup = true_dup[true_dup > 0]  # Keep only non-zero
-            true_dup.name = 'COUNT'
-            true_dup = true_dup.reset_index()
+            # cal_extract does not have duplicate entries produced by -master=True
+            # WIP
+
+            dup = self.log_extract_num_align - self.output_num_align
+            dup = dup[dup > 0]
+            dup.name = 'COUNT'
+            dup = dup.reset_index()
 
         else:
             comments_check_dup = ''
-            true_dup = pd.DataFrame({'PATTERN' : [],
-                                     'DIRECTORY' : [],
-                                     'COUNT' : []})
+            dup = pd.DataFrame({'PATTERN' : [],
+                                'DIRECTORY' : [],
+                                'COUNT' : []})
 
-        return comments_check_dup, true_dup
+        return comments_check_dup, dup
 
     def stop_output_log(self, dup: pd.DataFrame, nstop: int = 0) -> dict:
         """stop_output_log.
@@ -942,6 +944,8 @@ class CalibTest(Test):
         """stop_output_log.
 
         Unique output == log?
+
+        no cal_extract with -master=True
 
         :param dup: true duplicate outputs (i.e. not master)
         :type dup: pd.DataFrame
@@ -1148,6 +1152,65 @@ class CalibTest(Test):
 
         return missing_calib
 
+    def get_missing_previous_calib_extract(self) -> pd.DataFrame:
+        """get_missing_calib.
+        :rtype: pd.DataFrame
+
+        The output PID match the PID from cal_extract and not self.recipe
+        This will be corrected in 0.7
+        """
+
+        # Load header of all output files (one output pattern only)
+        full_paths = (self.reduced_path
+                      + os.path.sep
+                      + self.output_files.index.get_level_values('DIRECTORY')
+                      + os.path.sep
+                      + self.output_files)
+        headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
+        header_df = pd.DataFrame(headers.tolist(), index=headers.index)
+
+        # Keep only matching PIDs
+        # Not good: header_df = header_df[header_df.DRSPID.isin(self.log_df.PID)]
+        log_pid_dir = self.log_extract_df.reset_index().set_index('PID').DIRECTORY
+        # make sure no duplicate PID per night
+        log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index('PID').DIRECTORY 
+        log_nights = log_pid_dir.loc[header_df.DRSPID]  # log nights for PIDs
+        header_df = header_df[(log_nights == header_df.index).values]
+
+        # Keep only calib columns
+        used_calibs = [p
+                       for p in self.previous_calibs
+                       if p in header_df.columns]
+        header_df = header_df[used_calibs]  # Keep calibs
+
+        # Get masks (used and exists) and project condition on nights (axis=1)
+        none_mask = (header_df == 'None')  # calib not used
+        prefix = (self.reduced_path + os.path.sep
+                  + header_df.index + os.path.sep)
+        isfile_mask = header_df.radd(prefix, axis=0).applymap(os.path.isfile)
+        missing_mask = ~(isfile_mask | none_mask)
+
+        # Check nights where 1) used and 2) does not exists for each output
+        missing_calib_all = header_df[missing_mask]
+        missing_calib_list = [missing_calib_all[k]
+                              for k in missing_calib_all.columns]
+        missing_calib = pd.concat(missing_calib_list).sort_index()
+        missing_calib = missing_calib.dropna()  # 2D mask yields NaNs if false
+        missing_calib.name = 'FILE'
+        missing_calib = missing_calib.reset_index()
+        missing_calib = missing_calib.rename(columns={'DIRECTORY': 'LOC_DIR'})
+
+        # Find calibration nights used
+        pattern = (self.reduced_path
+                   + os.path.sep + '*'
+                   + os.path.sep + missing_calib.FILE)
+        calib_path = pattern.apply(glob.glob).str[0]  # First glob for each
+        calib_dir = calib_path.str.split(os.path.sep).str[-2]
+        missing_calib['CALIB_DIR'] = calib_dir
+
+        return missing_calib
+
+
     @staticmethod
     def check_previous_calib(missing_calib, ncheck: int = 0) -> dict:
         """check_previous_calib.
@@ -1163,7 +1226,7 @@ class CalibTest(Test):
             inspect_missing_calib = ''
         else:
             comments_missing_calib = ('One or more recipe outputs'
-                                      ' used the bad pixel calibrations from'
+                                      ' used calibrations from'
                                       ' another night')
             data_dict_missing_calib = {
                     'Recipe Night': missing_calib.LOC_DIR.values,
