@@ -4,6 +4,12 @@ from scipy import constants
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from scipy.optimize import curve_fit
 from astropy.io import fits
+from astropy.table import Table
+import warnings
+import numba
+from numba import jit
+
+
 
 def doppler(wave,v):
     # velocity expressed in m/s
@@ -71,33 +77,32 @@ def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
 
     return systemic_vel
 
-def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
-    #
-    # Provide values and corresponding errors and compute a
-    # weighted mean
-    #
-    #
-    # odd_bad -> probability that the point is bad
-    #
-    # nmax -> number of iterations
+def robust_polyfit(x, y, degree, nsigcut):
+    keep = np.isfinite(y)
+    # set the nsigmax to infinite
+    nsigmax = np.inf
+    # set the fit as unset at first
+    fit = None
+    # while sigma is greater than sigma cut keep fitting
+    while nsigmax > nsigcut:
+        # calculate the polynomial fit (of the non-NaNs)
+        fit = np.polyfit(x[keep], y[keep], degree)
+        # calculate the residuals of the polynomial fit
+        res = y - np.polyval(fit, x)
+        # work out the new sigma values
+        sig = np.nanmedian(np.abs(res))
+        if sig == 0:
+            nsig = np.zeros_like(res)
+            nsig[res != 0] = np.inf
+        else:
+            nsig = np.abs(res) / sig
+        # work out the maximum sigma
+        nsigmax = np.max(nsig[keep])
+        # re-work out the keep criteria
+        keep = nsig < nsigcut
+    # return the fit and the mask of good values
+    return fit, keep
 
-    guess = np.nanmedian(value)
-
-    nite = 0
-    while (nite < nmax):
-        nsig = (value-guess)/err
-        gg = np.exp(-0.5*nsig**2)
-        odd_bad = odd_ratio/(gg+odd_ratio)
-        odd_good = 1-odd_bad
-
-        w = odd_good/err**2
-
-        guess = np.nansum(value*w)/np.nansum(w)
-        nite+=1
-
-    bulk_error =  np.sqrt(1/np.nansum(odd_good/err**2))
-
-    return guess,bulk_error
 
 def sigma(tmp):
     # return a robust estimate of 1 sigma
@@ -229,3 +234,93 @@ def fits2wave(file_or_header):
 
     # return wave grid
     return np.array(wavesol)
+
+
+def td_convert(instance):
+    if isinstance(instance, Table):
+        out = dict()
+        for col in instance.keys():
+            out[col] = np.array(instance[col])
+        return out
+    if isinstance(instance, dict):
+        out = Table()
+        for col in instance.keys():
+            out[col] = np.array(instance[col])
+        return out
+
+def running_rms(sp1):
+    sp1b = np.zeros(4096)+np.nan
+    sp1b[4:-4] = sp1
+    with warnings.catch_warnings(record=True) as _:
+        b1 = np.nanpercentile(np.reshape(sp1b, [16, 256]),[16,84], axis=1)
+    rms =  (b1[1]-b1[0])/2
+    index = np.arange(16)*256+128
+    keep = np.isfinite(rms)
+    index = index[keep]
+    rms = rms[keep]
+
+    return ius(index,rms,k=2,ext=3)(np.arange(len(sp1)))
+
+def sed_ratio(sp1,sp2,doplot = False):
+
+    sp1b = np.zeros(4096)+np.nan
+    sp2b = np.zeros(4096)+np.nan
+    sp1b[4:-4] = sp1
+    sp2b[4:-4] = sp2
+
+    invalid = (np.isfinite(sp1b)*np.isfinite(sp2b)) == False
+    sp1b[invalid] = np.nan
+    sp2b[invalid] = np.nan
+
+    index = np.arange(128)*32+16
+    b1 = np.nansum(np.reshape(sp1b, [128, 32]), axis=1)
+    b2 = np.nansum(np.reshape(sp2b, [128, 32]), axis=1)
+
+    invalid = ( (b1!=0)*(b2!=0) ) == False
+    b1[invalid] = np.nan
+    b2[invalid] = np.nan
+
+    ratio = b1/b2
+
+    ratio2 = np.zeros_like(ratio)+np.nan
+    for i in range(3,128-4):
+        if np.isfinite(ratio[i]):
+            i1 = i-3
+            i2 = i+4
+            ratio2[i] = np.nanmedian(ratio[i1:i2])
+
+    keep = np.isfinite(ratio2)
+    index = index[keep]
+    ratio2 = ratio2[keep]
+
+    return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
+
+@jit(nopython=True)
+def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
+    #
+    # Provide values and corresponding errors and compute a
+    # weighted mean
+    #
+    #
+    # odd_bad -> probability that the point is bad
+    #
+    # nmax -> number of iterations
+
+    guess = np.nanmedian(value)
+
+    nite = 0
+    while (nite < nmax):
+        nsig = (value-guess)/err
+        gg = np.exp(-0.5*nsig**2)
+        odd_bad = odd_ratio/(gg+odd_ratio)
+        odd_good = 1-odd_bad
+
+        w = odd_good/err**2
+
+        guess = np.nansum(value*w)/np.nansum(w)
+        nite+=1
+
+    bulk_error =  np.sqrt(1/np.nansum(odd_good/err**2))
+
+    return guess,bulk_error
+

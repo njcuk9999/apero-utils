@@ -11,11 +11,16 @@ import numpy as np
 #obj_sci, obj_template = 'GL436','GL436'
 
 def compilblrv(obj_sci, obj_template, doplot = False, force = False):
+
+    # pass just one object and we assume that the object is it's own template
+    if obj_template is None:
+        obj_template = obj_sci
+
     outname = 'tbllblrv_{0}_{1}.csv'.format(obj_sci, obj_template)
 
     # default keywords to be included in the
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
-            'TLPDVH2O','TLPDVOTR','CDBWAVE']
+            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT']
     keys = np.array(keys)
 
     if (not os.path.isfile(outname)) or force:
@@ -33,11 +38,15 @@ def compilblrv(obj_sci, obj_template, doplot = False, force = False):
                 # adding keys from the input file
                 for key in keys:
                     if key in hdr:
-                        tbl[key] = np.zeros_like(np.tile(hdr[key],len(scifiles)))
+                        val = hdr[key]
+                        if type(val) == str:
+                            val =  ' '*100
+                        tbl[key] = np.zeros_like(np.tile(val,len(scifiles)))
 
             for key in keys:
                 # adding header value in output table
                 if key in hdr:
+
                     tbl[i][key] = hdr[key]
 
             # read line file
@@ -67,8 +76,8 @@ def compilblrv(obj_sci, obj_template, doplot = False, force = False):
             tbl['per_epoch_err'][i] = bulk_error
 
         # plot or not
-        if doplot:
-            plt.errorbar(tbl['MJDATE']+0.2, tbl['per_epoch_mean'] - np.nanmean(tbl['per_epoch_mean']), fmt='.g', yerr=tbl['per_epoch_err'], alpha=0.5)
+        #if doplot:
+        #    plt.errorbar(tbl['MJDATE']+0.2, tbl['per_epoch_mean'] - np.nanmean(tbl['per_epoch_mean']), fmt='.g', yerr=tbl['per_epoch_err'], alpha=0.5)
 
         # de-biasing line. Matrix that contains a replicated 2d version of the per-epoch mean
         rv_per_epoch_model = np.reshape(np.repeat(tbl['per_epoch_mean'],rvs.shape[1]),rvs.shape)
@@ -95,15 +104,16 @@ def compilblrv(obj_sci, obj_template, doplot = False, force = False):
             tbl['per_epoch_mean'][i] = guess
             tbl['per_epoch_err'][i] = bulk_error
 
-        # plot or not
-        if doplot:
-            plt.errorbar(tbl['MJDATE'], tbl['per_epoch_mean']-np.nanmean(tbl['per_epoch_mean']) , fmt='.r', yerr=tbl['per_epoch_err'],alpha = 0.5)
-            plt.show()
 
         # keeping track of the per-band RV measurements
         bands = ['Y','J','H','K']
         blue_end = [900,1150,1400,1900]
         red_end = [1150,1400,1900,2500]
+        suffix = ['', '_0-2044', '_2044-4088',  '_1532-2556']
+
+
+        rvs_matrix = np.zeros([len(tbl),len(bands),len(suffix)])+np.nan
+        err_matrix = np.zeros([len(tbl),len(bands),len(suffix)])+np.nan
 
         # updating the table with per-band
         for i in tqdm(range(len(scifiles))):
@@ -111,18 +121,48 @@ def compilblrv(obj_sci, obj_template, doplot = False, force = False):
             tmp_err = dvrms[i]
 
             for iband in range(len(bands)):
-                g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband])
+                for reg in range(4):
+                    if reg == 0:
+                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband])
+                    if reg == 1:
+                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband]) * (tbl_per_line_ini['XPIX'] < 2044)
+                    if reg == 2:
+                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband]) * (tbl_per_line_ini['XPIX'] > 2044)
+                    if reg == 3:
+                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband])  * (tbl_per_line_ini['XPIX'] > 1532)  * (tbl_per_line_ini['XPIX'] < 2556)
 
-                if i == 0:
-                    tbl['per_epoch_mean_'+bands[iband]] = np.zeros_like(scifiles,dtype = float)
-                    tbl['per_epoch_err_'+bands[iband]] = np.zeros_like(scifiles,dtype = float)
+                    #if i == 0:
+                    #    tbl['per_epoch_mean_'+bands[iband]+suffix] = np.zeros_like(scifiles,dtype = float)
+                    #    tbl['per_epoch_err_'+bands[iband]+suffix] = np.zeros_like(scifiles,dtype = float)
 
-                guess,bulk_error  = et.odd_ratio_mean(tmp_rv[g],tmp_err[g])
+                    guess,bulk_error  = et.odd_ratio_mean(tmp_rv[g],tmp_err[g])
 
-                tbl['per_epoch_mean_' + bands[iband]][i] = guess
-                tbl['per_epoch_err_' + bands[iband]][i] = bulk_error
+                    rvs_matrix[i,iband,reg] = guess
+                    err_matrix[i,iband,reg] = bulk_error
+
+
+                    #tbl['per_epoch_mean_' + bands[iband]+suffix][i] = guess
+                    #tbl['per_epoch_err_' + bands[iband]+suffix][i] = bulk_error
+
+        for iband in range(len(bands)):
+            for reg in range(4):
+                tbl['per_epoch_mean_' + bands[iband]+suffix[reg]] = rvs_matrix[:,iband,reg]
+                tbl['per_epoch_err_' + bands[iband]+suffix[reg]] = err_matrix[:,iband,reg]
+
+        # plot or not
+        if doplot:
+            fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmean(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.5,label = 'H')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmean(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.5,label = 'J')
+            ax[1].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-tbl['per_epoch_mean_H'] , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
+            ax[0].legend()
+            plt.show()
 
         tbl.write(outname)
 
 
 
+doplot,force = True, True
+obj_sci =   'GL699'#,'GL699'
+
+compilblrv(obj_sci, doplot= doplot,force = force)
