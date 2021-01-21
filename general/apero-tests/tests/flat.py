@@ -156,7 +156,7 @@ class FlatTest(CalibTest):
 
         # Check previous calibs to see if missing any
         missing_previous = self.get_missing_previous_calib()
-        comments_check9, inspect_check9 = FlatTest.check_previous_calib(
+        comments_check9, inspect_check9 = self.check_previous_calib(
                                                             missing_previous,
                                                             ncheck=9)
 
