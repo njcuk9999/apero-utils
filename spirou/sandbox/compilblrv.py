@@ -1,13 +1,15 @@
 import glob
 from astropy.io import fits
 import os
-import matplotlib.pyplot as plt
 from tqdm import tqdm
 import etienne_tools as et
-from astropy.table import Table
 import numpy as np
 
 def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
+
+    if doplot:
+        # avoids conflicts if one uses ssh without graphic displays
+        import matplotlib.pyplot as plt
 
     # pass just one object and we assume that the object is it's own template
     if obj_template is None:
@@ -28,9 +30,11 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
             hdr = fits.getheader(scifiles[i])
             # if first file, we populate the columns
             if i == 0:
-                tbl = Table()
+                tbl = dict()
                 tbl['per_epoch_mean'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_err'] = np.zeros_like(scifiles, dtype = float)
+                tbl['per_epoch_DDV'] = np.zeros_like(scifiles, dtype = float)
+                tbl['per_epoch_DDVRMS'] = np.zeros_like(scifiles, dtype = float)
 
                 # adding keys from the input file
                 for key in keys:
@@ -44,7 +48,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
                 # adding header value in output table
                 if key in hdr:
 
-                    tbl[i][key] = hdr[key]
+                    tbl[key][i] = hdr[key]
 
             # read line file
             tbl_per_line_ini = fits.getdata(scifiles[i])
@@ -54,23 +58,35 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
                 g = (tbl_per_line_ini['WAVE_START'] > 900) * (tbl_per_line_ini['WAVE_START'] < 2500)
                 rvs = np.zeros([len(scifiles),np.sum(g)])
                 dvrms = np.zeros([len(scifiles), np.sum(g)])
+                DDV = np.zeros([len(scifiles),np.sum(g)])
+                DDVRMS = np.zeros([len(scifiles), np.sum(g)])
 
             # keep track in two big matrices of the rv and corresponding errors
             tbl_per_line = tbl_per_line_ini[g]
             rvs[i] = tbl_per_line['RV']
             dvrms[i] = tbl_per_line['DVRMS']
 
+            DDV[i] = tbl_per_line['DDV']
+            DDVRMS[i] = tbl_per_line['DDVRMS']
+
         # a line must be present >80% of the line
         valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > 0.8
         rvs = rvs[:,valid_lines]
         dvrms = dvrms[:,valid_lines]
         tbl_per_line_ini = tbl_per_line_ini[valid_lines]
+        DDV = DDV[:,valid_lines]
+        DDVRMS = DDVRMS[:,valid_lines]
 
         # constructing a per-epoch mean velocity
         for i in tqdm(range(len(scifiles))):
             guess,bulk_error  = et.odd_ratio_mean(rvs[i],dvrms[i])
             tbl['per_epoch_mean'][i] = guess
             tbl['per_epoch_err'][i] = bulk_error
+
+            guess,bulk_error  = et.odd_ratio_mean(DDV[i],DDVRMS[i])
+
+            tbl['per_epoch_DDV'][i] = guess
+            tbl['per_epoch_DDVRMS'][i] = bulk_error
 
         # plot or not
         #if doplot:
@@ -109,8 +125,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
         suffix = ['', '_0-2044', '_2044-4088',  '_1532-2556']
 
 
-        rvs_matrix = np.zeros([len(tbl),len(bands),len(suffix)])+np.nan
-        err_matrix = np.zeros([len(tbl),len(bands),len(suffix)])+np.nan
+        rvs_matrix = np.zeros([len(scifiles),len(bands),len(suffix)])+np.nan
+        err_matrix = np.zeros([len(scifiles),len(bands),len(suffix)])+np.nan
 
         # updating the table with per-band
         for i in tqdm(range(len(scifiles))):
@@ -128,18 +144,10 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
                     if reg == 3:
                         g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband])  * (tbl_per_line_ini['XPIX'] > 1532)  * (tbl_per_line_ini['XPIX'] < 2556)
 
-                    #if i == 0:
-                    #    tbl['per_epoch_mean_'+bands[iband]+suffix] = np.zeros_like(scifiles,dtype = float)
-                    #    tbl['per_epoch_err_'+bands[iband]+suffix] = np.zeros_like(scifiles,dtype = float)
-
                     guess,bulk_error  = et.odd_ratio_mean(tmp_rv[g],tmp_err[g])
 
                     rvs_matrix[i,iband,reg] = guess
                     err_matrix[i,iband,reg] = bulk_error
-
-
-                    #tbl['per_epoch_mean_' + bands[iband]+suffix][i] = guess
-                    #tbl['per_epoch_err_' + bands[iband]+suffix][i] = bulk_error
 
         for iband in range(len(bands)):
             for reg in range(4):
@@ -148,11 +156,17 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
 
         # plot or not
         if doplot:
-            fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmean(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.7,label = 'J')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmean(tbl['per_epoch_mean_H']) , fmt='.k', yerr=tbl['per_epoch_err_H'],alpha = 0.7,label = 'H')
-            ax[1].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-tbl['per_epoch_mean_H'] , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
+            fig, ax = plt.subplots(nrows = 3, ncols = 1,sharex = True)
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.7,label = 'J')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmedian(tbl['per_epoch_mean_H']) , fmt='.k', yerr=tbl['per_epoch_err_H'],alpha = 0.7,label = 'H')
+            ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'] ,fmt='.k', yerr=tbl['per_epoch_DDVRMS'], alpha = 0.7)
+
+            diff_JH =  tbl['per_epoch_mean_J']-tbl['per_epoch_mean_H']
+            ax[1].errorbar(tbl['MJDATE'],diff_JH - np.nanmedian(diff_JH) , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
             ax[0].legend()
+            ax[0].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]',title = 'H velocity')
+            ax[1].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]', title = 'J-H velo diff')
+            ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
             plt.show()
 
-        tbl.write(outname)
+        et.td_convert(tbl).write(outname)
