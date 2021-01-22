@@ -10,7 +10,7 @@ import numpy as np
 
 #obj_sci, obj_template = 'GL436','GL436'
 
-def compilblrv(obj_sci, obj_template, doplot = False, force = False):
+def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
 
     # pass just one object and we assume that the object is it's own template
     if obj_template is None:
