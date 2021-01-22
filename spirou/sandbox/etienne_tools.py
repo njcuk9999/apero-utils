@@ -293,7 +293,10 @@ def sed_ratio(sp1,sp2,doplot = False):
     index = index[keep]
     ratio2 = ratio2[keep]
 
-    return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
+    if len(ratio2)<4:
+        return np.zeros_like(sp1)+np.nan
+    else:
+        return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
 
 @jit(nopython=True)
 def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
