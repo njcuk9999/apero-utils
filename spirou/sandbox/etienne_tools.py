@@ -9,6 +9,20 @@ import warnings
 import numba
 from numba import jit
 
+def color(message,color):
+    COLOURS = dict()
+    COLOURS['BLACK'] = '\033[90;1m'
+    COLOURS['RED'] = '\033[1;91;1m'
+    COLOURS['GREEN'] = '\033[92;1m'
+    COLOURS['YELLOW'] = '\033[1;93;1m'
+    COLOURS['BLUE'] = '\033[94;1m'
+    COLOURS['MAGENTA'] = '\033[1;95;1m'
+    COLOURS['CYAN'] = '\033[1;96;1m'
+    COLOURS['WHITE'] = '\033[97;1m'
+    COLOURS['ENDC'] = '\033[0;0m'
+
+    return COLOURS[color.upper()] + message + COLOURS['ENDC']
+
 
 
 def doppler(wave,v):
@@ -297,6 +311,8 @@ def sed_ratio(sp1,sp2,doplot = False):
         return np.zeros_like(sp1)+np.nanmedian(ratio2)
     else:
         return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
+
+
 
 @jit(nopython=True)
 def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):

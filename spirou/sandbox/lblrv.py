@@ -12,7 +12,6 @@ import etienne_tools as et
 import warnings
 from time import time
 
-
 def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits', check_fp = False):
@@ -430,13 +429,13 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         mjdate_all[ifile] = hdr['MJDATE']
 
         if ite_convergence >=9:
-            print('\t\tWe assume that the RV is (probably) bad. Next step we''ll measure it with a CCF')
+            print(et.color('\t\tWe assume that the RV is (probably) bad. Next step we''ll measure it with a CCF','red'))
             failed_convergence = True
         else:
-            print('\t\tConverged in {0} steps'.format(ite_convergence))
+            print(et.color('\t\tConverged in {0} steps'.format(ite_convergence),'green'))
             failed_convergence = False
 
-        print('\tWe write file {0} [{1}/{2}]'.format(outname,ifile, len(scifiles)))
+        print(et.color('\tWe write file {0} [{1}/{2}]'.format(outname,ifile, len(scifiles)),'magenta'))
 
         hdu1 = fits.PrimaryHDU()
 
@@ -455,7 +454,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         nleft = len(scifiles) - ifile - 1
 
         if len(all_durations) >2:
-            print('\tDuration per file {0:.2f}+-{1:.2f}s'.format(np.nanmean(all_durations),np.nanstd(all_durations)))
-            print('\tTime left to completion {0:.2f}h, {1} / {2} files todo/done\n'.format(np.nanmean(all_durations)*nleft/3600, nleft,ifile))
+            print(et.color('\tDuration per file {0:.2f}+-{1:.2f}s'.format(np.nanmean(all_durations),
+                                                                          np.nanstd(all_durations)), 'yellow'))
+            print(et.color('\tTime left to completion {0:.2f}h, {1} / {2} files todo/done\n'.format(np.nanmean(all_durations)*nleft/3600, nleft,ifile), 'yellow'))
         else:
             print()
