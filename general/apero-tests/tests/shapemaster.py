@@ -158,7 +158,7 @@ class ShapeMTest(CalibTest):
         :rtype: pd.DataFrame
         """
         # NOTE: should change in APERO v0.7
-        dup = self.output_num_align[self.output_num_align > 1]
+        dup = self.output_num_night[self.output_num_night > 1]
         dup.name = 'COUNT'
         dup = dup.reset_index()
 
