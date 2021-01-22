@@ -61,7 +61,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
             dvrms[i] = tbl_per_line['DVRMS']
 
         # a line must be present >80% of the line
-        valid_lines = np.nanmean(np.isfinite(dvrms),axis=0) > 0.8
+        valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > 0.8
         rvs = rvs[:,valid_lines]
         dvrms = dvrms[:,valid_lines]
         tbl_per_line_ini = tbl_per_line_ini[valid_lines]
@@ -149,8 +149,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
         # plot or not
         if doplot:
             fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmean(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.5,label = 'H')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmean(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.5,label = 'J')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmean(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.7,label = 'J')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmean(tbl['per_epoch_mean_H']) , fmt='.k', yerr=tbl['per_epoch_err_H'],alpha = 0.7,label = 'H')
             ax[1].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-tbl['per_epoch_mean_H'] , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
             ax[0].legend()
             plt.show()
