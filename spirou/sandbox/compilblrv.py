@@ -128,6 +128,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
         rvs_matrix = np.zeros([len(scifiles),len(bands),len(suffix)])+np.nan
         err_matrix = np.zeros([len(scifiles),len(bands),len(suffix)])+np.nan
 
+
+        keep = np.ones_like(scifiles,dtype = bool)
         # updating the table with per-band
         for i in tqdm(range(len(scifiles))):
             tmp_rv = rvs[i] - rv_per_line_model[i]
@@ -147,6 +149,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
 
                     if np.sum(np.isfinite(tmp_err[g]) * np.isfinite(tmp_rv[g]))<np.sum(g)/2:
                         print(et.color('Less than 50% of lines are valid for {0}, band {1}, reg {2}'.format(scifiles[i], bands[iband],reg),'red'))
+                        keep[i] = False
                         continue
 
                     guess,bulk_error  = et.odd_ratio_mean(tmp_rv[g],tmp_err[g])
@@ -158,6 +161,10 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
             for reg in range(4):
                 tbl['per_epoch_mean_' + bands[iband]+suffix[reg]] = rvs_matrix[:,iband,reg]
                 tbl['per_epoch_err_' + bands[iband]+suffix[reg]] = err_matrix[:,iband,reg]
+
+        tbl = et.td_convert(tbl)
+        tbl = tbl[keep]
+        tbl.write(outname)
 
         # plot or not
         if doplot:
@@ -174,4 +181,3 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
             ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
             plt.show()
 
-        et.td_convert(tbl).write(outname)
