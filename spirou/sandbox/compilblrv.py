@@ -7,9 +7,6 @@ import etienne_tools as et
 from astropy.table import Table
 import numpy as np
 
-
-#obj_sci, obj_template = 'GL436','GL436'
-
 def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
 
     # pass just one object and we assume that the object is it's own template
@@ -159,10 +156,3 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
             plt.show()
 
         tbl.write(outname)
-
-
-
-doplot,force = True, True
-obj_sci =   'GL699'#,'GL699'
-
-compilblrv(obj_sci, doplot= doplot,force = force)
