@@ -112,6 +112,14 @@ class DarkMTest(CalibTest):
         No fibers for darkmaster
         """
 
+    @property
+    def calls_extract(self) -> bool:
+        """Does this method call extract.
+
+        :rtype: bool
+        """
+        return False
+
     # =========================================================================
     # Overwritten parent methods
     # =========================================================================

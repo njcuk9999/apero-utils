@@ -93,7 +93,7 @@ class Log:
 
         :rtype: int
         """
-        return self.log_tot_num - self.master_recipe_num_logfits
+        return self.tot_num - self.master_num
 
     @property
     def qc_failed(self) -> pd.DataFrame:

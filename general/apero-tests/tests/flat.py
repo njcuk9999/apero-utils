@@ -123,6 +123,14 @@ class FlatTest(CalibTest):
         """
         return ['AB', 'A', 'B', 'C']
 
+    @property
+    def calls_extract(self) -> bool:
+        """Does this method call extract.
+
+        :rtype: bool
+        """
+        return False
+
     # =========================================================================
     # Run the full test
     # =========================================================================

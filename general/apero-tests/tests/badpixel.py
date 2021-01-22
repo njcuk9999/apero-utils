@@ -112,6 +112,14 @@ class BadPixTest(CalibTest):
         No fibers for badpix
         """
 
+    @property
+    def calls_extract(self) -> bool:
+        """Does this method call extract.
+
+        :rtype: bool
+        """
+        return False
+
     # =========================================================================
     # Running the test
     # =========================================================================

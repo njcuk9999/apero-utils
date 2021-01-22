@@ -161,7 +161,7 @@ class CalibTest(Test):
                  inst: str = 'SPIROU',
                  setup: Optional[str] = None,
                  logdir: Union[str, list] = 'night',
-                 calls_extract: bool = False):
+                 ):
         """__init__.
 
         :param inst:
@@ -188,9 +188,6 @@ class CalibTest(Test):
 
         # Series of output files
         self._output_files = self._load_output()
-
-        # Does the test call extract recipe to generate outputs
-        self._calls_extract = calls_extract
 
         # Handle logs (this creates log_df and missing_logfits properties)
         # Missing logs to _ because not used
@@ -249,7 +246,7 @@ class CalibTest(Test):
 
         :rtype: Log
         """
-        return self._log
+        return self._log_all
 
     @property
     def log_extract(self) -> Log:
@@ -387,14 +384,6 @@ class CalibTest(Test):
         :rtype: pd.Series
         """
         return ~self.master_calib_df.FILE.isin(self.output_calibdb)
-
-    @property
-    def calls_extract(self) -> bool:
-        """calls_extract.
-
-        :rtype: bool
-        """
-        return self._calls_extract
 
     # =========================================================================
     # Generators methods to derive things that are too heavy to calculate time
@@ -731,10 +720,10 @@ class CalibTest(Test):
         :rtype: dict
         """
         # Condition for everything to pass
-        passed = (self.output_num_unique == self.log.recipe_num).all()
+        passed = (self.output_num_unique == self.log.num).all()
 
         # Conditional pass
-        cond = (self.output_num_unique < self.log.recipe_num).any()
+        cond = (self.output_num_unique < self.log.num).any()
 
         if passed:
             color = 'Lime'
@@ -991,3 +980,10 @@ class CalibTest(Test):
         :rtype: List[str]
         """
 
+    @property
+    @abstractmethod
+    def calls_extract(self) -> bool:
+        """calls_extract.
+
+        :rtype: bool
+        """

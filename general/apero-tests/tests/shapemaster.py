@@ -119,6 +119,14 @@ class ShapeMTest(CalibTest):
         :rtype: List[str]
         """
 
+    @property
+    def calls_extract(self) -> bool:
+        """Does this method call extract.
+
+        :rtype: bool
+        """
+        return False
+
     # =========================================================================
     # Overwritten parent methods
     # =========================================================================
