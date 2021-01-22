@@ -577,7 +577,7 @@ class CalibTest(Test):
         """check_qc."""
 
         # Check passed QC and ENDED, can then access easily later
-        num_logfits_qc_failed = len(self.log_all.qc_failed.shape)
+        num_logfits_qc_failed = len(self.log_all.qc_failed)
 
         # check: QC
         if num_logfits_qc_failed == 0:
@@ -601,7 +601,7 @@ class CalibTest(Test):
 
     def check_ended(self, ncheck: int = 0) -> dict:
         """check_ended."""
-        num_logfits_ended_false = self.log_all.ended_false.shape[0]
+        num_logfits_ended_false = len(self.log_all.ended_false)
 
         # check: ENDED
         if num_logfits_ended_false == 0:
