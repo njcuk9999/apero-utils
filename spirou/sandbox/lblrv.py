@@ -81,37 +81,37 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     if not os.path.isdir(lblrv_path):
         raise ValueError('Directory {0} does not exist, that''s really bad, we exit'.format(lblrv_path))
     else:
-        print('Direcotry {0} exists, we are happy'.format(lblrv_path))
+        print(et.color('Direcotry {0} exists, we are happy'.format(lblrv_path),'green'))
 
     if not os.path.isdir(mask_path):
-        raise ValueError('Directory {0} does not exist, that''s really bad, we exit'.format(mask_path))
+        raise ValueError(et.color('Directory {0} does not exist, that''s really bad, we exit'.format(mask_path),'red'))
     else:
-        print('Direcotry {0} exists, we are happy'.format(mask_path))
+        print(et.color('Direcotry {0} exists, we are happy'.format(mask_path),'green'))
 
     if not os.path.isdir(template_path):
         raise ValueError('Directory {0} does not exist, that''s really bad, we exit'.format(template_path))
     else:
-        print('Direcotry {0} exists, we are happy'.format(template_path))
+        print(et.color('Direcotry {0} exists, we are happy'.format(template_path),'green'))
 
     if not os.path.isdir(science_path):
         raise ValueError('Directory {0} does not exist, that''s really bad, we exit'.format(science_path))
     else:
-        print('Direcotry {0} exists, we are happy'.format(science_path))
+        print(et.color('Direcotry {0} exists, we are happy'.format(science_path),'green'))
 
     if not os.path.isdir(science_path+'/'+obj_sci):
         raise ValueError('Directory {0} does not exist, that''s really bad, we exit'.format(science_path+'/'+obj_sci))
     else:
-        print('Direcotry {0} exists, we are happy'.format(science_path+'/'+obj_sci))
+        print(et.color('Direcotry {0} exists, we are happy'.format(science_path+'/'+obj_sci),'green'))
 
     if not os.path.isfile(maskfile):
         raise ValueError('File {0} does not exist, that''s really bad, we exit'.format(maskfile))
     else:
-        print('File {0} exists, we are happy!'.format(maskfile))
+        print(et.color('File {0} exists, we are happy!'.format(maskfile),'green'))
 
     if not os.path.isfile(ref_blaze_file):
         raise ValueError('File {0} does not exist, that''s really bad, we exit'.format(ref_blaze_file))
     else:
-        print('File {0} exists, we are happy!'.format(ref_blaze_file))
+        print(et.color('File {0} exists, we are happy!'.format(ref_blaze_file),'green'))
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     End of checks
@@ -206,7 +206,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         outname = lblrv_path + scifiles[ifile].split('.fits')[0].split('/')[-1]+'_'+obj_sci+'_'+obj_template+'.lblrv'
 
         if os.path.isfile(outname) and not force:
-            print('\t\tfile {0} exists and force = {1}'.format(outname, force))
+            print(et.color('\t\tfile {0} exists and force = {1}'.format(outname, force),'cyan'))
             continue
 
         time_start = time()
