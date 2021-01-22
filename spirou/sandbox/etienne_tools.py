@@ -294,7 +294,7 @@ def sed_ratio(sp1,sp2,doplot = False):
     ratio2 = ratio2[keep]
 
     if len(ratio2)<4:
-        return np.zeros_like(sp1)+np.nan
+        return np.zeros_like(sp1)+np.nanmedian(ratio2)
     else:
         return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
 
