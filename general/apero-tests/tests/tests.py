@@ -719,11 +719,14 @@ class CalibTest(Test):
         :type nstop: int
         :rtype: dict
         """
+        # Get total log count. For master get total else total - masters
+        log_num = self.log.tot_num if self.ismaster else self.log.num
+
         # Condition for everything to pass
-        passed = (self.output_num_unique == self.log.num).all()
+        passed = (self.output_num_unique == log_num).all()
 
         # Conditional pass
-        cond = (self.output_num_unique < self.log.num).any()
+        cond = (self.output_num_unique < log_num).any()
 
         if passed:
             color = 'Lime'
