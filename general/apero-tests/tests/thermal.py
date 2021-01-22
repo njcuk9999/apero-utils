@@ -121,6 +121,14 @@ class ThermalTest(CalibTest):
         return 'cal_thermal_{}'.format(self.instrument.lower())
 
     @property
+    def ismaster(self) -> bool:
+        """Is the test for a master recipe.
+
+        :rtype: bool
+        """
+        return False
+
+    @property
     def fibers(self) -> List[str]:
         """fibers.
 
@@ -129,27 +137,19 @@ class ThermalTest(CalibTest):
         return ['AB', 'A', 'B', 'C']
 
     # =========================================================================
-    # Overwritten parent methods
-    # =========================================================================
-
-
-
-
-
-    # =========================================================================
     # Run the full test
     # =========================================================================
     def runtest(self):
         """runtest."""
 
         # Checking duplicates
-        comments_check1, dup = self.check_duplicates_extract()
+        comments_check1, dup = self.check_duplicates()
 
         # QC/ENDED
         comments_check5, inspect_check5 = self.check_qc(ncheck=5)
         comments_check6, inspect_check6 = self.check_ended(ncheck=6)
 
-        dict_stop1 = self.stop_output_log_extract(dup, nstop=1)
+        dict_stop1 = self.stop_output_log(dup, nstop=1)
 
         # Generate comment on extra master entries in calib db
         comments_check7 = ('An additional {0} {1} and {2} {3} with master = 1 '
@@ -174,7 +174,7 @@ class ThermalTest(CalibTest):
         dict_stop2 = self.stop_calibdb(calib_dup)
 
         # Check previous calibs to see if missing any
-        missing_previous = self.get_missing_previous_calib_extract()
+        missing_previous = self.get_missing_previous_calib()
         comments_check9, inspect_check9 = self.check_previous_calib(
                                                             missing_previous,
                                                             ncheck=9)
@@ -193,11 +193,11 @@ class ThermalTest(CalibTest):
                 'calibdb_path': self.calibdb_path,
 
                 # check 1 for logs
-                'recipe_num_logfits': self.recipe_num_logfits,
+                'recipe_num_logfits': self.log_recipe.num,
                 'comments_check1': comments_check1,
 
                 # check 2 for logs
-                'recipe_extract_num_logfits': self.recipe_extract_num_logfits,
+                'recipe_extract_num_logfits': self.log_extract.num,
 
                 # check 3 for outputsl
                 'output_num_total': self.output_num_total,
@@ -209,12 +209,12 @@ class ThermalTest(CalibTest):
                 'dict_stop1': dict_stop1,
 
                 # check 5: QC failed
-                'log_qc_failed': self.log_qc_failed,
+                'log_qc_failed': self.log_all.qc_failed,
                 'comments_check5': comments_check5,
                 'inspect_check5': inspect_check5,
 
                 # check 6: not ended
-                'log_ended_false': self.log_ended_false,
+                'log_ended_false': self.log_all.ended_false,
                 'comments_check6': comments_check6,
                 'inspect_check6': inspect_check6,
 

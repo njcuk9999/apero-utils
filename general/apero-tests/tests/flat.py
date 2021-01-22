@@ -108,6 +108,14 @@ class FlatTest(CalibTest):
         return 'cal_flat_{}'.format(self.instrument.lower())
 
     @property
+    def ismaster(self) -> bool:
+        """Is the test for a master recipe.
+
+        :rtype: bool
+        """
+        return False
+
+    @property
     def fibers(self) -> List[str]:
         """fibers.
 
@@ -173,7 +181,7 @@ class FlatTest(CalibTest):
                 'calibdb_path': self.calibdb_path,
 
                 # check 1 for logs
-                'recipe_num_logfits': self.recipe_num_logfits,
+                'recipe_num_logfits': self.log_recipe.num,
                 'comments_check1': comments_check1,
 
                 # check 2 for outputsl
@@ -186,7 +194,7 @@ class FlatTest(CalibTest):
                 'dict_stop1': dict_stop1,
 
                 # check 4: QC failed
-                'log_qc_failed': self.log_qc_failed,
+                'log_qc_failed': self.log_all.qc_failed,
                 'comments_check4': comments_check4,
                 'inspect_check4': inspect_check4,
 
@@ -194,7 +202,7 @@ class FlatTest(CalibTest):
                 'inspect_check5': inspect_check5,
 
                 # check 6: not ended
-                'log_ended_false': self.log_ended_false,
+                'log_ended_false': self.log_all.ended_false,
                 'comments_check6': comments_check6,
                 'inspect_check6': inspect_check6,
 

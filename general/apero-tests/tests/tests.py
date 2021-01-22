@@ -9,13 +9,13 @@ from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Optional, Union, List, Tuple
 
-import numpy as np
 import pandas as pd
 from apero.core import constants
 from astropy.io import fits
 from astropy.table import Table
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
+from .log import Log
 from . import TEMPLATEDIR, OUTDIR
 from . import utils as ut
 
@@ -134,13 +134,20 @@ class Test(ABC):
 
     @property
     @abstractmethod
-    def fibers(self):
+    def fibers(self) -> Optional[List[str]]:
         """Fibers to search in outputs"""
+
+    @property
+    @abstractmethod
+    def ismaster(self) -> bool:
+        """Is the test for a master recipe.
+
+        :rtype: bool
+        """
 
     @abstractmethod
     def runtest(self):
         """Method called to run the tests on APERO products"""
-
 
 class CalibTest(Test):
     """CalibTest."""
@@ -187,11 +194,11 @@ class CalibTest(Test):
 
         # Handle logs (this creates log_df and missing_logfits properties)
         # Missing logs to _ because not used
-        self._log_df, _ = self._load_log(logdirs)
-
-        # Get aligned counts for logs
-        self._output_num_align, self._log_num_align = self._align_counts()
-        _, self._log_extract_num_align = self._align_counts_extract()
+        log_df, _ = self._load_log(logdirs)
+        recipes = [self.recipe, f'cal_extract_{self.instrument.lower()}']
+        self._log_all = Log(log_df, recipe=recipes)             # All recipes
+        self._log_recipe = Log(log_df, recipe=recipes[0])   # recipe in test
+        self._log_extract = Log(log_df, recipe=recipes[1])  # extracts called
 
         # Load calib db
         self._master_calib_df = self._load_calibdb_entries()
@@ -237,13 +244,39 @@ class CalibTest(Test):
         return self._output_files
 
     @property
-    def log_df(self) -> pd.DataFrame:
-        """Dataframe with log information
+    def log_all(self) -> Log:
+        """log with all entries for test.
 
-        :return: log_df
-        :rtype: pd.DataFrame
+        :rtype: Log
         """
-        return self._log_df
+        return self._log
+
+    @property
+    def log_extract(self) -> Log:
+        """log with entries of the called extract recipes.
+
+        :rtype: Log
+        """
+        return self._log_extract
+
+    @property
+    def log_recipe(self) -> Log:
+        """log with entries of the test recipe (self.recipe).
+
+        :rtype: Log
+        """
+        return self._log_recipe
+
+    @property
+    def log(self) -> Log:
+        """log entries used to compare with outputs.
+
+        This is log_recipe if extract calls are used and log_recipe otherwise.
+        Useful for checks that require comparison with output
+
+        :rtype: Log
+        """
+        return self._log_extract if self.calls_extract else self._log_recipe
 
     @property
     def master_calib_df(self) -> pd.DataFrame:
@@ -292,99 +325,22 @@ class CalibTest(Test):
         return self.output_files.groupby('PATTERN').nunique()
 
     @property
-    def log_tot_num(self) -> int:
-        """Total number of log entries.
-
-        :rtype: int
-        """
-        return self.log_df.shape[0]
-
-    @property
-    def log_num_align(self) -> pd.Series:
-        """log_num_align.
-
-        emtpy nights fille with zeros
-
-        :returns: series of log count with indexes aligned to MultiIndex output
-        :rtype: pd.Series
-        """
-        return self._log_num_align
-
-    @property
-    def log_extract_num_align(self) -> pd.Series:
-        """log_num_align.
-
-        emtpy nights fille with zeros
-
-        :returns: series of log count with indexes aligned to MultiIndex output
-        :rtype: pd.Series
-        """
-        return self._log_extract_num_align
-
-    @property
-    def output_num_align(self) -> pd.Series:
-        """log_num_align.
-
-         series of log count with indexes aligned with logs
-        (empty filled with 0)
-
-        :rtype: pd.Series
-        """
-        return self._output_num_align
-
-    @property
-    def master_mask(self) -> pd.Series:
-        """master_mask.
-
-        :rtype: pd.Series
-        """
-        return self.log_df['RUNSTRING'].str.contains('--master')
-
-    @property
-    def master_nights(self) -> np.ndarray:
-        """master_nights.
-
-        :rtype: np.ndarray
-        """
-        return self.master_mask[self.master_mask].index.values
-
-    @property
-    def master_recipe_num_logfits(self) -> int:
-        """master_recipe_num_logfits.
-
-        :rtype: int
-        """
-        return self.master_nights.size
-
-    @property
-    def recipe_num_logfits(self) -> int:
-        """recipe_num_logfits.
-
-        :rtype: int
-        """
-        return self.log_tot_num - self.master_recipe_num_logfits
-
-    @property
-    def recipe_extract_num_logfits(self) -> int:
-        """recipe_extract_num_logfits.
-
-        :rtype: int
-        """
-        # The main recipe calls x number of cal_extract (one per fiber)
-        return self.log_extract_df.shape[0]
-
-    @property
     def output_missing(self) -> pd.DataFrame:
         """output_missing.
 
         :rtype: pd.DataFrame
         """
 
+        # Align log and output
+        log_num_align, output_num_align = self.log.get_align_count(
+                                                        self.output_num_night
+                                                        )
+
         # Get missing outputs that are in log
-        log_mask = self.log_num_align > 0
-        output_mask = self.output_num_align == 0
+        log_mask = log_num_align > 0
+        output_mask = output_num_align == 0
         missing_mask = log_mask & output_mask
-        output_missing = self.output_num_align.index.to_frame()[missing_mask]
+        output_missing = output_num_align.index.to_frame()[missing_mask]
         output_missing = output_missing.reset_index(drop=True)
 
         return output_missing
@@ -433,23 +389,11 @@ class CalibTest(Test):
         return ~self.master_calib_df.FILE.isin(self.output_calibdb)
 
     @property
-    def log_qc_failed(self) -> pd.DataFrame:
-        """log_qc_failed.
-
-        :rtype: pd.DataFrame
-        """
-        return self.log_df[~self.log_df.PASSED_ALL_QC]
-
-    @property
-    def log_ended_false(self) -> pd.DataFrame:
-        """log_ended_false.
-
-        :rtype: pd.DataFrame
-        """
-        return self.log_df[~self.log_df.ENDED]
-
-    @property
     def calls_extract(self) -> bool:
+        """calls_extract.
+
+        :rtype: bool
+        """
         return self._calls_extract
 
     # =========================================================================
@@ -510,11 +454,16 @@ class CalibTest(Test):
         """
         return [glob.glob(pattern.format(FIBER=f)) for f in fibers]
 
-    def _load_log(self, logdirs: List[str]) -> Tuple[pd.DataFrame, list]:
-        """_gen_log_df.
+    def _load_log(self, logdirs: List[str]) -> Tuple[pd.DataFrame, List[str]]:
+        """_load_log.
 
-        Generate a dataframe with log for each directory, with DIRECTORY as
-        index. Only logs of the recipe being tested are kept.
+        Parse all log files and return a dataframe with only entries that have
+        the current recipe in LOGFILE.
+
+        :param logdirs:
+        :type logdirs: List[str]
+        :returns: dataframe and list of missing log files
+        :rtype: Tuple[pd.DataFrame, list]
         """
         # Get all logs in a dataframe
         allpaths = [os.path.join(self.reduced_path, ld, 'log.fits')
@@ -534,16 +483,11 @@ class CalibTest(Test):
         # Use DIRECTORY as index and keep only relevant entries
         # whith self.recipe or extract recipes called
         log_df = log_df.set_index(['DIRECTORY'])
-        if self.calls_extract:
-            recipes = [self.recipe, f'cal_extract_{self.instrument.lower()}']
-        else:
-            recipes = [self.recipe]
-        log_df = log_df.loc[log_df.RECIPE.isin(recipes)]
 
-        # Important for extract recipes
+        # Important for extract recipes: keep only the recipe under test
         log_df = log_df[log_df.LOGFILE.str.contains(self.recipe)]
 
-        # Store missing logs in another list
+        # Paths without files
         missing_logs = [p for p in allpaths if not os.path.isfile(p)]
 
         return log_df, missing_logs
@@ -628,50 +572,14 @@ class CalibTest(Test):
 
         return output_calibdb
 
-    def _align_counts(self) -> Tuple[pd.DataFrame]:
-        """Align output and log, fill with zeros where not intersecting.
+    @property
+    def output_num_night(self) -> pd.Series:
+        """Count outputs per night (and per output with multi-index).
 
-        :param output_num: output counts per night and output
-        :param log_num: log counts per night
-
-        :returns: aligned output and log counts, in this order
-        :rtype: Tuple[pd.DataFrame]
+        :rtype: pd.Series
         """
-        log_num_night = self.log_df.groupby('DIRECTORY').size()
         ind_name = self.output_files.index.names
-        output_num_night = self.output_files.groupby(ind_name).size()
-        log_num_align, output_num_align = log_num_night.align(
-            output_num_night,
-            fill_value=0,
-        )
-        # Filling might switch to float
-        log_num_align = log_num_align.astype(int)
-        output_num_align = output_num_align.astype(int)
-
-        return (output_num_align, log_num_align)
-
-    def _align_counts_extract(self) -> Tuple[pd.DataFrame]:
-        """Align output and log when the recipe uses cal_extract, fill with
-        zeros where not intersecting.
-
-        :param output_num: output counts per night and output
-        :param log_num: log counts per night
-
-        :returns: aligned output and log counts, in this order
-        :rtype: Tuple[pd.DataFrame]
-        """
-        log_extract_num_night = self.log_extract_df.groupby('DIRECTORY').size()
-        ind_name = self.output_files.index.names
-        output_num_night = self.output_files.groupby(ind_name).size()
-        log_extract_num_align, output_num_align = log_extract_num_night.align(
-            output_num_night,
-            fill_value=0,
-        )
-        # Filling might switch to float
-        log_extract_num_align = log_extract_num_align.astype(int)
-        output_num_align = output_num_align.astype(int)
-
-        return (output_num_align, log_extract_num_align)
+        return self.output_files.groupby(ind_name).size()
 
     # =========================================================================
     # Checks and stop common to all calibs
@@ -680,7 +588,7 @@ class CalibTest(Test):
         """check_qc."""
 
         # Check passed QC and ENDED, can then access easily later
-        num_logfits_qc_failed = self.log_qc_failed.shape[0]
+        num_logfits_qc_failed = len(self.log_all.qc_failed.shape)
 
         # check: QC
         if num_logfits_qc_failed == 0:
@@ -688,10 +596,10 @@ class CalibTest(Test):
             inspect_check_qc = ''
         else:
             comments_check_qc = 'One or more recipe have failed QC.'
-            log_reset = self.log_qc_failed.reset_index()
+            log_reset = self.log_all.qc_failed.reset_index()
             data_dict_check_qc = {
                 'Night': log_reset.DIRECTORY.values,
-                'QC_STRING': self.log_qc_failed.QC_STRING.values,
+                'QC_STRING': self.log_all.qc_failed.QC_STRING.values,
             }
             inspect_check_qc = ut.inspect_table(
                 self.test_id,
@@ -704,7 +612,7 @@ class CalibTest(Test):
 
     def check_ended(self, ncheck: int = 0) -> dict:
         """check_ended."""
-        num_logfits_ended_false = self.log_ended_false.shape[0]
+        num_logfits_ended_false = self.log_all.ended_false.shape[0]
 
         # check: ENDED
         if num_logfits_ended_false == 0:
@@ -712,11 +620,11 @@ class CalibTest(Test):
             inspect_check_ended = ''
         else:
             comments_check_ended = 'One or more recipe have failed to finish.'
-            log_reset = self.log_ended_false.reset_index()
+            log_reset = self.log_all.ended_false.reset_index()
             data_dict_check_ended = {
                 'Night': log_reset.DIRECTORY.values,
-                'ERRORS': self.log_ended_false.ERRORS.values,
-                'LOGFILE': self.log_ended_false.LOGFILE.values,
+                'ERRORS': self.log_all.ended_false.ERRORS.values,
+                'LOGFILE': self.log_all.ended_false.LOGFILE.values,
             }
             inspect_check_ended = ut.inspect_table(
                 self.test_id,
@@ -732,8 +640,9 @@ class CalibTest(Test):
 
         :rtype: dict
         """
-        qc_names = self.log_df.QC_NAMES.str.split(r'\|\|', expand=True).iloc[0]
-        qc_values = self.log_df.QC_VALUES.str.split(r'\|\|', expand=True)
+        qc_names = self.log_all.df.QC_NAMES.str.split(r'\|\|', expand=True)
+        qc_names = qc_names.iloc[0]  # Keep only one row
+        qc_values = self.log_all.df.QC_VALUES.str.split(r'\|\|', expand=True)
         qc_values.columns = qc_names
         # NOTE: .convert_dtypes will do in pd versions >= 1.0.0
         for col in qc_values.columns:
@@ -755,39 +664,52 @@ class CalibTest(Test):
 
         return inspect_check_qc_plot
 
-    def check_duplicates(self,
-                         extract: bool = False) -> Tuple[str, pd.DataFrame]:
+    def check_duplicates(self) -> Tuple[str, pd.DataFrame]:
         """check_duplicates."""
 
-        output_dup_mask = self.log_num_align > self.output_num_align
-        if output_dup_mask.any():
-            output_dup_ind = output_dup_mask[output_dup_mask]
-            output_dup_ind = output_dup_ind.index.get_level_values(
-                'DIRECTORY'
-            ).unique()
+        # Define output duplicate mask
+        (log_num_align,
+         output_num_align) = self.log.get_align_count(self.output_num_night)
+        output_dup_mask = log_num_align > output_num_align
 
-            # Check if '--master' in runstring
-            # Get subset of master in output_dup_ind
-            if self.master_recipe_num_logfits > 0:
-                comments_check_dup = ('An additional {0} recipe with '
-                                      '--master=True was called in the master '
-                                      'directory {1}.'.format(self.master_recipe_num_logfits,
-                                                              self.master_nights)
+        if output_dup_mask.any():
+            # Check if '--master' in runstring of any file
+            # Only for recipe log entries, not extract
+            # These are a special case of duplicates
+            if self.log_recipe.master_num > 0:
+                comments_check_dup = ('An additional'
+                                      f' {self.log_recipe.master_num}'
+                                      ' recipe with --master=True was called'
+                                      ' in the master directory'
+                                      f' {self.log_recipe.master_nights}.'
                                       )
+            else:
+                comments_check_dup = ''
+
+            # Get indices where outputs are duplicated in
+            output_dup_ind = output_dup_mask[output_dup_mask]
+            output_dup_ind = output_dup_ind.index.get_level_values('DIRECTORY')
+            output_dup_ind = output_dup_ind.unique()
 
             # Check for non-master duplicates for each pattern
             dir_kwd = 'DIRECTORY'
-            master_mask_group = self.master_mask.astype(int).groupby(dir_kwd)
+            master_mask_group = self.log.master_mask.astype(int).groupby(dir_kwd)
             master_num_night = master_mask_group.sum()
             dup_num_night = master_mask_group.size()
             dup_not_master = dup_num_night - master_num_night
             log_dup_align, output_dup_align = dup_not_master.align(
-                self.output_num_align[output_dup_mask]
+                output_num_align[output_dup_mask]
             )
             true_dup = log_dup_align - output_dup_align  # number of dups
             true_dup = true_dup[true_dup > 0]  # Keep only non-zero
             true_dup.name = 'COUNT'
             true_dup = true_dup.reset_index()
+
+            # TODO: implement something like this or just above w/o master/recipe
+            #  dup = self.log_extract_num_align - self.output_num_align
+            #  dup = dup[dup > 0]
+            #  dup.name = 'COUNT'
+            #  dup = dup.reset_index()
 
         else:
             comments_check_dup = ''
@@ -796,45 +718,6 @@ class CalibTest(Test):
                                      'COUNT': []})
 
         return comments_check_dup, true_dup
-
-    # def check_duplicates_extract(self) -> Tuple[str, pd.DataFrame]:
-    #     """check_duplicates_extract
-
-    #     Check for duplicates when the outputs are produced by cal_extract.
-    #     """
-
-    #     output_dup_mask = self.log_extract_num_align > self.output_num_align
-    #     if output_dup_mask.any():
-    #         output_dup_ind = output_dup_mask[output_dup_mask]
-    #         output_dup_ind = output_dup_ind.index.get_level_values(
-    #             'DIRECTORY'
-    #         ).unique()
-
-    #         # Check if '--master' in runstring
-    #         # Get subset of master in output_dup_ind
-    #         if self.master_recipe_num_logfits > 0:
-    #             comments_check_dup = ('An additional {0} recipe with '
-    #                                   '--master=True was called in the master '
-    #                                   'directory {1}.'.format(self.master_recipe_num_logfits,
-    #                                                           self.master_nights)
-    #                                   )
-
-    #         # Check for non-master duplicates for each pattern
-    #         # cal_extract does not have duplicate entries produced by -master=True
-    #         # WIP
-
-    #         dup = self.log_extract_num_align - self.output_num_align
-    #         dup = dup[dup > 0]
-    #         dup.name = 'COUNT'
-    #         dup = dup.reset_index()
-
-    #     else:
-    #         comments_check_dup = ''
-    #         dup = pd.DataFrame({'PATTERN': [],
-    #                             'DIRECTORY': [],
-    #                             'COUNT': []})
-
-    #     return comments_check_dup, dup
 
     def stop_output_log(self, dup: pd.DataFrame, nstop: int = 0) -> dict:
         """stop_output_log.
@@ -847,93 +730,20 @@ class CalibTest(Test):
         :type nstop: int
         :rtype: dict
         """
-        if (self.output_num_unique == self.recipe_num_logfits).all():
+        # Condition for everything to pass
+        passed = (self.output_num_unique == self.log.recipe_num).all()
+
+        # Conditional pass
+        cond = (self.output_num_unique < self.log.recipe_num).any()
+
+        if passed:
             color = 'Lime'
             result = 'Yes'
             comment = ''
             inspect = ''
             data_dict = {}
 
-        elif (self.output_num_unique < self.recipe_num_logfits).any():
-            color = 'Yellow'
-            result = 'No'
-            # if missing output
-            # NOTE: could there be both missing output and duplicate?
-            if self.output_missing.shape[0] > 0:
-
-                comment = 'One or more output were not produced.'
-                # NOTE: might need arrays instead of list
-                data_dict = {
-                    'Night': self.output_missing.DIRECTORY.values,
-                    'File name': self.output_missing.PATTERN.values,
-                }
-                inspect = ut.inspect_table(
-                    self.test_id,
-                    f'stop{nstop}',
-                    data_dict,
-                    f'Missing Outputs in {self.reduced_path}'
-                )
-            # if duplicates
-            else:
-                comment = ('Recipe called multiple times producing the '
-                           'same outputs.')
-                data_dict = {
-                    'Night': dup.DIRECTORY.values,
-                    'File name': dup.PATTERN.values,
-                    'Occurrence': dup.COUNT.values,
-                }
-
-                inspect_msg = ('Same Recipe Called Twice '
-                               'or More Producing the Same Outputs in '
-                               f'{self.reduced_path}'
-                               )
-                inspect = ut.inspect_table(
-                    self.test_id,
-                    f'stop{nstop}',
-                    data_dict,
-                    inspect_msg
-                )
-
-        else:
-            color = 'Red'
-            result = 'No'
-            comment = ('The number of unique output files should always be '
-                       'smaller than or equal to the number of recipes '
-                       'called.')
-            inspect = ''
-            data_dict = {}
-
-        stop_dict = {
-            'data': data_dict,
-            'comment': comment,
-            'inspect': inspect,
-            'color': color,
-            'result': result,
-        }
-
-        return stop_dict
-
-    def stop_output_log_extract(self, dup: pd.DataFrame, nstop: int = 0) -> dict:
-        """stop_output_log.
-
-        Unique output == log?
-
-        no cal_extract with -master=True
-
-        :param dup: true duplicate outputs (i.e. not master)
-        :type dup: pd.DataFrame
-        :param nstop: stop id number
-        :type nstop: int
-        :rtype: dict
-        """
-        if (self.output_num_unique == self.recipe_extract_num_logfits).all():
-            color = 'Lime'
-            result = 'Yes'
-            comment = ''
-            inspect = ''
-            data_dict = {}
-
-        elif (self.output_num_unique < self.recipe_extract_num_logfits).any():
+        elif cond:
             color = 'Yellow'
             result = 'No'
             # if missing output
@@ -1072,6 +882,7 @@ class CalibTest(Test):
 
     def get_missing_previous_calib(self) -> pd.DataFrame:
         """get_missing_calib.
+
         :rtype: pd.DataFrame
         """
 
@@ -1085,68 +896,14 @@ class CalibTest(Test):
         header_df = pd.DataFrame(headers.tolist(), index=headers.index)
 
         # Keep only matching PIDs
-        # Not good: header_df = header_df[header_df.DRSPID.isin(self.log_df.PID)]
-        log_pid_dir = self.log_df.reset_index().set_index('PID').DIRECTORY
+        # NOTE: The output PID match the PID from cal_extract and not self.recipe
+        # This will be corrected in 0.7
+        log_pid_dir = self.log.df.reset_index().set_index('PID').DIRECTORY
+
         # make sure no duplicate PID per night
-        log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index('PID').DIRECTORY
-        log_nights = log_pid_dir.loc[header_df.DRSPID]  # log nights for PIDs
-        header_df = header_df[(log_nights == header_df.index).values]
-
-        # Keep only calib columns
-        used_calibs = [p
-                       for p in self.previous_calibs
-                       if p in header_df.columns]
-        header_df = header_df[used_calibs]  # Keep calibs
-
-        # Get masks (used and exists) and project condition on nights (axis=1)
-        none_mask = (header_df == 'None')  # calib not used
-        prefix = (self.reduced_path + os.path.sep
-                  + header_df.index + os.path.sep)
-        isfile_mask = header_df.radd(prefix, axis=0).applymap(os.path.isfile)
-        missing_mask = ~(isfile_mask | none_mask)
-
-        # Check nights where 1) used and 2) does not exists for each output
-        missing_calib_all = header_df[missing_mask]
-        missing_calib_list = [missing_calib_all[k]
-                              for k in missing_calib_all.columns]
-        missing_calib = pd.concat(missing_calib_list).sort_index()
-        missing_calib = missing_calib.dropna()  # 2D mask yields NaNs if false
-        missing_calib.name = 'FILE'
-        missing_calib = missing_calib.reset_index()
-        missing_calib = missing_calib.rename(columns={'DIRECTORY': 'LOC_DIR'})
-
-        # Find calibration nights used
-        pattern = (self.reduced_path
-                   + os.path.sep + '*'
-                   + os.path.sep + missing_calib.FILE)
-        calib_path = pattern.apply(glob.glob).str[0]  # First glob for each
-        calib_dir = calib_path.str.split(os.path.sep).str[-2]
-        missing_calib['CALIB_DIR'] = calib_dir
-
-        return missing_calib
-
-    def get_missing_previous_calib_extract(self) -> pd.DataFrame:
-        """get_missing_calib.
-        :rtype: pd.DataFrame
-
-        The output PID match the PID from cal_extract and not self.recipe
-        This will be corrected in 0.7
-        """
-
-        # Load header of all output files (one output pattern only)
-        full_paths = (self.reduced_path
-                      + os.path.sep
-                      + self.output_files.index.get_level_values('DIRECTORY')
-                      + os.path.sep
-                      + self.output_files)
-        headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
-        header_df = pd.DataFrame(headers.tolist(), index=headers.index)
-
-        # Keep only matching PIDs
-        # Not good: header_df = header_df[header_df.DRSPID.isin(self.log_df.PID)]
-        log_pid_dir = self.log_extract_df.reset_index().set_index('PID').DIRECTORY
-        # make sure no duplicate PID per night
-        log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index('PID').DIRECTORY
+        log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index(
+                                                                    'PID'
+                                                                    ).DIRECTORY
         log_nights = log_pid_dir.loc[header_df.DRSPID]  # log nights for PIDs
         header_df = header_df[(log_nights == header_df.index).values]
 
@@ -1233,3 +990,4 @@ class CalibTest(Test):
 
         :rtype: List[str]
         """
+

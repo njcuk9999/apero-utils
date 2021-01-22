@@ -99,6 +99,14 @@ class DarkMTest(CalibTest):
         return f'cal_dark_master_{self.instrument.lower()}'
 
     @property
+    def ismaster(self) -> bool:
+        """Is the test for a master recipe.
+
+        :rtype: bool
+        """
+        return True
+
+    @property
     def fibers(self) -> None:
         """fibers.
         No fibers for darkmaster
@@ -107,16 +115,6 @@ class DarkMTest(CalibTest):
     # =========================================================================
     # Overwritten parent methods
     # =========================================================================
-    @property
-    def recipe_num_logfits(self) -> int:
-        """recipe_num_logfits.
-
-        For a master recipe, we don't need to subtract master entries.
-
-        :rtype: int
-        """
-        return self.log_tot_num
-
     @property
     def output_num_entry(self) -> pd.Series:
         """Total number of entries per output in calibdb.
@@ -206,7 +204,7 @@ class DarkMTest(CalibTest):
                 'calibdb_path': self.calibdb_path,
 
                 # Check 1: number of calls in logfits
-                'recipe_num_logfits': self.recipe_num_logfits,  # Master recipe
+                'recipe_num_logfits': self.log_recipe.tot_num,  # Master recipe
 
                 # Check 2 number of outputs
                 'output_num_total': self.output_num_total,
@@ -218,12 +216,12 @@ class DarkMTest(CalibTest):
                 'dict_stop1': dict_stop1,
 
                 # Check 4: QC failed
-                'log_qc_failed': self.log_qc_failed,
+                'log_qc_failed': self.log_all.qc_failed,
                 'comments_check4': comments_check4,
                 'inspect_check4': inspect_check4,
 
                 # Check 5: not ended
-                'log_ended_false': self.log_ended_false,
+                'log_ended_false': self.log_all.ended_false,
                 'comments_check5': comments_check5,
                 'inspect_check5': inspect_check5,
 

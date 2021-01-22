@@ -105,6 +105,14 @@ class ShapeMTest(CalibTest):
         return 'cal_shape_master_{}'.format(self.instrument.lower())
 
     @property
+    def ismaster(self) -> bool:
+        """Is the test for a master recipe.
+
+        :rtype: bool
+        """
+        return True
+
+    @property
     def fibers(self) -> List[str]:
         """fibers.
 
@@ -131,16 +139,6 @@ class ShapeMTest(CalibTest):
         output_missing = all_nights[~all_nights.isin(output_frame).all(axis=1)]
 
         return output_missing
-
-    @property
-    def recipe_num_logfits(self) -> int:
-        """recipe_num_logfits.
-
-        For a master recipe, we don't need to subtract master entries.
-
-        :rtype: int
-        """
-        return self.log_tot_num
 
     @property
     def output_num_entry(self) -> pd.Series:
@@ -175,8 +173,9 @@ class ShapeMTest(CalibTest):
         :type ncheck: int
         :rtype: dict
         """
-        qc_names = self.log_df.QC_NAMES.str.split(r'\|\|', expand=True).iloc[0]
-        qc_values = self.log_df.QC_VALUES.str.split(r'\|\|', expand=True)
+        qc_names = self.log_all.df.QC_NAMES.str.split(r'\|\|', expand=True)
+        qc_names = qc_names.iloc[0]
+        qc_values = self.log_all.df.QC_VALUES.str.split(r'\|\|', expand=True)
         qc_values.columns = qc_names
         # NOTE: .convert_dtypes will do in pd versions >= 1.0.0
         float_mask = ~qc_values.isin(['True', 'False']).any()
@@ -241,7 +240,7 @@ class ShapeMTest(CalibTest):
                 'calibdb_path': self.calibdb_path,
 
                 # Check 1: number of calls in logfits
-                'recipe_num_logfits': self.log_tot_num,  # Master recipe
+                'recipe_num_logfits': self.log_recipe.tot_num,  # Master recipe
 
                 # Check 2 number of outputs
                 'output_num_total': self.output_num_total,
@@ -253,7 +252,7 @@ class ShapeMTest(CalibTest):
                 'dict_stop1': dict_stop1,
 
                 # Check 4: QC failed
-                'log_qc_failed': self.log_qc_failed,
+                'log_qc_failed': self.log_all.qc_failed,
                 'comments_check4': comments_check4,
                 'inspect_check4': inspect_check4,
 
@@ -261,7 +260,7 @@ class ShapeMTest(CalibTest):
                 'inspect_check5': inspect_check5,
 
                 # Check 6: not ended
-                'log_ended_false': self.log_ended_false,
+                'log_ended_false': self.log_all.ended_false,
                 'comments_check6': comments_check6,
                 'inspect_check6': inspect_check6,
 

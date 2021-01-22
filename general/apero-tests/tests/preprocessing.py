@@ -33,8 +33,8 @@ class PPTest(Test):
     """PPTEST."""
 
     # pylint: disable=too-many-public-methods
-    # A few more (20+5=25) here to keep same logic as other tests even though
-    # inherits directly from Test (no intermediate in between)
+    # Not (yet?) compatible with the Log structure of other tests so keep
+    # methods here
 
     def __init__(self, inst: str = 'SPIROU', setup: Optional[str] = None):
         """__init__.
@@ -104,6 +104,15 @@ class PPTest(Test):
         :rtype: List[str]
         """
         return ['*_pp.fits']
+
+    @property
+    def ismaster(self) -> bool:
+        """Is the test for a master recipe.
+
+        :rtype: bool
+        """
+        # NOTE: Marking as true because part of master sequence
+        return True
 
     # =========================================================================
     # Properties specific to PP
@@ -201,7 +210,7 @@ class PPTest(Test):
 
         :rtype: int
         """
-        return self.log_df.shape[0]
+        return len(self.log_df)
 
     @property
     def pp_num_log_unique(self) -> int:
@@ -209,7 +218,7 @@ class PPTest(Test):
 
         :rtype: int
         """
-        return self.log_df_unique.shape[0]
+        return len(self.log_df_unique)
 
     @property
     def log_qc_failed(self) -> pd.DataFrame:
