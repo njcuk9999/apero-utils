@@ -205,11 +205,11 @@ class LeakMTest(CalibTest):
 
         dict_stop2 = self.stop_calibdb(calib_dup, nstop=2)
 
-        # # Check previous calibs to see if missing any
-        # missing_previous = self.get_missing_previous_calib()
-        # comments_check9, inspect_check9 = self.check_previous_calib(
-        #                                                     missing_previous,
-        #                                                     ncheck=9)
+        # Check previous calibs to see if missing any
+        missing_previous = self.get_missing_previous_calib()
+        comments_check9, inspect_check9 = self.check_previous_calib(
+                                                            missing_previous,
+                                                            ncheck=9)
 
         html_dict = {
             # Summary header info
@@ -260,9 +260,9 @@ class LeakMTest(CalibTest):
             'dict_stop2': dict_stop2,
 
             # Check9: previous calibrations
-            'missing_previous': '',  # missing_previous,
-            'comments_check9': '',  # comments_check9,
-            'inspect_check9': '',  # inspect_check9,
+            'missing_previous': missing_previous,
+            'comments_check9': comments_check9,
+            'inspect_check9': inspect_check9,
         }
 
         self.gen_html(html_dict)
