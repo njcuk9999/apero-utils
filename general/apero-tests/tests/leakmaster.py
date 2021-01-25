@@ -35,7 +35,6 @@ from .tests import CalibTest
 
 class LeakMTest(CalibTest):
     """LeakMTest."""
-
     def __init__(self,
                  inst: str = 'SPIROU',
                  setup: Optional[str] = None,
@@ -77,8 +76,9 @@ class LeakMTest(CalibTest):
         :return: output_list
         :rtype: list[str]
         """
-        return ['*_pp_leak_master_{FIBER}.fits',
-                '*F*Td_pp_e2dsff_{FIBER}.fits']
+        return [
+            '*_pp_leak_master_{FIBER}.fits', '*F*Td_pp_e2dsff_{FIBER}.fits'
+        ]
 
     @property
     def calibdb_list(self) -> List[str]:
@@ -95,12 +95,10 @@ class LeakMTest(CalibTest):
 
         :rtype: List[str]
         """
-        return ['CDBBAD', 'CDBBACK',
-                'CDBORDP', 'CDBLOCO',
-                'CDBSHAPX', 'CDBSHAPY',
-                'CDBSHAPL',
-                'CDBFLAT', 'CDBBLAZE',
-                'CDBTHERM']
+        return [
+            'CDBBAD', 'CDBBACK', 'CDBORDP', 'CDBLOCO', 'CDBSHAPX', 'CDBSHAPY',
+            'CDBSHAPL', 'CDBFLAT', 'CDBBLAZE', 'CDBTHERM'
+        ]
 
     @property
     def recipe(self) -> List[str]:
@@ -147,9 +145,9 @@ class LeakMTest(CalibTest):
         :rtype: pd.DataFrame
         """
         # NOTE: should change in APERO v0.7
-        output_frame = self.output_files.index.to_frame().reset_index(drop=True)
-        night_comb = [(p, n)
-                      for p in self.output_list
+        output_frame = self.output_files.index.to_frame().reset_index(
+            drop=True)
+        night_comb = [(p, n) for p in self.output_list
                       for n in self.reduced_nights]
         all_nights = pd.DataFrame(night_comb, columns=['PATTERN', 'DIRECTORY'])
         output_missing = all_nights[~all_nights.isin(output_frame).all(axis=1)]
@@ -214,58 +212,58 @@ class LeakMTest(CalibTest):
         #                                                     ncheck=9)
 
         html_dict = {
-                # Summary header info
-                'name': self.name,
-                'setup': self.setup,
-                'instrument': self.instrument,
-                'recipe': self.recipe,
-                'date': self.date,
-                'reduced_path': self.reduced_path,
-                'output_list': self.output_list,
-                'calibdb_list': self.calibdb_list,
-                'calibdb_path': self.calibdb_path,
+            # Summary header info
+            'name': self.name,
+            'setup': self.setup,
+            'instrument': self.instrument,
+            'recipe': self.recipe,
+            'date': self.date,
+            'reduced_path': self.reduced_path,
+            'output_list': self.output_list,
+            'calibdb_list': self.calibdb_list,
+            'calibdb_path': self.calibdb_path,
 
-                # check 1 for logs
-                'recipe_num_logfits': self.log_recipe.tot_num,
+            # check 1 for logs
+            'recipe_num_logfits': self.log_recipe.tot_num,
 
-                # check 2 for logs
-                'recipe_extract_num_logfits': self.log_extract.tot_num,
+            # check 2 for logs
+            'recipe_extract_num_logfits': self.log_extract.tot_num,
 
-                # check 3 for outputs
-                'output_num_total': self.output_num_total,
+            # check 3 for outputs
+            'output_num_total': self.output_num_total,
 
-                # check 4
-                'output_num_unique': self.output_num_unique,
+            # check 4
+            'output_num_unique': self.output_num_unique,
 
-                # stop 1: output==log
-                'dict_stop1': dict_stop1,
+            # stop 1: output==log
+            'dict_stop1': dict_stop1,
 
-                # check 5: QC failed
-                'log_qc_failed': self.log_all.qc_failed,
-                'comments_check5': comments_check5,
-                'inspect_check5': inspect_check5,
+            # check 5: QC failed
+            'log_qc_failed': self.log_all.qc_failed,
+            'comments_check5': comments_check5,
+            'inspect_check5': inspect_check5,
 
-                # check 6: not ended
-                'log_ended_false': self.log_all.ended_false,
-                'comments_check6': comments_check6,
-                'inspect_check6': inspect_check6,
+            # check 6: not ended
+            'log_ended_false': self.log_all.ended_false,
+            'comments_check6': comments_check6,
+            'inspect_check6': inspect_check6,
 
-                # Check 7: calibdb entries
-                'output_num_entry': self.output_num_entry,
-                #'comments_check7': comments_check7,
+            # Check 7: calibdb entries
+            'output_num_entry': self.output_num_entry,
+            # 'comments_check7': comments_check7,
 
-                # Check 8: calibdb outputs
-                'output_num_calibdb': self.output_num_calibdb,
-                'output_dict': self.calib_output_dict,
+            # Check 8: calibdb outputs
+            'output_num_calibdb': self.output_num_calibdb,
+            'output_dict': self.calib_output_dict,
 
-                # Stop 2: calib output == entries
-                'dict_stop2': dict_stop2,
+            # Stop 2: calib output == entries
+            'dict_stop2': dict_stop2,
 
-                # Check9: previous calibrations
-                'missing_previous': '',#missing_previous,
-                'comments_check9': '',#comments_check9,
-                'inspect_check9': '',#inspect_check9,
-                }
+            # Check9: previous calibrations
+            'missing_previous': '',  # missing_previous,
+            'comments_check9': '',  # comments_check9,
+            'inspect_check9': '',  # inspect_check9,
+        }
 
         self.gen_html(html_dict)
 

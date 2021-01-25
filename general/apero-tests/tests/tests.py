@@ -310,7 +310,10 @@ class CalibTest(Test):
         """Total number of outputs for each pattern.
         :rtype: pd.Series
         """
-        return self.output_files.groupby('PATTERN').size()
+        if not self.output_files.emtpy:
+            return self.output_files.groupby('PATTERN').size()
+        else:
+            return pd.Series(0, index=self.output_list)
 
     @property
     def output_num_unique(self) -> pd.Series:
@@ -319,7 +322,10 @@ class CalibTest(Test):
         :returns: series with total unique count of each output
         :rtype: pd.Series
         """
-        return self.output_files.groupby('PATTERN').nunique()
+        if not self.output_files.emtpy:
+            return self.output_files.groupby('PATTERN').nunique()
+        else:
+            return pd.Series(0, index=self.output_list)
 
     @property
     def output_missing(self) -> pd.DataFrame:
@@ -348,7 +354,10 @@ class CalibTest(Test):
 
         :rtype: pd.Series
         """
-        return self.master_calib_df.groupby('KEY').size()
+        if not self.master_calib_df.empty:
+            return self.master_calib_df.groupby('KEY').size()
+        else:
+            return pd.Series(0, index=self.calibdb_list)
 
     @property
     def master_num_entry(self) -> pd.Series:
@@ -356,10 +365,12 @@ class CalibTest(Test):
 
         :rtype: pd.Series
         """
-        master_mask = self.master_calib_df.MASTER
-        master_calib_group = self.master_calib_df[master_mask].groupby('KEY')
-
-        return master_calib_group.size()
+        if not self.master_calib_df.empty:
+            master_mask = self.master_calib_df.MASTER
+            master_calib_group = self.master_calib_df[master_mask].groupby('KEY')
+            return master_calib_group.size()
+        else:
+            return pd.Series(0, index=self.calibdb_list)
 
     @property
     def output_num_entry(self) -> pd.Series:
@@ -375,7 +386,10 @@ class CalibTest(Test):
 
         :rtype: pd.Series
         """
-        return self.output_calibdb.groupby('KEY').size()
+        if not self.output_calibdb.empty:
+            return self.output_calibdb.groupby('KEY').size()
+        else:
+            return pd.Series(0, index=self.calibdb_list)
 
     @property
     def calib_missing_mask(self) -> pd.Series:
