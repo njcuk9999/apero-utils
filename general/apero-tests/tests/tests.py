@@ -149,6 +149,7 @@ class Test(ABC):
     def runtest(self):
         """Method called to run the tests on APERO products"""
 
+
 class CalibTest(Test):
     """CalibTest."""
 
@@ -310,7 +311,7 @@ class CalibTest(Test):
         """Total number of outputs for each pattern.
         :rtype: pd.Series
         """
-        if not self.output_files.emtpy:
+        if not self.output_files.empty:
             return self.output_files.groupby('PATTERN').size()
         else:
             return pd.Series(0, index=self.output_list)
@@ -322,7 +323,7 @@ class CalibTest(Test):
         :returns: series with total unique count of each output
         :rtype: pd.Series
         """
-        if not self.output_files.emtpy:
+        if not self.output_files.empty:
             return self.output_files.groupby('PATTERN').nunique()
         else:
             return pd.Series(0, index=self.output_list)
