@@ -734,6 +734,7 @@ class CalibTest(Test):
         :type nstop: int
         :rtype: dict
         """
+        # NOTE: Should we also check that the size is > 0 ?
         # Get total log count. For master get total else total - masters
         log_num = self.log.tot_num if self.ismaster else self.log.num
 
