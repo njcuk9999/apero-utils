@@ -5,7 +5,10 @@ from tqdm import tqdm
 import etienne_tools as et
 import numpy as np
 
-def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
+
+
+
+def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, common_weights = False):
 
     if doplot:
         # avoids conflicts if one uses ssh without graphic displays
@@ -76,6 +79,22 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
         tbl_per_line_ini = tbl_per_line_ini[valid_lines]
         DDV = DDV[:,valid_lines]
         DDVRMS = DDVRMS[:,valid_lines]
+
+        if common_weights:
+            # produce a map of median change in error, liked to SNR changes
+            err_ratio = np.zeros(dvrms.shape)
+            # first guess at median per-line error
+            ref = np.nanmedian(dvrms, axis=0)
+            for i in range(dvrms.shape[0]):
+                err_ratio[i] = np.nanmedian(dvrms[i]/ref)
+            # better estimate of median rms
+            ref = np.nanmedian(dvrms / err_ratio, axis=0)
+            for i in range(dvrms.shape[0]):
+                amp = np.nanmedian(dvrms[i]/ref)
+                # all lines have the same relative weights
+                # but may vary from one spectra to the other while
+                # preserving the same relative ratios
+                dvrms[i] = amp*ref
 
         # constructing a per-epoch mean velocity
         for i in tqdm(range(len(scifiles))):
@@ -164,7 +183,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
 
         tbl = et.td_convert(tbl)
         tbl = tbl[keep]
-        tbl.write(outname)
+        tbl.write(outname, overwrite = True)
 
         # plot or not
         if doplot:
@@ -181,3 +200,12 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False):
             ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
             plt.show()
 
+
+
+obj_sci = 'TOI-1452'
+obj_template = 'GL699'
+doplot = True
+force = True
+common_weights = False
+
+compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = common_weights)

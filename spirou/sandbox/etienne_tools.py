@@ -249,6 +249,28 @@ def fits2wave(file_or_header):
     # return wave grid
     return np.array(wavesol)
 
+def smart_time(time_in_s):
+    if time_in_s>3600:
+        h = str(int(np.floor(time_in_s/3600)))+'h'
+        time_in_s -= (np.floor(time_in_s/3600)*3600)
+        flag_h = True
+    else:
+        h = ''
+        flag_h = False
+
+    if time_in_s>60:
+        min = str(int(np.floor(time_in_s/60))).zfill(2)+'m'
+        time_in_s -= (np.floor(time_in_s/60)*60)
+    else:
+        min = ''
+
+
+    if flag_h:
+        return h+min
+    else:
+        sec = str(int(np.round(time_in_s))).zfill(2) + 's'
+        return min+sec
+
 
 def td_convert(instance):
     if isinstance(instance, Table):

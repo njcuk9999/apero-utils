@@ -456,6 +456,6 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         if len(all_durations) >2:
             print(et.color('\tDuration per file {0:.2f}+-{1:.2f}s'.format(np.nanmean(all_durations),
                                                                           np.nanstd(all_durations)), 'yellow'))
-            print(et.color('\tTime left to completion {0:.2f}h, {1} / {2} files todo/done\n'.format(np.nanmean(all_durations)*nleft/3600, nleft,ifile), 'yellow'))
+            print(et.color('\tTime left to completion {0}, {1} / {2} files todo/done\n'.format(ea.smart_time(np.nanmean(all_durations)*nleft), nleft,ifile), 'yellow'))
         else:
             print()
