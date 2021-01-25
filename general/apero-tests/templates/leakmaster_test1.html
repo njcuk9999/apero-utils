@@ -184,9 +184,13 @@
         <td>9</td>
         <td># of outputs in {{ reduced_path }} that used the bad pixel, loc, shape master, shape,
         flat/blaze calibration files from another night</td>
-        <td></td>
-        <td></td>
-
+        <td>{{ missing_previous.shape[0] }}</td>
+        <td>{{ comments_check9 }}</td>
+        {% if inspect_check9 != '' %}
+          <td><a href='{{ inspect_check9 }}'>Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
       </tr>
 
     </table>
