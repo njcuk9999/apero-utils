@@ -183,8 +183,7 @@ class LeakMTest(CalibTest):
     # =========================================================================
     def runtest(self):
         """runtest."""
-        print(self.output_num_total)
-        print(self.output_num_unique)
+
         dup = self.check_duplicates()
 
         # QC/ENDED
@@ -202,6 +201,14 @@ class LeakMTest(CalibTest):
         calib_dup['COUNT'] = calib_dup.groupby(ind_names).size()
         calib_dup = calib_dup.reset_index('FILE')
         calib_dup = calib_dup.drop_duplicates()
+
+        # If the number of output is 0, comment on the default leak master file
+        # used (MASTER_LEAK_{FIBER}.fit
+        if self.output_num_entry[0] == 0:
+            comments_check7 = ('4 LEAKM_{FIBER} entries not DRS processed. '
+                    'Default MASTER_LEAK_{FIBER}.fits files used.')
+        else:
+            comments_check7 = ''
 
         dict_stop2 = self.stop_calibdb(calib_dup, nstop=2)
 
@@ -250,7 +257,7 @@ class LeakMTest(CalibTest):
 
             # Check 7: calibdb entries
             'output_num_entry': self.output_num_entry,
-            # 'comments_check7': comments_check7,
+            'comments_check7': comments_check7,
 
             # Check 8: calibdb outputs
             'output_num_calibdb': self.output_num_calibdb,
