@@ -17,6 +17,8 @@ pc_file = 'sky_PCs.fits'
 
 # constants
 debug = True
+# number of bright OH lines that will be individually adjusted in amplitude. Done
+# only on lines that are at an SNR > 1
 nbright = 300
 
 # e-width of the region over which we measure the residuals of brighter lines
