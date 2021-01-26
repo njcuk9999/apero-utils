@@ -6,8 +6,6 @@ import etienne_tools as et
 import numpy as np
 
 
-
-
 def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, common_weights = False):
 
     if doplot:
@@ -187,25 +185,25 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, comm
 
         # plot or not
         if doplot:
-            fig, ax = plt.subplots(nrows = 3, ncols = 1,sharex = True)
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.7,label = 'J')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmedian(tbl['per_epoch_mean_H']) , fmt='.k', yerr=tbl['per_epoch_err_H'],alpha = 0.7,label = 'H')
-            ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'] ,fmt='.k', yerr=tbl['per_epoch_DDVRMS'], alpha = 0.7)
+            fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.3,label = 'J')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmedian(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.8,label = 'H')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean']-np.nanmedian(tbl['per_epoch_mean']) , fmt='.k', yerr=tbl['per_epoch_err'],alpha = 0.8,label = 'all')
+            #ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'] ,fmt='.k', yerr=tbl['per_epoch_DDVRMS'], alpha = 0.7)
 
             diff_JH =  tbl['per_epoch_mean_J']-tbl['per_epoch_mean_H']
             ax[1].errorbar(tbl['MJDATE'],diff_JH - np.nanmedian(diff_JH) , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
             ax[0].legend()
             ax[0].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]',title = 'H velocity')
             ax[1].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]', title = 'J-H velo diff')
-            ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
+            #ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
             plt.show()
 
 
-
-obj_sci = 'TOI-1452'
+obj_sci = 'TOI-1452sky'
 obj_template = 'GL699'
 doplot = True
 force = True
-common_weights = False
+common_weights = True
 
 compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = common_weights)

@@ -45,7 +45,9 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     #template_path = 'templates/' # stellar templates
     #science_path = 'tellurics/' # direcory with per-object telluric-corect (tcorr) files are hidden
 
-    template = fits.getdata(template_path+'Template_s1d_'+obj_template+'_sc1d_v_file_AB.fits')
+    template_file = template_path+'Template_s1d_'+obj_template+'_sc1d_v_file_AB.fits'
+
+    template = fits.getdata(template_file)
 
     if 'FP' not in obj_sci:
         scifiles = glob.glob(science_path+obj_sci+'/*tcorr*AB.fits')
@@ -70,7 +72,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     # reference table that will always be used afterward as a starting point
     ref_table_name = 'ref_table_{0}.csv'.format(obj_template)
-    maskfile = mask_path+obj_template+'_pos.csv'
+    maskfile = mask_path+obj_template+'_pos.fits'
 
 
     if not os.path.isfile(ref_table_name):
@@ -122,11 +124,14 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
     all_durations = []
 
+    mask_hdr = fits.getheader(maskfile)
+
     if os.path.isfile(ref_table_name) == False:
         # we create an empty table that serves as the baseline for all future observations
         # using that template as a starting point. This table is read if it exists.
         wavegrid = et.fits2wave(scifiles[0])
-        tbl = et.td_convert(Table.read(maskfile, format='ascii'))
+        tbl = et.td_convert(Table.read(maskfile))
+
 
         wave_start = []
         wave_end = []
@@ -164,13 +169,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     valid = np.isfinite(template['flux'])
     bl = fits.getdata(ref_blaze_file)
 
-    if 'FP' not in obj_sci:
-        # we get an estimate of the model velocity
-        systemic_vel = et.get_rough_ccf_rv(template['wavelength'],template['flux'],wave_start,np.ones_like(weight_line),
-                                           doplot = doplot_ccf)
-    else:
-        systemic_vel = 0
-
+    # get info on template systvel for splining correctly
+    systemic_vel = -1000*mask_hdr['SYSTVEL']
 
     print('defining all the splines required later')
 
@@ -456,6 +456,6 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         if len(all_durations) >2:
             print(et.color('\tDuration per file {0:.2f}+-{1:.2f}s'.format(np.nanmean(all_durations),
                                                                           np.nanstd(all_durations)), 'yellow'))
-            print(et.color('\tTime left to completion {0}, {1} / {2} files todo/done\n'.format(ea.smart_time(np.nanmean(all_durations)*nleft), nleft,ifile), 'yellow'))
+            print(et.color('\tTime left to completion {0}, {1} / {2} files todo/done\n'.format(et.smart_time(np.nanmean(all_durations)*nleft), nleft,ifile), 'white'))
         else:
             print()

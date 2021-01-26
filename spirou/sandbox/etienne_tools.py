@@ -1,13 +1,37 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy import constants
-from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from scipy.optimize import curve_fit
 from astropy.io import fits
 from astropy.table import Table
 import warnings
 import numba
 from numba import jit
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
+
+
+def sigma(im):
+    return (np.nanpercentile(im,85) - np.nanpercentile(im,15))/2
+
+def running_sigma(v,w):
+    # provide a vector and return a running robust dispersion
+    # the width (w) is the box size to measure the dispersion
+    # pick a w that is wide enough to be representative of the
+    # noise but small enough to avoid variations
+    ll = len(v)
+
+    sigma = np.zeros(ll)
+    for i in range(ll):
+        i0 = ll-w//2
+        i1 = ll+w//2
+        if i0 < 0:
+            i0 = 0
+        if i1 > ll:
+            i1 = ll
+        sigma[i] = sigma(v[i0:i1])
+
+    return sigma
+
 
 def color(message,color):
     COLOURS = dict()
@@ -44,6 +68,18 @@ def weighted_median(values, weights):
     imed = np.min(np.where(cumsum>0.5))
 
     return values1[imed]
+
+def wave2wave(e2ds_data_input, wave1, wave2):
+    # transform e2ds data from one wavelength grid to another.
+
+    e2ds_data = np.array(e2ds_data_input)
+
+    for iord in range(49):
+        keep = np.isfinite(e2ds_data[iord])
+        spl = ius(wave1[iord][keep],e2ds_data[iord][keep],k=3, ext=1)
+        e2ds_data[iord][keep] = spl(wave2[iord][keep])
+
+    return e2ds_data
 
 def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
 

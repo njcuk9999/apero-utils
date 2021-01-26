@@ -1,0 +1,128 @@
+import numpy as np
+from astropy.io import fits
+from scipy.signal import medfilt
+import glob
+import matplotlib.pyplot as plt
+from sklearn.decomposition import PCA
+from tqdm import tqdm
+import etienne_tools as et
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
+from lin_mini import *
+
+# file = '2517483o_pp_e2dsff_AB.fits' # TRAPPIST-1
+# file = '2512909o_pp_e2dsff_AB.fits' # TOI-1452
+file = '2502382o_pp_e2dsff_AB.fits' # GL699
+
+pc_file = 'sky_PCs.fits'
+
+# constants
+debug = False
+nbright = 300
+width = 20 # must be integer
+ew_weight = 5.0
+
+
+### exists in the DRS ###
+
+# read science data
+sp, hdr = fits.getdata(file,header = True)
+
+# get sci wavelength
+wave = et.fits2wave(hdr)
+
+# get the sky PCs
+pcs = fits.getdata(pc_file)
+
+# reconstruct the PC wavelength solution
+wavepc = np.reshape(pcs[:,0],sp.shape)
+
+# get only the sky PCs
+pcs = pcs[:,1:]
+
+sp2 = et.wave2wave(np.array(sp),wave,wavepc)
+
+# mimicking the DRS behavior
+print('performing reconstruction')
+amps,recon = lin_mini(np.gradient(sp2.ravel()),np.gradient(pcs,axis=0))
+
+skymodel = np.zeros_like(sp.ravel())
+for iamp in range(len(amps)):
+    skymodel+=(pcs[:,iamp]*amps[iamp])
+skymodel[skymodel<0] = 0
+
+sp2 = sp2.ravel()
+
+### just for debug
+skymodel0 = np.array(skymodel)
+skymodel0 = et.wave2wave(skymodel0.reshape(sp.shape),wavepc,wave)
+
+
+### NEW STUFF ###
+
+# sky amplitude correction
+amp_sky = np.ones_like(skymodel)
+
+# weight vector to have a seamless falloff of the sky weight
+weight = np.exp(-0.5*np.arange(-width+.5,width+.5)**2/ew_weight**2)
+
+# mask to know where we looked for a bright line
+mask = np.zeros_like(sp2)
+
+# keep a mask of what has actually been masked
+mask_plot = np.zeros_like(sp2)+np.nan
+
+# number of masked lines
+masked_lines = 0
+
+# loop through bright lines
+for i in tqdm(range(nbright)):
+    # find brightest sky pixel that has not yet been looked at
+    imax = np.nanargmax(skymodel+mask)
+    # keep track of where we looked
+    mask[imax-width:imax+width] = np.nan
+
+    # segment of science spectrum minus current best guess of sky
+    tmp1 = (sp2-skymodel*amp_sky)[imax-width:imax+width]
+    # segment of sky sp
+    tmp2 = (skymodel*amp_sky)[imax-width:imax+width]
+
+    # find rms of derivative of science vs sky line
+    snr_line = (np.nanstd(np.gradient(tmp2))/np.nanstd(np.gradient(tmp1)))
+
+    # if above 1 sigma, we adjust
+    if snr_line>1:
+        # dot product of derivative vs science sp
+        amp = np.nansum(np.gradient(tmp1)*np.gradient(tmp2)*weight**2)/np.nansum(np.gradient(tmp2)**2*weight**2)
+        if amp<(-1):
+            amp = 0
+        # modify the amplitude of the sky
+        amp_sky[imax - width:imax + width] *= (amp*weight+1)
+        mask_plot[imax-width:imax+width] = 0
+        masked_lines +=1
+# print how many lines were masked
+print('N masked = {0}'.format(masked_lines))
+
+# update sky model
+skymodel *= amp_sky
+
+# reshape sky model
+skymodel = np.reshape(skymodel, sp.shape)
+
+# back to science wavelength grid
+skymodel = et.wave2wave(skymodel,wavepc,wave)
+
+if debug:
+    plt.plot(wave.ravel(),sp.ravel(),label = 'input',color = 'orange',alpha =0.3)
+    plt.plot(wave.ravel(),sp.ravel() - skymodel0.ravel(),label = 'PCA sky model',color = 'red',alpha = 0.9)
+    plt.plot(wave.ravel(),sp.ravel() - skymodel.ravel(),label = 'PCA+per-line',color = 'green',alpha = 0.9)
+
+    plt.plot(wave.ravel(),mask_plot,color = 'black',label = 'domain line-by-line')
+    plt.title(hdr['object'])
+    plt.legend()
+    plt.show()
+
+### END OF NEW STUFF ###
+
+fits.writeto('clean.fits',sp-skymodel,hdr,overwrite = True)
+
+
