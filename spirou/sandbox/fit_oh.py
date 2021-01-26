@@ -10,16 +10,21 @@ from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from lin_mini import *
 
 # file = '2517483o_pp_e2dsff_AB.fits' # TRAPPIST-1
-# file = '2512909o_pp_e2dsff_AB.fits' # TOI-1452
-file = '2502382o_pp_e2dsff_AB.fits' # GL699
+file = '2512909o_pp_e2dsff_AB.fits' # TOI-1452
+#file = '2502382o_pp_e2dsff_AB.fits' # GL699
 
 pc_file = 'sky_PCs.fits'
 
 # constants
-debug = False
+debug = True
 nbright = 300
-width = 20 # must be integer
-ew_weight = 5.0
+
+# e-width of the region over which we measure the residuals of brighter lines
+# to adjust them
+FWHM_PIXEL_PSF = 2.1
+ew_weight = 2.5*FWHM_PIXEL_PSF
+# region of which we will compute the weight falloff of a bright sky line
+width = np.int(ew_weight*4)
 
 
 ### exists in the DRS ###
