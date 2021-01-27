@@ -199,6 +199,9 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, comm
             ax[1].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]', title = 'J-H velo diff')
             #ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
             plt.show()
+    else:
+        print('File {0} exists, we read it'.format(outname))
+        print('You may use force=True to overwrite it')
 
-    return tbl
+    return Table.read(outname)
 
