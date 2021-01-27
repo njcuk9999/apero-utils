@@ -26,7 +26,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, comm
 
     if (not os.path.isfile(outname)) or force:
         # keys to be transfered to the fits table
-        scifiles = np.array(glob.glob('lblrv/2*{0}_{1}.lblrv'.format(obj_sci, obj_template)))
+        scifiles = np.array(glob.glob('lblrv/2*{0}_{1}_lbl.fits'.format(obj_sci, obj_template)))
 
         for i in tqdm(range(len(scifiles))):
             hdr = fits.getheader(scifiles[i])

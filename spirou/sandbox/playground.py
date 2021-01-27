@@ -6,13 +6,13 @@ import etienne_tools as et
 import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
-from compliblrv import *
+from compilblrv import *
 # DO NOT TOUCH, this is 100% test zone and not to be used by anyone but me!
 #
 #                                     grrrrrr
 #
-obj_sci = 'TRAPPIST-1'
-obj_template = 'TRAPPIST-1'
+obj_sci = 'GL699'
+obj_template = 'GL699'
 doplot = True
 force = True
 common_weights = True

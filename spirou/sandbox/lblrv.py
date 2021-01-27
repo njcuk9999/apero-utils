@@ -203,7 +203,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     for ifile in range(len(scifiles)):
 
         # output name
-        outname = lblrv_path + scifiles[ifile].split('.fits')[0].split('/')[-1]+'_'+obj_sci+'_'+obj_template+'.lblrv'
+        outname = lblrv_path + scifiles[ifile].split('.fits')[0].split('/')[-1]+'_'+obj_sci+'_'+obj_template+'_lbl.fits'
 
         if os.path.isfile(outname) and not force:
             print(et.color('\t\tfile {0} exists and force = {1}'.format(outname, force),'cyan'))
