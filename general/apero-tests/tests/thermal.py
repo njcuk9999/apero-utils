@@ -84,11 +84,7 @@ class ThermalTest(CalibTest):
         :rtype: list[str]
         """
         return ['*_pp_thermal_e2ds_int_{FIBER}.fits',
-                '*_pp_thermal_e2ds_tel_{FIBER}.fits',
-                '*d_pp_e2ds_{FIBER}.fits',
-                '*d_pp_e2dsff_{FIBER}.fits',
-                '*d_pp_s1d_w_{FIBER}.fits',
-                '*d_pp_s1d_v_{FIBER}.fits']
+                '*_pp_thermal_e2ds_tel_{FIBER}.fits']
 
     @property
     def calibdb_list(self) -> List[str]:

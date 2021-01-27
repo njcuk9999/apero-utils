@@ -644,9 +644,9 @@ class CalibTest(Test):
 
         :rtype: dict
         """
-        qc_names = self.log_all.df.QC_NAMES.str.split(r'\|\|', expand=True)
+        qc_names = self.log_recipe.df.QC_NAMES.str.split(r'\|\|', expand=True)
         qc_names = qc_names.iloc[0]  # Keep only one row
-        qc_values = self.log_all.df.QC_VALUES.str.split(r'\|\|', expand=True)
+        qc_values = self.log_recipe.df.QC_VALUES.str.split(r'\|\|', expand=True)
         qc_values.columns = qc_names
         # NOTE: .convert_dtypes will do in pd versions >= 1.0.0
         for col in qc_values.columns:
@@ -903,12 +903,12 @@ class CalibTest(Test):
                           + self.output_files)
             headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
             header_df = pd.DataFrame(headers.tolist(), index=headers.index)
-
+            print(header_df)
             # Keep only matching PIDs
             # NOTE: The output PID match the PID from cal_extract and not self.recipe
             # This will be corrected in 0.7
             log_pid_dir = self.log.df.reset_index().set_index('PID').DIRECTORY
-
+            print(log_pid_dir)
             # make sure no duplicate PID per night
             log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index(
                                                                         'PID'

@@ -14,6 +14,7 @@ from .shape import ShapeTest
 from .flat import FlatTest
 from .thermal import ThermalTest
 from .leakmaster import LeakMTest
+from .wavelengthmaster import WaveMTest
 
 
 # Dictionary of all tests with id and definition
@@ -30,7 +31,7 @@ TESTDICT = {
         'flat_test1': FlatTest,
         'thermal_test1': ThermalTest,
         'leakmaster_test1': LeakMTest,
-        'masterwavelength_test1': None,
+        'wavelengthmaster_test1': WaveMTest,
         'wavelength_test1': None,
         'leak_test1': None,
         'extraction_test1': None,
