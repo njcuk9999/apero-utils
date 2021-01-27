@@ -202,7 +202,6 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, comm
 
     return tbl
 
-"""
 obj_sci = 'TOI-1452sky2'
 obj_template = 'GL699'
 doplot = True
@@ -233,4 +232,3 @@ plt.errorbar(tbl2['MJDATE'],tbl2['RV'] - np.nanmedian(tbl2['RV']),fmt='.g', yerr
 plt.show()
 
 print( np.mean(tbl2['ERR']),np.nanstd(tbl2['RV']))
-"""

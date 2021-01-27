@@ -81,6 +81,11 @@ def wave2wave(e2ds_data_input, wave1, wave2):
 
     return e2ds_data
 
+def fit_gauss(x,y,p0):
+    fit, pcov = curve_fit(gauss, x,y,p0 = p0)
+    return fit
+
+
 def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
 
     if len(wave.shape) == 2: # we have the e2ds file, we reshape it

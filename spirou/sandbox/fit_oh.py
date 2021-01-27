@@ -9,10 +9,10 @@ import glob
 #file = '2502382o_pp_e2dsff_AB.fits' # GL699
 
 # one needs e2dsff_AB and e2dsff_recon_AB in the directory
-files = glob.glob('tellurics/data/*o_pp_e2dsff_AB.fits')
+files = glob.glob('tellurics/data/251748*o_pp_e2dsff_AB.fits')
 
 # constants
-debug = False
+debug = True
 # number of bright OH lines that will be individually adjusted in amplitude. Done
 # only on lines that are at an SNR > 1
 nbright = 300
@@ -37,7 +37,7 @@ for file in files:
     if os.path.isfile(outname) == False:
         abso,hdr = fits.getdata(abso_name, header = True)
 
-        pc_file = 'sky_PCs.fits'
+        pc_file = '/Users/eartigau/smart_sky/sky_PCs.fits'
 
 
         # e-width of the region over which we measure the residuals of brighter lines

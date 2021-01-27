@@ -180,8 +180,6 @@ def mk_ccf_mask(template, doplot = False):
             cc = np.zeros_like(dvs)
             for i in range(len(dvs)):
                 corrv = np.sqrt((1 + dvs[i] / c) / (1 - dvs[i] / c))
-
-
                 cc[i] = np.sum(weight_tmp*model(wave_tmp / corrv))
 
             # just centering the cc around one and removing low-f trends
@@ -190,7 +188,11 @@ def mk_ccf_mask(template, doplot = False):
             minpos = np.argmin(cc)
             fit = np.polyfit(dvs[minpos - 1:minpos + 2], cc[minpos - 1:minpos + 2], 2)
 
+
+
             if doplot:
+
+
                 plt.plot(dvs+systemic_velocity, cc,alpha = 0.5)
 
 
@@ -238,7 +240,47 @@ def mk_ccf_mask(template, doplot = False):
     # convert back to table for manipulation
     tbl = et.td_convert(tbl)
 
+    if 'FP' not in template:
+        valid = np.isfinite(f)
+        spline = InterpolatedUnivariateSpline(w[valid],f[valid], k = 1, ext=0)
+        # DETERMINATION OF H-band FWHM
+        # cen, ew, amp, zp, slope
+        dvs = np.arange(-50000,50000,500)+systemic_velocity*1000
+        cc = np.zeros_like(dvs,dtype = float)
+
+        H = (tbl['ll_mask_s'] > 1500) * (tbl['ll_mask_s'] > 1800) * (tbl['w_mask'] > 0)
+        wave_H = np.array(tbl['ll_mask_s'][H])
+        weights_H = np.array(tbl['w_mask'][H])
+        for i in range(len(dvs)):
+            cc[i] = np.sum(weights_H*spline(et.doppler(wave_H,-dvs[i])))
+
+        imin = np.nanargmin(cc)
+        p0 = [dvs[imin], 4000, np.nanmin(cc) - np.nanmedian(cc), np.nanmedian(cc), 0]
+
+        fit_gau = et.fit_gauss(dvs, cc, p0)
+        gfit = et.gauss(dvs, *fit_gau)
+
+        cc /= np.polyval(fit_gau[[4, 3]], dvs)
+        gfit /= np.polyval(fit_gau[[4, 3]], dvs)
+
+        print(fit_gau)
+
+
+        if doplot:
+            plt.plot(dvs/1000, cc, color='black', alpha=0.5, label = 'normalized CCF')
+            plt.plot(dvs/1000, gfit,alpha = 0.5,label = 'normalized gaussian fit')
+            plt.ylabel('flux')
+            plt.xlabel('velocity [km/s]')
+            plt.legend()
+            plt.show()
+
+        hdr['CCF_FWHM'] = np.sqrt(2*np.log(2))*2*fit_gau[1]/1000,'H-band CCF FWHM in km/s'
+        hdr['CCF_CONT'] = 1-np.min(cc),'Fractionnal CCF contrast'
+
     if doplot:
+
+
+
         plt.plot(w,f, 'g-',label = 'input spectrum')
         plt.vlines(tbl[tbl['w_mask'] < 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'k',alpha = 0.2,label = 'positive feature')
         plt.vlines(tbl[tbl['w_mask'] > 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'r',alpha = 0.2,label = 'negative feature')
@@ -287,7 +329,7 @@ def mk_ccf_mask(template, doplot = False):
     hdu1.header['SYSTVEL'] =systemic_velocity,'Systemic velocity'
     hdu1.header['NSPTEMPL'] =nsp_input,'Number of spectra used for tempalte'
 
-    keys_transfer = ['OBJTEMP']
+    keys_transfer = ['OBJTEMP','CCF_FWHM','CCF_CONT']
     for key in keys_transfer:
         if key in hdr.keys():
             hdu1.header[key] = hdr[key]
@@ -298,6 +340,6 @@ def mk_ccf_mask(template, doplot = False):
     new_hdul = fits.HDUList([hdu1, hdu2])
     new_hdul.writeto(out_pos_name, overwrite=True)
 
-templates = glob.glob('Template_s1d_*_sc1d_v_file_AB.fits')
+templates = glob.glob('Template_s1d_TOI-14*_sc1d_v_file_AB.fits')
 for template in templates:
-        mk_ccf_mask(template)
+        mk_ccf_mask(template,doplot = True)
