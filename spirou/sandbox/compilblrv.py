@@ -4,7 +4,8 @@ import os
 from tqdm import tqdm
 import etienne_tools as et
 import numpy as np
-
+from astropy.table import Table
+import matplotlib.pyplot as plt
 
 def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, common_weights = False):
 
@@ -186,8 +187,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, comm
         # plot or not
         if doplot:
             fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.3,label = 'J')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmedian(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.8,label = 'H')
+            #ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.3,label = 'J')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmedian(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.2,label = 'H')
             ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean']-np.nanmedian(tbl['per_epoch_mean']) , fmt='.k', yerr=tbl['per_epoch_err'],alpha = 0.8,label = 'all')
             #ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'] ,fmt='.k', yerr=tbl['per_epoch_DDVRMS'], alpha = 0.7)
 
@@ -199,11 +200,37 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, comm
             #ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
             plt.show()
 
+    return tbl
 
-obj_sci = 'TOI-1452sky'
+"""
+obj_sci = 'TOI-1452sky2'
 obj_template = 'GL699'
 doplot = True
 force = True
 common_weights = True
 
-compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = common_weights)
+tbl = compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = common_weights)
+
+tbl2 = Table()
+udates =np.unique(tbl['DATE-OBS'])
+tbl2['MJDATE'] = np.zeros(len(udates),dtype = float)
+tbl2['RV'] = np.zeros(len(udates),dtype = float)
+tbl2['ERR'] = np.zeros(len(udates),dtype = float)
+
+for i in range(len(udates)):
+    g = (tbl['DATE-OBS'] == udates[i])
+
+    err = tbl['per_epoch_err'][g]
+    rv = tbl['per_epoch_mean'][g]
+
+    tbl2['RV'][i] = np.sum( rv/err**2 )/np.sum(1/err**2)
+    tbl2['ERR'][i]  = np.sqrt(1/np.sum(1/err**2))
+    tbl2['MJDATE'][i] = np.mean(tbl['MJDATE'][g])
+
+
+plt.errorbar(tbl2['MJDATE'],tbl2['RV'] - np.nanmedian(tbl2['RV']),fmt='.g', yerr=tbl2['ERR'])
+
+plt.show()
+
+print( np.mean(tbl2['ERR']),np.nanstd(tbl2['RV']))
+"""
