@@ -7,7 +7,7 @@ import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
 
-def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, common_weights = False):
+def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False):
 
     if doplot:
         # avoids conflicts if one uses ssh without graphic displays
