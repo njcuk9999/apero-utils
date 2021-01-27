@@ -202,33 +202,3 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = False, comm
 
     return tbl
 
-obj_sci = 'TOI-1452sky2'
-obj_template = 'GL699'
-doplot = True
-force = True
-common_weights = True
-
-tbl = compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = common_weights)
-
-tbl2 = Table()
-udates =np.unique(tbl['DATE-OBS'])
-tbl2['MJDATE'] = np.zeros(len(udates),dtype = float)
-tbl2['RV'] = np.zeros(len(udates),dtype = float)
-tbl2['ERR'] = np.zeros(len(udates),dtype = float)
-
-for i in range(len(udates)):
-    g = (tbl['DATE-OBS'] == udates[i])
-
-    err = tbl['per_epoch_err'][g]
-    rv = tbl['per_epoch_mean'][g]
-
-    tbl2['RV'][i] = np.sum( rv/err**2 )/np.sum(1/err**2)
-    tbl2['ERR'][i]  = np.sqrt(1/np.sum(1/err**2))
-    tbl2['MJDATE'][i] = np.mean(tbl['MJDATE'][g])
-
-
-plt.errorbar(tbl2['MJDATE'],tbl2['RV'] - np.nanmedian(tbl2['RV']),fmt='.g', yerr=tbl2['ERR'])
-
-plt.show()
-
-print( np.mean(tbl2['ERR']),np.nanstd(tbl2['RV']))
