@@ -368,8 +368,12 @@ class CalibTest(Test):
         """
         if not self.master_calib_df.empty:
             master_mask = self.master_calib_df.MASTER
-            master_calib_group = self.master_calib_df[master_mask].groupby('KEY')
-            return master_calib_group.size()
+            if master_mask.sum() == 0:
+                return pd.Series(0, index=self.calibdb_list)
+            
+            else:
+                master_calib_group = self.master_calib_df[master_mask].groupby('KEY')
+                return master_calib_group.size()
         else:
             return pd.Series(0, index=self.calibdb_list)
 
@@ -903,12 +907,12 @@ class CalibTest(Test):
                           + self.output_files)
             headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
             header_df = pd.DataFrame(headers.tolist(), index=headers.index)
-            print(header_df)
+
             # Keep only matching PIDs
             # NOTE: The output PID match the PID from cal_extract and not self.recipe
             # This will be corrected in 0.7
             log_pid_dir = self.log.df.reset_index().set_index('PID').DIRECTORY
-            print(log_pid_dir)
+
             # make sure no duplicate PID per night
             log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index(
                                                                         'PID'
