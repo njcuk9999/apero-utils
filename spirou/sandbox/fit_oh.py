@@ -151,6 +151,7 @@ for file in files:
         ### END OF NEW STUFF ###
         sp = (sp-skymodel)/abso
 
+        hdr['OHMASKED'] = masked_lines,'Number of bright OH lines adjusted'
         fits.writeto(outname,sp,hdr,overwrite = True)
     else:
         print('File {0} exists '.format(outname))
