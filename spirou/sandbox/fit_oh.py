@@ -21,7 +21,11 @@ if debug:
     import matplotlib.pyplot as plt
 
 
+ifile = 0
 for file in files:
+    print('[{0}/{1}]'.format(ifile,len(files)))
+    ifile+=1
+
     outname = '_tcorr_AB'.join(file.split('_AB'))
 
     abso_name = '_recon_AB'.join(file.split('_AB'))
