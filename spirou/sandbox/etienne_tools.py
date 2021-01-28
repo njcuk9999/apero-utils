@@ -39,12 +39,12 @@ def nanpercentile(v,p):
     return np.nanpercentile(v,p)
 
 @jit(nopython=True)
-def nanmedian(v,p):
-    return np.nanmedian(v,p)
+def nanmedian(v):
+    return np.nanmedian(v)
 
 @jit(nopython=True)
-def median(v,p):
-    return np.median(v,p)
+def median(v):
+    return np.median(v)
 
 
 def sigma(im):
