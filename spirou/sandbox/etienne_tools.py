@@ -9,9 +9,46 @@ import numba
 from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
+@jit(nopython=True)
+def nanstd(v):
+    return np.nanstd(v)
+
+@jit(nopython=True)
+def nansum(v):
+    return np.nansum(v)
+
+@jit(nopython=True)
+def sum(v):
+    return np.sum(v)
+
+@jit(nopython=True)
+def mean(v):
+    return np.mean(v)
+
+
+@jit(nopython=True)
+def std(v):
+    return np.std(v)
+
+@jit(nopython=True)
+def nanmean(v):
+    return np.nanmean(v)
+
+@jit(nopython=True)
+def nanpercentile(v,p):
+    return np.nanpercentile(v,p)
+
+@jit(nopython=True)
+def nanmedian(v,p):
+    return np.nanmedian(v,p)
+
+@jit(nopython=True)
+def median(v,p):
+    return np.median(v,p)
+
 
 def sigma(im):
-    return (np.nanpercentile(im,85) - np.nanpercentile(im,15))/2
+    return (nanpercentile(im,85) - nanpercentile(im,15))/2
 
 def running_sigma(v,w):
     # provide a vector and return a running robust dispersion
@@ -115,7 +152,7 @@ def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
 
     imax = np.argmax(ccf)
 
-    guess = [dvs[imax],2000,ccf[imax]-np.nanmedian(ccf),np.nanmedian(ccf),0]
+    guess = [dvs[imax],2000,ccf[imax]-nanmedian(ccf),nanmedian(ccf),0]
     fit, pcov = curve_fit(gauss, dvs,ccf,p0 = guess)
 
     #fit = np.polyfit(dvs[imax - 1:imax + 2], ccf[imax - 1:imax + 2], 2)
@@ -145,7 +182,7 @@ def robust_polyfit(x, y, degree, nsigcut):
         # calculate the residuals of the polynomial fit
         res = y - np.polyval(fit, x)
         # work out the new sigma values
-        sig = np.nanmedian(np.abs(res))
+        sig = nanmedian(np.abs(res))
         if sig == 0:
             nsig = np.zeros_like(res)
             nsig[res != 0] = np.inf
@@ -163,7 +200,7 @@ def sigma(tmp):
     # return a robust estimate of 1 sigma
     sig1 = 0.682689492137086
     p1 = (1-(1-sig1)/2)*100
-    return (np.nanpercentile(tmp,p1) -np.nanpercentile(tmp,100-p1))/2.0
+    return (nanpercentile(tmp,p1) -nanpercentile(tmp,100-p1))/2.0
 
 def gauss(x,cen, ew, amp, zp, slope):
     return np.exp(-0.5*(x-cen)**2/ew**2)*amp+zp+(x-cen)*slope
@@ -216,8 +253,8 @@ def lowpassfilter(input_vect,width = 101):
 
         # mean position along vector and NaN median value of
         # points at those positions
-        xmed.append(np.nanmean(pixval))
-        ymed.append(np.nanmedian(input_vect[pixval]))
+        xmed.append(nanmean(pixval))
+        ymed.append(nanmedian(input_vect[pixval]))
 
     xmed = np.array(xmed,dtype = float)
     ymed = np.array(ymed,dtype = float)
@@ -364,14 +401,14 @@ def sed_ratio(sp1,sp2,doplot = False):
         if np.isfinite(ratio[i]):
             i1 = i-3
             i2 = i+4
-            ratio2[i] = np.nanmedian(ratio[i1:i2])
+            ratio2[i] = nanmedian(ratio[i1:i2])
 
     keep = np.isfinite(ratio2)
     index = index[keep]
     ratio2 = ratio2[keep]
 
     if len(ratio2)<4:
-        return np.zeros_like(sp1)+np.nanmedian(ratio2)
+        return np.zeros_like(sp1)+nanmedian(ratio2)
     else:
         return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
 
@@ -388,7 +425,7 @@ def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
     #
     # nmax -> number of iterations
 
-    guess = np.nanmedian(value)
+    guess = nanmedian(value)
 
     nite = 0
     while (nite < nmax):
@@ -399,7 +436,7 @@ def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
 
         w = odd_good/err**2
 
-        guess = np.nansum(value*w)/np.nansum(w)
+        guess = nansum(value*w)/np.nansum(w)
         nite+=1
 
     bulk_error =  np.sqrt(1/np.nansum(odd_good/err**2))

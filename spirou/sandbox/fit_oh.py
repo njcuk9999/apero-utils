@@ -3,6 +3,7 @@ from astropy.io import fits
 import etienne_tools as et
 import os
 import glob
+import etienne_tools as et
 
 # file = '2517483o_pp_e2dsff_AB.fits' # TRAPPIST-1
 #file = '2512909o_pp_e2dsff_AB.fits' # TOI-1452
@@ -114,7 +115,7 @@ for file in files:
             tmp2 = (skymodel*amp_sky)[imax-width:imax+width]
 
             # find rms of derivative of science vs sky line
-            snr_line = (np.nanstd(np.gradient(tmp2))/np.nanstd(np.gradient(tmp1)))
+            snr_line = (et.nanstd(np.gradient(tmp2))/et.nanstd(np.gradient(tmp1)))
 
             # if above 1 sigma, we adjust
             if snr_line>1:

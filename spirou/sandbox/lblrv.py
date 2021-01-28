@@ -11,14 +11,15 @@ from datetime import datetime
 import etienne_tools as et
 import warnings
 from time import time
+from scipy import stats
 
 def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits', check_fp = False):
     """
-    obj_sci = 'FP'
+    obj_sci = 'TOI-1452'
     force = True
-    obj_template = 'FP'
+    obj_template = 'GL699'
     doplot_ccf = False
     doplot_debug = False
     lblrv_path = 'lblrv/'
@@ -154,6 +155,13 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         tbl['WAVE_END'] = wave_end#np.array(wave_end* (1 + objrv * 1000 / constants.c))
         tbl['WEIGHT_LINE'] = weight_line # from mask
         tbl['XPIX'] = xpix #pixel position along array
+        tbl['RMSRATIO'] = np.zeros_like(xpix) # ratio of expected VS actual RMS in difference of model vs line
+        tbl['NPIXLINE'] = np.zeros_like(xpix,dtype = int) # effective number of pixels in line
+        # Considering the number of pixels, expected and actual RMS, this is the likelihood that the line is
+        # acually valid from a Chi2 test point of view
+        tbl['CHI2'] = np.zeros_like(xpix)
+        # probability of valid considering the chi2 CDF for the number of DOF
+        tbl['CHI2_VALID_CDF'] = np.zeros_like(xpix)
 
         print('We write {0}'.format(ref_table_name))
         et.td_convert(tbl).write(ref_table_name)
@@ -289,7 +297,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                 with warnings.catch_warnings(record=True) as _:
                     rms[ii] = np.sqrt(model[ii])
-                    p1 = np.nanpercentile(tmp/rms[ii],[16,84])
+                    p1 = et.nanpercentile(tmp/rms[ii],[16,84])
                 rms[ii] *= ((p1[1]-p1[0])/2)
 
 
@@ -369,24 +377,38 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
 
                 # residuals of the segment
+
                 diff_segment = diff[imin:imax+1]*weight_mask
 
+
+
+
+                sum_weight_mask = et.sum(weight_mask)  # we need this value 4 times
+                mean_rms = et.sum(rms_ord[imin:imax+1]*weight_mask)/sum_weight_mask
                 # From Bouchy 2001 equation, RV error for each pixel
-                dvrms_pix = np.sum(rms_ord[imin:imax+1]*weight_mask)/np.sum(weight_mask) / d_segment
+                dvrms_pix = mean_rms/ d_segment
 
                 # RV error for the line
                 dvrms[i] = 1/np.sqrt(np.sum((1/dvrms_pix**2)))
 
                 # From Bouchy 2001 equation, RV error for each pixel
-                ddvrms_pix = np.sum(rms_ord[imin:imax + 1] * weight_mask) / np.sum(weight_mask) / dd_segment
+                ddvrms_pix = mean_rms / dd_segment
 
                 # RV error for the line
                 ddvrms[i] = 1 / np.sqrt(np.sum((1 / ddvrms_pix ** 2)))
-                ddv[i] = np.sum(diff_segment * dd_segment) / np.sum(dd_segment ** 2)
-
+                ddv[i] = et.sum(diff_segment * dd_segment) / np.sum(dd_segment ** 2)
 
                 # feed the monster
-                dv[i] = np.sum(diff_segment*d_segment)/np.sum(d_segment**2)
+                dv[i] = et.sum(diff_segment*d_segment)/np.sum(d_segment**2)
+
+                #ratio of expected VS actual RMS in difference of model vs line
+                tbl['RMSRATIO'][i] = et.nanstd(diff_segment)/mean_rms
+                # effective number of pixels in line
+                tbl['NPIXLINE'][i] = len(diff_segment)
+                # Considering the number of pixels, expected and actual RMS, this is the likelihood that the line is
+                # acually valid from a chi2 point of view
+                tbl['CHI2'][i] = et.nansum( (diff_segment/mean_rms)**2)
+
 
             if doplot_debug:
                 if ite_rv ==1:
@@ -395,7 +417,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             nsig = dv / dvrms
             nsig = nsig[np.isfinite(nsig)]
             nsig = nsig[np.abs(nsig) < 8]
-            stddev_nsig = np.std(nsig)
+            stddev_nsig = et.std(nsig)
 
             print('\t\tstdev_meas/stdev_pred = {0:.2f}'.format(stddev_nsig))
             # we force to one
@@ -444,6 +466,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         hdr['RMSRATIO'] = stddev_nsig, 'RMS vs photon noise'
         hdu1.header = hdr
 
+        tbl['CHI2_VALID_CDF'] = 1-stats.chi2.cdf(tbl['CHI2'],tbl['NPIXLINE'])
+
         # convert back from dictionnary to table and save
         hdu2 = fits.BinTableHDU(et.td_convert(tbl))
         new_hdul = fits.HDUList([hdu1, hdu2])
@@ -454,8 +478,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         nleft = len(scifiles) - ifile - 1
 
         if len(all_durations) >2:
-            print(et.color('\tDuration per file {0:.2f}+-{1:.2f}s'.format(np.nanmean(all_durations),
-                                                                          np.nanstd(all_durations)), 'yellow'))
-            print(et.color('\tTime left to completion {0}, {1} / {2} files todo/done\n'.format(et.smart_time(np.nanmean(all_durations)*nleft), nleft,ifile), 'white'))
+            print(et.color('\tDuration per file {0:.2f}+-{1:.2f}s'.format(et.nanmean(all_durations),
+                                                                          et.nanstd(all_durations)), 'yellow'))
+            print(et.color('\tTime left to completion {0}, {1} / {2} files todo/done\n'.format(et.smart_time(et.nanmean(all_durations)*nleft), nleft,ifile), 'white'))
         else:
             print()

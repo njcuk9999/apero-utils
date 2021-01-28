@@ -21,7 +21,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
     # default keywords to be included in the
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
-            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT']
+            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT','SBRHB1_P','SBRHB2_P']
     keys = np.array(keys)
 
     if (not os.path.isfile(outname)) or force:
@@ -72,7 +72,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             DDVRMS[i] = tbl_per_line['DDVRMS']
 
         # a line must be present >80% of the line
-        valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > 0.8
+        valid_lines = et.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > 0.8
         rvs = rvs[:,valid_lines]
         dvrms = dvrms[:,valid_lines]
         tbl_per_line_ini = tbl_per_line_ini[valid_lines]
@@ -83,13 +83,13 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             # produce a map of median change in error, liked to SNR changes
             err_ratio = np.zeros(dvrms.shape)
             # first guess at median per-line error
-            ref = np.nanmedian(dvrms, axis=0)
+            ref = et.nanmedian(dvrms, axis=0)
             for i in range(dvrms.shape[0]):
-                err_ratio[i] = np.nanmedian(dvrms[i]/ref)
+                err_ratio[i] = et.nanmedian(dvrms[i]/ref)
             # better estimate of median rms
-            ref = np.nanmedian(dvrms / err_ratio, axis=0)
+            ref = et.nanmedian(dvrms / err_ratio, axis=0)
             for i in range(dvrms.shape[0]):
-                amp = np.nanmedian(dvrms[i]/ref)
+                amp = et.nanmedian(dvrms[i]/ref)
                 # all lines have the same relative weights
                 # but may vary from one spectra to the other while
                 # preserving the same relative ratios
@@ -188,12 +188,12 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
         if doplot:
             fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
             #ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.3,label = 'J')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-np.nanmedian(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.2,label = 'H')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean']-np.nanmedian(tbl['per_epoch_mean']) , fmt='.k', yerr=tbl['per_epoch_err'],alpha = 0.8,label = 'all')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-et.nanmedian(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.2,label = 'H')
+            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean']-et.nanmedian(tbl['per_epoch_mean']) , fmt='.k', yerr=tbl['per_epoch_err'],alpha = 0.8,label = 'all')
             #ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'] ,fmt='.k', yerr=tbl['per_epoch_DDVRMS'], alpha = 0.7)
 
             diff_JH =  tbl['per_epoch_mean_J']-tbl['per_epoch_mean_H']
-            ax[1].errorbar(tbl['MJDATE'],diff_JH - np.nanmedian(diff_JH) , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
+            ax[1].errorbar(tbl['MJDATE'],diff_JH - et.nanmedian(diff_JH) , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
             ax[0].legend()
             ax[0].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]',title = 'H velocity')
             ax[1].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]', title = 'J-H velo diff')
