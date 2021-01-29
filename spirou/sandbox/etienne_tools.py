@@ -9,6 +9,16 @@ import numba
 from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
+def nanpercentile(v,p,axis = None):
+    if axis == None:
+        return jit_nanpercentile(v, p)
+    else:
+        return np.nanpercentile(v,p,axis = axis)
+
+@jit(nopython=True)
+def jit_nanpercentile(v, p):
+    return np.nanpercentile(v,p)
+
 @jit(nopython=True)
 def nanstd(v):
     return np.nanstd(v)
@@ -25,7 +35,6 @@ def sum(v):
 def mean(v):
     return np.mean(v)
 
-
 @jit(nopython=True)
 def std(v):
     return np.std(v)
@@ -35,16 +44,16 @@ def nanmean(v):
     return np.nanmean(v)
 
 @jit(nopython=True)
-def nanpercentile(v,p):
-    return np.nanpercentile(v,p)
-
-@jit(nopython=True)
 def nanmedian(v):
     return np.nanmedian(v)
 
 @jit(nopython=True)
 def median(v):
     return np.median(v)
+
+@jit(nopython=True)
+def exp(v):
+    return np.exp(v)
 
 
 def sigma(im):
@@ -411,6 +420,7 @@ def sed_ratio(sp1,sp2,doplot = False):
         return np.zeros_like(sp1)+nanmedian(ratio2)
     else:
         return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
+
 
 
 

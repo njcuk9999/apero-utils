@@ -7,9 +7,10 @@ import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
 
-def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False):
 
-    if doplot:
+def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False, get_cumul_plot = False):
+
+    if doplot or get_cumul_plot:
         # avoids conflicts if one uses ssh without graphic displays
         import matplotlib.pyplot as plt
 
@@ -17,9 +18,13 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
     if obj_template is None:
         obj_template = obj_sci
 
-    outname = 'tbllblrv_{0}_{1}.csv'.format(obj_sci, obj_template)
+    suffix = ''
+    if common_weights:
+        suffix = suffix+'_weights'
 
-    # default keywords to be included in the
+    outname = 'tbllblrv{2}_{0}_{1}.csv'.format(obj_sci, obj_template,suffix)
+
+    # default keywords to be included in the compilation of per-object RVs
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
             'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT','SBRHB1_P','SBRHB2_P']
     keys = np.array(keys)
@@ -28,6 +33,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
         # keys to be transfered to the fits table
         scifiles = np.array(glob.glob('lblrv/2*{0}_{1}_lbl.fits'.format(obj_sci, obj_template)))
 
+        if get_cumul_plot:
+            fix, ax = plt.subplots(nrows = 2, ncols =1)
         for i in tqdm(range(len(scifiles))):
             hdr = fits.getheader(scifiles[i])
             # if first file, we populate the columns
@@ -65,14 +72,53 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
             # keep track in two big matrices of the rv and corresponding errors
             tbl_per_line = tbl_per_line_ini[g]
-            rvs[i] = tbl_per_line['RV']
-            dvrms[i] = tbl_per_line['DVRMS']
+
+            rv_per_file = np.array( tbl_per_line['RV'])
+            dvrms_per_file = np.array( tbl_per_line['DVRMS'])
+
+            rvs[i] = rv_per_file
+            dvrms[i] = dvrms_per_file
+
+
+            if get_cumul_plot:
+                if i ==0:
+                    med_velo = np.nanmedian(rv_per_file)
+                    xlim = [med_velo-5000,med_velo+5000]
+                    best = dvrms_per_file<np.nanpercentile(dvrms_per_file,5)
+
+                vrange = np.arange(xlim[0],xlim[1], 50.0)
+                pdf = np.zeros_like(vrange,dtype = float)
+
+                dvrms_per_file = dvrms_per_file[best]
+                rv_per_file = rv_per_file[best]
+
+                for ii in (range(len(rv_per_file))):
+                    if np.isfinite(rv_per_file[ii])*np.isfinite(dvrms_per_file[ii]):
+                        ww = et.exp(-0.5*(vrange-rv_per_file[ii])**2/dvrms_per_file[ii]**2)
+                        ww /= dvrms_per_file[ii]
+                        pdf += ww
+                pdf/=np.nansum(pdf)
+                ax[0].plot(vrange/1000,pdf,alpha = 0.2,color = 'grey')
+
+                #cen, ew, amp, zp, slope
+                p0 = [med_velo,500,np.max(pdf),0,0]
+                #print(p0)
+                fit  = et.fit_gauss(vrange,pdf, p0)
+
+                ax[1].plot(vrange/1000,pdf - et.gauss(vrange, *fit),alpha = 0.2,color = 'grey')
 
             DDV[i] = tbl_per_line['DDV']
             DDVRMS[i] = tbl_per_line['DDVRMS']
 
+        if get_cumul_plot:
+            ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'Distribution function of RVs')
+            ax[1].set(xlabel = 'Velocity [km/s]',ylabel = 'Distribution function of RVs - gaussfit')
+            plt.savefig(outname+'_cumul.pdf')
+            plt.close()
+
+
         # a line must be present >80% of the line
-        valid_lines = et.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > 0.8
+        valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > 0.8
         rvs = rvs[:,valid_lines]
         dvrms = dvrms[:,valid_lines]
         tbl_per_line_ini = tbl_per_line_ini[valid_lines]
@@ -83,11 +129,11 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             # produce a map of median change in error, liked to SNR changes
             err_ratio = np.zeros(dvrms.shape)
             # first guess at median per-line error
-            ref = et.nanmedian(dvrms, axis=0)
+            ref = np.nanmedian(dvrms, axis=0)
             for i in range(dvrms.shape[0]):
                 err_ratio[i] = et.nanmedian(dvrms[i]/ref)
             # better estimate of median rms
-            ref = et.nanmedian(dvrms / err_ratio, axis=0)
+            ref = np.nanmedian(dvrms / err_ratio, axis=0)
             for i in range(dvrms.shape[0]):
                 amp = et.nanmedian(dvrms[i]/ref)
                 # all lines have the same relative weights
