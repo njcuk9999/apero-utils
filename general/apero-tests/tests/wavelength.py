@@ -40,6 +40,9 @@ check10: which previous calibrations (bad pixel, loc, shape master, shape,
 """
 from typing import List, Optional, Union
 
+import glob
+import os
+from astropy.io import fits
 import numpy as np
 import pandas as pd
 from . import utils as ut
@@ -131,7 +134,7 @@ class WaveTest(CalibTest):
 
         :rtype: bool
         """
-        return True
+        return False
 
     @property
     def fibers(self) -> List[str]:
@@ -148,6 +151,73 @@ class WaveTest(CalibTest):
         :rtype: bool
         """
         return True
+
+    # =========================================================================
+    # Overwritten parent methods
+    # =========================================================================
+
+    def get_missing_previous_calib(self) -> pd.DataFrame:
+        """get_missing_calib.
+
+        :rtype: pd.DataFrame
+        """
+
+        # Load header of all output files (one output pattern only)
+        if not self.output_files.empty:
+            full_paths = (self.reduced_path
+                          + os.path.sep
+                          + self.output_files.index.get_level_values('DIRECTORY')
+                          + os.path.sep
+                          + self.output_files)
+            headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
+            header_df = pd.DataFrame(headers.tolist(), index=headers.index)
+
+            # Keep only matching PIDs
+            # NOTE: The output PID match the PID from cal_extract and not self.recipe
+            # This will be corrected in 0.7
+            log_pid_dir = self.log_recipe.df.reset_index().set_index('PID').DIRECTORY
+
+            # make sure no duplicate PID per night
+            log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index(
+                                                                        'PID'
+                                                                        ).DIRECTORY
+            log_nights = log_pid_dir.loc[header_df.DRSPID]  # log nights for PIDs
+            header_df = header_df[(log_nights == header_df.index).values]
+
+            # Keep only calib columns
+            used_calibs = [p
+                           for p in self.previous_calibs
+                           if p in header_df.columns]
+            header_df = header_df[used_calibs]  # Keep calibs
+
+            # Get masks (used and exists) and project condition on nights (axis=1)
+            none_mask = (header_df == 'None')  # calib not used
+            prefix = (self.reduced_path + os.path.sep
+                      + header_df.index + os.path.sep)
+            isfile_mask = header_df.radd(prefix, axis=0).applymap(os.path.isfile)
+            missing_mask = ~(isfile_mask | none_mask)
+
+            # Check nights where 1) used and 2) does not exists for each output
+            missing_calib_all = header_df[missing_mask]
+            missing_calib_list = [missing_calib_all[k]
+                                  for k in missing_calib_all.columns]
+            missing_calib = pd.concat(missing_calib_list).sort_index()
+            missing_calib = missing_calib.dropna()  # 2D mask yields NaNs if false
+            missing_calib.name = 'FILE'
+            missing_calib = missing_calib.reset_index()
+            missing_calib = missing_calib.rename(columns={'DIRECTORY': 'LOC_DIR'})
+
+            # Find calibration nights used
+            pattern = (self.reduced_path
+                       + os.path.sep + '*'
+                       + os.path.sep + missing_calib.FILE)
+            calib_path = pattern.apply(glob.glob).str[0]  # First glob for each
+            calib_dir = calib_path.str.split(os.path.sep).str[-2]
+            missing_calib['CALIB_DIR'] = calib_dir
+        else:
+            missing_calib = pd.DataFrame([], columns=['LOC_DIR', 'FILE', 'CALIB_DIR'])
+
+        return missing_calib
  
     # =========================================================================
     # Run the full test
@@ -181,10 +251,10 @@ class WaveTest(CalibTest):
 
         # No DRSPID in the header. Fixed by Neil, it will be corrected
         # in the next mini_data run.
-        #missing_previous = self.get_missing_previous_calib()
-        #comments_check10, inspect_check9 = self.check_previous_calib(
-        #                                                    missing_previous,
-        #                                                    ncheck=10)
+        missing_previous = self.get_missing_previous_calib()
+        comments_check10, inspect_check10 = self.check_previous_calib(
+                                                            missing_previous,
+                                                            ncheck=10)
 
         html_dict = {
             # Summary header info
@@ -237,9 +307,9 @@ class WaveTest(CalibTest):
             'dict_stop2': dict_stop2,
 
             # Check10: previous calibrations
-            'missing_previous': '',#missing_previous,
-            'comments_check10': '',#comments_check10,
-            'inspect_check10': '',#inspect_check10,
+            'missing_previous': missing_previous,
+            'comments_check10': comments_check10,
+            'inspect_check10': inspect_check10,
         }
 
         self.gen_html(html_dict)

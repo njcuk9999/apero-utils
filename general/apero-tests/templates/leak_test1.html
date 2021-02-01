@@ -40,7 +40,7 @@
     <p>Script: {{ recipe }}.py<br>
     <p>Output files: {{ ', '.join(output_list) }}<br>
     <p>Calibration database entry: {{ ', '.join(calibdb_list) }}<br>
-    <p><a href='https://github.com/njcuk9999/apero-drs#810-master-wavelength-solution-recipe'>Link</a> to Master wavelength solution Recipe description</p>
+    <p><a href='https://github.com/njcuk9999/apero-drs#813-leak-correction-recipe'>Link</a> to Leak correction description</p>
     <br></br>
 
     <table id="t01">
@@ -72,15 +72,6 @@
 
       <!-- Check 2 -->
       <tr>
-        <td>2</td>
-        <td># of time cal_extract_{{ instrument.lower() }} was called by {{ recipe }}.py</td>
-        <td>{{ recipe_extract_num_logfits }}</td>
-        <td></td>
-        <td></td>
-      </tr>
-
-      <!-- Check 3 -->
-      <tr>
         <td>3</td>
         <td># of outputs in {{ reduced_path }}</td>
         <td>
@@ -92,7 +83,7 @@
         <td></td>
       </tr>
 
-      <!-- Check 4 -->
+      <!-- Check 3 -->
       <tr>
         <td>4</td>
         <td># of unique outputs in {{ reduced_path }}</td>
@@ -108,7 +99,7 @@
       <!-- Stop 1 -->
       <tr>
         <td></td>
-        <td>Check 4 == Check 2?</td>
+        <td>Check 3 == Check 1?</td>
         <td bgcolor={{ dict_stop1.color }}>{{ dict_stop1.result }}</td>
         <td>{{ dict_stop1.comment }}</td>
         {% if dict_stop1.inspect != '' %}
@@ -118,92 +109,13 @@
         {% endif %}
       </tr>
 
-      <!-- Check 5 -->
+      <!-- Check 4 -->
       <tr>
-        <td>5</td>
-        <td># of entry in {{ reduced_path }}/log.fits that failed one or more QC</td>
-        <td>{{ log_qc_failed.shape[0] }}</td>
-        <td>{{ comments_check5 }}</td>
-        {% if inspect_check5 != '' %}
-          <td><a href='{{ inspect_check5 }}'>Inspect</a></td>
-        {% else %}
-          <td></td>
-        {% endif %}
-      </tr>
-
-      <!-- Check 6 -->
-      <tr>
-        <td>6</td>
-        <td>Plot the different QCs as a function of time</td>
-        {% if inspect_check6 != '' %}
-          <td><a href='{{ inspect_check6 }}'>Inspect</a></td>
-        {% else %}
-          <td></td>
-        {% endif %}
-        <td></td>
-        <td></td>
-      </tr>
-
-      <!-- Check 7 -->
-      <tr>
-        <td>7</td>
+        <td>4</td>
         <td># of entry in {{ reduced_path }}/log.fits that failed to finish</td>
         <td>{{ log_ended_false.shape[0] }}</td>
-        <td>{{ comments_check7 }}</td>
+        <td>{{ comments_check4 }}</td>
         <td></td>
-      </tr>
-
-      <!-- Check 8 -->
-      <tr>
-        <td>8</td>
-        <td># of {{ ', '.join(calibdb_list) }} entry in {{ calibdb_path }}/master_calib_{{ instrument }}.txt</td>
-        <td>
-        {% for key, num in output_num_entry.iteritems() %}
-          {{ key }}: {{ num }}<br>
-        {% endfor %}
-        </td>
-        <td>{{ comments_check8 }}</td>
-        <td></td>
-      </tr>
-
-      <!-- Check 9 -->
-      <tr>
-        <td>9</td>
-        <td># of outputs in {{ calibdb_path }}</td>
-        <td>
-        {% for key, num in output_num_calibdb.iteritems() %}
-          {{ output_dict[key] }}: {{ num }}<br>
-        {% endfor %}
-        </td>
-        <td></td>
-        <td></td>
-      </tr>
-
-      <!-- Stop 2 -->
-      <tr>
-        <td></td>
-        <td>Check 9 == Check 8?</td>
-        <td bgcolor={{ dict_stop2.color }}>{{ dict_stop2.result }}</td>
-        <td>{{ dict_stop2.comment }}</td>
-        {% if dict_stop2.inspect != '' %}
-          <td><a href='{{ dict_stop2.inspect }}'>Inspect</a></td>
-        {% else %}
-          <td></td>
-        {% endif %}
-      </tr>
-
-      <!-- Check 10 -->
-      <tr>
-        <td>10</td>
-        <td># of outputs in {{ reduced_path }} that used the bad pixel, loc, shape master, shape,
-        flat/blaze calibration files from another night</td>
-        <td>{{ missing_previous.shape[0] }}</td>
-        <td>{{ comments_check10 }}</td>
-        {% if inspect_check10 != '' %}
-          <td><a href='{{ inspect_check10 }}'>Inspect</a></td>
-        {% else %}
-          <td></td>
-        {% endif %}
       </tr>
 
     </table>
