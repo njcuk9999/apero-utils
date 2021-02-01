@@ -184,7 +184,10 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
     flux = np.array(template['flux'])
     dflux = np.gradient(flux)/ np.gradient(np.log(template['wavelength'])) / constants.c
+    # 2nd derivative
     ddflux = np.gradient(dflux) / np.gradient(np.log(template['wavelength'])) / constants.c
+    # 3rd derivative
+    dddflux = np.gradient(ddflux) / np.gradient(np.log(template['wavelength'])) / constants.c
 
     # we create the spline of the template to be used everywhere further down
     valid = np.isfinite(flux) * np.isfinite(dflux) * np.isfinite(ddflux)
@@ -196,6 +199,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     spline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),flux[valid],k=3,ext=1)
     dspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),dflux[valid],k=3,ext=1)
     ddspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),ddflux[valid],k=3,ext=1)
+    dddspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),dddflux[valid],k=3,ext=1)
 
     # we create a mask to know if the splined point  is valid
     spline_mask = ius(et.doppler(template['wavelength'],-systemic_vel),np.isfinite(template['flux']),k=1,ext=1)
@@ -263,6 +267,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 model = np.zeros_like(sp)
                 dmodel = np.zeros_like(sp)
                 ddmodel = np.zeros_like(sp)
+                dddmodel = np.zeros_like(sp)
                 rms = np.zeros_like(sp)
                 lowf = np.zeros_like(sp)
                 model_mask = np.zeros_like(sp)
@@ -273,6 +278,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 dmodel[ii] = dspline(et.doppler(wave[ii],-rv)) * bl[ii]
 
                 ddmodel[ii] = ddspline(et.doppler(wave[ii],-rv)) * bl[ii]
+                dddmodel[ii] = dddspline(et.doppler(wave[ii],-rv)) * bl[ii]
 
                 # if on first iteration, get the low-frequency component out
                 model_mask[ii] = spline_mask(et.doppler(wave[ii], -rv))
@@ -291,6 +297,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 # match low frequency of model to that of spectrum
                 model[ii] /= lowf[ii]
                 dmodel[ii] /= lowf[ii]
+                ddmodel[ii] /= lowf[ii]
+                dddmodel[ii] /= lowf[ii]
 
                 # get residuals and running RMS
                 tmp = sp[ii]-model[ii]
@@ -304,9 +312,12 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             if ite_rv == 1:
                 # create a dummy array that will contain velocities and corresponding errors
                 dv = np.zeros(len(tbl['WAVE_START']))+np.nan
-                dvrms = np.zeros(len(tbl['WAVE_START']))+np.nan
                 ddv = np.zeros(len(tbl['WAVE_START']))+np.nan
+                dddv = np.zeros(len(tbl['WAVE_START']))+np.nan
+
+                dvrms = np.zeros(len(tbl['WAVE_START']))+np.nan
                 ddvrms = np.zeros(len(tbl['WAVE_START']))+np.nan
+                dddvrms = np.zeros(len(tbl['WAVE_START']))+np.nan
 
             # keep track of which order we are looking at
             iord_prev = -1
@@ -333,6 +344,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                     model_ord = model[iord[i]]
                     dmodel_ord = dmodel[iord[i]]
                     ddmodel_ord = ddmodel[iord[i]]
+                    dddmodel_ord = dddmodel[iord[i]]
 
                     diff = sp_ord - model_ord
 
@@ -375,6 +387,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 # keep track of 2nd derivative
                 dd_segment = ddmodel_ord[imin:imax + 1] * weight_mask
 
+                ddd_segment = dddmodel_ord[imin:imax + 1] * weight_mask
+
 
                 # residuals of the segment
 
@@ -385,21 +399,33 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                 sum_weight_mask = et.sum(weight_mask)  # we need this value 4 times
                 mean_rms = et.sum(rms_ord[imin:imax+1]*weight_mask)/sum_weight_mask
+
+
+                # 1st derivative
                 # From Bouchy 2001 equation, RV error for each pixel
                 dvrms_pix = mean_rms/ d_segment
-
                 # RV error for the line
                 dvrms[i] = 1/np.sqrt(np.sum((1/dvrms_pix**2)))
+                # feed the monster
+                dv[i] = et.sum(diff_segment*d_segment)/np.sum(d_segment**2)
 
+                # 2nd derivative
                 # From Bouchy 2001 equation, RV error for each pixel
                 ddvrms_pix = mean_rms / dd_segment
-
                 # RV error for the line
                 ddvrms[i] = 1 / np.sqrt(np.sum((1 / ddvrms_pix ** 2)))
                 ddv[i] = et.sum(diff_segment * dd_segment) / np.sum(dd_segment ** 2)
 
-                # feed the monster
-                dv[i] = et.sum(diff_segment*d_segment)/np.sum(d_segment**2)
+
+                # 3rd derivative
+                # From Bouchy 2001 equation, RV error for each pixel
+                dddvrms_pix = mean_rms / ddd_segment
+                # RV error for the line
+                dddvrms[i] = 1 / np.sqrt(np.sum((1 / dddvrms_pix ** 2)))
+                dddv[i] = et.sum(diff_segment * ddd_segment) / np.sum(ddd_segment ** 2)
+
+
+
 
                 #ratio of expected VS actual RMS in difference of model vs line
                 tbl['RMSRATIO'][i] = et.nanstd(diff_segment)/mean_rms
@@ -443,8 +469,13 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
         tbl['RV'] = -rv_finale # express to have sign fine relative to convention
         tbl['DVRMS'] = dvrms
+
         tbl['DDV'] = ddv
         tbl['DDVRMS'] = ddvrms
+
+        tbl['DDDV'] = ddv
+        tbl['DDDVRMS'] = ddvrms
+
 
         systemic_all[ifile] = rv-BERV
 

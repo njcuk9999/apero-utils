@@ -396,8 +396,8 @@ def sed_ratio(sp1,sp2,doplot = False):
     sp2b[invalid] = np.nan
 
     index = np.arange(128)*32+16
-    b1 = np.nansum(np.reshape(sp1b, [128, 32]), axis=1)
-    b2 = np.nansum(np.reshape(sp2b, [128, 32]), axis=1)
+    b1 = np.nansum(np.reshape(sp1b, [128,32]), axis=1)
+    b2 = np.nansum(np.reshape(sp2b, [128,32]), axis=1)
 
     invalid = ( (b1!=0)*(b2!=0) ) == False
     b1[invalid] = np.nan
@@ -405,8 +405,15 @@ def sed_ratio(sp1,sp2,doplot = False):
 
     ratio = b1/b2
 
+    #fit,_ = robust_polyfit(index,ratio,3,3)
+    #return np.polyval(fit,np.arange(len(sp1)))
+
+    #plt.plot(index,ratio)
+    #plt.plot(index,np.polyval(fit,index))
+    #plt.show()
+
     ratio2 = np.zeros_like(ratio)+np.nan
-    for i in range(3,128-4):
+    for i in range(len(ratio)):
         if np.isfinite(ratio[i]):
             i1 = i-3
             i2 = i+4
@@ -420,7 +427,6 @@ def sed_ratio(sp1,sp2,doplot = False):
         return np.zeros_like(sp1)+nanmedian(ratio2)
     else:
         return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
-
 
 
 

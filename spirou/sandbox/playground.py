@@ -155,3 +155,86 @@ if False:
     ax[0].set(xlabel = 'MJDATE', ylabel = 'DV [m/s]',title = 'FP velocity')
     ax[1].set(xlabel = 'MJDATE', ylabel = 'DDV [(m/s)^2]',title= '2nd derivative')
     plt.show()
+
+if True:
+    tbl = compilblrv('FP',force = True)
+    tbl['SED'] = np.zeros(len(tbl), dtype = bool)
+
+    for i in range(len(tbl)):
+        if 'sed' in tbl['LOCAL_FILE_NAME'][i]:
+            tbl['SED'][i] = True
+
+    #g1 = tbl['CDBWAVE'] == '257146F1T2c_pp_e2dsff_C_wave_night_C.fits'
+    #g2 = ~g1
+
+    key0 = 'per_epoch_mean_H_1532-2556'
+    #key1 = 'per_epoch_mean_Y_0-2044'
+    #key2 = 'per_epoch_mean_Y_1532-2556'
+    #key3 = 'per_epoch_mean_Y_2044-4088'
+    #key4 = 'per_epoch_mean_H_0-2044'
+    #key5 = 'per_epoch_mean_H_2044-4088'
+
+    #plt.errorbar(tbl['per_epoch_mean_H'][g1],tbl[key1][g1] - tbl[key2][g1], fmt='.', alpha=0.5,
+    #          yerr=tbl['per_epoch_err_H'][g1],color = 'red')
+    #plt.errorbar(tbl['per_epoch_mean_H'][g2], tbl[key1][g2] - tbl[key2][g2], fmt='.', alpha=0.5,
+    #          yerr=tbl['per_epoch_err_H'][g2],color = 'blue')
+
+    #plt.plot(tbl['MJDATE'], tbl[key1], '.', alpha=0.5,color = 'red',label = key1)#,
+    #plt.plot(tbl['MJDATE'], tbl[key2], '.', alpha=0.5, color='green',label = key2)  # ,
+    #plt.plot(tbl['MJDATE'], tbl[key3], '.', alpha=0.5, color='blue',label = key3)  # ,
+    #plt.plot(tbl['MJDATE'], tbl[key1][tbl['SED']], 'o', alpha=0.5, color='black',label = 'Y band')  # ,
+    plt.plot(tbl['MJDATE'][tbl['SED']], tbl[key0][tbl['SED']], 'o', alpha=0.5, color='black',label = 'SED')  # ,
+    plt.plot(tbl['MJDATE'][~tbl['SED']], tbl[key0][~tbl['SED']], 'o', alpha=0.5, color='red',label = 'not SED')  # ,
+    #plt.plot(tbl['MJDATE'], tbl[key4] - tbl[key5], 'o', alpha=0.5, color='red',label = 'H band')  # ,
+    #          yerr=tbl['per_epoch_err_H'][g1],color = 'red')
+    #plt.plot(tbl['MJDATE'][g2], tbl[key1][g2], fmt='.', alpha=0.5)#,
+    plt.legend()
+    plt.xlabel('MJDATE')
+    plt.ylabel('dv in H [m/s]')
+    plt.show()
+
+if False:
+    tbl1 = Table.read('2571513o_pp_e2dsff_C_FP_FP_lbl.fits')
+    tbl2 = Table.read('2571514o_pp_e2dsff_C_FP_FP_lbl.fits')
+
+    g = (tbl1['ORDER'] > 35)*(tbl1['ORDER'] < 38)*(tbl1['DVRMS']>1)*(tbl1['DVRMS']<100)
+    tbl1 = tbl1[g]
+    tbl2 = tbl2[g]
+
+
+    fig,ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
+    ax[0].plot(tbl1['XPIX'],tbl1['RV'] - tbl2['RV'],'.',alpha = 0.5)#, yerr =tbl1['DVRMS']  )
+    ax[0].plot([0,4096],[0,0],color = 'red')
+    ax[0].set(xlabel = 'position in pix',ylabel = 'dv [m/s]')
+
+
+    ax[1].plot(tbl1['XPIX'],tbl1['DDV'] - tbl2['DDV'],'.',alpha = 0.5)#, yerr =tbl1['DVRMS']  )
+    ax[1].plot([0,4096],[0,0],color = 'red')
+    ax[1].set(xlabel = 'position in pix',ylabel = 'ddv ')
+
+    plt.show()
+
+    plt.xlabel('MJDATE')
+    plt.ylabel('dv in H left/right [m/s]')
+    plt.show()
+
+if False:
+    tbl1 = Table.read('2571513o_pp_e2dsff_C_FP_FP_lbl.fits')
+    tbl2 = Table.read('2571514o_pp_e2dsff_C_FP_FP_lbl.fits')
+
+    g = (tbl1['ORDER'] > 40)*(tbl1['ORDER'] < 45)*(tbl1['DVRMS']>1)*(tbl1['DVRMS']<100)
+    tbl1 = tbl1[g]
+    tbl2 = tbl2[g]
+
+
+    fig,ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
+    ax[0].plot(tbl1['XPIX'],tbl1['RV'] - tbl2['RV'],'.',alpha = 0.5)#, yerr =tbl1['DVRMS']  )
+    ax[0].plot([0,4096],[0,0],color = 'red')
+    ax[0].set(xlabel = 'position in pix',ylabel = 'dv [m/s]')
+
+
+    ax[1].plot(tbl1['XPIX'],tbl1['DDV'] - tbl2['DDV'],'.',alpha = 0.5)#, yerr =tbl1['DVRMS']  )
+    ax[1].plot([0,4096],[0,0],color = 'red')
+    ax[1].set(xlabel = 'position in pix',ylabel = 'ddv ')
+
+    plt.show()

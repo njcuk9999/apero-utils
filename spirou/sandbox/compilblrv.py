@@ -26,7 +26,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
     # default keywords to be included in the compilation of per-object RVs
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
-            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT','SBRHB1_P','SBRHB2_P']
+            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT','SBRHB1_P','SBRHB2_P','SBCDEN_P','SPEMSNR','SNRGOAL',
+            'EXTSN035']
     keys = np.array(keys)
 
     if (not os.path.isfile(outname)) or force:
@@ -44,6 +45,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 tbl['per_epoch_err'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDV'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDVRMS'] = np.zeros_like(scifiles, dtype = float)
+                tbl['LOCAL_FILE_NAME'] = scifiles
 
                 # adding keys from the input file
                 for key in keys:
