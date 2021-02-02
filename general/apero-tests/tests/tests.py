@@ -11,6 +11,7 @@ from typing import Optional, Union, List, Tuple
 
 import pandas as pd
 from apero.core import constants
+from apero.core.instruments.spirou.recipe_definitions import recipes
 from astropy.io import fits
 from astropy.table import Table
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -19,11 +20,13 @@ from .log import Log
 from . import TEMPLATEDIR, OUTDIR
 from . import utils as ut
 
+RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
+
 
 class Test(ABC):
     """Test."""
 
-    def __init__(self, inst: str = 'SPIROU', setup: Optional[str] = None):
+    def __init__(self, recipe: Optional[str] = None, setup: Optional[str] = None):
         """__init__.
 
         :param inst: Instrument name used in APERO (Default is SPIROU).
@@ -31,7 +34,8 @@ class Test(ABC):
         :param setup: Path to apero setup. Using DRS_UCONFIG if None.
         :type setup: Optional[str]
         """
-        self._params = constants.load(inst)
+        self.recipe = RECIPE_DICT[recipe]
+        self._params = self.recipe.drs_params
 
         # setup path
         if setup is None:
@@ -39,44 +43,9 @@ class Test(ABC):
         else:
             self._setup = setup
 
-        self._instrument = self.params['INSTRUMENT']  # instrument
+        self._instrument = self.recipe.instrument
 
         self._date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # test date
-
-    # =========================================================================
-    # Properties
-    # =========================================================================
-    @property
-    def setup(self) -> str:
-        """setup.
-
-        :rtype: str
-        """
-        return self._setup
-
-    @property
-    def instrument(self) -> str:
-        """instrument.
-
-        :rtype: str
-        """
-        return self._instrument
-
-    @property
-    def params(self) -> constants.param_functions.ParamDict:
-        """params.
-
-        :rtype: constants.param_functions.ParamDict
-        """
-        return self._params
-
-    @property
-    def date(self) -> str:
-        """date.
-
-        :rtype: str
-        """
-        return self._date
 
     # =========================================================================
     # Public methods
@@ -120,11 +89,6 @@ class Test(ABC):
 
     @property
     @abstractmethod
-    def recipe(self) -> str:
-        """Recipe checked by the tests"""
-
-    @property
-    @abstractmethod
     def output_list(self) -> List[str]:
         """List of output string patterns
 
@@ -136,14 +100,6 @@ class Test(ABC):
     @abstractmethod
     def fibers(self) -> Optional[List[str]]:
         """Fibers to search in outputs"""
-
-    @property
-    @abstractmethod
-    def ismaster(self) -> bool:
-        """Is the test for a master recipe.
-
-        :rtype: bool
-        """
 
     @abstractmethod
     def runtest(self):
@@ -370,7 +326,7 @@ class CalibTest(Test):
             master_mask = self.master_calib_df.MASTER
             if master_mask.sum() == 0:
                 return pd.Series(0, index=self.calibdb_list)
-            
+
             else:
                 master_calib_group = self.master_calib_df[master_mask].groupby('KEY')
                 return master_calib_group.size()

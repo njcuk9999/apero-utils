@@ -62,6 +62,7 @@ class BadPixTest(CalibTest):
 
         :rtype: str
         """
+        # TODO: Use IDs derived from recipe info (name, master)
         return 'badpixel_test1'
 
     @property
