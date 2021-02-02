@@ -14,7 +14,7 @@ def xpand_mask(mask1,mask2):
         sum_prev = np.nansum(mask1)
     return mask1
 
-def read_smart_cosmic(file, header = False, variance_cuts = [100,50], intercept_cuts = [50,10]):
+def read_smart_cosmic(file, header = False, variance_cuts = 100, intercept_cuts = 50):
 
     ron = 30.0 # super-pessimistic noise estimate. Includes uncorrected common noise
 
@@ -42,10 +42,10 @@ def read_smart_cosmic(file, header = False, variance_cuts = [100,50], intercept_
     #fits.writeto('nsig2_slope.fits',nsig2, overwrite = True)
 
 
-    mask1 = nsig2>variance_cuts[0]
-    mask2 = nsig2>variance_cuts[1]
+    mask_slope_variance = nsig2>variance_cuts#[0]
+    #mask2 = nsig2>variance_cuts[1]
     # mask of where variance is bad
-    mask_slope_variance = xpand_mask(mask1,mask2)
+    #mask_slope_variance = xpand_mask(mask1,mask2)
 
     # set to NaN bad pixels
     im[mask_slope_variance] = np.nan
@@ -63,11 +63,11 @@ def read_smart_cosmic(file, header = False, variance_cuts = [100,50], intercept_
     # express as variance
     nsig2 = intercept**2
 
-    mask1 = nsig2>intercept_cuts[0]
-    mask2 = nsig2>intercept_cuts[1]
+    mask_intercept_deviation = nsig2>intercept_cuts#[0]
+    #mask2 = nsig2>intercept_cuts[1]
 
     # find spurious pixels
-    mask_intercept_deviation = xpand_mask(mask1,mask2)
+    #mask_intercept_deviation = xpand_mask(mask1,mask2)
     im[mask_intercept_deviation] = np.nan
 
     #fits.writeto('nsig2_intercept.fits',nsig2, overwrite = True)
