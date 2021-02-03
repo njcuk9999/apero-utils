@@ -39,14 +39,10 @@ def read_smart_cosmic(file, header = False, variance_cuts = 100, intercept_cuts 
     # number of sigma away from bulk of expected-to-observed variance
     nsig2 /= np.nanpercentile(np.abs(nsig2),68) # 1-sigma
 
-    #fits.writeto('nsig2_slope.fits',nsig2, overwrite = True)
-
 
     mask_slope_variance = nsig2>variance_cuts#[0]
-    #mask2 = nsig2>variance_cuts[1]
-    # mask of where variance is bad
-    #mask_slope_variance = xpand_mask(mask1,mask2)
 
+    # mask of where variance is bad
     # set to NaN bad pixels
     im[mask_slope_variance] = np.nan
 

@@ -8,7 +8,18 @@ from astropy.table import Table
 import matplotlib.pyplot as plt
 
 
-def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False, get_cumul_plot = False):
+def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
+               get_cumul_plot = False, fcut = 0.95):
+
+    """
+    obj_sci = 'GL388'
+    obj_template = None
+    doplot = True
+    force = True
+    common_weights = True
+    get_cumul_plot = True
+
+    """
 
     if doplot or get_cumul_plot:
         # avoids conflicts if one uses ssh without graphic displays
@@ -33,6 +44,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
     if (not os.path.isfile(outname)) or force:
         # keys to be transfered to the fits table
         scifiles = np.array(glob.glob('lblrv/2*{0}_{1}_lbl.fits'.format(obj_sci, obj_template)))
+        scifiles = scifiles[np.argsort(scifiles)]
 
         if get_cumul_plot:
             fix, ax = plt.subplots(nrows = 2, ncols =1)
@@ -45,6 +57,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 tbl['per_epoch_err'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDV'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDVRMS'] = np.zeros_like(scifiles, dtype = float)
+                tbl['per_epoch_DDDV'] = np.zeros_like(scifiles, dtype = float)
+                tbl['per_epoch_DDDVRMS'] = np.zeros_like(scifiles, dtype = float)
                 tbl['LOCAL_FILE_NAME'] = scifiles
 
                 # adding keys from the input file
@@ -71,6 +85,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 dvrms = np.zeros([len(scifiles), np.sum(g)])
                 DDV = np.zeros([len(scifiles),np.sum(g)])
                 DDVRMS = np.zeros([len(scifiles), np.sum(g)])
+                DDDV = np.zeros([len(scifiles),np.sum(g)])
+                DDDVRMS = np.zeros([len(scifiles), np.sum(g)])
 
             # keep track in two big matrices of the rv and corresponding errors
             tbl_per_line = tbl_per_line_ini[g]
@@ -111,6 +127,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
             DDV[i] = tbl_per_line['DDV']
             DDVRMS[i] = tbl_per_line['DDVRMS']
+            DDDV[i] = tbl_per_line['DDDV']
+            DDDVRMS[i] = tbl_per_line['DDDVRMS']
 
         if get_cumul_plot:
             ax[0].set(xlabel = 'Velocity [km/s]',ylabel = 'Distribution function of RVs')
@@ -120,14 +138,23 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
 
         # a line must be present >80% of the line
-        valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > 0.8
+        valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > fcut
         rvs = rvs[:,valid_lines]
         dvrms = dvrms[:,valid_lines]
         tbl_per_line_ini = tbl_per_line_ini[valid_lines]
-        DDV = DDV[:,valid_lines]
-        DDVRMS = DDVRMS[:,valid_lines]
+        DDV  = DDV[:,valid_lines]
+        DDDV = DDDV[:,valid_lines]
+        DDVRMS  = DDVRMS[:,valid_lines]
+        DDDVRMS = DDDVRMS[:,valid_lines]
+
+        sig =  np.nanpercentile((rvs- np.nanmedian(rvs))/dvrms,[16,84],axis=0)
+        sig = (sig[1]-sig[0])/2
+
 
         if common_weights:
+            for i in range(rvs.shape[1]):
+                dvrms[:, i] *= sig[i]
+
             # produce a map of median change in error, liked to SNR changes
             err_ratio = np.zeros(dvrms.shape)
             # first guess at median per-line error
@@ -153,6 +180,11 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
             tbl['per_epoch_DDV'][i] = guess
             tbl['per_epoch_DDVRMS'][i] = bulk_error
+
+            guess,bulk_error  = et.odd_ratio_mean(DDDV[i],DDDVRMS[i])
+
+            tbl['per_epoch_DDDV'][i] = guess
+            tbl['per_epoch_DDDVRMS'][i] = bulk_error
 
         # plot or not
         #if doplot:

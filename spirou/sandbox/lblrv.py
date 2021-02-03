@@ -190,7 +190,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     dddflux = np.gradient(ddflux) / np.gradient(np.log(template['wavelength'])) / constants.c
 
     # we create the spline of the template to be used everywhere further down
-    valid = np.isfinite(flux) * np.isfinite(dflux) * np.isfinite(ddflux)
+    valid = np.isfinite(flux) * np.isfinite(dflux) * np.isfinite(ddflux)* np.isfinite(dddflux)
 
     # template removed from its systemic velocity, the spline is redefined for good
     #
@@ -198,6 +198,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     # Be careful to update the 'valid' mask above
     spline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),flux[valid],k=3,ext=1)
     dspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),dflux[valid],k=3,ext=1)
+
     ddspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),ddflux[valid],k=3,ext=1)
     dddspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),dddflux[valid],k=3,ext=1)
 
@@ -386,7 +387,6 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                 # keep track of 2nd derivative
                 dd_segment = ddmodel_ord[imin:imax + 1] * weight_mask
-
                 ddd_segment = dddmodel_ord[imin:imax + 1] * weight_mask
 
 
@@ -394,12 +394,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                 diff_segment = diff[imin:imax+1]*weight_mask
 
-
-
-
                 sum_weight_mask = et.sum(weight_mask)  # we need this value 4 times
                 mean_rms = et.sum(rms_ord[imin:imax+1]*weight_mask)/sum_weight_mask
-
 
                 # 1st derivative
                 # From Bouchy 2001 equation, RV error for each pixel
@@ -423,8 +419,6 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 # RV error for the line
                 dddvrms[i] = 1 / np.sqrt(np.sum((1 / dddvrms_pix ** 2)))
                 dddv[i] = et.sum(diff_segment * ddd_segment) / np.sum(ddd_segment ** 2)
-
-
 
 
                 #ratio of expected VS actual RMS in difference of model vs line
@@ -459,8 +453,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             rv_finale = np.array(dv + rv - BERV)
             rv += rv_mean
 
-            if ite_rv == 1:
-                rv1 = np.array(rv_finale)
+            #if ite_rv == 1:
+            #    rv1 = np.array(rv_finale)
 
 
             if np.abs(rv_mean) < bulk_error:
@@ -470,11 +464,13 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         tbl['RV'] = -rv_finale # express to have sign fine relative to convention
         tbl['DVRMS'] = dvrms
 
+        # adding to the fits table the 2nd derivative projection
         tbl['DDV'] = ddv
         tbl['DDVRMS'] = ddvrms
+        # adding to the fits table the 3rd derivative projection
 
-        tbl['DDDV'] = ddv
-        tbl['DDDVRMS'] = ddvrms
+        tbl['DDDV'] = dddv
+        tbl['DDDVRMS'] = dddvrms
 
 
         systemic_all[ifile] = rv-BERV

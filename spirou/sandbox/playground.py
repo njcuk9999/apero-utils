@@ -55,8 +55,6 @@ if False:
     plt.show()
 
     print( np.mean(tbl2['ERR']),np.nanstd(tbl2['RV']))
-
-
 if False:
     files = np.array(glob.glob('tbllblrv_G*.csv'))
     #files = np.append(files, 'tbllblrv_FP_FP.csv')
@@ -95,7 +93,6 @@ if False:
     plt.ylabel('dv [m/s]')
     plt.legend()
     plt.show()
-
 # rossiter 58648.526577
 if False:
     tbl = Table.read('tbllblrv_TRAPPIST-1_TRAPPIST-1.csv')
@@ -131,8 +128,6 @@ if False:
     plt.ylabel('dv [m/s]')
     plt.legend()
     plt.show()
-
-
 if False:
     force = False
     tbl1 =   compilblrv('FP',common_weights = True,force = force)
@@ -141,8 +136,6 @@ if False:
     plt.plot(tbl1['MJDATE'],tbl1['per_epoch_mean_H_2044-4088'],'r.')
     plt.plot(tbl2['MJDATE'],tbl2['per_epoch_mean_H_2044-4088'],'g.')
     plt.show()
-
-
 if False:
     tbl = Table.read('tbllblrv_FP_FP.csv')
 
@@ -155,8 +148,7 @@ if False:
     ax[0].set(xlabel = 'MJDATE', ylabel = 'DV [m/s]',title = 'FP velocity')
     ax[1].set(xlabel = 'MJDATE', ylabel = 'DDV [(m/s)^2]',title= '2nd derivative')
     plt.show()
-
-if True:
+if False:
     tbl = compilblrv('FP',force = True)
     tbl['SED'] = np.zeros(len(tbl), dtype = bool)
 
@@ -192,7 +184,6 @@ if True:
     plt.xlabel('MJDATE')
     plt.ylabel('dv in H [m/s]')
     plt.show()
-
 if False:
     tbl1 = Table.read('2571513o_pp_e2dsff_C_FP_FP_lbl.fits')
     tbl2 = Table.read('2571514o_pp_e2dsff_C_FP_FP_lbl.fits')
@@ -217,7 +208,6 @@ if False:
     plt.xlabel('MJDATE')
     plt.ylabel('dv in H left/right [m/s]')
     plt.show()
-
 if False:
     tbl1 = Table.read('2571513o_pp_e2dsff_C_FP_FP_lbl.fits')
     tbl2 = Table.read('2571514o_pp_e2dsff_C_FP_FP_lbl.fits')
@@ -238,3 +228,17 @@ if False:
     ax[1].set(xlabel = 'position in pix',ylabel = 'ddv ')
 
     plt.show()
+
+obj_sci = 'GL846'
+obj_template = 'GL846'
+doplot = True
+force = False
+
+tbl1 = compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = True,
+               get_cumul_plot = False, fcut = 0.80)
+
+plt.plot(tbl1['per_epoch_mean'], 'r.')
+plt.plot(tbl2['per_epoch_mean'], 'g.')
+plt.plot(tbl1['per_epoch_mean'] - tbl2['per_epoch_mean'], 'k.')
+
+plt.show()
