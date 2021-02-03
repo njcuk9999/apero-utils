@@ -10,9 +10,10 @@ Created on 2021-02-02
 @author: cook
 """
 from astropy.io import fits
-import glob
+import numpy as np
+import os
 from pathlib import Path
-import sys
+from tqdm import tqdm
 from typing import List, Union
 
 from apero.core import constants
@@ -37,6 +38,8 @@ FILE_EXT = '.fits'
 # only need to test one file of each type, define here how to find similar
 # files (anything after this key that is identical is the same file)
 COMMON_KEY = '_pp'
+# output filename
+output_file = 'output_analysis.txt'
 
 
 # =============================================================================
@@ -93,6 +96,7 @@ class FitsExtension:
         output += ['         DIM:    {0}'.format(self.dimensions)]
         return output
 
+
 class FitsInfo:
     def __init__(self, filename):
         self.filename = Path(filename)
@@ -140,24 +144,70 @@ class FitsInfo:
         return output
 
 
+def find_unique_files(test_path: str) -> List[str]:
+    # store all files
+    allfiles, common_texts = [], []
+    # get all files in this path matching file extension
+    for root, dirs, files in os.walk(test_path):
+        for filename in files:
+            # cond1: filename ends with extension
+            cond1 = filename.endswith(FILE_EXT)
+            # cond2: filename contains common key
+            cond2 = COMMON_KEY in filename
+            # add to all files if conditions are satisfied
+            if cond1 and cond2:
+                # append file
+                allfiles.append(os.path.join(root, filename))
+                # get comment text for all files
+                common_suffix = filename.split(COMMON_KEY)[-1]
+                # add to array
+                cargs = [COMMON_KEY, common_suffix]
+                common_texts.append('{0}{1}'.format(*cargs))
+    # only keep one of each type of file
+    unique_texts = np.unique(common_texts)
+    unique_files = []
+    # find first file with each unique text
+    for unique_text in unique_texts:
+        # get position
+        pos = np.where(np.array(common_texts) == unique_text)[0][0]
+        # add to unique files
+        unique_files.append(allfiles[pos])
+    # return unique_files
+    return unique_files
+
+
 # =============================================================================
 # Start of code
 # =============================================================================
 if __name__ == "__main__":
-
     # get parameters
     params = constants.load('SPIROU')
-
+    # storage of strings
+    outstrings = ''
     # loop around directories
     for test_dir in test_dirs:
+        # log progress
+        print('\nProcessing {0} directory\n'.format(test_dir))
         # get path using params
         test_path = params[test_dirs[test_dir]]
-        # get all files in this path matching file extension
-        # TODO: Need to generate some data to test this!
-        allfiles = glob.glob(test_path + '*' + FILE_EXT, recursive=True)
+        # add header to outstrings
+        outstrings += '\n\n' + '=' * 100
+        outstrings += '\n\t {0}: {1}'.format(test_dir, test_path)
+        outstrings += '\n' + '=' * 100
+        # find unique examples of each "COMMON KEY" file type
+        ufiles = find_unique_files(str(test_path))
+        # loop around each file and make fits instance
+        for ufile in tqdm(ufiles):
+            # make fits info instance
+            fitsfile = FitsInfo(ufile)
+            # store display
+            outstrings += '\n\n' + fitsfile.pprint()
+    # log progress
+    print('\nSaving analysis to {0}'.format(output_file))
+    # save outstrings to file
+    with open(output_file, 'w') as ofile:
+        ofile.write(outstrings)
 
-
-    pass
 
 # =============================================================================
 # End of code
