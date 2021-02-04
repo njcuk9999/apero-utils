@@ -5,7 +5,7 @@ from scipy.optimize import curve_fit
 from astropy.io import fits
 from astropy.table import Table
 import warnings
-import numba
+#import numba
 from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
@@ -440,8 +440,11 @@ def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
     # odd_bad -> probability that the point is bad
     #
     # nmax -> number of iterations
+    keep = np.isfinite(value)*np.isfinite(err)
+    value = value[keep]
+    err = err[keep]
 
-    guess = nanmedian(value)
+    guess = np.nanmedian(value)
 
     nite = 0
     while (nite < nmax):

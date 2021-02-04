@@ -37,7 +37,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
     # default keywords to be included in the compilation of per-object RVs
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
-            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT','SBRHB1_P','SBRHB2_P','SBCDEN_P','SPEMSNR','SNRGOAL',
+            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT','SBRHB1_P','SBRHB2_P','SBCDEN_P','SNRGOAL',
             'EXTSN035']
     keys = np.array(keys)
 
@@ -217,9 +217,9 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
 
         # keeping track of the per-band RV measurements
-        bands = ['Y','J','H','K']
-        blue_end = [900,1150,1400,1900]
-        red_end = [1150,1400,1900,2500]
+        bands =   ['Y',  'gapYJ',  'J',    'gapJH',  'H',    'gapHK',   'K',   'redK']
+        blue_end =[ 900.0,1113.400,1153.586,1354.422,1462.897,1808.544,1957.792,2343.105]
+        red_end = [1113.4,1153.586,1354.422,1462.897,1808.544,1957.792,2343.105,2500.000]
         suffix = ['', '_0-2044', '_2044-4088',  '_1532-2556']
 
 

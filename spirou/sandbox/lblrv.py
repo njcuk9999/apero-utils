@@ -351,7 +351,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                     if doplot_debug:
                         if (iord[i] == 35)*(ite_rv == 1):
-                            plt.plot(ww_ord,sp_ord, color = 'grey', linewidth=6, alpha = 0.3)
+                            plt.plot(ww_ord,model_ord, color = 'grey', linewidth=3, alpha = 0.3,label = 'template')
 
 
                 imin, imax = wave2pix([wave_start[i], wave_end[i]])
@@ -379,8 +379,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                     if (iord[i] == 35)*(ite_rv == 1):
                         color = (['red','green','blue'])[i % 3]
                         plt.plot(ww_ord[imin:imax+1],sp_ord[imin:imax+1],color = color)
-                        for ii in range(imax-imin+1):
-                            plt.plot(ww_ord[imin+ii],sp_ord[imin+ii] ,alpha = weight_mask[ii],color = color,marker = '.')
+                        #for ii in range(imax-imin+1):
+                        #    plt.plot(ww_ord[imin+ii],sp_ord[imin+ii] ,alpha = weight_mask[ii],color = color,marker = '.')
 
                 # derivative of the segment
                 d_segment = dmodel_ord[imin:imax+1]*weight_mask
@@ -432,6 +432,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
             if doplot_debug:
                 if ite_rv ==1:
+                    plt.xlabel('Wavelength [nm]')
+                    plt.ylabel('Arbitrary flux')
                     plt.show()
 
             nsig = dv / dvrms
