@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>APERO Tests</title>
+    <style>
+      table {
+        width:50%;
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+      th, td {
+        padding: 15px;
+        text-align: left;
+      }
+      #t01 tr:nth-child(even) {
+        background-color: #eee;
+      }
+      #t01 tr:nth-child(odd) {
+       background-color: #fff;
+      }
+      #t01 th {
+        background-color: white;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <img src='../images/apero_logo.png' alt='APERO'>
+    <font size="-1">A PipelinE to Reduce Observations</font>
+
+    <h3>APERO Tests Summary Page</h3>
+    <p><b>Setup: {{ setup }}</b><br>
+    <p><b>Instrument: {{ instrument }}</b><br>
+    <p><b>Date: {{ date_final }}</b><br>
+    <p><b>Running Time: {{ delta_date }}</b></p>
+    <br></br>
+
+    <table id="t01">
+      <colgroup>
+         <col span="1" style="width: 50%;">
+         <col span="1" style="width: 40%;">
+         <col span="1" style="width: 10%;">
+      </colgroup>
+      <tr>
+        <th>Recipe Test</th>
+        <th>Summary</th>
+        <th>Details</th>
+      </tr>
+      {% for test_dict in summary_list %}
+      <tr>
+        <td>{{ test_dict.name }}</td>
+        {% if test_dict.ntotal is not none %}
+          <td>
+            Passed: {{ test_dict.passed }}/{{ test_dict.ntotal }}<br>
+            Passed with conditions: {{ test_dict.ncond }}/{{ test_dict.ntotal }}<br>
+            Failed: {{ test_dict.nfailed }}/{{ test_dict.ntotal }}<br>
+          </td>
+        {% else %}
+          <td></td>
+        {% endif %}
+        {% if test_dict.color is not none %}
+          <td bgcolor={{ test_dict.color }}><a href="{{ test_dict.inspect }}">Inspect</a></td>
+        {% else %}
+          <td></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+    </table>
+
+  </body>
+</html>

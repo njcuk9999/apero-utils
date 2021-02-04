@@ -1,0 +1,320 @@
+"""
+Check if wavelength calib worked fine.
+
+Tests preformed
+check1: how many recipes were run (cal_wave_night_{instrument} in log.fits)?
+        how many in the master directory?
+check2: how many recipes were run (cal_extract_{instrument} in log.fits)?
+check3: how many of each output do we have?
+        output1: {ODOMETER_CODE}_pp_e2ds_{FIBER}.fits
+        output2: {ODOMETER_CODE}_pp_e2dsff_{FIBER}.fits
+        output3: {ODOMETER_CODE}_pp_s1d_w_{FIBER}.fits
+        output4: {ODOMETER_CODE}_pp_s1d_v_{FIBER}.fits
+        output5: {ODOMETER_CODE}_pp_e2dsff_wave_night_{FIBER}.fits
+        output6: {ODOMETER_CODE}_pp_e2dsff_wave_hc_{FIBER}.fits
+        output7: {ODOMETER_CODE}_pp_e2dsff_wave_fp_{FIBER}.fits
+        output8: {ODOMETER_CODE}_pp_e2dsff_ccf_{FIBER}.fits
+check4: how many of each unique output do we have?
+        output1: {ODOMETER_CODE}_pp_e2ds_{FIBER}.fits
+        output2: {ODOMETER_CODE}_pp_e2dsff_{FIBER}.fits
+        output3: {ODOMETER_CODE}_pp_s1d_w_{FIBER}.fits
+        output4: {ODOMETER_CODE}_pp_s1d_v_{FIBER}.fits
+        output5: {ODOMETER_CODE}_pp_e2dsff_wave_night_{FIBER}.fits
+        output6: {ODOMETER_CODE}_pp_e2dsff_wave_hc_{FIBER}.fits
+        output7: {ODOMETER_CODE}_pp_e2dsff_wave_fp_{FIBER}.fits
+        output8: {ODOMETER_CODE}_pp_e2dsff_ccf_{FIBER}.fits
+stop1:  check4 == check2?
+check5: using the log.fits how many files failed one or more QC?
+        Which odometers? Which nights? Which QC?
+check6: plot the different QCs as a function of time.
+check7: using the log.fits how many files failed to finish? Which odometers?
+        Which nights? Why (using the ERRORS and LOGFILE columns)?
+check8: how many entry WAVE_{FIBER} in master_calib_{INSTRUMENT}.txt?
+check9: for each calib entry how many are in the calibDB?
+stop2:  check9 == check8?
+check10: which previous calibrations (bad pixel, loc, shape master, shape,
+        flat/blaze) were used? Are they from this night? How far away is the
+        calibration obs time from the loc input file obs time?
+
+@author: charles
+"""
+from typing import List, Optional, Union
+
+import glob
+import os
+from astropy.io import fits
+import numpy as np
+import pandas as pd
+from . import utils as ut
+
+from .tests import CalibTest
+
+
+class WaveTest(CalibTest):
+    """WaveTest."""
+    def __init__(self,
+                 inst: str = 'SPIROU',
+                 setup: Optional[str] = None,
+                 logdir: Union[str, list] = 'night'):
+        """__init__.
+
+        :param inst:
+        :type inst: str
+        :param setup:
+        :type setup: Optional[str]
+        :param logdir:
+        :type logdir: Union[str, list]
+        """
+        super().__init__(inst=inst, setup=setup, logdir=logdir)
+
+    # =========================================================================
+    # Specific properties
+    # =========================================================================
+    @property
+    def name(self) -> str:
+        """name.
+
+        :rtype: str
+        """
+        return 'Nightly Wavelength Solution Recipe #1'
+
+    @property
+    def test_id(self) -> str:
+        """test_id.
+
+        :rtype: str
+        """
+        return 'wavelength_test1'
+
+    @property
+    def output_list(self) -> List[str]:
+        """List of output string patterns
+
+        :return: output_list
+        :rtype: list[str]
+        """
+
+        return ['*_pp_e2dsff_{FIBER}_wave_night_{FIBER}.fits',
+                '*_pp_e2dsff_{FIBER}_wave_hclines_{FIBER}.fits',
+                '*_pp_e2dsff_{FIBER}_wave_fplines_{FIBER}.fits',
+                '*_pp_e2dsff_{FIBER}ccf_{FIBER}.fits']
+
+    @property
+    def calibdb_list(self) -> List[str]:
+        """List of calibDB entries
+
+        :return: calibdb_list
+        :rtype: list[str]
+        """
+        return ['WAVE_{FIBER}']
+
+    @property
+    def previous_calibs(self) -> List[str]:
+        """previous_calibs.
+
+        :rtype: List[str]
+        """
+        return [
+            'CDBBAD', 'CDBBACK', 'CDBORDP', 'CDBLOCO', 'CDBSHAPX', 'CDBSHAPY',
+            'CDBSHAPL', 'CDBFLAT', 'CDBBLAZE', 'CDBTHERM'
+        ]
+
+    @property
+    def recipe(self) -> List[str]:
+        """Recipe name
+
+        :return: output_list
+        :rtype: list[str]
+        """
+        return 'cal_wave_night_{}'.format(self.instrument.lower())
+
+    @property
+    def ismaster(self) -> bool:
+        """Is the test for a master recipe.
+
+        :rtype: bool
+        """
+        return False
+
+    @property
+    def fibers(self) -> List[str]:
+        """fibers.
+
+        :rtype: List[str]
+        """
+        return ['AB', 'A', 'B', 'C']
+
+    @property
+    def calls_extract(self) -> bool:
+        """Does this method call extract.
+
+        :rtype: bool
+        """
+        return True
+
+    # =========================================================================
+    # Overwritten parent methods
+    # =========================================================================
+
+    def get_missing_previous_calib(self) -> pd.DataFrame:
+        """get_missing_calib.
+
+        :rtype: pd.DataFrame
+        """
+
+        # Load header of all output files (one output pattern only)
+        if not self.output_files.empty:
+            full_paths = (self.reduced_path
+                          + os.path.sep
+                          + self.output_files.index.get_level_values('DIRECTORY')
+                          + os.path.sep
+                          + self.output_files)
+            headers = full_paths.loc[self.output_list[0]].apply(fits.getheader)
+            header_df = pd.DataFrame(headers.tolist(), index=headers.index)
+
+            # Keep only matching PIDs
+            # NOTE: The output PID match the PID from cal_extract and not self.recipe
+            # This will be corrected in 0.7
+            log_pid_dir = self.log_recipe.df.reset_index().set_index('PID').DIRECTORY
+
+            # make sure no duplicate PID per night
+            log_pid_dir = log_pid_dir.reset_index().drop_duplicates().set_index(
+                                                                        'PID'
+                                                                        ).DIRECTORY
+            log_nights = log_pid_dir.loc[header_df.DRSPID]  # log nights for PIDs
+            header_df = header_df[(log_nights == header_df.index).values]
+
+            # Keep only calib columns
+            used_calibs = [p
+                           for p in self.previous_calibs
+                           if p in header_df.columns]
+            header_df = header_df[used_calibs]  # Keep calibs
+
+            # Get masks (used and exists) and project condition on nights (axis=1)
+            none_mask = (header_df == 'None')  # calib not used
+            prefix = (self.reduced_path + os.path.sep
+                      + header_df.index + os.path.sep)
+            isfile_mask = header_df.radd(prefix, axis=0).applymap(os.path.isfile)
+            missing_mask = ~(isfile_mask | none_mask)
+
+            # Check nights where 1) used and 2) does not exists for each output
+            missing_calib_all = header_df[missing_mask]
+            missing_calib_list = [missing_calib_all[k]
+                                  for k in missing_calib_all.columns]
+            missing_calib = pd.concat(missing_calib_list).sort_index()
+            missing_calib = missing_calib.dropna()  # 2D mask yields NaNs if false
+            missing_calib.name = 'FILE'
+            missing_calib = missing_calib.reset_index()
+            missing_calib = missing_calib.rename(columns={'DIRECTORY': 'LOC_DIR'})
+
+            # Find calibration nights used
+            pattern = (self.reduced_path
+                       + os.path.sep + '*'
+                       + os.path.sep + missing_calib.FILE)
+            calib_path = pattern.apply(glob.glob).str[0]  # First glob for each
+            calib_dir = calib_path.str.split(os.path.sep).str[-2]
+            missing_calib['CALIB_DIR'] = calib_dir
+        else:
+            missing_calib = pd.DataFrame([], columns=['LOC_DIR', 'FILE', 'CALIB_DIR'])
+
+        return missing_calib
+ 
+    # =========================================================================
+    # Run the full test
+    # =========================================================================
+
+    def runtest(self):
+        """runtest."""
+
+        comments_check1, dup = self.check_duplicates()
+
+        # QC/ENDED
+        comments_check5, inspect_check5 = self.check_qc(ncheck=5)
+        inspect_check6 = self.check_qc_plot(ncheck=6)
+        comments_check7, inspect_check7 = self.check_ended(ncheck=7)
+
+        dict_stop1 = self.stop_output_log(dup, nstop=1)
+
+        # Check for duplicates in calibdb
+        calib_dup_mask = self.master_calib_df.duplicated(keep=False)
+        # master_mask = self.master_calib_df.MASTER  # master recipe
+        calib_dup = self.master_calib_df[calib_dup_mask]
+        calib_dup = calib_dup.set_index('FILE', append=True)
+        ind_names = calib_dup.index.names  # get file and key to count
+        calib_dup['COUNT'] = calib_dup.groupby(ind_names).size()
+        calib_dup = calib_dup.reset_index('FILE')
+        calib_dup = calib_dup.drop_duplicates()
+
+        dict_stop2 = self.stop_calibdb(calib_dup, nstop=2)
+
+        # Check previous calibs to see if missing any
+
+        # No DRSPID in the header. Fixed by Neil, it will be corrected
+        # in the next mini_data run.
+        missing_previous = self.get_missing_previous_calib()
+        comments_check10, inspect_check10 = self.check_previous_calib(
+                                                            missing_previous,
+                                                            ncheck=10)
+
+        html_dict = {
+            # Summary header info
+            'name': self.name,
+            'setup': self.setup,
+            'instrument': self.instrument,
+            'recipe': self.recipe,
+            'date': self.date,
+            'reduced_path': self.reduced_path,
+            'output_list': self.output_list,
+            'calibdb_list': self.calibdb_list,
+            'calibdb_path': self.calibdb_path,
+
+            # check 1 for logs
+            'recipe_num_logfits': self.log_recipe.tot_num,
+
+            # check 2 for logs
+            'recipe_extract_num_logfits': self.log_extract.tot_num,
+
+            # check 3 for outputs
+            'output_num_total': self.output_num_total,
+
+            # check 4
+            'output_num_unique': self.output_num_unique,
+
+            # stop 1: output==log
+            'dict_stop1': dict_stop1,
+
+            # check 5: QC failed
+            'log_qc_failed': self.log_all.qc_failed,
+            'comments_check5': comments_check5,
+            'inspect_check5': inspect_check5,
+
+            # check 6: QC Plot
+            'inspect_check6': inspect_check6,
+
+            # check 7: not ended
+            'log_ended_false': self.log_all.ended_false,
+            'comments_check7': comments_check7,
+            'inspect_check7': inspect_check7,
+
+            # Check 8: calibdb entries
+            'output_num_entry': self.output_num_entry,
+
+            # Check 9: calibdb outputs
+            'output_num_calibdb': self.output_num_calibdb,
+            'output_dict': self.calib_output_dict,
+
+            # Stop 2: calib output == entries
+            'dict_stop2': dict_stop2,
+
+            # Check10: previous calibrations
+            'missing_previous': missing_previous,
+            'comments_check10': comments_check10,
+            'inspect_check10': inspect_check10,
+        }
+
+        self.gen_html(html_dict)
+
+
+if __name__ == '__main__':
+    test = WaveTest()
+    test.runtest()
