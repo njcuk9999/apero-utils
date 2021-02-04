@@ -5,12 +5,13 @@ import os
 import glob
 import etienne_tools as et
 
-# file = '2517483o_pp_e2dsff_AB.fits' # TRAPPIST-1
+#file = '2517483o_pp_e2dsff_AB.fits' # TRAPPIST-1
 #file = '2512909o_pp_e2dsff_AB.fits' # TOI-1452
 #file = '2502382o_pp_e2dsff_AB.fits' # GL699
 
 # one needs e2dsff_AB and e2dsff_recon_AB in the directory
-files = glob.glob('tellurics/data/251748*o_pp_e2dsff_AB.fits')
+#files = glob.glob('tellurics/data/251748*o_pp_e2dsff_AB.fits')
+files = glob.glob('2516853o_pp_e2dsff_AB.fits')
 
 # constants
 debug = True

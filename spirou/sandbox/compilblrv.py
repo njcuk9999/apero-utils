@@ -6,6 +6,8 @@ import etienne_tools as et
 import numpy as np
 from astropy.table import Table
 import matplotlib.pyplot as plt
+from astropy.time import Time
+
 
 
 def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
@@ -60,6 +62,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 tbl['per_epoch_DDDV'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDDVRMS'] = np.zeros_like(scifiles, dtype = float)
                 tbl['LOCAL_FILE_NAME'] = scifiles
+                tbl['plot_time'] = np.zeros_like(scifiles, dtype = float) # time for matplotlib
 
                 # adding keys from the input file
                 for key in keys:
@@ -74,6 +77,9 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 if key in hdr:
 
                     tbl[key][i] = hdr[key]
+            # for date plotting
+            tbl['plot_time'][i] = Time(hdr['MJDATE'], format='mjd').plot_date - Time(40588, format='mjd').plot_date
+
 
             # read line file
             tbl_per_line_ini = fits.getdata(scifiles[i])
