@@ -62,7 +62,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 tbl['per_epoch_DDDV'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDDVRMS'] = np.zeros_like(scifiles, dtype = float)
                 tbl['LOCAL_FILE_NAME'] = scifiles
-                tbl['plot_time'] = np.zeros_like(scifiles, dtype = float) # time for matplotlib
+                tbl['plot_date'] = np.zeros_like(scifiles, dtype = float) # time for matplotlib
 
                 # adding keys from the input file
                 for key in keys:
@@ -78,7 +78,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
                     tbl[key][i] = hdr[key]
             # for date plotting
-            tbl['plot_time'][i] = Time(hdr['MJDATE'], format='mjd').plot_date - Time(40588, format='mjd').plot_date
+            tbl['plot_date'][i] = Time(hdr['MJDATE'], format='mjd').plot_date - Time(40588, format='mjd').plot_date
 
 
             # read line file
