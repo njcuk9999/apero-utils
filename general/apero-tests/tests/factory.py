@@ -17,6 +17,7 @@ from .leakmaster import LeakMTest
 from .wavelengthmaster import WaveMTest
 from .wavelength import WaveTest
 
+
 # Dictionary of all tests with id and definition
 TESTDICT = {
         # Preprocessing
