@@ -157,6 +157,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         tbl['XPIX'] = xpix #pixel position along array
         tbl['RMSRATIO'] = np.zeros_like(xpix) # ratio of expected VS actual RMS in difference of model vs line
         tbl['NPIXLINE'] = np.zeros_like(xpix,dtype = int) # effective number of pixels in line
+        tbl['MEANXPIX'] = np.zeros_like(xpix,dtype = int) # mean line position in pixel space
+
         # Considering the number of pixels, expected and actual RMS, this is the likelihood that the line is
         # acually valid from a Chi2 test point of view
         tbl['CHI2'] = np.zeros_like(xpix)
@@ -309,7 +311,6 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                     p1 = et.nanpercentile(tmp/rms[ii],[16,84])
                 rms[ii] *= ((p1[1]-p1[0])/2)
 
-
             if ite_rv == 1:
                 # create a dummy array that will contain velocities and corresponding errors
                 dv = np.zeros(len(tbl['WAVE_START']))+np.nan
@@ -374,13 +375,14 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 if ww_ord[imax+1] > wave_end[i]:
                     weight_mask[-1] = 1-( ww_ord[imax] - wave_end[i] )/(ww_ord[imax+1]-ww_ord[imax])
 
+                xpix = np.arange(len(weight_mask))+imin
+                tbl['MEANXPIX'][i] = np.nansum(weight_mask*xpix)/np.nansum(weight_mask)
+
                 # maybe some plots
                 if doplot_debug:
                     if (iord[i] == 35)*(ite_rv == 1):
                         color = (['red','green','blue'])[i % 3]
                         plt.plot(ww_ord[imin:imax+1],sp_ord[imin:imax+1],color = color)
-                        #for ii in range(imax-imin+1):
-                        #    plt.plot(ww_ord[imin+ii],sp_ord[imin+ii] ,alpha = weight_mask[ii],color = color,marker = '.')
 
                 # derivative of the segment
                 d_segment = dmodel_ord[imin:imax+1]*weight_mask
