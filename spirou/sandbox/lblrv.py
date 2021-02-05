@@ -180,7 +180,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     valid = np.isfinite(template['flux'])
     bl = fits.getdata(ref_blaze_file)
     for i in range(bl.shape[0]):
-        bl[i]/=et.nanpercentile(bl[i],90)
+        bl[i]/=np.nanpercentile(bl[i],90)
 
     # get info on template systvel for splining correctly
     systemic_vel = -1000*mask_hdr['SYSTVEL']
