@@ -157,8 +157,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         tbl['XPIX'] = xpix #pixel position along array
         tbl['RMSRATIO'] = np.zeros_like(xpix) # ratio of expected VS actual RMS in difference of model vs line
         tbl['NPIXLINE'] = np.zeros_like(xpix,dtype = int) # effective number of pixels in line
-        tbl['MEANXPIX'] = np.zeros_like(xpix,dtype = int) # mean line position in pixel space
-        tbl['MEANBLAZE'] = np.zeros_like(xpix,dtype = int) # blaze value compared to peak for that order
+        tbl['MEANXPIX'] = np.zeros_like(xpix,dtype = float) # mean line position in pixel space
+        tbl['MEANBLAZE'] = np.zeros_like(xpix,dtype = float) # blaze value compared to peak for that order
 
         # Considering the number of pixels, expected and actual RMS, this is the likelihood that the line is
         # acually valid from a Chi2 test point of view
