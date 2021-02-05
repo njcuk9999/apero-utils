@@ -158,6 +158,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         tbl['RMSRATIO'] = np.zeros_like(xpix) # ratio of expected VS actual RMS in difference of model vs line
         tbl['NPIXLINE'] = np.zeros_like(xpix,dtype = int) # effective number of pixels in line
         tbl['MEANXPIX'] = np.zeros_like(xpix,dtype = int) # mean line position in pixel space
+        tbl['MEANBLAZE'] = np.zeros_like(xpix,dtype = int) # blaze value compared to peak for that order
 
         # Considering the number of pixels, expected and actual RMS, this is the likelihood that the line is
         # acually valid from a Chi2 test point of view
@@ -178,6 +179,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     # we create the spline of the template to be used everywhere further down
     valid = np.isfinite(template['flux'])
     bl = fits.getdata(ref_blaze_file)
+    for i in range(bl.shape[0]):
+        bl[i]/=et.nanpercentile(bl[i],90)
 
     # get info on template systvel for splining correctly
     systemic_vel = -1000*mask_hdr['SYSTVEL']
@@ -348,6 +351,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                     ddmodel_ord = ddmodel[iord[i]]
                     dddmodel_ord = dddmodel[iord[i]]
 
+                    bl_ord = bl[iord[i]]
+
                     diff = sp_ord - model_ord
 
                     if doplot_debug:
@@ -376,8 +381,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                     weight_mask[-1] = 1-( ww_ord[imax] - wave_end[i] )/(ww_ord[imax+1]-ww_ord[imax])
 
                 xpix = np.arange(len(weight_mask))+imin
-                tbl['MEANXPIX'][i] = np.nansum(weight_mask*xpix)/np.nansum(weight_mask)
-
+                tbl['MEANXPIX'][i] = et.nansum(weight_mask*xpix)/np.nansum(weight_mask)
+                tbl['MEANBLAZE'][i] = bl_ord[(imin+imax)//2]
                 # maybe some plots
                 if doplot_debug:
                     if (iord[i] == 35)*(ite_rv == 1):
