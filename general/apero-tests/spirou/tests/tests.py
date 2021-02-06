@@ -48,33 +48,6 @@ class Test(ABC):
         self._date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # test date
 
     # =========================================================================
-    # Public methods
-    # =========================================================================
-    def gen_html(self, html_dict: dict):
-        """Generate HTML summary from jinja2 template.
-
-        :param html_dict: dict with all values used in html template
-        :type html_dict: dict
-        """
-
-        # Jinja2 env
-        env = Environment(
-            loader=FileSystemLoader(TEMPLATEDIR),
-            autoescape=select_autoescape(['html', 'xml'])
-        )
-
-        # Create template for test
-        template = env.get_template('.'.join([self.test_id, 'html']))
-
-        html_text = template.render(html_dict)
-
-        output_path = os.path.join(OUTDIR,
-                                   self.test_id,
-                                   '.'.join([self.test_id, 'html']))
-        with open(output_path, 'w') as f:
-            f.write(html_text)
-
-    # =========================================================================
     # Abstract methods common to all tests
     # =========================================================================
     @property
