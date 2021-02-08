@@ -26,27 +26,6 @@ RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
 class Test(ABC):
     """Test."""
 
-    def __init__(self, recipe: Optional[str] = None, setup: Optional[str] = None):
-        """__init__.
-
-        :param inst: Instrument name used in APERO (Default is SPIROU).
-        :type inst: str
-        :param setup: Path to apero setup. Using DRS_UCONFIG if None.
-        :type setup: Optional[str]
-        """
-        self.recipe = RECIPE_DICT[recipe]
-        self._params = self.recipe.drs_params
-
-        # setup path
-        if setup is None:
-            self._setup = os.environ['DRS_UCONFIG']
-        else:
-            self._setup = setup
-
-        self._instrument = self.recipe.instrument
-
-        self._date = datetime.now().strftime("%Y-%m-%d %H:%M:%S")  # test date
-
     # =========================================================================
     # Abstract methods common to all tests
     # =========================================================================
@@ -101,10 +80,6 @@ class CalibTest(Test):
         :param logdir:
         :type logdir: str
         """
-
-        super().__init__(inst=inst, setup=setup)
-
-        # List of all reduced nights
 
         # Where logs can be found
         if logdir == 'night':
