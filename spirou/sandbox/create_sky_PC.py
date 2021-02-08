@@ -262,3 +262,4 @@ for ite in range(len(cuts)-1):
     out[band,1+ite*n_components:1+(ite+1)*n_components] = principalComponents[band,:]
 
 fits.writeto('sky_PCs.fits',out,overwrite = True)
+os.system('rsync -av -e "ssh  -oPort=5822" sky_PCs.fits artigau@venus.astro.umontreal.ca:/home/artigau/www/')

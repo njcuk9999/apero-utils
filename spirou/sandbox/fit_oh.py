@@ -7,6 +7,9 @@ import etienne_tools as et
 #### TO BE UPDATED #####
 # one needs e2dsff_AB and e2dsff_recon_AB in the directory
 files = glob.glob('2516853o_pp_e2dsff_AB.fits')
+
+# local path, get it at http://www.astro.umontreal.ca/~artigau/sky_PCs.fits
+# and put it somewhere on your machine
 pc_file = '/Users/eartigau/smart_sky/sky_PCs.fits'
 
 # constants
