@@ -43,8 +43,9 @@ def std(v):
 def nanmean(v):
     return np.nanmean(v)
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def nanmedian(v):
+    #g = np.isfinite(v)
     return np.nanmedian(v)
 
 @jit(nopython=True)

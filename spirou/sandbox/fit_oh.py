@@ -1,23 +1,22 @@
 import numpy as np
 from astropy.io import fits
-import etienne_tools as et
 import os
 import glob
 import etienne_tools as et
 
-#file = '2517483o_pp_e2dsff_AB.fits' # TRAPPIST-1
-#file = '2512909o_pp_e2dsff_AB.fits' # TOI-1452
-#file = '2502382o_pp_e2dsff_AB.fits' # GL699
-
+#### TO BE UPDATED #####
 # one needs e2dsff_AB and e2dsff_recon_AB in the directory
-#files = glob.glob('tellurics/data/251748*o_pp_e2dsff_AB.fits')
 files = glob.glob('2516853o_pp_e2dsff_AB.fits')
+pc_file = '/Users/eartigau/smart_sky/sky_PCs.fits'
 
 # constants
-debug = True
+debug = True # more plots, makes it slow
 # number of bright OH lines that will be individually adjusted in amplitude. Done
 # only on lines that are at an SNR > 1
 nbright = 300
+
+#### END OF UPDATES #####
+
 
 if debug:
     import matplotlib.pyplot as plt
@@ -38,8 +37,6 @@ for file in files:
 
     if os.path.isfile(outname) == False:
         abso,hdr = fits.getdata(abso_name, header = True)
-
-        pc_file = '/Users/eartigau/smart_sky/sky_PCs.fits'
 
 
         # e-width of the region over which we measure the residuals of brighter lines
