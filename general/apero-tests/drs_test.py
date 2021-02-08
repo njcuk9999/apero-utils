@@ -5,13 +5,16 @@ DRS Tests that (try to) follow the APERO framework.
 """
 import os
 from datetime import datetime
-from typing import Optional
+from typing import List, Optional, Tuple
 
 import pandas as pd
 from astropy.table import Table
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
-from . import OUTDIR, TEMPLATEDIR
+# from . import OUTDIR, TEMPLATEDIR
+PARENTDIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
+OUTDIR = os.path.join(PARENTDIR, "out")
 
 
 def removext(name: str, ext: str = ".py"):
@@ -67,7 +70,7 @@ class DrsTest:
         # Overwrite some parameters with recipe info automatically
         if drs_recipe is not None:
             # The recipe object and test ID
-            self.recipe = drs_recipe.newcopy()
+            self.recipe = drs_recipe
             if self.instrument is not None:
                 print("WARNING: Overwriding kwarg instrument with recipe info")
             self.instrument = self.recipe.instrument
