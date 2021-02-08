@@ -245,7 +245,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             else:
                 rv = 0
         else:
-            rv = systemic_all[np.argmin(hdr['MJDATE'] - mjdate_all)] + BERV
+            rv = systemic_all[np.argmin(hdr['MJDATE'] - mjdate_all)] + BERV + 1000*np.random.random()
 
         # loop on the model spline velocity
         rv_zp = 0
@@ -465,6 +465,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             #if ite_rv == 1:
             #    rv1 = np.array(rv_finale)
 
+            print(rv_mean,bulk_error)
 
             if np.abs(rv_mean) < bulk_error:
                 ite_convergence = ite_rv
