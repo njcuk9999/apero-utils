@@ -475,7 +475,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                 # 2nd derivative
                 # From Bouchy 2001 equation, RV error for each pixel
-                ddvrms_pix = mean_rms / dd_segment
+                with warnings.catch_warnings(record=True) as _:
+                    ddvrms_pix = mean_rms / dd_segment
                 # RV error for the line
                 ddvrms[i] = 1 / np.sqrt(np.sum((1 / ddvrms_pix ** 2)))
                 ddv[i] = et.sum(diff_segment * dd_segment) / np.sum(dd_segment ** 2)
@@ -483,7 +484,8 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                 # 3rd derivative
                 # From Bouchy 2001 equation, RV error for each pixel
-                dddvrms_pix = mean_rms / ddd_segment
+                with warnings.catch_warnings(record=True) as _:
+                    dddvrms_pix = mean_rms / ddd_segment
                 # RV error for the line
                 dddvrms[i] = 1 / np.sqrt(np.sum((1 / dddvrms_pix ** 2)))
                 dddv[i] = et.sum(diff_segment * ddd_segment) / np.sum(ddd_segment ** 2)
