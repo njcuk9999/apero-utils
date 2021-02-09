@@ -354,8 +354,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 with warnings.catch_warnings(record=True) as _:
                     rms[ii] = np.sqrt(model0[ii])
                     p1 = et.nanpercentile(tmp/rms[ii],[16,84])
-
-                rms[ii] *= ((p1[1]-p1[0])/2)
+                    rms[ii] *= ((p1[1]-p1[0])/2)
 
             if ite_rv == 1:
                 # create a dummy array that will contain velocities and corresponding errors
