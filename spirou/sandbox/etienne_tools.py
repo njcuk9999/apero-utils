@@ -39,14 +39,21 @@ def mean(v):
 def std(v):
     return np.std(v)
 
-@jit(nopython=True)
 def nanmean(v):
-    return np.nanmean(v)
+    with warnings.catch_warnings(record=True) as _:
+        mean = jitnanmean(v)
+    return mean
+
+@jit(nopython=True)
+def jitnanmean(v):
+    mean = np.nanmean(v)
+    return mean
 
 #@jit(nopython=True)
 def nanmedian(v):
+    med = np.nanmedian(v)
     #g = np.isfinite(v)
-    return np.nanmedian(v)
+    return med
 
 @jit(nopython=True)
 def median(v):

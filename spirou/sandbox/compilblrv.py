@@ -8,19 +8,17 @@ from astropy.table import Table
 import matplotlib.pyplot as plt
 from astropy.time import Time
 
-
-
-def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
+def compilblrv(obj_sci, obj_template = None, doplot = True, force = True, common_weights = False,
                get_cumul_plot = False, fcut = 0.95):
 
     """
-    obj_sci = 'GL388'
+    obj_sci = 'TRAPPIST-1'
     obj_template = None
-    doplot = True
+    doplot = False
     force = True
-    common_weights = True
-    get_cumul_plot = True
-
+    common_weights = False
+    get_cumul_plot = False
+    fcut = 0.95
     """
 
     if doplot or get_cumul_plot:
@@ -32,8 +30,6 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
         obj_template = obj_sci
 
     suffix = ''
-    if common_weights:
-        suffix = suffix+'_weights'
 
     outname = 'tbllblrv{2}_{0}_{1}.csv'.format(obj_sci, obj_template,suffix)
 
@@ -86,7 +82,10 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
             # get lines in the proper domain
             if i == 0:
-                g = (tbl_per_line_ini['WAVE_START'] > 900) * (tbl_per_line_ini['WAVE_START'] < 2500)
+                g = (tbl_per_line_ini['WAVE_START'] > 900) * \
+                    (tbl_per_line_ini['WAVE_START'] < 2500) * \
+                    (tbl_per_line_ini['NPIXLINE'] < 50) * \
+                    (tbl_per_line_ini['RMSRATIO'] < 5)
                 rvs = np.zeros([len(scifiles),np.sum(g)])
                 dvrms = np.zeros([len(scifiles), np.sum(g)])
                 DDV = np.zeros([len(scifiles),np.sum(g)])
@@ -142,12 +141,11 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             plt.savefig(outname+'_cumul.pdf')
             plt.close()
 
-
         # a line must be present >80% of the line
         valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > fcut
         rvs = rvs[:,valid_lines]
         dvrms = dvrms[:,valid_lines]
-        tbl_per_line_ini = tbl_per_line_ini[valid_lines]
+        tbl_per_line = tbl_per_line[valid_lines]
         DDV  = DDV[:,valid_lines]
         DDDV = DDDV[:,valid_lines]
         DDVRMS  = DDVRMS[:,valid_lines]
@@ -155,6 +153,17 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
         sig =  np.nanpercentile((rvs- np.nanmedian(rvs))/dvrms,[16,84],axis=0)
         sig = (sig[1]-sig[0])/2
+
+
+        valid_lines = sig<1.2
+        rvs = rvs[:,valid_lines]
+        dvrms = dvrms[:,valid_lines]
+        tbl_per_line = tbl_per_line[valid_lines]
+        DDV  = DDV[:,valid_lines]
+        DDDV = DDDV[:,valid_lines]
+        DDVRMS  = DDVRMS[:,valid_lines]
+        DDDVRMS = DDDVRMS[:,valid_lines]
+
 
 
         if common_weights:
@@ -242,13 +251,13 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             for iband in range(len(bands)):
                 for reg in range(4):
                     if reg == 0:
-                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband])
+                        g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (tbl_per_line['WAVE_START'] < red_end[iband])
                     if reg == 1:
-                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband]) * (tbl_per_line_ini['XPIX'] < 2044)
+                        g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] < 2044)
                     if reg == 2:
-                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband]) * (tbl_per_line_ini['XPIX'] > 2044)
+                        g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] > 2044)
                     if reg == 3:
-                        g = (tbl_per_line_ini['WAVE_START'] > blue_end[iband]) * (tbl_per_line_ini['WAVE_START'] < red_end[iband])  * (tbl_per_line_ini['XPIX'] > 1532)  * (tbl_per_line_ini['XPIX'] < 2556)
+                        g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (tbl_per_line['WAVE_START'] < red_end[iband])  * (tbl_per_line['XPIX'] > 1532)  * (tbl_per_line['XPIX'] < 2556)
 
 
                     if np.sum(np.isfinite(tmp_err[g]) * np.isfinite(tmp_rv[g]))<np.sum(g)/2:
@@ -256,6 +265,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                         keep[i] = False
                         continue
 
+                    if np.sum(g) < 5:
+                        continue
                     guess,bulk_error  = et.odd_ratio_mean(tmp_rv[g],tmp_err[g])
 
                     rvs_matrix[i,iband,reg] = guess

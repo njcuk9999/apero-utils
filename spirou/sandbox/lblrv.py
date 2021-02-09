@@ -16,18 +16,20 @@ from scipy import stats
 def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits', check_fp = False):
+
     """
-    obj_sci = 'TOI-1452'
-    force = True
-    obj_template = 'GL699'
-    doplot_ccf = False
-    doplot_debug = False
-    lblrv_path = 'lblrv/'
-    mask_path = 'masks/'
-    template_path = 'templates/'
-    science_path = 'tellurics/'
-    ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'
-    check_fp = False
+    if True:
+        obj_sci = 'GL436'
+        force = False
+        obj_template = None
+        doplot_ccf = False
+        doplot_debug = False
+        lblrv_path = 'lblrv/'
+        mask_path = 'masks/'
+        template_path = 'templates/'
+        science_path = 'tellurics/'
+        ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'
+        check_fp = False
     """
 
     # pass just one object and we assume that the object is it's own template
@@ -159,6 +161,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         tbl['NPIXLINE'] = np.zeros_like(xpix,dtype = int) # effective number of pixels in line
         tbl['MEANXPIX'] = np.zeros_like(xpix,dtype = float) # mean line position in pixel space
         tbl['MEANBLAZE'] = np.zeros_like(xpix,dtype = float) # blaze value compared to peak for that order
+        tbl['AMP_CONTINUUM'] = np.zeros_like(xpix,dtype = float) # blaze value compared to peak for that order
 
         # Considering the number of pixels, expected and actual RMS, this is the likelihood that the line is
         # acually valid from a Chi2 test point of view
@@ -186,8 +189,12 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     systemic_vel = -1000*mask_hdr['SYSTVEL']
 
     print('defining all the splines required later')
-
     flux = np.array(template['flux'])
+
+    flux0 =np.array(flux)
+
+    flux -= et.lowpassfilter(flux, width=223)
+
     dflux = np.gradient(flux)/ np.gradient(np.log(template['wavelength'])) / constants.c
     # 2nd derivative
     ddflux = np.gradient(dflux) / np.gradient(np.log(template['wavelength'])) / constants.c
@@ -201,6 +208,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     #
     # Flux, 1st and 2nd derivatives. We could add more derivatives if need be one day
     # Be careful to update the 'valid' mask above
+    spline0 = ius(et.doppler(template['wavelength'][valid],-systemic_vel),flux0[valid],k=3,ext=1)
     spline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),flux[valid],k=3,ext=1)
     dspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),dflux[valid],k=3,ext=1)
 
@@ -231,6 +239,12 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
         # get the science file info
         sp, hdr = fits.getdata(scifiles[ifile], header=True)
+        sp0 = np.array(sp)
+        wave = et.fits2wave(hdr)
+        for iord in range(sp.shape[0]):
+            sp[iord] -= et.lowpassfilter(sp[iord])
+
+
 
         if 'FP' not in obj_sci:
             BERV = hdr['BERV']*1000
@@ -245,7 +259,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             else:
                 rv = 0
         else:
-            rv = systemic_all[np.argmin(hdr['MJDATE'] - mjdate_all)] + BERV + 1000*np.random.random()
+            rv = systemic_all[np.argmin(hdr['MJDATE'] - mjdate_all)] + BERV# + 1000*np.random.random()
 
         # loop on the model spline velocity
         rv_zp = 0
@@ -259,18 +273,18 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
         done = False
         ite_convergence = 10
 
+        #sp, hdr = fits.getdata(scifiles[ifile], header=True)
+
         for ite_rv in range(1,10):
             if done:
                 continue
 
             now = datetime.now()
 
-            sp, hdr = fits.getdata(scifiles[ifile], header=True)
-            wave = et.fits2wave(hdr)
-
             if (ite_rv == 1):
                 # spline the model onto the wavelenght grid at the specified velocity
                 model = np.zeros_like(sp)
+                model0 = np.zeros_like(sp)
                 dmodel = np.zeros_like(sp)
                 ddmodel = np.zeros_like(sp)
                 dddmodel = np.zeros_like(sp)
@@ -281,37 +295,66 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             for ii in range(sp.shape[0]):
                 # RV shift the spline and give it the shape of the model
                 model[ii] = spline(et.doppler(wave[ii],-rv) ) * bl[ii]
-                dmodel[ii] = dspline(et.doppler(wave[ii],-rv)) * bl[ii]
 
-                ddmodel[ii] = ddspline(et.doppler(wave[ii],-rv)) * bl[ii]
-                dddmodel[ii] = dddspline(et.doppler(wave[ii],-rv)) * bl[ii]
+                #model[ii] -= et.lowpassfilter(model[ii])
+
+                amp =  np.nansum(model[ii]*sp[ii])/np.nansum(model[ii]**2)
+                model[ii]*=amp
+
+
+                if ite_rv == 1:
+                    model0[ii] = spline0(et.doppler(wave[ii],-rv) ) * bl[ii]
+                    model0[ii]/=np.nanmedian(model0[ii])
+                    model0[ii]*=np.nanmedian(sp0[ii])
+
+                dmodel[ii] = dspline(et.doppler(wave[ii],-rv)) * bl[ii] * amp
+
+                ddmodel[ii] = ddspline(et.doppler(wave[ii],-rv)) * bl[ii]* amp
+                dddmodel[ii] = dddspline(et.doppler(wave[ii],-rv)) * bl[ii]* amp
 
                 # if on first iteration, get the low-frequency component out
                 model_mask[ii] = spline_mask(et.doppler(wave[ii], -rv))
                 g = tbl['ORDER'] == ii
 
+
+
             # keep only legit splined points
             model[model_mask < .99] = np.nan
 
             for ii in range(sp.shape[0]):
+
+                #v = np.zeros([5,sp.shape[1]])
+                #v[0] = model[ii]
+                #v[1] = bl[ii]
+                #v[2] = 1
+                #v[3] = np.arange(sp.shape[1])
+                #v[4] = (np.arange(sp.shape[1])-sp.shape[1]/2)**2
+                #amps, reco = et.lin_mini(sp[ii],v)
+
+
+                #if ii ==35:
+                #    stop
                 #only compute to low frequency on first two steps
-                if ite_rv <=2:
-                    tmp = et.sed_ratio(model[ii],sp[ii],doplot = True)
-                    tmp[tmp==0] = np.nan
-                    lowf[ii] = tmp
+                #if ite_rv <=2:
+                #    tmp = et.sed_ratio(model[ii],sp[ii],doplot = True)
+                #    tmp[tmp==0] = np.nan
+                #    lowf[ii] = tmp
 
                 # match low frequency of model to that of spectrum
-                model[ii] /= lowf[ii]
-                dmodel[ii] /= lowf[ii]
-                ddmodel[ii] /= lowf[ii]
-                dddmodel[ii] /= lowf[ii]
+                #model[ii] *= amps[0]#lowf[ii]
+                #dmodel[ii] *= amps[0]##lowf[ii]
+                #ddmodel[ii] *= amps[0]#lowf[ii]
+                #dddmodel[ii] *= amps[0]#lowf[ii]
+
+                #model[ii] += et.lowpassfilter(sp[ii] - model[ii])
 
                 # get residuals and running RMS
                 tmp = sp[ii]-model[ii]
 
                 with warnings.catch_warnings(record=True) as _:
-                    rms[ii] = np.sqrt(model[ii])
+                    rms[ii] = np.sqrt(model0[ii])
                     p1 = et.nanpercentile(tmp/rms[ii],[16,84])
+
                 rms[ii] *= ((p1[1]-p1[0])/2)
 
             if ite_rv == 1:
@@ -347,14 +390,16 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                     rms_ord = rms[iord[i]]
                     model_ord = model[iord[i]]
+
                     dmodel_ord = dmodel[iord[i]]
                     ddmodel_ord = ddmodel[iord[i]]
                     dddmodel_ord = dddmodel[iord[i]]
 
                     bl_ord = bl[iord[i]]
 
-                    diff = sp_ord - model_ord
-
+                    # we will perform a line-by-line amplitude correction
+                    #diff = sp_ord - model_ord
+                    #
                     if doplot_debug:
                         if (iord[i] == 35)*(ite_rv == 1):
                             plt.plot(ww_ord,model_ord, color = 'grey', linewidth=3, alpha = 0.3,label = 'template')
@@ -396,10 +441,26 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 dd_segment = ddmodel_ord[imin:imax + 1] * weight_mask
                 ddd_segment = dddmodel_ord[imin:imax + 1] * weight_mask
 
-
                 # residuals of the segment
 
-                diff_segment = diff[imin:imax+1]*weight_mask
+                sp_segment = (sp_ord[imin:imax+1])
+                model_segment = (model_ord[imin:imax+1])
+
+                #sp_segment -= et.nanmean(sp_segment)
+                #model_segment -= et.nanmean(model_segment)
+
+                #amp = np.nansum(sp_segment * model_segment) / np.nansum(model_segment ** 2)
+
+                #if (i >= 0)*(i <= 20000):
+                #plt.plot(ww_ord[imin:imax+1],sp_segment,color = 'red')
+                #plt.plot(ww_ord[imin:imax+1],model_segment, color = 'blue')
+                #plt.plot(ww_ord[imin:imax+1],sp_segment/amp,color = 'orange')
+                #plt.plot(np.mean(ww_ord[imin:imax+1]),amp,'g.',alpha = 0.2)
+
+                #if i == 20000:
+                #    plt.show()
+
+                diff_segment = (sp_segment - model_segment)*weight_mask
 
                 sum_weight_mask = et.sum(weight_mask)  # we need this value 4 times
                 mean_rms = et.sum(rms_ord[imin:imax+1]*weight_mask)/sum_weight_mask
