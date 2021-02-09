@@ -8,7 +8,7 @@ from astropy.table import Table
 import matplotlib.pyplot as plt
 from astropy.time import Time
 
-def compilblrv(obj_sci, obj_template = None, doplot = True, force = True, common_weights = False,
+def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
                get_cumul_plot = False, fcut = 0.95):
 
     """
