@@ -87,7 +87,7 @@ class DrsTest:
         self.instrument = instrument  # Instrument may be set as kwarg
         self.params = None  # DRS parameters
         self.ismaster = False  # Is it a master recipe?
-        self.fibers = []  # NOTE: not sure still needed
+        self.fibers = []  # NOTE: not sure still needed. (output file def.?)
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
         self.calib_hkeys = []  # All calib header keys
@@ -100,7 +100,7 @@ class DrsTest:
             # The recipe object and test ID
             self.recipe = drs_recipe
             if self.instrument is not None:
-                print("WARNING: Overwriding kwarg instrument with recipe info")
+                print("WARNING: Overwriting kwarg instrument with recipe info")
             self.instrument = self.recipe.instrument
             self.recipe_name = removext(self.recipe.name, ext=".py")
             self.test_id = self.recipe_name + f"_test{testnum}"
@@ -133,7 +133,8 @@ class DrsTest:
             ]
 
         # Load log and index in a DataFrame
-        self.log_df, _ = self._load_log()
+            self.log_df, _ = self._load_log()
+            self.ind_df, _ = self._load_index()
 
     # =========================================================================
     # Functions to load output information
@@ -169,8 +170,7 @@ class DrsTest:
     def _load_index(self) -> Tuple[pd.DataFrame, List[str]]:
         """Get index contents in a dataframe
 
-        Parse all index.fits files and return a dataframe with only entries that have
-        the current recipe in LOGFILE.
+        Parse all index.fits files and return a dataframe.
 
         :returns: dataframe of log content and list of missing log files
         :rtype: Tuple[pd.DataFrame, list]
@@ -184,15 +184,12 @@ class DrsTest:
 
         # Use DIRECTORY as index and keep only relevant entries
         # whith self.recipe or extract recipes called
-        log_df = log_df.set_index(["DIRECTORY"])
-
-        # Important for extract recipes: keep only the recipe under test
-        log_df = log_df[log_df.LOGFILE.str.contains(self.recipe_name)]
+        ind_df = ind_df.set_index(["NIGHTNAME"])
 
         # Paths without files
-        missing_logs = [p for p in allpaths if not os.path.isfile(p)]
+        missing_inds = [p for p in allpaths if not os.path.isfile(p)]
 
-        return log_df, missing_logs
+        return ind_df, missing_logs
 
     # =========================================================================
     # Utility functions
