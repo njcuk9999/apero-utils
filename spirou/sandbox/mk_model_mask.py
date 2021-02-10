@@ -36,7 +36,7 @@ spirou_domain = (w>965)*(w<2500)
 w = w[spirou_domain]
 
 # get goettigen models if you don't have them.
-for temperature in np.arange(3000, 6100, 100):
+for temperature in np.arange(2700, 6100, 100):
     outname = '{0}/lte0{1}-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits'.format(path_to_models,temperature)
 
     print('We are downloading/checking presence of model file {0}'.format(outname))
