@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from astropy.time import Time
 
 def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
-               get_cumul_plot = False, fcut = 0.80):
+               get_cumul_plot = False):
 
     """
     obj_sci = 'TRAPPIST-1'
@@ -18,7 +18,6 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
     force = True
     common_weights = False
     get_cumul_plot = False
-    fcut = 0.8
     """
 
     if doplot or get_cumul_plot:
@@ -141,29 +140,26 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             plt.close()
 
         # a line must be present >80% of the line
-        valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > fcut
-        rvs = rvs[:,valid_lines]
-        dvrms = dvrms[:,valid_lines]
-        tbl_per_line = tbl_per_line[valid_lines]
-        DDV  = DDV[:,valid_lines]
-        DDDV = DDDV[:,valid_lines]
-        DDVRMS  = DDVRMS[:,valid_lines]
-        DDDVRMS = DDDVRMS[:,valid_lines]
+        print('Forcing a stddev of 1 for all lines')
+        print('constructing a per-epoch mean velocity')
+        for i in tqdm(range(rvs.shape[0])):
+            nsig = (rvs[i] - np.nanmedian(rvs[i])) / dvrms[i]
+            dvrms[i]*=et.sigma(nsig)
 
-        sig =  np.nanpercentile((rvs- np.nanmedian(rvs))/dvrms,[16,84],axis=0)
-        sig = (sig[1]-sig[0])/2
+            guess,bulk_error  = et.odd_ratio_mean(rvs[i],dvrms[i])
+            tbl['per_epoch_mean'][i] = guess
+            tbl['per_epoch_err'][i] = bulk_error
 
 
-        #valid_lines = sig<1.2
+        """
+        #valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > fcut
         #rvs = rvs[:,valid_lines]
         #dvrms = dvrms[:,valid_lines]
         #tbl_per_line = tbl_per_line[valid_lines]
-        ##DDV  = DDV[:,valid_lines]
+        #DDV  = DDV[:,valid_lines]
         #DDDV = DDDV[:,valid_lines]
         #DDVRMS  = DDVRMS[:,valid_lines]
         #DDDVRMS = DDDVRMS[:,valid_lines]
-
-
 
         if common_weights:
             for i in range(rvs.shape[1]):
@@ -184,25 +180,11 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 # preserving the same relative ratios
                 dvrms[i] = amp*ref
 
-        # constructing a per-epoch mean velocity
-        for i in tqdm(range(len(scifiles))):
-            guess,bulk_error  = et.odd_ratio_mean(rvs[i],dvrms[i])
-            tbl['per_epoch_mean'][i] = guess
-            tbl['per_epoch_err'][i] = bulk_error
-
-            guess,bulk_error  = et.odd_ratio_mean(DDV[i],DDVRMS[i])
-
-            tbl['per_epoch_DDV'][i] = guess
-            tbl['per_epoch_DDVRMS'][i] = bulk_error
-
-            guess,bulk_error  = et.odd_ratio_mean(DDDV[i],DDDVRMS[i])
-
-            tbl['per_epoch_DDDV'][i] = guess
-            tbl['per_epoch_DDDVRMS'][i] = bulk_error
 
         # plot or not
         #if doplot:
         #    plt.errorbar(tbl['MJDATE']+0.2, tbl['per_epoch_mean'] - np.nanmean(tbl['per_epoch_mean']), fmt='.g', yerr=tbl['per_epoch_err'], alpha=0.5)
+        """
 
         # de-biasing line. Matrix that contains a replicated 2d version of the per-epoch mean
         rv_per_epoch_model = np.reshape(np.repeat(tbl['per_epoch_mean'],rvs.shape[1]),rvs.shape)
@@ -213,7 +195,9 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
         # computing the per-line bias
         for i in tqdm(range(len(per_line_mean))):
-            guess,bulk_error  = et.odd_ratio_mean(rvs[:,i]-rv_per_epoch_model[:,i],dvrms[:,i])
+            tmp1 = rvs[:,i]-rv_per_epoch_model[:,i]
+            err1 = dvrms[:,i]
+            guess,bulk_error  = et.odd_ratio_mean(tmp1,err1)
             per_line_mean[i] = guess
             per_line_error[i] = bulk_error
 
@@ -223,19 +207,27 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
         # constructing a 2d model of line biases
         rv_per_line_model = np.reshape(np.tile(per_line_mean,rvs.shape[0]),rvs.shape)
 
+        rv1 = np.array(tbl['per_epoch_mean'])
+
         # updating the table
         for i in tqdm(range(len(scifiles))):
             guess,bulk_error  = et.odd_ratio_mean(rvs[i]-rv_per_line_model[i],dvrms[i])
             tbl['per_epoch_mean'][i] = guess
             tbl['per_epoch_err'][i] = bulk_error
 
+            guess,bulk_error  = et.odd_ratio_mean(DDV[i],DDVRMS[i])
+            tbl['per_epoch_DDV'][i] = guess
+            tbl['per_epoch_DDVRMS'][i] = bulk_error
+
+            guess,bulk_error  = et.odd_ratio_mean(DDDV[i],DDDVRMS[i])
+            tbl['per_epoch_DDDV'][i] = guess
+            tbl['per_epoch_DDDVRMS'][i] = bulk_error
 
         # keeping track of the per-band RV measurements
         bands =   ['Y',  'gapYJ',  'J',    'gapJH',  'H',    'gapHK',   'K',   'redK']
         blue_end =[ 900.0,1113.400,1153.586,1354.422,1462.897,1808.544,1957.792,2343.105]
         red_end = [1113.4,1153.586,1354.422,1462.897,1808.544,1957.792,2343.105,2500.000]
         suffix = ['', '_0-2044', '_2044-4088',  '_1532-2556']
-
 
         rvs_matrix = np.zeros([len(scifiles),len(bands),len(suffix)])+np.nan
         err_matrix = np.zeros([len(scifiles),len(bands),len(suffix)])+np.nan

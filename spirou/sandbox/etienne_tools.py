@@ -449,6 +449,10 @@ def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
     #
     # nmax -> number of iterations
     keep = np.isfinite(value)*np.isfinite(err)
+
+    if np.sum(keep) == 0:
+        return np.nan,np.nan
+
     value = value[keep]
     err = err[keep]
 

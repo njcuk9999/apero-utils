@@ -233,28 +233,28 @@ if False:
 if True:
     obj_sci = 'TRAPPIST-1'
     obj_template = 'TRAPPIST-1'
-    doplot = True
+    doplot = False
     force = True
 
 
     tbl1 = compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = False,
-                   get_cumul_plot = False, fcut = 0.80)
-    tbl2 = compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = False,
-                   get_cumul_plot = False, fcut = 0.95)
+                   get_cumul_plot = False)
+    #bl2 = compilblrv(obj_sci, obj_template = obj_template, doplot = doplot, force = force, common_weights = False,
+    #               get_cumul_plot = False, fcut = 0.8)
 
     keep = tbl1['per_epoch_err'] < 20
     tbl1 = tbl1[keep]
-    tbl2 = tbl2[keep]
+    #tbl2 = tbl2[keep]
 
-    fig,ax = plt.subplots(nrows = 1, ncols = 1,sharex = True)
+    fig,ax = plt.subplots(nrows = 3, ncols = 1,sharex = True)
 
     rv_date1= []
     err_date1 = []
     mjdate_date1 = []
 
-    rv_date2= []
-    err_date2 = []
-    mjdate_date2 = []
+    #rv_date2= []
+    #err_date2 = []
+    #mjdate_date2 = []
 
     for date in np.unique(tbl1['DATE-OBS']):
         gg = tbl1['DATE-OBS'] == date
@@ -265,27 +265,25 @@ if True:
         rv_date1 = np.append(rv_date1, np.nansum(rv/err**2)/np.nansum(1/err**2))
         err_date1 = np.append(err_date1,np.sqrt(1/np.nansum(1/err**2)))
 
-        gg = tbl2['DATE-OBS'] == date
-        rv = tbl2['per_epoch_mean'][gg]
-        err = tbl2['per_epoch_err'][gg]
+        #gg = tbl2['DATE-OBS'] == date
+        #rv = tbl2['per_epoch_mean'][gg]
+        #err = tbl2['per_epoch_err'][gg]
 
-        mjdate_date2 = np.append(mjdate_date2,np.nanmean(tbl2['MJDATE'][gg]))
-        rv_date2 = np.append(rv_date2, np.nansum(rv/err**2)/np.nansum(1/err**2))
-        err_date2 = np.append(err_date2,np.sqrt(1/np.nansum(1/err**2)))
+        #mjdate_date2 = np.append(mjdate_date2,np.nanmean(tbl2['MJDATE'][gg]))
+        #rv_date2 = np.append(rv_date2, np.nansum(rv/err**2)/np.nansum(1/err**2))
+        #err_date2 = np.append(err_date2,np.sqrt(1/np.nansum(1/err**2)))
 
-    rv_date1 -= np.nanmedian(rv_date1)
-    rv_date2 -= np.nanmedian(rv_date2)
+    #rv_date1 -= np.nanmedian(rv_date1)
+    #rv_date2 -= np.nanmedian(rv_date2)
 
-    ax.errorbar(mjdate_date1,rv_date1, yerr=err_date1, color='blue', fmt='.', alpha=0.5)
-    ax.errorbar(mjdate_date2+.2,rv_date2, yerr=err_date2, color='red', fmt='.', alpha=0.5)
-    ax.plot(mjdate_date2,rv_date1-rv_date2,'o', color='black',  alpha=0.5)
+    #ax.errorbar(mjdate_date2+.2,rv_date2, yerr=err_date2, color='red', fmt='.', alpha=0.5)
+    #ax.plot(mjdate_date2,rv_date1-rv_date2,'o', color='black',  alpha=0.5)
 
-    #ax[0].errorbar(tbl['MJDATE'],tbl['per_epoch_mean'], yerr = tbl['per_epoch_err'], fmt='.', alpha=0.5)
-    #ax.errorbar(tbl1['MJDATE'],tbl1['per_epoch_mean'], yerr = tbl1['per_epoch_err'],color = 'blue', fmt='.', alpha=0.5)
-    #ax.errorbar(tbl2['MJDATE']+.1,tbl2['per_epoch_mean'], yerr = tbl2['per_epoch_err'],color = 'red', fmt='.', alpha=0.5)
-    #ax[1].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'], yerr = tbl['per_epoch_DDVRMS'], fmt='.', alpha=0.5)
-    #ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDDV'], yerr = tbl['per_epoch_DDDVRMS'], fmt='.', alpha=0.5)
-    #ax[0].set(xlabel = 'Date', ylabel = 'RV [m/s]')
-    #ax[1].set(xlabel = 'Date', ylabel = '2nd deriv [m/s]')
-    #ax[2].set(xlabel = 'Date', ylabel = '3rd deriv [m/s]')
+    ax[0].errorbar(tbl1['MJDATE'],tbl1['per_epoch_mean'], yerr = tbl1['per_epoch_err'], fmt='.', alpha=0.5)
+    ax[0].errorbar(mjdate_date1,rv_date1, yerr=err_date1, color='red', fmt='.', alpha=0.9)
+    ax[1].errorbar(tbl1['MJDATE'],tbl1['per_epoch_DDV'], yerr = tbl1['per_epoch_DDVRMS'], fmt='.', alpha=0.5)
+    ax[2].errorbar(tbl1['MJDATE'],tbl1['per_epoch_DDDV'], yerr = tbl1['per_epoch_DDDVRMS'], fmt='.', alpha=0.5)
+    ax[0].set(xlabel = 'Date', ylabel = 'RV [m/s]')
+    ax[1].set(xlabel = 'Date', ylabel = '2nd deriv [m/s]')
+    ax[2].set(xlabel = 'Date', ylabel = '3rd deriv [m/s]')
     plt.show()
