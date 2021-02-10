@@ -12,6 +12,9 @@ from astropy.table import Table
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 # from . import OUTDIR, TEMPLATEDIR
+
+# TODO: Maybe we can move this so it's accessible to all files, maybe parameter
+# in drs later
 PARENTDIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
 OUTDIR = os.path.join(PARENTDIR, "out")
@@ -32,6 +35,31 @@ def removext(name: str, ext: str = ".py"):
         name = name[:-3]
 
     return name
+
+
+def load_fits_df(pathlist: List[str]) -> pd.DataFrame:
+    """Load contents from list of fits tables in a dataframe
+
+    :param pathlist:
+    :type pathlist: List[str]
+
+    :returns:
+    :rtype: pd.DataFrame
+    """
+    # Get all logs in a dataframe
+    paths = [p for p in pathlist if os.path.isfile(p)]  # Check all real files
+    df_list = [Table.read(f).to_pandas() for f in paths]  # Check List of dfs
+    df = pd.concat(df_list)  # List
+
+    # Decode strings (fits from astropy are encoded)
+    for col in df.columns:
+        # try/except for non-string columns
+        try:
+            df[col] = df[col].str.decode("utf-8")
+        except AttributeError:
+            pass
+
+    return df
 
 
 class DrsTest:
@@ -104,7 +132,7 @@ class DrsTest:
                 if kw.startswith("KW_CDB")
             ]
 
-        # TODO: Load log, outputs and calibdb in a nice way with APERO
+        # Load log and index in a DataFrame
         self.log_df, _ = self._load_log()
 
     # =========================================================================
@@ -121,27 +149,45 @@ class DrsTest:
         """
         # Get all logs in a dataframe
         allpaths = [
-            os.path.join(self.output_path, ld, "log.fits")
-            for ld in os.listdir(self.output_path)
+            os.path.join(self.output_path, d, "log.fits")
+            for d in os.listdir(self.output_path)
         ]
-        paths = [p for p in allpaths if os.path.isfile(p)]
-        dfs = [Table.read(f).to_pandas() for f in paths]
-        log_df = pd.concat(dfs)
-
-        # Decode strings (fits from astropy are encoded)
-        for col in log_df.columns:
-            # try/except for non-string columns
-            try:
-                log_df[col] = log_df[col].str.decode("utf-8")
-            except AttributeError:
-                pass
+        log_df = load_fits_df(allpaths)
 
         # Use DIRECTORY as index and keep only relevant entries
         # whith self.recipe or extract recipes called
         log_df = log_df.set_index(["DIRECTORY"])
 
         # Important for extract recipes: keep only the recipe under test
-        log_df = log_df[log_df.LOGFILE.str.contains(self.recipe)]
+        log_df = log_df[log_df.LOGFILE.str.contains(self.recipe_name)]
+
+        # Paths without files
+        missing_logs = [p for p in allpaths if not os.path.isfile(p)]
+
+        return log_df, missing_logs
+
+    def _load_index(self) -> Tuple[pd.DataFrame, List[str]]:
+        """Get index contents in a dataframe
+
+        Parse all index.fits files and return a dataframe with only entries that have
+        the current recipe in LOGFILE.
+
+        :returns: dataframe of log content and list of missing log files
+        :rtype: Tuple[pd.DataFrame, list]
+        """
+        # Get all index.fits in a dataframe
+        allpaths = [
+            os.path.join(self.output_path, d, "index.fits")
+            for d in os.listdir(self.output_path)
+        ]
+        ind_df = load_fits_df(allpaths)
+
+        # Use DIRECTORY as index and keep only relevant entries
+        # whith self.recipe or extract recipes called
+        log_df = log_df.set_index(["DIRECTORY"])
+
+        # Important for extract recipes: keep only the recipe under test
+        log_df = log_df[log_df.LOGFILE.str.contains(self.recipe_name)]
 
         # Paths without files
         missing_logs = [p for p in allpaths if not os.path.isfile(p)]
