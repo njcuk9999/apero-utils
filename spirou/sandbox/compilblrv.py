@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from astropy.time import Time
 
 def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
-               get_cumul_plot = False, fcut = 0.95):
+               get_cumul_plot = False, fcut = 0.80):
 
     """
     obj_sci = 'TRAPPIST-1'
@@ -18,7 +18,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
     force = True
     common_weights = False
     get_cumul_plot = False
-    fcut = 0.95
+    fcut = 0.8
     """
 
     if doplot or get_cumul_plot:
@@ -76,7 +76,6 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             # for date plotting
             tbl['plot_date'][i] = Time(hdr['MJDATE'], format='mjd').plot_date - Time(40588, format='mjd').plot_date
 
-
             # read line file
             tbl_per_line_ini = fits.getdata(scifiles[i])
 
@@ -84,8 +83,8 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
             if i == 0:
                 g = (tbl_per_line_ini['WAVE_START'] > 900) * \
                     (tbl_per_line_ini['WAVE_START'] < 2500) * \
-                    (tbl_per_line_ini['NPIXLINE'] < 50) * \
-                    (tbl_per_line_ini['RMSRATIO'] < 5)
+                    (tbl_per_line_ini['NPIXLINE'] < 50) #* \
+                    #(tbl_per_line_ini['RMSRATIO'] < 5)
                 rvs = np.zeros([len(scifiles),np.sum(g)])
                 dvrms = np.zeros([len(scifiles), np.sum(g)])
                 DDV = np.zeros([len(scifiles),np.sum(g)])
@@ -155,14 +154,14 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
         sig = (sig[1]-sig[0])/2
 
 
-        valid_lines = sig<1.2
-        rvs = rvs[:,valid_lines]
-        dvrms = dvrms[:,valid_lines]
-        tbl_per_line = tbl_per_line[valid_lines]
-        DDV  = DDV[:,valid_lines]
-        DDDV = DDDV[:,valid_lines]
-        DDVRMS  = DDVRMS[:,valid_lines]
-        DDDVRMS = DDDVRMS[:,valid_lines]
+        #valid_lines = sig<1.2
+        #rvs = rvs[:,valid_lines]
+        #dvrms = dvrms[:,valid_lines]
+        #tbl_per_line = tbl_per_line[valid_lines]
+        ##DDV  = DDV[:,valid_lines]
+        #DDDV = DDDV[:,valid_lines]
+        #DDVRMS  = DDVRMS[:,valid_lines]
+        #DDDVRMS = DDDVRMS[:,valid_lines]
 
 
 
@@ -261,12 +260,13 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
 
 
                     if np.sum(np.isfinite(tmp_err[g]) * np.isfinite(tmp_rv[g]))<np.sum(g)/2:
-                        print(et.color('Less than 50% of lines are valid for {0}, band {1}, reg {2}'.format(scifiles[i], bands[iband],reg),'red'))
-                        keep[i] = False
+                        #print(et.color('Less than 50% of lines are valid for {0}, band {1}, reg {2}'.format(scifiles[i], bands[iband],reg),'red'))
+                        #keep[i] = False
                         continue
 
                     if np.sum(g) < 5:
                         continue
+
                     guess,bulk_error  = et.odd_ratio_mean(tmp_rv[g],tmp_err[g])
 
                     rvs_matrix[i,iband,reg] = guess
@@ -278,7 +278,7 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
                 tbl['per_epoch_err_' + bands[iband]+suffix[reg]] = err_matrix[:,iband,reg]
 
         tbl = et.td_convert(tbl)
-        tbl = tbl[keep]
+        #tbl = tbl[keep]
         tbl.write(outname, overwrite = True)
 
         # plot or not
