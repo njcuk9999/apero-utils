@@ -15,6 +15,11 @@ def nanpercentile(v,p,axis = None):
     else:
         return np.nanpercentile(v,p,axis = axis)
 
+def dot(a,b):
+    g = np.isfinite(a)*np.isfinite(b)
+    return np.vdot(a[g],b[g])
+
+
 @jit(nopython=True)
 def jit_nanpercentile(v, p):
     return np.nanpercentile(v,p)
@@ -437,6 +442,27 @@ def sed_ratio(sp1,sp2,doplot = False):
         return ius(index,ratio2,k=2,ext=3)(np.arange(len(sp1)))
 
 
+def wave2wave(file1,file2):
+    # get the e2ds from file 1 in the reference frame of file 2
+    # apply the BERV difference to match stellar restframes
+    sp1, hdr1 = fits.getdata(file1, header = True)
+    hdr2 = fits.getheader(file2)
+    print(1000*hdr1['BERV'],1000*hdr2['BERV'])
+    wave1 = doppler(fits2wave(hdr1),-1000*hdr1['BERV'])
+    wave2 = doppler(fits2wave(hdr2),-1000*hdr2['BERV'])
+
+    sp2 = np.zeros_like(sp1)
+
+    for iord in range(sp1.shape[0]):
+        tmp1 = wave1[iord]
+        tmp2 = sp1[iord]
+        g = np.isfinite(tmp2)
+        tmp3 = ius(tmp1[g],tmp2[g],k=3,ext=3)(wave2[iord])
+        mask = ius(tmp1,np.isfinite(tmp2),k=1,ext=1)(wave2[iord])
+        tmp3[mask<0.99] = np.nan
+        sp2[iord] = tmp3
+
+    return sp2
 
 @jit(nopython=True)
 def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
