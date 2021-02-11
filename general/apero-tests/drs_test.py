@@ -172,7 +172,7 @@ class DrsTest:
 
         Parse all index.fits files and return a dataframe.
 
-        :returns: dataframe of log content and list of missing log files
+        :returns: dataframe of index content and list of missing index files
         :rtype: Tuple[pd.DataFrame, list]
         """
         # Get all index.fits in a dataframe
@@ -182,14 +182,66 @@ class DrsTest:
         ]
         ind_df = load_fits_df(allpaths)
 
-        # Use DIRECTORY as index and keep only relevant entries
+        # Use NIGHTNAME as index and keep only relevant entries
         # whith self.recipe or extract recipes called
         ind_df = ind_df.set_index(["NIGHTNAME"])
+
 
         # Paths without files
         missing_inds = [p for p in allpaths if not os.path.isfile(p)]
 
         return ind_df, missing_logs
+
+
+    def _load_header(self) -> pd.DataFrame: 
+        # WIP
+
+        # Search for all .fits files on disk
+        filepaths = [d for d in glob.glob(self.params['DRS_DATA_REDUC']+'*/*.fits') 
+                if not (os.path.basename(d).startswith('index') or 
+                os.path.basename(d).startswith('log'))]
+
+
+
+        pconstant = constants.pload(self.params['INSTRUMENT'])
+        # list of index.fits columns
+        col_index = pconstant.OUTPUT_FILE_HEADER_KEYS()
+
+        # From apero drs
+
+        for output in outputs:
+        # get absfilename
+        absoutput = os.path.join(opath, output)
+
+        if not os.path.exists(absoutput):
+            mtime = np.nan
+        else:
+            mtime = os.path.getmtime(absoutput)
+
+        # get filename
+        if 'FILENAME' not in col_index:
+            col_index['FILENAME'] = [output]
+            col_index['NIGHTNAME'] = [nightname]
+            col_index['LAST_MODIFIED'] = [mtime]
+        else:
+            col_index['FILENAME'].append(output)
+            col_index['NIGHTNAME'].append(nightname)
+            col_index['LAST_MODIFIED'].append(mtime)
+
+        # loop around index columns and add outputs to istore
+        for icol in icolumns:
+            # get value from outputs
+            if icol not in outputs[output]:
+                value = 'None'
+            else:
+                value = outputs[output][icol]
+            # push in to istore
+            if icol not in istore:
+                istore[icol] = [value]
+            else:
+                istore[icol].append(value)
+
+
 
     # =========================================================================
     # Utility functions
