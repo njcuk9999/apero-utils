@@ -331,7 +331,11 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
                         sig[sig == 0] = np.nan
                         gg = np.isfinite(sig)
-                    rms[ii] = ius(ipix[gg], sig[gg], k=1, ext=3)(np.arange(4088))
+                    if np.sum(gg)>2:
+                        # we must have at least two bins to do anything useful here
+                        rms[ii] = ius(ipix[gg], sig[gg], k=1, ext=3)(np.arange(4088))
+                    else:
+                        rms[ii] = np.nan
 
             if ite_rv == 1:
                 # create a dummy array that will contain velocities and corresponding errors
