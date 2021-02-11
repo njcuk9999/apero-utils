@@ -290,7 +290,7 @@ def lowpassfilter(input_vect,width = 101):
         ymed = ymed2
 
     # splining the vector
-    spline = ius(xmed,ymed, k=1, ext=3)
+    spline = ius(xmed,ymed, k=2, ext=3)
     lowpass = spline(np.arange(len(input_vect)))
 
     return lowpass
