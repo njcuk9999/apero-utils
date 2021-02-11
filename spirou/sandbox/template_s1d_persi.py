@@ -60,7 +60,9 @@ sp, hdr = fits.getdata(files[0], header=True)
 hdu1 = fits.PrimaryHDU()
 
 hdr0 = hdu1.header
-for key in hdr.keys():
+
+keys = np.array([key for key in hdr.keys()])
+for key in keys[10:]:
     if key not in hdr0.keys():
         hdr0[key] = hdr[key]
 hdu1.header = hdr0

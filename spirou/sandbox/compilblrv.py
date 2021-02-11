@@ -197,9 +197,13 @@ def compilblrv(obj_sci, obj_template = None, doplot = False, force = True, commo
         for i in tqdm(range(len(per_line_mean))):
             tmp1 = rvs[:,i]-rv_per_epoch_model[:,i]
             err1 = dvrms[:,i]
-            guess,bulk_error  = et.odd_ratio_mean(tmp1,err1)
-            per_line_mean[i] = guess
-            per_line_error[i] = bulk_error
+            try:
+                guess,bulk_error  = et.odd_ratio_mean(tmp1,err1)
+                per_line_mean[i] = guess
+                per_line_error[i] = bulk_error
+            except:
+                per_line_mean[i] = np.nan
+                per_line_error[i] = np.nan
 
         # we keep the per-line mean to zero
         per_line_mean -= (et.odd_ratio_mean(per_line_mean,per_line_error))[0]

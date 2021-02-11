@@ -27,7 +27,7 @@ def mk_ccf_mask(template, doplot = False):
 
     print(template)
 
-    # Path where models are saved
+    # Path where models are saveds
     path_to_models = 'HiResFITS'
 
     # some parameters, don't worry
@@ -63,12 +63,13 @@ def mk_ccf_mask(template, doplot = False):
     # read template and header
     tbl, hdr = fits.getdata(template, ext=1, header=True)
 
-    if 'FP' not in template:
-        hdr2 = fits.getheader(template, ext=2)
-        nsp_input = hdr2['NAXIS2']
-    else:
-        nsp_input = 0
-        hdr['OBJECT'] = 'FP'
+    nsp_input = 0
+    #if 'FP' not in template:
+    #    hdr2 = fits.getheader(template, ext=2)
+    #    nsp_input = hdr2['NAXIS2']
+    #else:
+    #    nsp_input = 0
+    #    hdr['OBJECT'] = 'FP'
 
     out_pos_name = hdr['OBJECT'].upper() + '_pos.fits'
     if os.path.isfile(out_pos_name):
@@ -339,6 +340,8 @@ def mk_ccf_mask(template, doplot = False):
     new_hdul = fits.HDUList([hdu1, hdu2])
     new_hdul.writeto(out_pos_name, overwrite=True)
 
-templates = glob.glob('Template_s1d_*_sc1d_v_file_AB.fits')
+templates = glob.glob('Template_s1d_TRAPPIST-1_sc1d_v_file_AB.fits')
 for template in templates:
         mk_ccf_mask(template,doplot = True)
+
+

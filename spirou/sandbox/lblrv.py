@@ -53,7 +53,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     template = fits.getdata(template_file)
 
     if 'FP' not in obj_sci:
-        scifiles = glob.glob(science_path+obj_sci+'/*tcorr*AB.fits')
+        scifiles = glob.glob(science_path+obj_sci+'/*e2dsff_tcorr*AB.fits')
     else:
         scifiles = glob.glob(science_path+obj_sci+'/2*C.fits')
 
@@ -449,9 +449,9 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
                 # From Bouchy 2001 equation, RV error for each pixel
                 with warnings.catch_warnings(record=True) as _:
                     dddvrms_pix = mean_rms / ddd_segment
-                # RV error for the line
-                dddvrms[i] = 1 / np.sqrt(np.sum((1 / dddvrms_pix ** 2)))
-                dddv[i] = et.sum(diff_segment * ddd_segment) / np.sum(ddd_segment ** 2)
+                    # RV error for the line
+                    dddvrms[i] = 1 / np.sqrt(np.sum((1 / dddvrms_pix ** 2)))
+                    dddv[i] = et.sum(diff_segment * ddd_segment) / np.sum(ddd_segment ** 2)
 
                 #ratio of expected VS actual RMS in difference of model vs line
                 tbl['RMSRATIO'][i] = et.nanstd(diff_segment)/mean_rms

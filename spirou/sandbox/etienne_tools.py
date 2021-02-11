@@ -263,9 +263,8 @@ def lowpassfilter(input_vect,width = 101):
         if len(pixval)<3:
             continue
 
-
         # if no finite value, skip
-        if np.max(np.isfinite(input_vect[pixval])) == 0:
+        if np.sum(np.isfinite(input_vect[pixval])) < 3:
             continue
 
         # mean position along vector and NaN median value of
