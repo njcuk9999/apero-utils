@@ -13,7 +13,7 @@ import warnings
 from time import time
 from scipy import stats
 
-def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, force = False,
+def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits',
           noise_model = False,check_fp = False):
