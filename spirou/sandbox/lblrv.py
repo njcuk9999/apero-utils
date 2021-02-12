@@ -122,6 +122,9 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     End of checks
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
+    # get bad
+    bad_odo = et.get_bad_odo()
+
     # sort files by name so that they are consecutive in time
     scifiles.sort()
 
@@ -230,6 +233,14 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     failed_convergence = True
     for ifile in range(len(scifiles)):
 
+        # get the science file info
+        sp, hdr = fits.getdata(scifiles[ifile], header=True)
+
+        if 'EXPNUM' in hdr.keys():
+            if hdr['EXPNUM'] in bad_odo:
+                print(et.color('File {} is a known bad file, we skip'.format(scifiles[ifile]),'red'))
+                continue
+
         # output name
         outname = lblrv_path + scifiles[ifile].split('.fits')[0].split('/')[-1]+'_'+obj_sci+'_'+obj_template+'_lbl.fits'
 
@@ -239,8 +250,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
 
         time_start = time()
 
-        # get the science file info
-        sp, hdr = fits.getdata(scifiles[ifile], header=True)
+
 
         if noise_model:
             rms = get_noise_model(scifiles[ifile])

@@ -8,6 +8,28 @@ import warnings
 #import numba
 from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
+import requests
+
+
+def get_bad_odo():
+
+    URL_BASE = ('https://docs.google.com/spreadsheets/d/'
+                '{}/gviz/tq?tqx=out:csv&sheet={}')
+    SHEET_ID = '1gvMp1nHmEcKCUpxsTxkx-5m115mLuQIGHhxJCyVoZCM'
+    WORKSHEET = 0
+    BAD_ODO_URL = URL_BASE.format(SHEET_ID, WORKSHEET)
+
+
+    # fetch data
+    data = requests.get(BAD_ODO_URL)
+    tbl = Table.read(data.text, format='ascii')
+    # Convert types
+    tbl['ODOMETER'] = tbl['ODOMETER'].astype(str)
+    tbl['PP'] = tbl['PP'] == 'TRUE'
+    tbl['RV'] = tbl['RV'] == 'TRUE'
+
+    return np.array(tbl['ODOMETER'])
+
 
 def nanpercentile(v,p,axis = None):
     if axis == None:

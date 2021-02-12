@@ -20,7 +20,7 @@ import etienne_tools as et
 #
 
 
-def mk_ccf_mask(template, doplot = False):
+def mk_ccf_mask(template, doplot = False,force = True):
     # CSV table to contain systemic velocities. Will replace the entry of the same object if it is already present
     # in the table, will create the table if it does not exist
     systemic_velocity_table = 'systemic_velo.csv'
@@ -63,16 +63,16 @@ def mk_ccf_mask(template, doplot = False):
     # read template and header
     tbl, hdr = fits.getdata(template, ext=1, header=True)
 
-    nsp_input = 0
-    #if 'FP' not in template:
-    #    hdr2 = fits.getheader(template, ext=2)
-    #    nsp_input = hdr2['NAXIS2']
-    #else:
-    #    nsp_input = 0
-    #    hdr['OBJECT'] = 'FP'
+    #nsp_input = 0
+    if 'FP' not in template:
+        hdr2 = fits.getheader(template, ext=2)
+        nsp_input = hdr2['NAXIS2']
+    else:
+        nsp_input = 0
+        hdr['OBJECT'] = 'FP'
 
     out_pos_name = hdr['OBJECT'].upper() + '_pos.fits'
-    if os.path.isfile(out_pos_name):
+    if os.path.isfile(out_pos_name) and (not force):
         print('File {} exists, we skip'.format(out_pos_name))
         return
 
@@ -190,7 +190,6 @@ def mk_ccf_mask(template, doplot = False):
             fit = np.polyfit(dvs[minpos - 1:minpos + 2], cc[minpos - 1:minpos + 2], 2)
 
 
-
             if doplot:
 
 
@@ -201,7 +200,7 @@ def mk_ccf_mask(template, doplot = False):
             print(systemic_velocity)
             scale /= 5.0
 
-            if np.min(cc)/np.max(cc) > 0.95:
+            if np.min(cc)/np.max(cc) > 0.99:
                 low_contrast = True
                 print('not enough ccf contrast, will end after the plot')
 
@@ -267,7 +266,7 @@ def mk_ccf_mask(template, doplot = False):
         print(fit_gau)
 
 
-        if doplot:
+        if False:
             plt.plot(dvs/1000, cc, color='black', alpha=0.5, label = 'normalized CCF')
             plt.plot(dvs/1000, gfit,alpha = 0.5,label = 'normalized gaussian fit')
             plt.ylabel('flux')
@@ -282,12 +281,17 @@ def mk_ccf_mask(template, doplot = False):
 
 
 
-        plt.plot(w,f, 'g-',label = 'input spectrum')
+        plt.plot(et.doppler(w,systemic_velocity*1000),f, 'g-',label = 'input spectrum')
         plt.vlines(tbl[tbl['w_mask'] < 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'k',alpha = 0.2,label = 'positive feature')
         plt.vlines(tbl[tbl['w_mask'] > 0]['ll_mask_s'], np.nanmin(f), np.nanmax(f), 'r',alpha = 0.2,label = 'negative feature')
         plt.legend()
         plt.xlabel('Wavelength [nm]')
         plt.ylabel('Arbitrary flux')
+        plt.xlim([1600,1605])
+
+        gg = (w>1600)*(w<1620)
+        pp = np.nanpercentile(f[gg],[5,95])
+        plt.ylim([pp[0]-0.1*(pp[1]-pp[0]),pp[1]+0.1*(pp[1]-pp[0])])
         plt.show()
 
     # write the output table
@@ -340,8 +344,8 @@ def mk_ccf_mask(template, doplot = False):
     new_hdul = fits.HDUList([hdu1, hdu2])
     new_hdul.writeto(out_pos_name, overwrite=True)
 
-templates = glob.glob('Template_s1d_TRAPPIST-1_sc1d_v_file_AB.fits')
+templates = glob.glob('Template_s1d_*_sc1d_v_file_AB.fits')
 for template in templates:
-        mk_ccf_mask(template,doplot = True)
+        mk_ccf_mask(template,doplot = False,force = True)
 
 
