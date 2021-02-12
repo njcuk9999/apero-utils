@@ -122,7 +122,7 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     End of checks
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
 
-    # get bad
+    print(et.color('We get bad odometers','magenta'))
     bad_odo = et.get_bad_odo()
 
     # sort files by name so that they are consecutive in time
@@ -233,20 +233,31 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
     failed_convergence = True
     for ifile in range(len(scifiles)):
 
-        # get the science file info
-        sp, hdr = fits.getdata(scifiles[ifile], header=True)
-
-        if 'EXPNUM' in hdr.keys():
-            if hdr['EXPNUM'] in bad_odo:
-                print(et.color('File {} is a known bad file, we skip'.format(scifiles[ifile]),'red'))
-                continue
-
         # output name
         outname = lblrv_path + scifiles[ifile].split('.fits')[0].split('/')[-1]+'_'+obj_sci+'_'+obj_template+'_lbl.fits'
 
         if os.path.isfile(outname) and not force:
             print(et.color('\t\tfile {0} exists and force = {1}'.format(outname, force),'cyan'))
             continue
+
+        # get the science file info
+        sp, hdr = fits.getdata(scifiles[ifile], header=True)
+
+        if 'EXPNUM' in hdr.keys():
+            if str(hdr['EXPNUM']) in bad_odo:
+                print(et.color('File {} is a known bad file, we skip'.format(scifiles[ifile]),'red'))
+                continue
+            else:
+                print(et.color('File {} is *not* a known bad file'.format(scifiles[ifile]),'cyan'))
+
+        if 'EXTSN035' in hdr.keys():
+            if hdr['EXTSN035']<10:
+                print(et.color('We have an SNR of <10 in H band, we skip file','red'))
+                continue
+            else:
+                print(et.color('SNR in H is {0:.2f} and >10, all good'.format(hdr['EXTSN035']),'cyan'))
+
+
 
         time_start = time()
 
@@ -504,9 +515,9 @@ def lblrv(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, f
             #if ite_rv == 1:
             #    rv1 = np.array(rv_finale)
 
-            print(rv_mean,bulk_error)
+            print(et.color('\tRV = {0:.2f} m/s, sigma = {1:.2f} m/s'.format(rv_mean,bulk_error),'green'))
 
-            if np.abs(rv_mean) < bulk_error:
+            if np.abs(rv_mean) < bulk_error/5:
                 ite_convergence = ite_rv
                 done = True
 

@@ -6,7 +6,6 @@ from astropy.table import Table
 import numpy as np
 import matplotlib.pyplot as plt
 
-
 files = glob.glob('tellurics/TRAPPIST-1/*s1d*.fits')
 
 wave = Table.read(files[0])['wavelength']
