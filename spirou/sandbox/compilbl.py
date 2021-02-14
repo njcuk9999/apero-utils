@@ -50,8 +50,9 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             # if first file, we populate the columns
             if i == 0:
                 tbl = dict()
-                tbl['per_epoch_mean'] = np.zeros_like(scifiles, dtype = float)
-                tbl['per_epoch_err'] = np.zeros_like(scifiles, dtype = float)
+                tbl['rjd'] = np.zeros_like(scifiles, dtype = float)
+                tbl['vrad'] = np.zeros_like(scifiles, dtype = float)
+                tbl['svrad'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDV'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDVRMS'] = np.zeros_like(scifiles, dtype = float)
                 tbl['per_epoch_DDDV'] = np.zeros_like(scifiles, dtype = float)
@@ -66,6 +67,8 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
                         if type(val) == str:
                             val =  ' '*100
                         tbl[key] = np.zeros_like(np.tile(val,len(scifiles)))
+            tbl['rjd'][i] = hdr['BJD'] - 2400000
+
 
             for key in keys:
                 # adding header value in output table
@@ -139,7 +142,6 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             plt.savefig(outname+'_cumul.pdf')
             plt.close()
 
-        # a line must be present >80% of the line
         print('Forcing a stddev of 1 for all lines')
         print('constructing a per-epoch mean velocity')
         for i in tqdm(range(rvs.shape[0])):
@@ -147,47 +149,11 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             dvrms[i]*=et.sigma(nsig)
 
             guess,bulk_error  = et.odd_ratio_mean(rvs[i],dvrms[i])
-            tbl['per_epoch_mean'][i] = guess
-            tbl['per_epoch_err'][i] = bulk_error
-
-
-        """
-        #valid_lines = np.nanmean(np.isfinite(rvs) * np.isfinite(dvrms),axis=0) > fcut
-        #rvs = rvs[:,valid_lines]
-        #dvrms = dvrms[:,valid_lines]
-        #tbl_per_line = tbl_per_line[valid_lines]
-        #DDV  = DDV[:,valid_lines]
-        #DDDV = DDDV[:,valid_lines]
-        #DDVRMS  = DDVRMS[:,valid_lines]
-        #DDDVRMS = DDDVRMS[:,valid_lines]
-
-        if common_weights:
-            for i in range(rvs.shape[1]):
-                dvrms[:, i] *= sig[i]
-
-            # produce a map of median change in error, liked to SNR changes
-            err_ratio = np.zeros(dvrms.shape)
-            # first guess at median per-line error
-            ref = np.nanmedian(dvrms, axis=0)
-            for i in range(dvrms.shape[0]):
-                err_ratio[i] = et.nanmedian(dvrms[i]/ref)
-            # better estimate of median rms
-            ref = np.nanmedian(dvrms / err_ratio, axis=0)
-            for i in range(dvrms.shape[0]):
-                amp = et.nanmedian(dvrms[i]/ref)
-                # all lines have the same relative weights
-                # but may vary from one spectra to the other while
-                # preserving the same relative ratios
-                dvrms[i] = amp*ref
-
-
-        # plot or not
-        #if doplot:
-        #    plt.errorbar(tbl['MJDATE']+0.2, tbl['per_epoch_mean'] - np.nanmean(tbl['per_epoch_mean']), fmt='.g', yerr=tbl['per_epoch_err'], alpha=0.5)
-        """
+            tbl['vrad'][i] = guess
+            tbl['svrad'][i] = bulk_error
 
         # de-biasing line. Matrix that contains a replicated 2d version of the per-epoch mean
-        rv_per_epoch_model = np.reshape(np.repeat(tbl['per_epoch_mean'],rvs.shape[1]),rvs.shape)
+        rv_per_epoch_model = np.reshape(np.repeat(tbl['vrad'],rvs.shape[1]),rvs.shape)
 
         # line-by-line mean position
         per_line_mean = np.zeros(rvs.shape[1])
@@ -211,13 +177,11 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
         # constructing a 2d model of line biases
         rv_per_line_model = np.reshape(np.tile(per_line_mean,rvs.shape[0]),rvs.shape)
 
-        rv1 = np.array(tbl['per_epoch_mean'])
-
         # updating the table
         for i in tqdm(range(len(scifiles))):
             guess,bulk_error  = et.odd_ratio_mean(rvs[i]-rv_per_line_model[i],dvrms[i])
-            tbl['per_epoch_mean'][i] = guess
-            tbl['per_epoch_err'][i] = bulk_error
+            tbl['vrad'][i] = guess
+            tbl['svrad'][i] = bulk_error
 
             guess,bulk_error  = et.odd_ratio_mean(DDV[i],DDVRMS[i])
             tbl['per_epoch_DDV'][i] = guess
@@ -270,26 +234,25 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
         for iband in range(len(bands)):
             for reg in range(4):
-                tbl['per_epoch_mean_' + bands[iband]+suffix[reg]] = rvs_matrix[:,iband,reg]
-                tbl['per_epoch_err_' + bands[iband]+suffix[reg]] = err_matrix[:,iband,reg]
+                tbl['vrad_' + bands[iband]+suffix[reg]] = rvs_matrix[:,iband,reg]
+                tbl['svrad_' + bands[iband]+suffix[reg]] = err_matrix[:,iband,reg]
 
         tbl = et.td_convert(tbl)
-        #tbl = tbl[keep]
         tbl.write(outname, overwrite = True)
 
         # plot or not
         if doplot:
             fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
             #ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.3,label = 'J')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_H']-et.nanmedian(tbl['per_epoch_mean_H']) , fmt='.r', yerr=tbl['per_epoch_err_H'],alpha = 0.2,label = 'H')
-            ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean']-et.nanmedian(tbl['per_epoch_mean']) , fmt='.k', yerr=tbl['per_epoch_err'],alpha = 0.8,label = 'all')
+            ax[0].errorbar(tbl['rjd'], tbl['vrad_H']-et.nanmedian(tbl['vrad_H']) , fmt='.r', yerr=tbl['svrad_H'],alpha = 0.2,label = 'H')
+            ax[0].errorbar(tbl['rjd'], tbl['vrad']-et.nanmedian(tbl['svrad']) , fmt='.k', yerr=tbl['svrad'],alpha = 0.8,label = 'all')
             #ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'] ,fmt='.k', yerr=tbl['per_epoch_DDVRMS'], alpha = 0.7)
 
-            diff_JH =  tbl['per_epoch_mean_J']-tbl['per_epoch_mean_H']
-            ax[1].errorbar(tbl['MJDATE'],diff_JH - et.nanmedian(diff_JH) , fmt='.g', yerr=np.sqrt(tbl['per_epoch_err_J']**2+tbl['per_epoch_err_H']**2),alpha = 0.5,label = 'J')
+            diff_JH =  tbl['vrad_J']-tbl['vrad_H']
+            ax[1].errorbar(tbl['rjd'],diff_JH - et.nanmedian(diff_JH) , fmt='.g', yerr=np.sqrt(tbl['svrad_J']**2+tbl['svrad_H']**2),alpha = 0.5,label = 'J')
             ax[0].legend()
-            ax[0].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]',title = 'H velocity')
-            ax[1].set(xlabel = 'MJDATE', ylabel = 'RV [m/s]', title = 'J-H velo diff')
+            ax[0].set(xlabel = 'rjd', ylabel = 'RV [m/s]',title = 'H velocity')
+            ax[1].set(xlabel = 'rjd', ylabel = 'RV [m/s]', title = 'J-H velo diff')
             #ax[2].set(xlabel = 'MJDATE', ylabel = '2nd deriv')
             plt.show()
     else:
@@ -297,4 +260,3 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
         print('You may use force=True to overwrite it')
 
     return Table.read(outname)
-
