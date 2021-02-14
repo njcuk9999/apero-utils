@@ -30,7 +30,8 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
     suffix = ''
 
-    outname = 'tbllblrv{2}_{0}_{1}.csv'.format(obj_sci, obj_template,suffix)
+    outname = 'lbl_{0}_{1}.rdb'.format(obj_sci, obj_template)
+    outname2 = 'lbl2_{0}_{1}.rdb'.format(obj_sci, obj_template)
 
     # default keywords to be included in the compilation of per-object RVs
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
@@ -258,5 +259,30 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
     else:
         print('File {0} exists, we read it'.format(outname))
         print('You may use force=True to overwrite it')
+
+
+
+    udates = np.unique( tbl['DATE-OBS'])
+
+    tbl2 = Table(tbl[0:len(udates)]) # create a table with a per-epoch value
+
+    for i in tqdm(range(len(udates))):
+        tbl_date = tbl[udates[i] ==  tbl['DATE-OBS']]
+        for key in tbl_date.keys():
+            if 'vrad' not in key:
+                try:
+                    tbl2[key][i] = np.mean(tbl_date[key])
+                except:
+                    tbl2[key][i] = tbl_date[key][0]
+
+            if key[0:4] == 'vrad':
+                rv = tbl_date[key]
+
+                err_rv = tbl_date['s'+key]
+                tbl2[key][i] = np.nansum(rv/err_rv**2)/np.nansum(1/err_rv**2)
+
+                tbl2['s'+key][i] = np.sqrt(1/np.nansum(1/err_rv**2))
+    tbl2.write(outname2, overwrite = True)
+
 
     return Table.read(outname)
