@@ -2,7 +2,6 @@ import numpy as np
 import glob
 from astropy.io import fits
 import os
-import matplotlib.pyplot as plt
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from astropy.table import Table
 from tqdm import tqdm
@@ -36,6 +35,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
     if obj_template is None:
         obj_template = obj_sci
 
+    if doplot_ccf or doplot_debug:
+        import matplotlib.pyplot as plt
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     Inputs to the code
