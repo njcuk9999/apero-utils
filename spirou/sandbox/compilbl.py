@@ -34,8 +34,11 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
     outname2 = 'lbl2_{0}_{1}.rdb'.format(obj_sci, obj_template)
 
     # default keywords to be included in the compilation of per-object RVs
-    keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME', 'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE', 'ITE_RV', 'SYSTVELO',
-            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT','SBRHB1_P','SBRHB2_P','SBCDEN_P','SNRGOAL',
+    keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME',
+            'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE',
+            'ITE_RV', 'SYSTVELO',
+            'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT',
+            'SBRHB1_P','SBRHB2_P','SBCDEN_P','SNRGOAL',
             'EXTSN035','BJD']
     keys = np.array(keys)
 
@@ -74,8 +77,10 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             for key in keys:
                 # adding header value in output table
                 if key in hdr:
-
-                    tbl[key][i] = hdr[key]
+                    try:
+                        tbl[key][i] = hdr[key]
+                    except:
+                        print(et.colors('key {0} not present in file {1}'.format(key,scifiles[i]),'red'))
             # for date plotting
             tbl['plot_date'][i] = Time(hdr['MJDATE'], format='mjd').plot_date - Time(40588, format='mjd').plot_date
 
