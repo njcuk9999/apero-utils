@@ -226,8 +226,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
 
                     if np.sum(np.isfinite(tmp_err[g]) * np.isfinite(tmp_rv[g]))<np.sum(g)/2:
-                        #print(et.color('Less than 50% of lines are valid for {0}, band {1}, reg {2}'.format(scifiles[i], bands[iband],reg),'red'))
-                        #keep[i] = False
+
                         continue
 
                     if np.sum(g) < 5:
