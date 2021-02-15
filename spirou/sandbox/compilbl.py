@@ -80,7 +80,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
                     try:
                         tbl[key][i] = hdr[key]
                     except:
-                        print(et.colors('key {0} not present in file {1}'.format(key,scifiles[i]),'red'))
+                        print(et.color('key {0} not present in file {1}'.format(key,scifiles[i]),'red'))
             # for date plotting
             tbl['plot_date'][i] = Time(hdr['MJDATE'], format='mjd').plot_date - Time(40588, format='mjd').plot_date
 
