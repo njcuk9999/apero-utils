@@ -118,7 +118,7 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
                                      fp_lines['WAVE_MEAS'][g]
 
             # current peak numbers if you take the previous order cavity length and
-            # assume it's the same of current order while using the current order wavelength
+            # assume it's the same as for the current order while using the current order wavelength
             # solution.
             # The median between the two should be close to zero (extrapolated_numbering can
             # be float, not int as current_numbering). If the is a mis-counting, then you get
@@ -169,6 +169,8 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
     mean2err=np.inf
 
     # we change the achromatic cavity length term to force HC peaks to have a zero velocity error.
+    fig,ax = plt.subplots(nrows = 2, ncols = 1)
+
 
     # we will loop until the cavity change is below 1/100th of the error on the cavity change.
     while mean2err>1e-2:
@@ -192,12 +194,15 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
         # in velocity, diff between measured and catalog HC line positions
         diff_hc = (1-hc_lines['WAVE_MEAS']/hc_lines['WAVE_REF'])*constants.c
 
+        if np.isfinite(mean2err) == False:
+            ax[0].hist(diff_hc[np.abs(diff_hc) < 200],color = 'red', bins=100)
+
         # model of the errors in the HC line positions. We assume that
         # they decrease as 1/NSIG
         sig = et.sigma(diff_hc*(hc_lines['NSIG']))/(hc_lines['NSIG'])
 
         # get smart mean of the velocity error
-        mean_hc_vel,err = et.odd_ratio_mean(diff_hc,sig,odd_ratio=1e-2)
+        mean_hc_vel,err = et.odd_ratio_mean(diff_hc,sig,odd_ratio=1e-4)
 
         # if we are allowed to change the achromatic cavity length, then we do it, else
         # we just keep track of how much we would have changed it.
@@ -213,9 +218,7 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
     # final cavity change
     print('change in cavity length {0:6.2f} nm'.format(cavity[-1]-cavity0[-1]))
 
-    #
-    fig,ax = plt.subplots(nrows = 2, ncols = 1)
-    ax[0].hist(diff_hc[np.abs(diff_hc)<500],bins = 100)
+    ax[0].hist(diff_hc[np.abs(diff_hc)<200],color = 'blue',alpha = 0.5,bins = 100)
     ax[0].set(xlabel = 'Velocity [m/s]',title = 'HC diff')
     nsig = diff_hc/sig
     ax[1].hist(nsig[np.abs(nsig)<5],bins = 100)
@@ -245,23 +248,34 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
 if os.path.isfile('sample_cavity.csv'):
     os.system('rm sample_cavity.csv')
 
+if os.path.isfile('dummy.csv'):
+    os.system('rm dummy.csv')
+
+# test with NIRPS
 # we create the cavity file
-fp_lines = Table.read('EA_23994F38T42a_pp_e2dsff_AB_wavem_fplines_AB.fits')
-hc_lines = Table.read('EA_239944F5T6c_pp_e2dsff_AB_wavem_hclines_AB.fits')
+fp_lines = Table.read('EA_NIRPS_GEN_WAVE343_0003_pp_e2dsff_A_wavem_fplines_A.fits')
+hc_lines = Table.read('EA_NIRPS_GEN_WAVE343_0004_pp_e2dsff_A_wavem_hclines_A.fits')
+
+wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_order = 3,cavity_table_name = 'dummy.csv')
+print()
+
+# we create the cavity file
+fp_lines = Table.read('EA_23754F69T73a_pp_e2dsff_AB_wavem_fplines_AB.fits')
+hc_lines = Table.read('EA_237547F4T5c_pp_e2dsff_AB_wavem_hclines_AB.fits')
 
 wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'sample_cavity.csv')
 print()
 
 # we read the cavity file and perform an achromatic cavity change
-fp_lines = Table.read('EA_242680F5T9a_pp_e2dsff_AB_wavem_fplines_AB.fits')
-hc_lines = Table.read('EA_241318F5T6c_pp_e2dsff_AB_wavem_hclines_AB.fits')
+fp_lines = Table.read('EA_24004F09T13a_pp_e2dsff_AB_wavem_fplines_AB.fits')
+hc_lines = Table.read('EA_240041F6T7c_pp_e2dsff_AB_wavem_hclines_AB.fits')
 
 wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'sample_cavity.csv')
 print()
 
 # we read the cavity file but perform do *NOT* perform the achromatic cavity change
-fp_lines = Table.read('EA_24004F09T13a_pp_e2dsff_AB_wavem_fplines_AB.fits')
-hc_lines = Table.read('EA_240041F6T7c_pp_e2dsff_AB_wavem_hclines_AB.fits')
+fp_lines = Table.read('EA_242680F5T9a_pp_e2dsff_AB_wavem_fplines_AB.fits')
+hc_lines = Table.read('EA_241318F5T6c_pp_e2dsff_AB_wavem_hclines_AB.fits')
 wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'sample_cavity.csv',
-                        no_achromatic=True)
+                        no_achromatic=False)
 print()
