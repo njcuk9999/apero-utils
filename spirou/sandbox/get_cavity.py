@@ -253,8 +253,8 @@ wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'sample_cavity.csv
 print()
 
 # we read the cavity file and perform an achromatic cavity change
-fp_lines = Table.read('EA_23754F69T73a_pp_e2dsff_AB_wavem_fplines_AB.fits')
-hc_lines = Table.read('EA_237547F4T5c_pp_e2dsff_AB_wavem_hclines_AB.fits')
+fp_lines = Table.read('EA_242680F5T9a_pp_e2dsff_AB_wavem_fplines_AB.fits')
+hc_lines = Table.read('EA_241318F5T6c_pp_e2dsff_AB_wavem_hclines_AB.fits')
 
 wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'sample_cavity.csv')
 print()
