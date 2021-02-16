@@ -25,7 +25,7 @@ for i in range(len(all_masks)):
     OBJTEMP[i] = hdr['OBJTEMP']
     NSPTEMPL[i] = hdr['NSPTEMPL']
 
-    REFS[i] = (NSPTEMPL[i] > 200) and ('GL' in OBJ[i]) and (OBJ[i] not in bad)
+    REFS[i] = (NSPTEMPL[i] > 200) and ('G' in OBJ[i]) and (OBJ[i] not in bad)
 
 
 for i in range(len(all_masks)):

@@ -194,10 +194,8 @@ def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
     guess = [dvs[imax],2000,ccf[imax]-nanmedian(ccf),nanmedian(ccf),0]
     fit, pcov = curve_fit(gauss, dvs,ccf,p0 = guess)
 
-    #fit = np.polyfit(dvs[imax - 1:imax + 2], ccf[imax - 1:imax + 2], 2)
-    systemic_vel = fit[0]#-.5 * fit[1] / fit[0]
+    systemic_vel = fit[0]
     print('CCF Velocity : {0:.2f} m/s'.format(-systemic_vel))
-
 
     if doplot:
         plt.plot(-dvs/1000, ccf )

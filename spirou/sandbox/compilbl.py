@@ -5,7 +5,6 @@ from tqdm import tqdm
 import etienne_tools as et
 import numpy as np
 from astropy.table import Table
-import matplotlib.pyplot as plt
 from astropy.time import Time
 
 def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
@@ -51,6 +50,9 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             fix, ax = plt.subplots(nrows = 2, ncols =1)
         for i in tqdm(range(len(scifiles))):
             hdr = fits.getheader(scifiles[i])
+
+
+
             # if first file, we populate the columns
             if i == 0:
                 tbl = dict()

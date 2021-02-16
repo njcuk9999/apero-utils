@@ -400,7 +400,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                     bl_ord = bl[iord[i]]
 
                     # we will perform a line-by-line amplitude correction
-                    #diff = sp_ord - model_ord
                     #
                     if doplot_debug:
                         if (iord[i] == 35)*(ite_rv == 1):
