@@ -33,12 +33,13 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
     outname2 = 'lbl2_{0}_{1}.rdb'.format(obj_sci, obj_template)
 
     # default keywords to be included in the compilation of per-object RVs
-    keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME',
+    keys = ['MJDATE','MJDMID', 'EXPTIME', 'AIRMASS', 'FILENAME',
             'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE',
             'ITE_RV', 'SYSTVELO','WAVETIME','WAVEFILE',
             'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT',
             'SBRHB1_P','SBRHB2_P','SBCDEN_P','SNRGOAL',
-            'EXTSN035','BJD']
+            'EXTSN035','BJD','SHAPE_DX','SHAPE_DY','SHAPE_A',
+            'SHAPE_B','SHAPE_C','SHAPE_D']
     keys = np.array(keys)
 
     if (not os.path.isfile(outname)) or force:

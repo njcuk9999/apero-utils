@@ -197,6 +197,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
     flux0 =np.array(flux)
 
+    # we high-pass on a scale of ~101 pixels in the e2ds
     flux -= et.lowpassfilter(flux, width=223)
 
     dflux = np.gradient(flux)/ np.gradient(np.log(template['wavelength'])) / constants.c
@@ -227,8 +228,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
     # all systemic velocities. Used to guesstimate the velocity
     systemic_all = np.zeros_like(scifiles, dtype = float) + np.nan
     mjdate_all = np.zeros_like(scifiles, dtype = float)
-
-    current_epoch = 1e9 # dummy epoch so we know that we did not previously have a good RV
 
     # flag to take a completely new RV measurement
     failed_convergence = True
@@ -307,7 +306,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 dmodel = np.zeros_like(sp)
                 ddmodel = np.zeros_like(sp)
                 dddmodel = np.zeros_like(sp)
-                lowf = np.zeros_like(sp)
                 model_mask = np.zeros_like(sp)
 
             for ii in range(sp.shape[0]):
@@ -376,6 +374,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
             iord = np.array(tbl['ORDER'])
 
             # noinspection PyInterpreter
+            # loop through all lines
             for i in range(0,len(tbl['ORDER'])):#, leave = False):
                 # if the line has been flagged as bad, skip right away
                 if (ite_rv !=1) and (keep[i] == False):
@@ -459,7 +458,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 # RV error for the line
                 dvrms[i] = 1/np.sqrt(np.sum((1/dvrms_pix**2)))
                 # feed the monster
-                dv[i] = et.sum(diff_segment*d_segment)/np.sum(d_segment**2)
+                dv[i] = et.sum(diff_segment*d_segment)/et.sum(d_segment**2)
 
                 # 2nd derivative
                 # From Bouchy 2001 equation, RV error for each pixel
@@ -555,11 +554,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
         tbl['CHI2_VALID_CDF'] = 1-stats.chi2.cdf(tbl['CHI2'],tbl['NPIXLINE'])
 
-        if False:
-            nsig = (tbl['RV'] - np.nanmedian(tbl['RV'])) / tbl['DVRMS']
-            plt.hist(nsig[np.abs(nsig) < 10], bins=100)
-            plt.show()
-            et.sigma(nsig)
 
         # convert back from dictionnary to table and save
         hdu2 = fits.BinTableHDU(et.td_convert(tbl))
