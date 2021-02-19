@@ -4,12 +4,17 @@ DRS Tests that (try to) follow the APERO framework.
 @author: vandalt
 """
 import os
+import glob
+import numpy as np
 from datetime import datetime
 from typing import List, Optional, Tuple
 
 import pandas as pd
 from astropy.table import Table
+from astropy.io import fits
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
+from apero.core import constants
 
 # from . import OUTDIR, TEMPLATEDIR
 
@@ -182,65 +187,63 @@ class DrsTest:
         ]
         ind_df = load_fits_df(allpaths)
 
-        # Use NIGHTNAME as index and keep only relevant entries
-        # whith self.recipe or extract recipes called
+        # Use NIGHTNAME as index
         ind_df = ind_df.set_index(["NIGHTNAME"])
 
+        # Search for files not in the index.fits
+        # Paths of the files inside the index.fits
+        indpaths = (self.output_path
+                    + ind_df.index.get_level_values("NIGHTNAME") 
+                    + os.path.sep 
+                    + ind_df.FILENAME)
+        # Paths for all .fits files on disk
+        filepaths = [d for d in glob.glob(self.output_path+"*/*.fits") 
+                if not (os.path.basename(d).startswith("index") or 
+                os.path.basename(d).startswith("log"))]
+        # Paths for files not in index.fits
+        missing_paths = np.setdiff1d(filepaths, indpaths.tolist())
+        # Load headers
+        headers0 = pd.Series(missing_paths).apply(fits.getheader, ext=0)
+        index_ext1 = np.where(pd.Index(headers0.str.len()).get_loc(4))[0]
+        headers1 = pd.Series(missing_paths[index_ext1],
+                index = index_ext1).apply(fits.getheader, ext=1)
+        headers = headers0
+        headers.update(headers1)
+        header_df = pd.DataFrame(headers.tolist(), index=headers.index)
 
-        # Paths without files
+        pconstant = constants.pload(self.instrument)
+        # list of index.fits columns
+        index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
+        # Header keywords associate with index.fits columns
+        keys = [params[col][0] for col in index_cols]
+
+        missing_ind_df = pd.DataFrame(header_df[keys].values,
+                columns = index_cols)
+
+        # Populate the three columns not in the header
+        filename = []        
+        nightname = []
+        mtime = []
+        for i in range(len(missing_ind_df)):
+            sep_index = missing_paths[i].replace(
+                    self.output_path,"").index(os.path.sep)
+            filename.append(missing_paths[i].replace(
+                    self.output_path,"")[sep_index+1:])
+            nightname.append(missing_paths[i].replace(
+                    self.output_path,"")[:sep_index])
+            mtime.append(os.path.getmtime(missing_paths[i]))
+        missing_ind_df.insert(loc=0, column='LAST_MODIFIED', value=mtime)
+        missing_ind_df.insert(loc=0, column='NIGHTNAME', value=nightname)
+        missing_ind_df.insert(loc=0, column='FILENAME', value=filename)
+        missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
+        
+        # Append the missing files to the index DataFrame
+        ind_df = ind_df.append(missing_ind_df)
+
+        # Paths without index.fits at all
         missing_inds = [p for p in allpaths if not os.path.isfile(p)]
 
-        return ind_df, missing_logs
-
-
-    def _load_header(self) -> pd.DataFrame: 
-        # WIP
-
-        # Search for all .fits files on disk
-        filepaths = [d for d in glob.glob(self.params['DRS_DATA_REDUC']+'*/*.fits') 
-                if not (os.path.basename(d).startswith('index') or 
-                os.path.basename(d).startswith('log'))]
-
-
-
-        pconstant = constants.pload(self.params['INSTRUMENT'])
-        # list of index.fits columns
-        col_index = pconstant.OUTPUT_FILE_HEADER_KEYS()
-
-        # From apero drs
-
-        for output in outputs:
-        # get absfilename
-        absoutput = os.path.join(opath, output)
-
-        if not os.path.exists(absoutput):
-            mtime = np.nan
-        else:
-            mtime = os.path.getmtime(absoutput)
-
-        # get filename
-        if 'FILENAME' not in col_index:
-            col_index['FILENAME'] = [output]
-            col_index['NIGHTNAME'] = [nightname]
-            col_index['LAST_MODIFIED'] = [mtime]
-        else:
-            col_index['FILENAME'].append(output)
-            col_index['NIGHTNAME'].append(nightname)
-            col_index['LAST_MODIFIED'].append(mtime)
-
-        # loop around index columns and add outputs to istore
-        for icol in icolumns:
-            # get value from outputs
-            if icol not in outputs[output]:
-                value = 'None'
-            else:
-                value = outputs[output][icol]
-            # push in to istore
-            if icol not in istore:
-                istore[icol] = [value]
-            else:
-                istore[icol].append(value)
-
+        return ind_df, missing_inds
 
 
     # =========================================================================
@@ -264,6 +267,12 @@ class DrsTest:
     # =========================================================================
     # Function to run tests and write their output
     # =========================================================================
+    def run_test(self):
+        """Run the test given a proper recipe test script
+        """
+        self.run_test
+
+
     def gen_html(self, html_dict: dict):
         """Generate HTML summary from jinja2 template.
 
@@ -287,3 +296,6 @@ class DrsTest:
         )
         with open(output_path, "w") as f:
             f.write(html_text)
+
+
+    

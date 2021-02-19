@@ -8,15 +8,27 @@ import sys  # Temporary
 from apero.core import constants
 from apero.core.instruments.spirou.recipe_definitions import recipes
 
-
 # Temporary to import full paths
 sys.path.insert(0, '..')
-from drs_test import DrsTest  # Eventually from apero-test.drs_test
+from drs_test import DrsTest  # Eventually from apero-tests.drs_test
+
+# Something similar?
+#from .preprocessing import PPTest
+#from .darkmaster import DarkMTest
+from tests.badpixel import BadPixTest
+#from .localisation import LocTest
+#from .shapemaster import ShapeMTest
+#from .shape import ShapeTest
+#from .flat import FlatTest
+#from .thermal import ThermalTest
+#from .leakmaster import LeakMTest
+#from .wavelengthmaster import WaveMTest
+#from .wavelength import WaveTest
 
 # =============================================================================
 # Define variables
 # =============================================================================
-__NAME__ = "apero-test.spirou.test_definitions.py"
+__NAME__ = "apero-tests.spirou.test_definitions.py"
 __INSTRUMENT__ = "SPIROU"
 # Get constants
 Constants = constants.load(__INSTRUMENT__)
@@ -46,10 +58,10 @@ tests = []
 # -----------------------------------------------------------------------------
 cal_badpix = DrsTest(__INSTRUMENT__, RECIPE_DICT["cal_badpix_spirou.py"])
 cal_badpix.name = "Bad Pixel Correction Recipe Test #1"
+cal_badpix.run_test = BadPixTest()
 # TODO: Add other attributes here
-tests.append(cal_badpix)
 
-# TODO: Add other tests
+tests.append(cal_badpix)
 
 # -----------------------------------------------------------------------------
 # Localisation Test
