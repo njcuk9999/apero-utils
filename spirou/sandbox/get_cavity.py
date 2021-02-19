@@ -7,7 +7,7 @@ from scipy import constants
 import os
 
 def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cut = 5,
-                 cavity_table_name = None, no_achromatic = False):
+                 cavity_table_name = None, no_achromatic = False, doplot = False):
 
     # only keep pixels that have finite positions
     # it is fine to have orders with no valid lines
@@ -98,9 +98,12 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
         fp_lines[g_fp] = fp_lines2
 
     # plot cavity length prior to finding offsets
-    fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
-    ax[0].plot(fp_lines['WAVE_MEAS'],fp_lines['WAVE_MEAS']*fp_lines['PEAK_NUMBER'],'r.',alpha = 0.4,
-               label = 'cavity prior to glitch corr.')
+
+
+    if doplot:
+        fig, ax = plt.subplots(nrows = 2, ncols = 1,sharex = True)
+        ax[0].plot(fp_lines['WAVE_MEAS'],fp_lines['WAVE_MEAS']*fp_lines['PEAK_NUMBER'],'r.',alpha = 0.4,
+                   label = 'cavity prior to glitch corr.')
 
 
     for ite in range(2): # do twice just to be sure it's all fine
@@ -140,15 +143,16 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
     # now we have valid numbering and best-guess WAVE_MEAS, we find the cavity length
     cavity = et.robust_polyfit(fp_lines['WAVE_MEAS'], fp_lines['WAVE_MEAS']*fp_lines['PEAK_NUMBER'],cavity_order,nsig_cut)[0]
 
-    ax[0].plot(fp_lines['WAVE_MEAS'],fp_lines['WAVE_MEAS']*fp_lines['PEAK_NUMBER'],'g.',alpha = 0.4,
-               label = 'cavity after glitch corr.')
-    ax[1].plot(fp_lines['WAVE_MEAS'],fp_lines['WAVE_MEAS']*fp_lines['PEAK_NUMBER']-np.polyval(cavity,fp_lines['WAVE_REF']),'k.',alpha= 0.5)
-    ax[0].set(xlabel = 'Wavelength [nm]',ylabel = 'Cavity [nm]')
-    ax[1].set(xlabel = 'Wavelength [nm]',ylabel = 'Cavity [nm]')
-    ax[0].legend()
-    plt.tight_layout()
+    if doplot:
+        ax[0].plot(fp_lines['WAVE_MEAS'],fp_lines['WAVE_MEAS']*fp_lines['PEAK_NUMBER'],'g.',alpha = 0.4,
+                   label = 'cavity after glitch corr.')
+        ax[1].plot(fp_lines['WAVE_MEAS'],fp_lines['WAVE_MEAS']*fp_lines['PEAK_NUMBER']-np.polyval(cavity,fp_lines['WAVE_REF']),'k.',alpha= 0.5)
+        ax[0].set(xlabel = 'Wavelength [nm]',ylabel = 'Cavity [nm]')
+        ax[1].set(xlabel = 'Wavelength [nm]',ylabel = 'Cavity [nm]')
+        ax[0].legend()
+        plt.tight_layout()
 
-    plt.show()
+        plt.show()
 
     # if we gave a table name and the file is absent, we write. If the file is
     # present, then we'll only correct the achromatic term (no_achromatic == False)
@@ -168,8 +172,9 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
     cavity0 = np.array(cavity)
     mean2err=np.inf
 
-    # we change the achromatic cavity length term to force HC peaks to have a zero velocity error.
-    fig,ax = plt.subplots(nrows = 2, ncols = 1)
+    if doplot:
+        # we change the achromatic cavity length term to force HC peaks to have a zero velocity error.
+        fig,ax = plt.subplots(nrows = 2, ncols = 1)
 
 
     # we will loop until the cavity change is below 1/100th of the error on the cavity change.
@@ -195,7 +200,8 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
         diff_hc = (1-hc_lines['WAVE_MEAS']/hc_lines['WAVE_REF'])*constants.c
 
         if np.isfinite(mean2err) == False:
-            ax[0].hist(diff_hc[np.abs(diff_hc) < 200],color = 'red', bins=100)
+            if doplot:
+                ax[0].hist(diff_hc[np.abs(diff_hc) < 200],color = 'red', bins=100)
 
         # model of the errors in the HC line positions. We assume that
         # they decrease as 1/NSIG
@@ -218,13 +224,14 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
     # final cavity change
     print('change in cavity length {0:6.2f} nm'.format(cavity[-1]-cavity0[-1]))
 
-    ax[0].hist(diff_hc[np.abs(diff_hc)<200],color = 'blue',alpha = 0.5,bins = 100)
-    ax[0].set(xlabel = 'Velocity [m/s]',title = 'HC diff')
-    nsig = diff_hc/sig
-    ax[1].hist(nsig[np.abs(nsig)<5],bins = 100)
-    ax[1].set(xlabel = 'sigma',title = 'HC diff')
-    plt.tight_layout()
-    plt.show()
+    if doplot:
+        ax[0].hist(diff_hc[np.abs(diff_hc)<200],color = 'blue',alpha = 0.5,bins = 100)
+        ax[0].set(xlabel = 'Velocity [m/s]',title = 'HC diff')
+        nsig = diff_hc/sig
+        ax[1].hist(nsig[np.abs(nsig)<5],bins = 100)
+        ax[1].set(xlabel = 'sigma',title = 'HC diff')
+        plt.tight_layout()
+        plt.show()
 
     # we update WAVE_REF
     for ite in range(3):
@@ -232,9 +239,11 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
 
     # we construct the output matrix to keep track of wavelength coefficients
     wave_fit = np.zeros([len(np.unique(fp_lines['ORDER'])),wavesol_order+1])
+    wave_map = np.zeros([len(np.unique(fp_lines['ORDER'])),4088])
     for iord in np.unique(fp_lines['ORDER']):
         g_fp = fp_lines['ORDER'] == iord
         wave_fit[iord] = et.robust_polyfit(fp_lines['PIXEL_MEAS'][g_fp], fp_lines['WAVE_REF'][g_fp], wavesol_order, 5)[0]
+        wave_map[iord] = np.polyval(wave_fit[iord],np.arange(4088))
 
     # if required, we save the cavity file
     if do_write:
@@ -243,8 +252,11 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
         tbl['coeffs'] = cavity
         tbl.write(cavity_table_name,overwrite = True)
 
-    return wave_fit
 
+
+    return wave_fit,wave_map, cavity[-1]-cavity0[-1]
+
+"""
 if os.path.isfile('sample_cavity.csv'):
     os.system('rm sample_cavity.csv')
 
@@ -279,3 +291,4 @@ hc_lines = Table.read('EA_241318F5T6c_pp_e2dsff_AB_wavem_hclines_AB.fits')
 wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'sample_cavity.csv',
                         no_achromatic=False)
 print()
+"""

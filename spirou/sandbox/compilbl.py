@@ -35,7 +35,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
     # default keywords to be included in the compilation of per-object RVs
     keys = ['MJDATE', 'EXPTIME', 'AIRMASS', 'FILENAME',
             'DATE-OBS', 'BERV', 'TAU_H2O', 'TAU_OTHE',
-            'ITE_RV', 'SYSTVELO',
+            'ITE_RV', 'SYSTVELO','WAVETIME','WAVEFILE',
             'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT',
             'SBRHB1_P','SBRHB2_P','SBCDEN_P','SNRGOAL',
             'EXTSN035','BJD']
