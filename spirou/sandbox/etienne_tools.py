@@ -19,7 +19,6 @@ def get_xycen(im,x0,y0,w=0):
     if w !=0:
         col1,col2,col3 = np.zeros_like(x0,dtype = float),np.zeros_like(x0,dtype = float),np.zeros_like(x0,dtype = float)
         for ww in range(-w,w+1):
-            print(ww)
             col1 += im[x+ww,y-1]
             col2 += im[x+ww,y]
             col3 += im[x+ww,y+1]
