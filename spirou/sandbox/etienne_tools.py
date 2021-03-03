@@ -26,7 +26,7 @@ def mk_hash_name(hash_name,path,suffix = '_pp.fits',check_exist = True):
         for i in index:
             files = np.append(files, path +prefix+ str(i).zfill(len(range[1])) + suffix)
     else:
-        files = np.array(path+hash_name+file_type+suffix) # we just have one file
+        files = np.array([path+hash_name+file_type+suffix]) # we just have one file
 
     if check_exist:
         for i in np.arange(len(files)):
