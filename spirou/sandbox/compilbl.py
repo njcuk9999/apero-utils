@@ -44,7 +44,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
     if (not os.path.isfile(outname)) or force:
         # keys to be transfered to the fits table
-        scifiles = np.array(glob.glob('lblrv/2*{0}_{1}_lbl.fits'.format(obj_sci, obj_template)))
+        scifiles = np.array(glob.glob('lblrv/*{0}_{1}_lbl.fits'.format(obj_sci, obj_template)))
         scifiles = scifiles[np.argsort(scifiles)]
 
         if get_cumul_plot:
@@ -92,9 +92,19 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
             # get lines in the proper domain
             if i == 0:
-                g = (tbl_per_line_ini['WAVE_START'] > 900) * \
-                    (tbl_per_line_ini['WAVE_START'] < 2500) * \
-                    (tbl_per_line_ini['NPIXLINE'] < 50) #* \
+
+                if np.nanmedian(tbl_per_line_ini['WAVE_START']) > 1000:
+                    g = (tbl_per_line_ini['WAVE_START'] > 900) * \
+                        (tbl_per_line_ini['WAVE_START'] < 2500) * \
+                        (tbl_per_line_ini['NPIXLINE'] < 50)
+                else:
+                    print(et.color('We have HARPS data','red'))
+                    g = (tbl_per_line_ini['WAVE_START'] > 400) * \
+                        (tbl_per_line_ini['WAVE_START'] < 700) * \
+                        (tbl_per_line_ini['NPIXLINE'] < 50)
+
+
+                    #* \
                     #(tbl_per_line_ini['RMSRATIO'] < 5)
                 rvs = np.zeros([len(scifiles),np.sum(g)])
                 dvrms = np.zeros([len(scifiles), np.sum(g)])

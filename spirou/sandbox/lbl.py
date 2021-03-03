@@ -2,7 +2,6 @@ import numpy as np
 import glob
 from astropy.io import fits
 import os
-from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from astropy.table import Table
 from tqdm import tqdm
 from scipy import constants
@@ -11,11 +10,13 @@ import etienne_tools as et
 import warnings
 from time import time
 from scipy import stats
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
 def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits',
-          noise_model = False,check_fp = False):
+          noise_model = False,check_fp = False, science_search_string = '*e2dsff_tcorr*AB.fits',
+          template_file = None):
     """
     if True:
         obj_sci = 'GL436'
@@ -49,12 +50,14 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
     #template_path = 'templates/' # stellar templates
     #science_path = 'tellurics/' # direcory with per-object telluric-corect (tcorr) files are hidden
 
-    template_file = template_path+'Template_s1d_'+obj_template+'_sc1d_v_file_AB.fits'
+
+    if template_file == None:
+        template_file = template_path+'Template_s1d_'+obj_template+'_sc1d_v_file_AB.fits'
 
     template = fits.getdata(template_file)
 
     if 'FP' not in obj_sci:
-        scifiles = glob.glob(science_path+obj_sci+'/*e2dsff_tcorr*AB.fits')
+        scifiles = glob.glob(science_path+obj_sci+'/'+science_search_string)
     else:
         scifiles = glob.glob(science_path+obj_sci+'/2*C.fits')
 
@@ -197,8 +200,14 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
     flux0 =np.array(flux)
 
+
+    # we select a scale of 223 km/s
+    width = int(223000/np.array(1/np.nanmedian((template['wavelength']/np.gradient(template['wavelength']))/constants.c)))
+    if (width % 2) ==0:
+        width+=1
+
     # we high-pass on a scale of ~101 pixels in the e2ds
-    flux -= et.lowpassfilter(flux, width=223)
+    flux -= et.lowpassfilter(flux, width=width)
 
     dflux = np.gradient(flux)/ np.gradient(np.log(template['wavelength'])) / constants.c
     # 2nd derivative
@@ -242,6 +251,9 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
         # get the science file info
         sp, hdr = fits.getdata(scifiles[ifile], header=True)
+        if hdr['INSTRUME'] == 'HARPS':
+            print(et.color('This is a HARPS file','cyan'))
+            hdr = et.harps2spirou(hdr)
 
         if 'EXPNUM' in hdr.keys():
             if str(hdr['EXPNUM']) in bad_odo:
@@ -273,7 +285,14 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
         wave = et.fits2wave(hdr)
         for iord in range(sp.shape[0]):
-            sp[iord] -= et.lowpassfilter(sp[iord])
+
+            # we select a scale of 223 km/s
+            width = int(
+                223000 / np.array(1 / np.nanmedian((wave[iord] / np.gradient(wave[iord])) / constants.c)))
+            if (width % 2) == 0:
+                width += 1
+
+            sp[iord] -= et.lowpassfilter(sp[iord], width = width)
 
 
         if 'FP' not in obj_sci:
@@ -337,15 +356,15 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 tmp = sp[ii]-model[ii]
 
                 if not noise_model:
-                    ipix = np.arange(0,4088,100)
+                    ipix = np.arange(0,model.shape[1],100)
                     sig = np.zeros_like(ipix,dtype = float)
                     for ipixi in range(len(ipix)):
                         i1 = ipix[ipixi] - 100
                         i2 = ipix[ipixi] + 100
                         if i1 <0:
                             i1 = 0
-                        if i2>4088:
-                            i2 = 4088
+                        if i2>model.shape[1]:
+                            i2 = model.shape[1]
 
                         sig[ipixi] = et.sigma(tmp[i1:i2])
 
@@ -353,7 +372,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                         gg = np.isfinite(sig)
                     if np.sum(gg)>2:
                         # we must have at least two bins to do anything useful here
-                        rms[ii] = ius(ipix[gg], sig[gg], k=1, ext=3)(np.arange(4088))
+                        rms[ii] = ius(ipix[gg], sig[gg], k=1, ext=3)(np.arange(model.shape[1]))
                     else:
                         rms[ii] = np.nan
 
@@ -387,7 +406,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                     ww_ord = et.doppler(wave[iord[i]],-rv)
                     sp_ord = sp[iord[i]]
 
-                    wave2pix = ius(ww_ord,np.arange(4088))
+                    wave2pix = ius(ww_ord,np.arange(model.shape[1]))
 
                     rms_ord = rms[iord[i]]
                     model_ord = model[iord[i]]
@@ -401,8 +420,12 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                     # we will perform a line-by-line amplitude correction
                     #
                     if doplot_debug:
-                        if (iord[i] == 35)*(ite_rv == 1):
-                            plt.plot(ww_ord,model_ord, color = 'grey', linewidth=3, alpha = 0.3,label = 'template')
+                        if hdr['INSTRUME'] == 'HARPS':
+                            if (iord[i] == 60)*(ite_rv == 1):
+                                plt.plot(ww_ord,model_ord, color = 'grey', linewidth=3, alpha = 0.3,label = 'template')
+                        else:
+                            if (iord[i] == 35)*(ite_rv == 1):
+                                plt.plot(ww_ord,model_ord, color = 'grey', linewidth=3, alpha = 0.3,label = 'template')
 
 
                 imin, imax = wave2pix([wave_start[i], wave_end[i]])
@@ -430,9 +453,20 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 tbl['MEANBLAZE'][i] = bl_ord[(imin+imax)//2]
                 # maybe some plots
                 if doplot_debug:
-                    if (iord[i] == 35)*(ite_rv == 1):
-                        color = (['red','green','blue'])[i % 3]
-                        plt.plot(ww_ord[imin:imax+1],sp_ord[imin:imax+1],color = color)
+                    if hdr['INSTRUME'] == 'HARPS':
+                        if (iord[i] == 60)*(ite_rv == 1):
+                            color = (['red','green','blue'])[i % 3]
+                            plt.plot(ww_ord[imin:imax+1],sp_ord[imin:imax+1],color = color)
+                    else:
+                        if (iord[i] == 35)*(ite_rv == 1):
+                            color = (['red','green','blue'])[i % 3]
+                            plt.plot(ww_ord[imin:imax+1],sp_ord[imin:imax+1],color = color)
+
+
+
+
+
+
 
                 # derivative of the segment
                 d_segment = dmodel_ord[imin:imax+1]*weight_mask
@@ -545,12 +579,28 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
         print(et.color('\tWe write file {0} [{1}/{2}]'.format(outname,ifile, len(scifiles)),'magenta'))
 
+
         hdu1 = fits.PrimaryHDU()
 
         hdr['ITE_RV'] = ite_convergence,'N of iter to reach 0.1 sigma num accuracy'
         hdr['SYSTVELO'] = -systemic_vel, 'Systemic velocity in m/s'
         hdr['RMSRATIO'] = stddev_nsig, 'RMS vs photon noise'
+
+        for key in hdr.keys():
+            if 'ESO ' in key:
+                del hdr[key]
+
+        # be sure that the header is healthy
+        for key in hdr.keys():
+            try:
+                val = hdr[key]
+            except:
+                print(et.color('key {} was bad, it has been padded'.format(key),'red'))
+                hdr[key] = ''
+
         hdu1.header = hdr
+        # to handle problematic keys in HARPS headers
+        hdu1.verify('fix')
 
         tbl['CHI2_VALID_CDF'] = 1-stats.chi2.cdf(tbl['CHI2'],tbl['NPIXLINE'])
 

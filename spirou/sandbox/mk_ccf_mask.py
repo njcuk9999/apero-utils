@@ -20,6 +20,7 @@ import etienne_tools as et
 #
 
 
+
 def mk_ccf_mask(template, doplot = False,force = True):
     # CSV table to contain systemic velocities. Will replace the entry of the same object if it is already present
     # in the table, will create the table if it does not exist
@@ -249,6 +250,9 @@ def mk_ccf_mask(template, doplot = False,force = True):
         cc = np.zeros_like(dvs,dtype = float)
 
         H = (tbl['ll_mask_s'] > 1500) * (tbl['ll_mask_s'] > 1800) * (tbl['w_mask'] > 0)
+        if np.sum(H) == 0: # that's if we have optical data
+            H =  (tbl['w_mask'] > 0)
+
         wave_H = np.array(tbl['ll_mask_s'][H])
         weights_H = np.array(tbl['w_mask'][H])
         for i in range(len(dvs)):
@@ -275,7 +279,7 @@ def mk_ccf_mask(template, doplot = False,force = True):
             plt.show()
 
         hdr['CCF_FWHM'] = np.sqrt(2*np.log(2))*2*fit_gau[1]/1000,'H-band CCF FWHM in km/s'
-        hdr['CCF_CONT'] = 1-np.min(cc),'Fractionnal CCF contrast'
+        hdr['CCF_CONT'] = 1-np.nanmin(cc),'Fractionnal CCF contrast'
 
     if doplot:
 
@@ -287,11 +291,12 @@ def mk_ccf_mask(template, doplot = False,force = True):
         plt.legend()
         plt.xlabel('Wavelength [nm]')
         plt.ylabel('Arbitrary flux')
-        plt.xlim([1600,1605])
+        #plt.xlim([1600,1605])
 
-        gg = (w>1600)*(w<1620)
-        pp = np.nanpercentile(f[gg],[5,95])
-        plt.ylim([pp[0]-0.1*(pp[1]-pp[0]),pp[1]+0.1*(pp[1]-pp[0])])
+
+        #gg = (w>1600)*(w<1620)
+        pp = np.nanpercentile(f,[5,95])
+        #plt.ylim([pp[0]-0.1*(pp[1]-pp[0]),pp[1]+0.1*(pp[1]-pp[0])])
         plt.show()
 
     # write the output table

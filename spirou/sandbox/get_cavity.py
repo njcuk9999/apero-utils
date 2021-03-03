@@ -249,14 +249,14 @@ def get_wave_sol(hc_lines,fp_lines, wavesol_order = 5, cavity_order = 9, nsig_cu
     if do_write:
         print('We write {}'.format(cavity_table_name))
         tbl  =Table()
-        tbl['coeffs'] = cavity
+        tbl['coeffs'] = cavity/2
         tbl.write(cavity_table_name,overwrite = True)
 
 
 
     return wave_fit,wave_map, cavity[-1]-cavity0[-1]
 
-"""
+
 if os.path.isfile('sample_cavity.csv'):
     os.system('rm sample_cavity.csv')
 
@@ -268,15 +268,16 @@ if os.path.isfile('dummy.csv'):
 fp_lines = Table.read('EA_NIRPS_GEN_WAVE343_0003_pp_e2dsff_A_wavem_fplines_A.fits')
 hc_lines = Table.read('EA_NIRPS_GEN_WAVE343_0004_pp_e2dsff_A_wavem_hclines_A.fits')
 
-wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_order = 3,cavity_table_name = 'dummy.csv')
+wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_order = 3,cavity_table_name = 'dummy_nirps.csv',doplot=True)
 print()
 
 # we create the cavity file
 fp_lines = Table.read('EA_23754F69T73a_pp_e2dsff_AB_wavem_fplines_AB.fits')
 hc_lines = Table.read('EA_237547F4T5c_pp_e2dsff_AB_wavem_hclines_AB.fits')
 
-wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'sample_cavity.csv')
+wave_fit = get_wave_sol(hc_lines,fp_lines,cavity_table_name = 'dummy_spirou.csv',doplot=True)
 print()
+"""
 
 # we read the cavity file and perform an achromatic cavity change
 fp_lines = Table.read('EA_24004F09T13a_pp_e2dsff_AB_wavem_fplines_AB.fits')

@@ -10,6 +10,120 @@ from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 import requests
 
+def get_xycen(im,x0,y0,w=0):
+
+    x = np.array(x0+0.5,dtype = int)
+    y = np.array(y0+0.5,dtype = int)
+    w = int(w)
+
+    if w !=0:
+        col1,col2,col3 = np.zeros_like(x0,dtype = float),np.zeros_like(x0,dtype = float),np.zeros_like(x0,dtype = float)
+        for ww in range(-w,w+1):
+            print(ww)
+            col1 += im[x+ww,y-1]
+            col2 += im[x+ww,y]
+            col3 += im[x+ww,y+1]
+    else:
+        col1 = im[x,y-1]
+        col2 = im[x,y]
+        col3 = im[x,y+1]
+
+    ycen =  .5 * (col1 - col3) / (col1 + col3 - 2 * col2) + y
+
+    if w !=0:
+        col1,col2,col3 = np.zeros_like(x0,dtype = float),np.zeros_like(x0,dtype = float),np.zeros_like(x0,dtype = float)
+        for ww in range(-w,w+1):
+            col1 += im[x - 1, y+ww]
+            col2 += im[x, y+ww]
+            col3 += im[x + 1, y+ww]
+
+    else:
+        col1 = im[x - 1, y]
+        col2 = im[x, y]
+        col3 = im[x + 1, y]
+
+    xcen = .5 * (col1 - col3) / (col1 + col3 - 2 * col2) + x
+
+    return xcen,ycen
+
+def harps2spirou(hdr):
+    # input the header of a HARPS image and add the corresponding SPIRou keywords.
+    # the code leaves in place the HARPS keywords.
+
+    if 'COMMENT' in hdr:
+        del hdr['COMMENT']
+
+    keys = [
+        ['MJDATE','HIERARCH ESO DRS BJD'],
+        ['MJDMID','HIERARCH ESO DRS BJD'],
+        ['EXPTIME','HIERARCH ESO DET WIN1 DIT1'],
+        ['AIRMASS','HIERARCH ESO TEL AIRM START'],
+        ['FILENAME',''],
+        ['DATE-OBS','HIERARCH ESO INS DATE'],
+        ['BERV','HIERARCH ESO DRS BERV'],
+        ['TAU_H2O',''],
+        ['TAU_OTHE',''],
+        ['ITE_RV',''],
+        ['SYSTVELO',''],
+        ['WAVETIME',''],
+        ['WAVEFILE',''],
+        ['TLPDVH2O',''],
+        ['TLPDVOTR',''],
+        ['CDBWAVE',''],
+        ['OBJECT','HIERARCH ESO OBS TARG NAME'],
+        ['SBRHB1_P',''],
+        ['SBRHB2_P',''],
+        ['SBCDEN_P',''],
+        ['SNRGOAL',''],
+        ['EXTSN035',''],
+        ['BJD','HIERARCH ESO DRS BJD'],
+        ['SHAPE_DX', ''],
+        ['SHAPE_DY',''],
+        ['SHAPE_A',''],
+        ['SHAPE_B',''],
+        ['SHAPE_C',''],
+        ['SHAPE_D','']]
+    keys = np.array(keys)
+
+    for i in range(keys.shape[0]):
+        if keys[i,1]!='':
+            hdr[keys[i, 0]] = hdr[keys[i,1]]
+        else:
+            hdr[keys[i, 0]] = 0.0
+
+    # we get the wavelength solution in the HARPS header
+    for i in range(0,999):
+        key = 'HIERARCH ESO DRS CAL TH COEFF LL'+str(i)
+        if key in hdr:
+            hdr['WAVE'+str(i).zfill(4)] = hdr[key]/10.0 # expressed in nm, not Angstrom for SPIRou
+
+    nord = hdr['NAXIS2']
+    # that's to match spirou's representation
+    hdr['WAVEORDN'] = nord
+    hdr['EXTSN035'] = 100 # we fake a good observation as there is no equivalent in HARPS headers
+
+    for key in hdr.keys():
+        try:
+            _= hdr[key]
+        except:
+            hdr[key] = ''
+
+    return hdr
+
+# magic grid is a standard (well, my standard) way of representing a wavelength vector
+# it is set so that each element is exactly dv_grid step in velocity. If you shift
+# your velocity, then you have a simple translation of this vector.
+def get_magic_grid(wave0=1500,wave1=1800,dv_grid=0.5):
+    # default for the function is 500 m/s
+    # the arithmetic is a but confusing here, you first find how many
+    # elements you have on your grid, then pass it to an exponential
+    # the first element is exactely wave0, the last element is NOT
+    # exactly wave1, but is very close and is set to get your exact
+    # step in velocity
+    len_magic = int(np.ceil(np.log(wave1/wave0)*np.array(constants.c)/dv_grid))
+    magic_grid =  np.exp(np.arange(len_magic)/len_magic*np.log(wave1/wave0))*wave0
+    return magic_grid
+
 
 def get_bad_odo():
 
@@ -167,10 +281,11 @@ def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
     if len(wave.shape) == 2: # we have the e2ds file, we reshape it
         mask = np.ones_like(wave,dtype = bool)
 
-        for iord in range(1,49):
+
+        for iord in range(1,wave.shape[0]):
             mask[iord]*=(wave[iord-1,::-1]<wave[iord])
 
-        for iord in range(0,48):
+        for iord in range(0,wave.shape[0]-1):
             mask[iord]*=(wave[iord]<wave[iord+1,::-1])
 
         mask*=np.isfinite(sp)
@@ -342,6 +457,9 @@ def fits2wave(file_or_header):
 
         print(info)
         return []
+
+    if hdr['INSTRUME'] == 'HARPS':
+        hdr = harps2spirou(hdr) # make the header SPIRou friendly
 
     # get the keys with the wavelength polynomials
     wave_hdr = hdr['WAVE0*']
