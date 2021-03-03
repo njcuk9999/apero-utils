@@ -10,6 +10,32 @@ from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 import requests
 
+def mk_hash_name(hash_name,path,suffix = '_pp.fits',check_exist = True):
+    # create a file list from Neil's hash
+    hash_name = hash_name.split('_')[0]
+    file_type = hash_name[-1]
+    hash_name=hash_name[:-1]
+
+    prefix = hash_name.split('F')[0]
+    range = hash_name.split('F')[1].split('T')
+    index = np.arange(int(range[0]), int(range[1]) + 1)
+    files = []
+    for i in index:
+        files = np.append(files, path +prefix+ str(i).zfill(len(range[1])) + suffix)
+
+    if check_exist:
+        for i in np.arange(len(files)):
+            if ~os.path.isfile(files[i]):
+                files[i] = ''
+        if  np.sum(files != '') == 0:
+            return None
+
+        else:
+            return files[files != '']
+
+    else:
+        return files
+
 def get_xycen(im,x0,y0,w=0):
 
     x = np.array(x0+0.5,dtype = int)
