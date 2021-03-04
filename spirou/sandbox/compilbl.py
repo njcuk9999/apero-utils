@@ -348,6 +348,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
     else:
         if os.path.isfile('drift.rdb'):
+            print(et.color('reading drift.rdb','blue'))
             drift = Table.read('drift.rdb')
             for i in range(len(tbl)):
                 if tbl['FILENAME'][i] in drift['FILENAME']:
@@ -360,14 +361,16 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
                             tbl[key][i] = np.sqrt(tbl[key][i] ** 2 + drift[g][key] ** 2)
 
             else:
-                for i in range(len(files)):
+                for i in range(len(tbl)):
                     for key in tbl.keys():
                         if 'vrad' == key[0:4]:
                             tbl[key][i] = np.nan
                         if 'svrad' == key[0:5]:
                             tbl[key][i] = np.nan
 
-        tbl.write('_drift'.join(outname.split('.')),format = 'rdb', overwrite = True)
+        name_drift = '_drift'.join(outname.split('.'))
+        print(et.color('writing {}'.format(name_drift), 'blue'))
+        tbl.write(name_drift,format = 'rdb', overwrite = True)
 
         udates = np.unique( tbl['DATE-OBS'])
 
@@ -389,7 +392,9 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
                     tbl2[key][i] = np.nansum(rv/err_rv**2)/np.nansum(1/err_rv**2)
 
                     tbl2['s'+key][i] = np.sqrt(1/np.nansum(1/err_rv**2))
-        tbl2.write('_drift'.join(outname.split('.')), format = 'rdb', overwrite = True)
+        name_drift = '_drift'.join(outname2.split('.'))
+        print(et.color('writing {}'.format(name_drift), 'blue'))
+        tbl2.write(name_drift, format = 'rdb', overwrite = True)
 
 
 
