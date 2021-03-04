@@ -83,6 +83,17 @@ def harps2spirou(hdr):
     if 'COMMENT' in hdr:
         del hdr['COMMENT']
 
+    hdr2 = dict(hdr)
+    for key in hdr.keys():
+        # val =  hdr[key]
+        # del hdr[key]
+        val = hdr2[key]
+        if type(val) not in [int, bool, float, str]:
+            hdr[key] = str(val)
+            print(et.color('Value {0} had type {1}, now forced to str'.format(val, type(val)), 'red'))
+        else:
+            hdr[key] = val
+
     keys = [
         ['MJDATE','HIERARCH ESO DRS BJD'],
         ['MJDMID','HIERARCH ESO DRS BJD'],
