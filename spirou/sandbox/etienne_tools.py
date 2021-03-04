@@ -83,6 +83,13 @@ def harps2spirou(hdr):
     if 'COMMENT' in hdr:
         del hdr['COMMENT']
 
+    badkey = ['ESO INS TEMP1 RMS']
+
+    for key in badkey:
+        if key in hdr:
+            del hdr[key]
+
+
     hdr2 = dict(hdr)
     for key in hdr.keys():
         # val =  hdr[key]
@@ -94,11 +101,6 @@ def harps2spirou(hdr):
         else:
             hdr[key] = val
 
-    badkey = ['ESO INS TEMP1 RMS']
-
-    for key in badkey:
-        if key in hdr:
-            del hdr[key]
 
     keys = [
         ['MJDATE','HIERARCH ESO DRS BJD'],
