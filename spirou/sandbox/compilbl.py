@@ -349,24 +349,28 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
     else:
         if os.path.isfile('drift.rdb'):
             print(et.color('reading drift.rdb','blue'))
-            drift = Table.read('drift.rdb')
-            for i in range(len(tbl)):
+            drift = et.td_convert(Table.read('drift.rdb'))
+
+            tbl = et.td_convert(tbl)
+            for i in tqdm(range(len(tbl['FILENAME']))):
                 if tbl['FILENAME'][i] in drift['FILENAME']:
                     g = np.where( tbl['FILENAME'][i] == drift['FILENAME'])[0]
 
                     for key in tbl.keys():
                         if 'vrad' == key[0:4]:
-                            tbl[key][i] -= drift[g][key]
+                            tbl[key][i] -= drift[key][g]
                         if 'svrad' == key[0:5]:
-                            tbl[key][i] = np.sqrt(tbl[key][i] ** 2 + drift[g][key] ** 2)
+                            tbl[key][i] = np.sqrt(tbl[key][i] ** 2 + drift[key][g] ** 2)
 
-            else:
-                for i in range(len(tbl)):
-                    for key in tbl.keys():
-                        if 'vrad' == key[0:4]:
-                            tbl[key][i] = np.nan
-                        if 'svrad' == key[0:5]:
-                            tbl[key][i] = np.nan
+                else:
+                    for i in range(len(tbl)):
+                        for key in tbl.keys():
+                            if 'vrad' == key[0:4]:
+                                tbl[key][i] = np.nan
+                            if 'svrad' == key[0:5]:
+                                tbl[key][i] = np.nan
+            tbl = et.td_convert(tbl)
+
 
         name_drift = '_drift.'.join(outname.split('.'))
         print(et.color('writing {}'.format(name_drift), 'blue'))
