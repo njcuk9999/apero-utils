@@ -349,8 +349,9 @@ def mk_ccf_mask(template, doplot = False,force = True):
     new_hdul = fits.HDUList([hdu1, hdu2])
     new_hdul.writeto(out_pos_name, overwrite=True)
 
+"""
 templates = glob.glob('Template_s1d_*_sc1d_v_file_AB.fits')
 for template in templates:
         mk_ccf_mask(template,doplot = False,force = True)
 
-
+"""
