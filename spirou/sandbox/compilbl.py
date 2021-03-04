@@ -363,12 +363,13 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
                             tbl[key][i] = np.sqrt(tbl[key][i] ** 2 + drift[key][g] ** 2)
 
                 else:
-                    for i in range(len(tbl)):
-                        for key in tbl.keys():
-                            if 'vrad' == key[0:4]:
-                                tbl[key][i] = np.nan
-                            if 'svrad' == key[0:5]:
-                                tbl[key][i] = np.nan
+                    # if we don't have a drift measurement, we put nans
+                    for key in tbl.keys():
+                        if 'vrad' == key[0:4]:
+                            tbl[key][i] = np.nan
+                        if 'svrad' == key[0:5]:
+                            tbl[key][i] = np.nan
+
             tbl = et.td_convert(tbl)
 
 
