@@ -15,7 +15,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as ius
 def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, force = False,
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits',
-          noise_model = False,check_fp = False, science_search_string = '*e2dsff_tcorr*AB.fits',
+          noise_model = False,check_fp = False, science_search_string = '*e2dsff*.fits',
           template_file = None):
     """
     if True:
@@ -56,10 +56,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
     template = fits.getdata(template_file)
 
-    if 'FP' not in obj_sci:
-        scifiles = glob.glob(science_path+obj_sci+'/'+science_search_string)
-    else:
-        scifiles = glob.glob(science_path+obj_sci+'/2*C.fits')
+    scifiles = glob.glob(science_path+obj_sci+'/'+science_search_string)
 
         if check_fp:
             print('Checking if this is OBJ_FP')
