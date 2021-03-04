@@ -58,14 +58,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
     scifiles = glob.glob(science_path+obj_sci+'/'+science_search_string)
 
-        if check_fp:
-            print('Checking if this is OBJ_FP')
-            for i in tqdm(range(len(scifiles))):
-                hdr = fits.getheader(scifiles[i])
-                if hdr['DPRTYPE'] != 'OBJ_FP':
-                    os.system('mv '+scifiles[i]+' '+science_path+obj_sci+'/others/')
-                    scifiles[i] = ''
-            scifiles = scifiles[scifiles != '']
 
     """""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
     End of inputs to the code
