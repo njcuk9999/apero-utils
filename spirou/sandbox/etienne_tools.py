@@ -127,9 +127,11 @@ def harps2spirou(hdr):
         if key in hdr:
             hdr['WAVE'+str(i).zfill(4)] = hdr[key]/10.0 # expressed in nm, not Angstrom for SPIRou
 
-    nord = hdr['NAXIS2']
-    # that's to match spirou's representation
-    hdr['WAVEORDN'] = nord
+    if 'NAXIS2' in hdr:
+        nord = hdr['NAXIS2']
+        # that's to match spirou's representation
+        hdr['WAVEORDN'] = nord
+
     hdr['EXTSN035'] = 100 # we fake a good observation as there is no equivalent in HARPS headers
 
     for key in hdr.keys():
