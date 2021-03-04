@@ -83,7 +83,7 @@ def harps2spirou(hdr):
     if 'COMMENT' in hdr:
         del hdr['COMMENT']
 
-    badkey = ['ESO INS TEMP1 RMS']
+    badkey = ['ESO INS TEMP1 RMS','ESO INS TEMP40 RMS']
 
     for key in badkey:
         if key in hdr:
