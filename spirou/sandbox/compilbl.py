@@ -373,33 +373,33 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             tbl = et.td_convert(tbl)
 
 
-        name_drift = '_drift.'.join(outname.split('.'))
-        print(et.color('writing {}'.format(name_drift), 'blue'))
-        tbl.write(name_drift,format = 'rdb', overwrite = True)
+            name_drift = '_drift.'.join(outname.split('.'))
+            print(et.color('writing {}'.format(name_drift), 'blue'))
+            tbl.write(name_drift,format = 'rdb', overwrite = True)
 
-        udates = np.unique( tbl['DATE-OBS'])
+            udates = np.unique( tbl['DATE-OBS'])
 
-        tbl2 = Table(tbl[0:len(udates)]) # create a table with a per-epoch value
+            tbl2 = Table(tbl[0:len(udates)]) # create a table with a per-epoch value
 
-        for i in tqdm(range(len(udates))):
-            tbl_date = tbl[udates[i] ==  tbl['DATE-OBS']]
-            for key in tbl_date.keys():
-                if 'vrad' not in key:
-                    try:
-                        tbl2[key][i] = np.mean(tbl_date[key])
-                    except:
-                        tbl2[key][i] = tbl_date[key][0]
+            for i in tqdm(range(len(udates))):
+                tbl_date = tbl[udates[i] ==  tbl['DATE-OBS']]
+                for key in tbl_date.keys():
+                    if 'vrad' not in key:
+                        try:
+                            tbl2[key][i] = np.mean(tbl_date[key])
+                        except:
+                            tbl2[key][i] = tbl_date[key][0]
 
-                if key[0:4] == 'vrad':
-                    rv = tbl_date[key]
+                    if key[0:4] == 'vrad':
+                        rv = tbl_date[key]
 
-                    err_rv = tbl_date['s'+key]
-                    tbl2[key][i] = np.nansum(rv/err_rv**2)/np.nansum(1/err_rv**2)
+                        err_rv = tbl_date['s'+key]
+                        tbl2[key][i] = np.nansum(rv/err_rv**2)/np.nansum(1/err_rv**2)
 
-                    tbl2['s'+key][i] = np.sqrt(1/np.nansum(1/err_rv**2))
-        name_drift = '_drift.'.join(outname2.split('.'))
-        print(et.color('writing {}'.format(name_drift), 'blue'))
-        tbl2.write(name_drift, format = 'rdb', overwrite = True)
+                        tbl2['s'+key][i] = np.sqrt(1/np.nansum(1/err_rv**2))
+            name_drift = '_drift.'.join(outname2.split('.'))
+            print(et.color('writing {}'.format(name_drift), 'blue'))
+            tbl2.write(name_drift, format = 'rdb', overwrite = True)
 
 
 
