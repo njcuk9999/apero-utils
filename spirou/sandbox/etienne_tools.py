@@ -349,7 +349,7 @@ def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
 
     spline_sp = ius(wave2,sp2, k=1, ext=1)
 
-    dvs = np.arange(-1.5e5, 1.5e5, 500)
+    dvs = np.arange(-3e5, 3e5, 500)
     ccf = np.zeros_like(dvs)
     print('computing CCF')
     for i in range(len(dvs)):
