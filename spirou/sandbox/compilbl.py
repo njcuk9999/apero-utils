@@ -7,6 +7,9 @@ import numpy as np
 from astropy.table import Table
 from astropy.time import Time
 
+
+
+
 def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
                get_cumul_plot = False):
 
@@ -39,7 +42,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT',
             'SBRHB1_P','SBRHB2_P','SBCDEN_P','SNRGOAL',
             'EXTSN035','BJD','SHAPE_DX','SHAPE_DY','SHAPE_A',
-            'SHAPE_B','SHAPE_C','SHAPE_D','WAFEVILE']
+            'SHAPE_B','SHAPE_C','SHAPE_D']
     keys = np.array(keys)
 
     if (not os.path.isfile(outname)) or force:
@@ -305,6 +308,87 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
                 tbl2['s'+key][i] = np.sqrt(1/np.nansum(1/err_rv**2))
     tbl2.write(outname2, overwrite = True)
+
+
+    # if we are requesting the FPs, then we produce and extra table with drifts
+    if obj_sci == 'FP':
+        for uwavefile in np.unique(tbl['WAVEFILE']):
+            g = (tbl['WAVEFILE'] == uwavefile)
+            tbl2 = Table(tbl[g])
+
+            ref_present = False
+            files = np.array(tbl2['FILENAME'])
+            for i in range(len(files)):
+                if 'a' in files[i]:
+                    ref = tbl2[i]
+                    ref_present = True
+
+            if ref_present:
+                for i in range(len(files)):
+                    if 'o' in files[i]:
+                        for key in tbl.keys():
+                            if 'vrad' == key[0:4]:
+                                tbl2[key][i] -= ref[key]
+                            if 'svrad' == key[0:5]:
+                                tbl2[key][i] = np.sqrt(tbl2[key][i] ** 2 + ref[key] ** 2)
+
+            else:
+                for i in range(len(files)):
+                    for key in tbl.keys():
+                        if 'vrad' == key[0:4]:
+                            tbl2[key][i] = np.nan
+                        if 'svrad' == key[0:5]:
+                            tbl2[key][i] = np.nan
+
+            tbl[g] = tbl2
+        print(et.color('we write drift.rdb','blue'))
+        tbl.write('drift.rdb', format='rdb', overwrite=True)
+
+    else:
+        if os.path.isfile('drift.rdb'):
+            drift = Table.read('drift.rdb')
+            for i in range(len(tbl)):
+                if tbl['FILENAME'][i] in drift['FILENAME']:
+                    g = np.where( tbl['FILENAME'][i] == drift['FILENAME'])[0]
+
+                    for key in tbl.keys():
+                        if 'vrad' == key[0:4]:
+                            tbl[key][i] -= drift[g][key]
+                        if 'svrad' == key[0:5]:
+                            tbl[key][i] = np.sqrt(tbl[key][i] ** 2 + drift[g][key] ** 2)
+
+            else:
+                for i in range(len(files)):
+                    for key in tbl.keys():
+                        if 'vrad' == key[0:4]:
+                            tbl[key][i] = np.nan
+                        if 'svrad' == key[0:5]:
+                            tbl[key][i] = np.nan
+
+        tbl.write('_drift'.join(outname.split('.')),format = 'rdb', overwrite = True)
+
+        udates = np.unique( tbl['DATE-OBS'])
+
+        tbl2 = Table(tbl[0:len(udates)]) # create a table with a per-epoch value
+
+        for i in tqdm(range(len(udates))):
+            tbl_date = tbl[udates[i] ==  tbl['DATE-OBS']]
+            for key in tbl_date.keys():
+                if 'vrad' not in key:
+                    try:
+                        tbl2[key][i] = np.mean(tbl_date[key])
+                    except:
+                        tbl2[key][i] = tbl_date[key][0]
+
+                if key[0:4] == 'vrad':
+                    rv = tbl_date[key]
+
+                    err_rv = tbl_date['s'+key]
+                    tbl2[key][i] = np.nansum(rv/err_rv**2)/np.nansum(1/err_rv**2)
+
+                    tbl2['s'+key][i] = np.sqrt(1/np.nansum(1/err_rv**2))
+        tbl2.write('_drift'.join(outname.split('.')), format = 'rdb', overwrite = True)
+
 
 
     return Table.read(outname)
