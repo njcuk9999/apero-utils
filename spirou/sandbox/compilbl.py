@@ -368,7 +368,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
                         if 'svrad' == key[0:5]:
                             tbl[key][i] = np.nan
 
-        name_drift = '_drift'.join(outname.split('.'))
+        name_drift = '_drift.'.join(outname.split('.'))
         print(et.color('writing {}'.format(name_drift), 'blue'))
         tbl.write(name_drift,format = 'rdb', overwrite = True)
 
@@ -392,7 +392,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
                     tbl2[key][i] = np.nansum(rv/err_rv**2)/np.nansum(1/err_rv**2)
 
                     tbl2['s'+key][i] = np.sqrt(1/np.nansum(1/err_rv**2))
-        name_drift = '_drift'.join(outname2.split('.'))
+        name_drift = '_drift.'.join(outname2.split('.'))
         print(et.color('writing {}'.format(name_drift), 'blue'))
         tbl2.write(name_drift, format = 'rdb', overwrite = True)
 
