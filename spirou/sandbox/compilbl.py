@@ -77,8 +77,9 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
             if type(hdr['BJD']) == str:
                 #
-                hdr['BJD'] = hdr['MJDMID']
-            tbl['rjd'][i] = hdr['BJD'] - 2400000
+                tbl['rjd'][i]  = hdr['MJDMID']
+            else:
+                tbl['rjd'][i] = hdr['BJD'] - 2400000
 
 
             for key in keys:
