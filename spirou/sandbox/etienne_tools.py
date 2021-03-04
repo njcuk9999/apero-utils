@@ -94,6 +94,12 @@ def harps2spirou(hdr):
         else:
             hdr[key] = val
 
+    badkey = ['ESO INS TEMP1 RMS']
+
+    for key in badkey:
+        if key in hdr:
+            del hdr[key]
+
     keys = [
         ['MJDATE','HIERARCH ESO DRS BJD'],
         ['MJDMID','HIERARCH ESO DRS BJD'],
