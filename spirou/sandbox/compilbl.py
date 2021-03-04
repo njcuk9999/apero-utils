@@ -54,7 +54,9 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             fix, ax = plt.subplots(nrows = 2, ncols =1)
         for i in tqdm(range(len(scifiles))):
             hdr = fits.getheader(scifiles[i])
-
+            if 'SNRGOAL' not in hdr:
+                # because FP files don't have an SNR goal
+                hdr['SNRGOAL'] = 0
 
 
             # if first file, we populate the columns
