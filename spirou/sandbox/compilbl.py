@@ -39,7 +39,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
             'TLPDVH2O','TLPDVOTR','CDBWAVE','OBJECT',
             'SBRHB1_P','SBRHB2_P','SBCDEN_P','SNRGOAL',
             'EXTSN035','BJD','SHAPE_DX','SHAPE_DY','SHAPE_A',
-            'SHAPE_B','SHAPE_C','SHAPE_D','WAVE0000']
+            'SHAPE_B','SHAPE_C','SHAPE_D','WAFEVILE']
     keys = np.array(keys)
 
     if (not os.path.isfile(outname)) or force:
