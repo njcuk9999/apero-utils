@@ -11,7 +11,7 @@ from astropy.time import Time
 
 
 def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
-               get_cumul_plot = False, suffix = ''):
+               get_cumul_plot = False, suffix_rdb = ''):
 
     """
     obj_sci = 'TRAPPIST-1'
@@ -20,6 +20,7 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
     force = True
     common_weights = False
     get_cumul_plot = False
+    suffix_rdb = string to be added to the RDB file name
     """
 
     if doplot or get_cumul_plot:
@@ -30,10 +31,8 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
     if obj_template is None:
         obj_template = obj_sci
 
-    suffix = ''
-
-    outname = 'lbl_{0}_{1}{2}.rdb'.format(obj_sci, obj_template,suffix)
-    outname2 = 'lbl2_{0}_{1}{2}.rdb'.format(obj_sci, obj_template,suffix)
+    outname = 'lbl_{0}_{1}{2}.rdb'.format(obj_sci, obj_template,suffix_rdb)
+    outname2 = 'lbl2_{0}_{1}{2}.rdb'.format(obj_sci, obj_template,suffix_rdb)
 
     # default keywords to be included in the compilation of per-object RVs
     keys = ['MJDATE','MJDMID', 'EXPTIME', 'AIRMASS', 'FILENAME',
