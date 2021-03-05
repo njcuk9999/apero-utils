@@ -11,7 +11,7 @@ from astropy.time import Time
 
 
 def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_weights = False,
-               get_cumul_plot = False):
+               get_cumul_plot = False, suffix = ''):
 
     """
     obj_sci = 'TRAPPIST-1'
@@ -32,8 +32,8 @@ def compilbl(obj_sci, obj_template = None, doplot = False, force = True, common_
 
     suffix = ''
 
-    outname = 'lbl_{0}_{1}.rdb'.format(obj_sci, obj_template)
-    outname2 = 'lbl2_{0}_{1}.rdb'.format(obj_sci, obj_template)
+    outname = 'lbl_{0}_{1}{2}.rdb'.format(obj_sci, obj_template,suffix)
+    outname2 = 'lbl2_{0}_{1}{2}.rdb'.format(obj_sci, obj_template,suffix)
 
     # default keywords to be included in the compilation of per-object RVs
     keys = ['MJDATE','MJDMID', 'EXPTIME', 'AIRMASS', 'FILENAME',
