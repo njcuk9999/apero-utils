@@ -8,22 +8,24 @@ import sys  # Temporary
 from apero.core import constants
 from apero.core.instruments.spirou.recipe_definitions import recipes
 
-# Temporary to import full paths
+# HACK: Temporary to import full paths
 sys.path.insert(0, '..')
 from drs_test import DrsTest  # Eventually from apero-tests.drs_test
 
 # Something similar?
-#from .preprocessing import PPTest
-#from .darkmaster import DarkMTest
+# from .preprocessing import PPTest
+# from .darkmaster import DarkMTest
 from tests.badpixel import BadPixTest
-#from .localisation import LocTest
-#from .shapemaster import ShapeMTest
-#from .shape import ShapeTest
-#from .flat import FlatTest
-#from .thermal import ThermalTest
-#from .leakmaster import LeakMTest
-#from .wavelengthmaster import WaveMTest
-#from .wavelength import WaveTest
+
+# from .localisation import LocTest
+# from .shapemaster import ShapeMTest
+# from .shape import ShapeTest
+# from .flat import FlatTest
+# from .thermal import ThermalTest
+# from .leakmaster import LeakMTest
+# from .wavelengthmaster import WaveMTest
+# from .wavelength import WaveTest
+import test_utils as tu
 
 # =============================================================================
 # Define variables
@@ -39,6 +41,16 @@ __date__ = Constants["DRS_DATE"]
 __release__ = Constants["DRS_RELEASE"]
 
 RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
+
+red_key = 'DRS_DATA_REDUC'
+
+
+# =============================================================================
+# Pre-load data for operations that take too much time
+# =============================================================================
+params = constants.load(__INSTRUMENT__)
+red_index = tu.load_index_df(params[red_key])
+
 
 # =============================================================================
 # Define tests
@@ -56,9 +68,9 @@ tests = []
 # -----------------------------------------------------------------------------
 # Badpixel Test
 # -----------------------------------------------------------------------------
-cal_badpix = DrsTest(__INSTRUMENT__, RECIPE_DICT["cal_badpix_spirou.py"])
+cal_badpix = DrsTest(drs_recipe=["cal_badpix_spirou.py"])
 cal_badpix.name = "Bad Pixel Correction Recipe Test #1"
-cal_badpix.run_test = BadPixTest()
+# cal_badpix.run_test = BadPixTest()
 # TODO: Add other attributes here
 
 tests.append(cal_badpix)

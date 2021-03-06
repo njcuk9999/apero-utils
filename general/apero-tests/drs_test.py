@@ -15,6 +15,7 @@ from astropy.io import fits
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from apero.core import constants
+from apero.core.core.drs_recipe import DrsRecipe
 
 # from . import OUTDIR, TEMPLATEDIR
 
@@ -25,13 +26,16 @@ TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
 OUTDIR = os.path.join(PARENTDIR, "out")
 
 
-def removext(name: str, ext: str = ".py"):
-    """Remove extension of a file/recipe name
+def removext(name: str, ext: str = ".py") -> str:
+    """
+    Remove extension of a file/recipe name
 
     :param name: file/recipe name
     :type name: str
-
+    :param ext: filetype extension, default is ".py"
+    :type ext: str
     :returns: cleaned up name
+    :rtype:  str
     """
     if not ext.startswith("."):
         ext = "." + ext
@@ -42,40 +46,26 @@ def removext(name: str, ext: str = ".py"):
     return name
 
 
-def load_fits_df(pathlist: List[str]) -> pd.DataFrame:
-    """Load contents from list of fits tables in a dataframe
-
-    :param pathlist:
-    :type pathlist: List[str]
-
-    :returns:
-    :rtype: pd.DataFrame
-    """
-    # Get all logs in a dataframe
-    paths = [p for p in pathlist if os.path.isfile(p)]  # Check all real files
-    df_list = [Table.read(f).to_pandas() for f in paths]  # Check List of dfs
-    df = pd.concat(df_list)  # List
-
-    # Decode strings (fits from astropy are encoded)
-    for col in df.columns:
-        # try/except for non-string columns
-        try:
-            df[col] = df[col].str.decode("utf-8")
-        except AttributeError:
-            pass
-
-    return df
-
-
 class DrsTest:
     def __init__(
         self,
         instrument: Optional[str] = None,
-        drs_recipe: Optional[str] = None,
+        drs_recipe: Optional[DrsRecipe] = None,
         setup: Optional[str] = None,
         testnum: int = 1,
     ):
+        """
 
+        :param instrument: Instrument of the tested recipe
+        :type instrument: Optional[str]
+        :param drs_recipe: Recipe under test
+        :type drs_recipe: Optional[DrsRecipe]
+        :param setup: Path APERO setup
+        :type setup: Optional[str]
+        :param testnum: Number ID N of the test (Nth test for recipe),
+                        default is 1
+        :type testnum: int
+        """
         # Get setup path
         if setup is None:
             self.setup = os.environ["DRS_UCONFIG"]
@@ -92,15 +82,15 @@ class DrsTest:
         self.instrument = instrument  # Instrument may be set as kwarg
         self.params = None  # DRS parameters
         self.ismaster = False  # Is it a master recipe?
-        self.fibers = []  # NOTE: not sure still needed. (output file def.?)
+        self.fibers = []  # TODO: Implement further only if needed in methods
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
         self.calib_hkeys = []  # All calib header keys
-        self.calls_extract = False  # NOTE: not sure still needed
+        self.calls_extract = False  # TODO: Remove if not needed
         self.input_path = ""  # Path to input dir
         self.output_path = ""  # Path to output dir
 
-        # Overwrite some parameters with recipe info automatically
+        # Overwrite some (most!) parameters with recipe info automatically
         if drs_recipe is not None:
             # The recipe object and test ID
             self.recipe = drs_recipe
@@ -126,20 +116,22 @@ class DrsTest:
                 map(
                     lambda o: o.required_header_keys["KW_OUTPUT"],
                     list(self.output_dict.values()),
-                )
-            )
+                ))
             self.calibdb_keys = list(
-                map(lambda o: o.get_dbkey(), list(self.output_dict.values()))
-            )
+                map(lambda o: o.get_dbkey(), list(self.output_dict.values())))
             self.calib_hkeys = [
                 self.recipe.drs_params[kw][0]
                 for kw in list(self.recipe.drs_params)
                 if kw.startswith("KW_CDB")
             ]
 
-        # Load log and index in a DataFrame
+            # Load log and index in a DataFrame
+            # TODO: should this be outside if block ?
             self.log_df, _ = self._load_log()
             self.ind_df, _ = self._load_index()
+
+            # Load calibdb DF (master entries and calibdb files)
+            self.master_calib_df = self._load_master_calibdb()
 
     # =========================================================================
     # Functions to load output information
@@ -167,7 +159,7 @@ class DrsTest:
         # Important for extract recipes: keep only the recipe under test
         log_df = log_df[log_df.LOGFILE.str.contains(self.recipe_name)]
 
-        # Paths without files
+        # Paths without log files
         missing_logs = [p for p in allpaths if not os.path.isfile(p)]
 
         return log_df, missing_logs
@@ -190,23 +182,60 @@ class DrsTest:
         # Use NIGHTNAME as index
         ind_df = ind_df.set_index(["NIGHTNAME"])
 
+        # Paths without index.fits at all
+        missing_inds = [p for p in allpaths if not os.path.isfile(p)]
+
+        return ind_df, missing_inds
+
+    def _load_master_calibdb(self):
+        """
+        Load Master calibdb
+
+        :return: Dataframe with master calibdb entries
+        :rtype: pd.DataFrame
+        """
+        # PORT: For 0.7 version
+        # from apero.core.core import drs_database
+        # from apero.core import constants
+        # params = constants.load()
+        # calibdb = drs_database.CalibDatabase(params)
+        # calibdb.load_db()
+        # calib_table = calibdb.database.get('*', calibdb.database.tname,
+        #                                    return_pandas=True)
+
+        calibdb_file_path = os.path.join(self.params['DRS_CALIB_DB'],
+                                         self.params['CALIB_DB_NAME'])
+
+        colnames = self.params.listp('CALIB_DB_COLS', dtype=str)
+        values = np.loadtxt(calibdb_file_path, unpack=True, dtype=str)
+        calib_df = pd.DataFrame(dict(zip(colnames, values)))
+
+        return calib_df
+
+    def find_missing_index(self):
+        """
+        Get df of files not in index.fits but found on disk
+        """
+
+        # TODO: Make sure that loading files here is optimized/moved if bottleneck
         # Search for files not in the index.fits
         # Paths of the files inside the index.fits
-        indpaths = (self.output_path
-                    + ind_df.index.get_level_values("NIGHTNAME") 
-                    + os.path.sep 
-                    + ind_df.FILENAME)
+        indpaths = (self.output_path +
+                    self.ind_df.index.get_level_values("NIGHTNAME") +
+                    os.path.sep + self.ind_df.FILENAME)
         # Paths for all .fits files on disk
-        filepaths = [d for d in glob.glob(self.output_path+"*/*.fits") 
-                if not (os.path.basename(d).startswith("index") or 
-                os.path.basename(d).startswith("log"))]
+        filepaths = [
+            d for d in glob.glob(self.output_path + "*/*.fits")
+            if not (os.path.basename(d).startswith("index")
+                    or os.path.basename(d).startswith("log"))
+        ]
         # Paths for files not in index.fits
         missing_paths = np.setdiff1d(filepaths, indpaths.tolist())
         # Load headers
         headers0 = pd.Series(missing_paths).apply(fits.getheader, ext=0)
         index_ext1 = np.where(pd.Index(headers0.str.len()).get_loc(4))[0]
         headers1 = pd.Series(missing_paths[index_ext1],
-                index = index_ext1).apply(fits.getheader, ext=1)
+                             index=index_ext1).apply(fits.getheader, ext=1)
         headers = headers0
         headers.update(headers1)
         header_df = pd.DataFrame(headers.tolist(), index=headers.index)
@@ -215,41 +244,37 @@ class DrsTest:
         # list of index.fits columns
         index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
         # Header keywords associate with index.fits columns
-        keys = [params[col][0] for col in index_cols]
+        keys = [self.params[col][0] for col in index_cols]
 
         missing_ind_df = pd.DataFrame(header_df[keys].values,
-                columns = index_cols)
+                                      columns=index_cols)
 
         # Populate the three columns not in the header
-        filename = []        
+        filename = []
         nightname = []
         mtime = []
         for i in range(len(missing_ind_df)):
-            sep_index = missing_paths[i].replace(
-                    self.output_path,"").index(os.path.sep)
-            filename.append(missing_paths[i].replace(
-                    self.output_path,"")[sep_index+1:])
-            nightname.append(missing_paths[i].replace(
-                    self.output_path,"")[:sep_index])
+            sep_index = (missing_paths[i].replace(self.output_path,
+                                                  "").index(os.path.sep))
+            filename.append(missing_paths[i].replace(self.output_path,
+                                                     "")[(sep_index + 1):])
+            nightname.append(missing_paths[i].replace(self.output_path,
+                                                      "")[:sep_index])
             mtime.append(os.path.getmtime(missing_paths[i]))
-        missing_ind_df.insert(loc=0, column='LAST_MODIFIED', value=mtime)
-        missing_ind_df.insert(loc=0, column='NIGHTNAME', value=nightname)
-        missing_ind_df.insert(loc=0, column='FILENAME', value=filename)
+        missing_ind_df.insert(loc=0, column="LAST_MODIFIED", value=mtime)
+        missing_ind_df.insert(loc=0, column="NIGHTNAME", value=nightname)
+        missing_ind_df.insert(loc=0, column="FILENAME", value=filename)
         missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
-        
-        # Append the missing files to the index DataFrame
-        ind_df = ind_df.append(missing_ind_df)
 
-        # Paths without index.fits at all
-        missing_inds = [p for p in allpaths if not os.path.isfile(p)]
-
-        return ind_df, missing_inds
-
+        return missing_ind_df
 
     # =========================================================================
     # Utility functions
     # =========================================================================
     def get_dir_path(self):
+        """
+        Get dictionary mapping keywords to data directories
+        """
         dirpaths = dict()
         if self.params is not None:
             dirpaths["raw"] = self.params["DRS_DATA_RAW"]
@@ -268,10 +293,10 @@ class DrsTest:
     # Function to run tests and write their output
     # =========================================================================
     def run_test(self):
-        """Run the test given a proper recipe test script
-        """
-        self.run_test
-
+        """Run the test given a proper recipe test script"""
+        # TODO: General runtest method for external calls
+        raise NotImplementedError(
+            "The run_test method has not yet been implemented")
 
     def gen_html(self, html_dict: dict):
         """Generate HTML summary from jinja2 template.
@@ -291,11 +316,7 @@ class DrsTest:
 
         html_text = template.render(html_dict)
 
-        output_path = os.path.join(
-            OUTDIR, self.test_id, ".".join([self.test_id, "html"])
-        )
+        output_path = os.path.join(OUTDIR, self.test_id,
+                                   ".".join([self.test_id, "html"]))
         with open(output_path, "w") as f:
             f.write(html_text)
-
-
-    
