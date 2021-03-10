@@ -212,8 +212,8 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
             tbl['per_epoch_DDV'][i] = guess
             tbl['per_epoch_DDVRMS'][i] = bulk_error
 
-            tbl['fwhm'][i] = 2 * np.sqrt(2 * np.log(2)) * (tbl['CCF_EW'] + guess / (tbl['CCF_EW'] * 1e6)) / 1e3
-            tbl['sig_fwhm'][i] = 2 * np.sqrt(2 * np.log(2)) * bulk_error / (tbl['CCF_EW'] * 1e6)
+            tbl['fwhm'][i] = 2 * np.sqrt(2 * np.log(2)) * (tbl['CCF_EW'][i] + guess / (tbl['CCF_EW'][i] * 1e6)) / 1e3
+            tbl['sig_fwhm'][i] = 2 * np.sqrt(2 * np.log(2)) * bulk_error / (tbl['CCF_EW'][i] * 1e6)
 
             guess, bulk_error = et.odd_ratio_mean(DDDV[i], DDDVRMS[i])
             tbl['per_epoch_DDDV'][i] = guess
