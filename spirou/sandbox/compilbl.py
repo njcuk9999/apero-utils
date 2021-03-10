@@ -68,6 +68,8 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
                 tbl['per_epoch_DDDVRMS'] = np.zeros_like(scifiles, dtype=float)
                 tbl['LOCAL_FILE_NAME'] = scifiles
                 tbl['plot_date'] = np.zeros_like(scifiles, dtype=float)  # time for matplotlib
+                tbl['fwhm'] = np.zeros_like(scifiles, dtype=float)  # for Dace, derived from de DDV
+                tbl['sig_fwhm'] = np.zeros_like(scifiles, dtype=float)  # for Dace, derived from de DDV
 
                 # adding keys from the input file
                 for key in keys:
