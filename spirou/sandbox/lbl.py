@@ -227,6 +227,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
     systemic_all = np.zeros_like(scifiles, dtype = float) + np.nan
     mjdate_all = np.zeros_like(scifiles, dtype = float)
 
+    CCF_EWIDTH = None
+
     # flag to take a completely new RV measurement
     failed_convergence = True
     for ifile in range(len(scifiles)):
@@ -258,11 +260,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
             else:
                 print(et.color('SNR in H is {0:.2f} and >10, all good'.format(hdr['EXTSN035']),'cyan'))
 
-
-
         time_start = time()
-
-
 
         if noise_model:
             rms = get_noise_model(scifiles[ifile])
@@ -291,9 +289,13 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
         if failed_convergence:
             if ('FP' not in obj_sci):
-                rv = et.get_rough_ccf_rv(wave, sp, wave_start, np.ones_like(weight_line), doplot=doplot_ccf)
+                rv,ewidth = et.get_rough_ccf_rv(wave, sp, wave_start, np.ones_like(weight_line), doplot=doplot_ccf)
+                if CCF_EWIDTH == None:
+                    CCF_EWIDTH = np.array(ewidth)
+                    print(et.color('CCF e-wdith = {:.2f} m/s'.format(CCF_EWIDTH),'blue'))
             else:
                 rv = 0
+                CCF_EWIDTH = 0
         else:
             rv = systemic_all[np.argmin(hdr['MJDATE'] - mjdate_all)] + BERV# + 1000*np.random.random()
 
@@ -587,11 +589,18 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 print(et.color('key {} was bad, it has been padded'.format(key),'red'))
                 hdr[key] = ''
 
+        conversion_d2_fwhm = CCF_EWIDTH*1e3 # CCF_EWIDTH is expressed in m/s
+        tbl['fwhm'] =  (tbl['DDV']/conversion_d2_fwhm+CCF_EWIDTH)* np.sqrt(np.log(2)*2)*2
+        tbl['sig_fwhm'] = (tbl['DDVRMS']/conversion_d2_fwhm)* np.sqrt(np.log(2)*2)*2
+        hdr['CCF_WIDTH'] = CCF_EWIDTH,'e-width of LBL CCF in m/s'
+
+
         hdu1.header = hdr
         # to handle problematic keys in HARPS headers
         hdu1.verify('fix')
 
         tbl['CHI2_VALID_CDF'] = 1-stats.chi2.cdf(tbl['CHI2'],tbl['NPIXLINE'])
+
 
 
         # convert back from dictionnary to table and save

@@ -20,10 +20,8 @@ nbright = 300
 
 #### END OF UPDATES #####
 
-
 if debug:
     import matplotlib.pyplot as plt
-
 
 ifile = 0
 for file in files:

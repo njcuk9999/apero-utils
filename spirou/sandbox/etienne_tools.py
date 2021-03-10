@@ -370,7 +370,8 @@ def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
         plt.ylabel('Normalized CCF')
         plt.show()
 
-    return systemic_vel
+    # returns the systemic velocity and e width of the CCF
+    return systemic_vel, fit[1]
 
 def robust_polyfit(x, y, degree, nsigcut):
     keep = np.isfinite(y)
