@@ -589,10 +589,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 print(et.color('key {} was bad, it has been padded'.format(key),'red'))
                 hdr[key] = ''
 
-        conversion_d2_fwhm = CCF_EWIDTH*1e3 # CCF_EWIDTH is expressed in m/s
-        tbl['fwhm'] =  (tbl['DDV']/conversion_d2_fwhm+CCF_EWIDTH)* np.sqrt(np.log(2)*2)*2
-        tbl['sig_fwhm'] = (tbl['DDVRMS']/conversion_d2_fwhm)* np.sqrt(np.log(2)*2)*2
-        hdr['CCF_WIDTH'] = CCF_EWIDTH,'e-width of LBL CCF in m/s'
+        hdr['CCF_EW'] = CCF_EWIDTH,'e-width of LBL CCF in m/s'
 
 
         hdu1.header = hdr
@@ -600,8 +597,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
         hdu1.verify('fix')
 
         tbl['CHI2_VALID_CDF'] = 1-stats.chi2.cdf(tbl['CHI2'],tbl['NPIXLINE'])
-
-
 
         # convert back from dictionnary to table and save
         hdu2 = fits.BinTableHDU(et.td_convert(tbl))
