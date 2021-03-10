@@ -288,7 +288,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
             BERV = 0
 
         if failed_convergence:
-            if ('FP' not in obj_sci):
+            if 'FP' not in obj_sci:
                 rv,ewidth = et.get_rough_ccf_rv(wave, sp, wave_start, np.ones_like(weight_line), doplot=doplot_ccf)
                 if CCF_EWIDTH == None:
                     CCF_EWIDTH = ewidth
