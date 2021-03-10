@@ -291,7 +291,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
             if ('FP' not in obj_sci):
                 rv,ewidth = et.get_rough_ccf_rv(wave, sp, wave_start, np.ones_like(weight_line), doplot=doplot_ccf)
                 if CCF_EWIDTH == None:
-                    CCF_EWIDTH = np.array(ewidth)
+                    CCF_EWIDTH = ewidth
                     print(et.color('CCF e-wdith = {:.2f} m/s'.format(CCF_EWIDTH),'blue'))
             else:
                 rv = 0
@@ -590,7 +590,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 hdr[key] = ''
 
         hdr['CCF_EW'] = CCF_EWIDTH,'e-width of LBL CCF in m/s'
-
 
         hdu1.header = hdr
         # to handle problematic keys in HARPS headers
