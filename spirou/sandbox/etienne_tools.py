@@ -289,6 +289,37 @@ def color(message,color):
     return COLOURS[color.upper()] + message + COLOURS['ENDC']
 
 
+def get_ratio(sp1,sp2):
+    # get the scaling ratio that minimizes least-square between two spectra with a
+
+    #iord = 40
+    #sp1 = np.array(sp)
+    #sp2 = np.array(model)
+
+    g = np.isfinite(sp1) * np.isfinite(sp2) * (np.abs(sp1)<5*sigma(sp1)) * (np.abs(sp2)<5*sigma(sp2)) #* (np.abs(diff / et.sigma(diff)) < 10)
+
+    amp = np.sqrt(np.nansum(sp1[g]**2)/np.nansum(sp2[g]**2))
+
+    #sp1 -= np.nanmedian(sp1[g])
+    #sp2 -= np.nanmedian(sp2[g])
+    for ite in range(5):
+        diff = sp1-amp*sp2
+
+        g = np.isfinite(sp1) * np.isfinite(sp2) * (np.abs(diff/sigma(diff))<3)
+
+        v=np.nansum(diff[g]*sp2[g])/np.sqrt(np.nansum(sp2[g]**2)*np.nansum(sp1[g]**2))
+
+        amp/=(1-v)
+        #print(amp,v)
+
+    #sp1[~g] = np.nan
+    #sp2[~g] = np.nan
+    #plt.plot(sp1)
+    #plt.plot(sp2*amp,alpha = 0.5)
+    #plt.plot(sp1-sp2*amp,color = 'red',alpha = 0.5)
+    #plt.show()
+
+    return amp
 
 def doppler(wave,v):
     # velocity expressed in m/s
@@ -404,7 +435,7 @@ def sigma(tmp):
     # return a robust estimate of 1 sigma
     sig1 = 0.682689492137086
     p1 = (1-(1-sig1)/2)*100
-    return (nanpercentile(tmp,p1) -nanpercentile(tmp,100-p1))/2.0
+    return (np.nanpercentile(tmp,p1) -np.nanpercentile(tmp,100-p1))/2.0
 
 def gauss(x,cen, ew, amp, zp, slope):
     return np.exp(-0.5*(x-cen)**2/ew**2)*amp+zp+(x-cen)*slope

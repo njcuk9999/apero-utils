@@ -19,9 +19,9 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
           template_file = None):
     """
     if True:
-        obj_sci = 'GL436'
+        obj_sci = 'GL699'
         force = True
-        obj_template = None
+        obj_template = 'GL699'
         doplot_ccf = False
         doplot_debug = False
         lblrv_path = 'lblrv/'
@@ -31,6 +31,11 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
         ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits'
         check_fp = False
         noise_model = False
+        template_file = None
+        check_fp = False
+        science_search_string = '*e2dsff*.fits'
+        import matplotlib.pyplot as plt
+
     """
     # pass just one object and we assume that the object is it's own template
     if obj_template is None:
@@ -316,16 +321,21 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 dmodel = np.zeros_like(sp)
                 ddmodel = np.zeros_like(sp)
                 dddmodel = np.zeros_like(sp)
-                model_mask = np.zeros_like(sp)
 
             for ii in range(sp.shape[0]):
+                # if on first iteration, get the low-frequency component out
+                model_mask = np.ones_like(model[ii])
+
+                model_mask[spline_mask(et.doppler(wave[ii], -rv)) < 0.99] = np.nan
+
+
                 # RV shift the spline and give it the shape of the model
-                model[ii] = spline(et.doppler(wave[ii],-rv) ) * bl[ii]
+                model[ii] = spline(et.doppler(wave[ii],-rv) ) * bl[ii] * model_mask
 
-                amp =  np.nansum(model[ii]*sp[ii])/np.nansum(model[ii]**2)
+                amp = et.get_ratio(sp[ii],model[ii])
+
                 model[ii]*=amp
-
-
+                #plt.plot(ii,amp,'g.')
                 if ite_rv == 1:
                     model0[ii] = spline0(et.doppler(wave[ii],-rv) ) * bl[ii]
                     model0[ii]/=np.nanmedian(model0[ii])
@@ -336,12 +346,16 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 ddmodel[ii] = ddspline(et.doppler(wave[ii],-rv)) * bl[ii]* amp
                 dddmodel[ii] = dddspline(et.doppler(wave[ii],-rv)) * bl[ii]* amp
 
-                # if on first iteration, get the low-frequency component out
-                model_mask[ii] = spline_mask(et.doppler(wave[ii], -rv))
-                g = tbl['ORDER'] == ii
+
+            #plt.plot(sp.ravel())
+            #plt.plot(model.ravel(), alpha=0.5)
+            #plt.plot((sp-model).ravel(), alpha=0.5,color = 'red')
+            #plt.show()
+            #stop
+
 
             # keep only legit splined points
-            model[model_mask < .99] = np.nan
+            # model[model_mask < .99] = np.nan
 
             for ii in range(sp.shape[0]):
                 tmp = sp[ii]-model[ii]

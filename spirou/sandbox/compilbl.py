@@ -54,7 +54,7 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
                 # because FP files don't have an SNR goal
                 hdr['SNRGOAL'] = 0
             if 'CCF_EW' not in hdr:
-                hdr['CCF_EW'] = 5.5 / 2.354  # default value
+                hdr['CCF_EW'] = 5.5 / 2.354 * 1000  # default value
 
             # if first file, we populate the columns
             if i == 0:
