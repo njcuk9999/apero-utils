@@ -3,19 +3,16 @@ Definition of SPIRou recipe tests following APERO framework
 
 @author: vandalt
 """
-import sys  # Temporary
-
 from apero.core import constants
 from apero.core.instruments.spirou.recipe_definitions import recipes
 
-# HACK: Temporary to import full paths
-sys.path.insert(0, '..')
-from drs_test import DrsTest  # Eventually from apero-tests.drs_test
+# TODO: Make sure this works for dev
+from ..drs_test import DrsTest
+from .. import test_utils as ut
 
 # Something similar?
 # from .preprocessing import PPTest
 # from .darkmaster import DarkMTest
-from tests.badpixel import BadPixTest
 
 # from .localisation import LocTest
 # from .shapemaster import ShapeMTest
@@ -25,7 +22,6 @@ from tests.badpixel import BadPixTest
 # from .leakmaster import LeakMTest
 # from .wavelengthmaster import WaveMTest
 # from .wavelength import WaveTest
-import test_utils as tu
 
 # =============================================================================
 # Define variables
@@ -44,13 +40,16 @@ RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
 
 red_key = 'DRS_DATA_REDUC'
 
-
 # =============================================================================
-# Pre-load data for operations that take too much time
+# Pre-load data for operations that are relatively expensive
 # =============================================================================
+# ???: Maybe in future  we could have a single index df with extra index level
+#  for parent dir (reduced, tmp, etc.)
 params = constants.load(__INSTRUMENT__)
-red_index = tu.load_index_df(params[red_key])
-
+red_log = ut.load_log_df(params[red_key])
+red_index = ut.load_index_df(params[red_key])
+red_missing_index = ut.missing_index_headers(red_index,
+                                             instrument=__INSTRUMENT__)
 
 # =============================================================================
 # Define tests

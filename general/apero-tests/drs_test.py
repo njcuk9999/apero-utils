@@ -4,18 +4,21 @@ DRS Tests that (try to) follow the APERO framework.
 @author: vandalt
 """
 import os
+import warnings
 import glob
 import numpy as np
 from datetime import datetime
 from typing import List, Optional, Tuple
 
 import pandas as pd
-from astropy.table import Table
 from astropy.io import fits
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+from pandas import DataFrame
 
 from apero.core import constants
 from apero.core.core.drs_recipe import DrsRecipe
+
+import test_utils as ut
 
 # from . import OUTDIR, TEMPLATEDIR
 
@@ -53,6 +56,8 @@ class DrsTest:
         drs_recipe: Optional[DrsRecipe] = None,
         setup: Optional[str] = None,
         testnum: int = 1,
+        all_log_df: Optional[DataFrame] = None,
+        all_index_df: Optional[DataFrame] = None,
     ):
         """
 
@@ -95,7 +100,9 @@ class DrsTest:
             # The recipe object and test ID
             self.recipe = drs_recipe
             if self.instrument is not None:
-                print("WARNING: Overwriting kwarg instrument with recipe info")
+                warnings.warn(
+                    "Overwriting kwarg instrument with recipe info", RuntimeWarning
+                )
             self.instrument = self.recipe.instrument
             self.recipe_name = removext(self.recipe.name, ext=".py")
             self.test_id = self.recipe_name + f"_test{testnum}"
@@ -116,9 +123,11 @@ class DrsTest:
                 map(
                     lambda o: o.required_header_keys["KW_OUTPUT"],
                     list(self.output_dict.values()),
-                ))
+                )
+            )
             self.calibdb_keys = list(
-                map(lambda o: o.get_dbkey(), list(self.output_dict.values())))
+                map(lambda o: o.get_dbkey(), list(self.output_dict.values()))
+            )
             self.calib_hkeys = [
                 self.recipe.drs_params[kw][0]
                 for kw in list(self.recipe.drs_params)
@@ -126,7 +135,9 @@ class DrsTest:
             ]
 
             # Load log and index in a DataFrame
-            # TODO: should this be outside if block ?
+            # TODO: Setup log such that if none passed, only generated on first call,
+            #  if possible to generate, and also just used passed all_log, all_ind as
+            #  first option
             self.log_df, _ = self._load_log()
             self.ind_df, _ = self._load_index()
 
@@ -150,13 +161,15 @@ class DrsTest:
             os.path.join(self.output_path, d, "log.fits")
             for d in os.listdir(self.output_path)
         ]
-        log_df = load_fits_df(allpaths)
+        log_df = ut.load_fits_df(allpaths)
 
         # Use DIRECTORY as index and keep only relevant entries
         # whith self.recipe or extract recipes called
         log_df = log_df.set_index(["DIRECTORY"])
 
         # Important for extract recipes: keep only the recipe under test
+        # !!!: this is only part that will be needed when all_log passed
+        #  probably need same for index
         log_df = log_df[log_df.LOGFILE.str.contains(self.recipe_name)]
 
         # Paths without log files
@@ -177,7 +190,7 @@ class DrsTest:
             os.path.join(self.output_path, d, "index.fits")
             for d in os.listdir(self.output_path)
         ]
-        ind_df = load_fits_df(allpaths)
+        ind_df = ut.load_fits_df(allpaths)
 
         # Use NIGHTNAME as index
         ind_df = ind_df.set_index(["NIGHTNAME"])
@@ -203,10 +216,11 @@ class DrsTest:
         # calib_table = calibdb.database.get('*', calibdb.database.tname,
         #                                    return_pandas=True)
 
-        calibdb_file_path = os.path.join(self.params['DRS_CALIB_DB'],
-                                         self.params['CALIB_DB_NAME'])
+        calibdb_file_path = os.path.join(
+            self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
+        )
 
-        colnames = self.params.listp('CALIB_DB_COLS', dtype=str)
+        colnames = self.params.listp("CALIB_DB_COLS", dtype=str)
         values = np.loadtxt(calibdb_file_path, unpack=True, dtype=str)
         calib_df = pd.DataFrame(dict(zip(colnames, values)))
 
@@ -220,22 +234,29 @@ class DrsTest:
         # TODO: Make sure that loading files here is optimized/moved if bottleneck
         # Search for files not in the index.fits
         # Paths of the files inside the index.fits
-        indpaths = (self.output_path +
-                    self.ind_df.index.get_level_values("NIGHTNAME") +
-                    os.path.sep + self.ind_df.FILENAME)
+        indpaths = (
+            self.output_path
+            + self.ind_df.index.get_level_values("NIGHTNAME")
+            + os.path.sep
+            + self.ind_df.FILENAME
+        )
         # Paths for all .fits files on disk
         filepaths = [
-            d for d in glob.glob(self.output_path + "*/*.fits")
-            if not (os.path.basename(d).startswith("index")
-                    or os.path.basename(d).startswith("log"))
+            d
+            for d in glob.glob(self.output_path + "*/*.fits")
+            if not (
+                os.path.basename(d).startswith("index")
+                or os.path.basename(d).startswith("log")
+            )
         ]
         # Paths for files not in index.fits
         missing_paths = np.setdiff1d(filepaths, indpaths.tolist())
         # Load headers
         headers0 = pd.Series(missing_paths).apply(fits.getheader, ext=0)
         index_ext1 = np.where(pd.Index(headers0.str.len()).get_loc(4))[0]
-        headers1 = pd.Series(missing_paths[index_ext1],
-                             index=index_ext1).apply(fits.getheader, ext=1)
+        headers1 = pd.Series(missing_paths[index_ext1], index=index_ext1).apply(
+            fits.getheader, ext=1
+        )
         headers = headers0
         headers.update(headers1)
         header_df = pd.DataFrame(headers.tolist(), index=headers.index)
@@ -246,20 +267,20 @@ class DrsTest:
         # Header keywords associate with index.fits columns
         keys = [self.params[col][0] for col in index_cols]
 
-        missing_ind_df = pd.DataFrame(header_df[keys].values,
-                                      columns=index_cols)
+        missing_ind_df = pd.DataFrame(header_df[keys].values, columns=index_cols)
 
         # Populate the three columns not in the header
         filename = []
         nightname = []
         mtime = []
         for i in range(len(missing_ind_df)):
-            sep_index = (missing_paths[i].replace(self.output_path,
-                                                  "").index(os.path.sep))
-            filename.append(missing_paths[i].replace(self.output_path,
-                                                     "")[(sep_index + 1):])
-            nightname.append(missing_paths[i].replace(self.output_path,
-                                                      "")[:sep_index])
+            sep_index = (
+                missing_paths[i].replace(self.output_path, "").index(os.path.sep)
+            )
+            filename.append(
+                missing_paths[i].replace(self.output_path, "")[(sep_index + 1) :]
+            )
+            nightname.append(missing_paths[i].replace(self.output_path, "")[:sep_index])
             mtime.append(os.path.getmtime(missing_paths[i]))
         missing_ind_df.insert(loc=0, column="LAST_MODIFIED", value=mtime)
         missing_ind_df.insert(loc=0, column="NIGHTNAME", value=nightname)
@@ -295,8 +316,7 @@ class DrsTest:
     def run_test(self):
         """Run the test given a proper recipe test script"""
         # TODO: General runtest method for external calls
-        raise NotImplementedError(
-            "The run_test method has not yet been implemented")
+        raise NotImplementedError("The run_test method has not yet been implemented")
 
     def gen_html(self, html_dict: dict):
         """Generate HTML summary from jinja2 template.
@@ -316,7 +336,8 @@ class DrsTest:
 
         html_text = template.render(html_dict)
 
-        output_path = os.path.join(OUTDIR, self.test_id,
-                                   ".".join([self.test_id, "html"]))
+        output_path = os.path.join(
+            OUTDIR, self.test_id, ".".join([self.test_id, "html"])
+        )
         with open(output_path, "w") as f:
             f.write(html_text)

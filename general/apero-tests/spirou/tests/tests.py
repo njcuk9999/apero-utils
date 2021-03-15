@@ -26,19 +26,6 @@ RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
 class Test(ABC):
     """Test."""
 
-    # =========================================================================
-    # Abstract methods common to all tests
-    # =========================================================================
-    @property
-    @abstractmethod
-    def name(self) -> str:
-        """Test full unique name."""
-
-    @property
-    @abstractmethod
-    def test_id(self) -> str:
-        """Test short name (ID)."""
-
     @property
     @abstractmethod
     def output_list(self) -> List[str]:
