@@ -16,7 +16,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits',
           noise_model = False,check_fp = False, science_search_string = '*e2dsff*.fits',
-          template_file = None):
+          template_file = None, hp_width = 223):
     """
     if True:
         obj_sci = 'GL699'
@@ -196,7 +196,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
 
     # we select a scale of 223 km/s
-    width = int(223000/np.array(1/np.nanmedian((template['wavelength']/np.gradient(template['wavelength']))/constants.c)))
+    width = int(hp_width/np.array(1/np.nanmedian((template['wavelength']/np.gradient(template['wavelength']))/constants.c)))
     if (width % 2) ==0:
         width+=1
 
@@ -280,7 +280,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
             # we select a scale of 223 km/s
             width = int(
-                223000 / np.array(1 / np.nanmedian((wave[iord] / np.gradient(wave[iord])) / constants.c)))
+                hp_width / np.array(1 / np.nanmedian((wave[iord] / np.gradient(wave[iord])) / constants.c)))
             if (width % 2) == 0:
                 width += 1
 
@@ -604,6 +604,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 hdr[key] = ''
 
         hdr['CCF_EW'] = CCF_EWIDTH,'e-width of LBL CCF in m/s'
+        hdr['HP_WIDTH'] = hp_width,'high-pass width in lbl [km/s]'
+
 
         hdu1.header = hdr
         # to handle problematic keys in HARPS headers
