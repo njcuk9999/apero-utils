@@ -604,7 +604,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 hdr[key] = ''
 
         hdr['CCF_EW'] = CCF_EWIDTH,'e-width of LBL CCF in m/s'
-        hdr['HP_WIDTH'] = hp_width,'high-pass width in lbl [km/s]'
+        hdr['HP_WIDTH'] = hp_width,'high-pass LBL width in lbl [km/s]'
 
 
         hdu1.header = hdr
