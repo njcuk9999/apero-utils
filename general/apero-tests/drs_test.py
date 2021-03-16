@@ -8,7 +8,7 @@ import warnings
 import glob
 import numpy as np
 from datetime import datetime
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Union
 
 import pandas as pd
 from astropy.io import fits
@@ -85,6 +85,7 @@ class DrsTest:
         self.name = "Unknown Test for unknown Recipe"  # Full test name
         self.test_id = "unknown_test"  # Short test ID
         self.instrument = instrument  # Instrument may be set as kwarg
+        self.recipe_name = None
         self.params = None  # DRS parameters
         self.ismaster = False  # Is it a master recipe?
         self.fibers = []  # TODO: Implement further only if needed in methods
@@ -94,6 +95,8 @@ class DrsTest:
         self.calls_extract = False  # TODO: Remove if not needed
         self.input_path = ""  # Path to input dir
         self.output_path = ""  # Path to output dir
+        self.log_df = None
+        self.ind_df = None
 
         # Overwrite some (most!) parameters with recipe info automatically
         if drs_recipe is not None:
@@ -134,71 +137,88 @@ class DrsTest:
                 if kw.startswith("KW_CDB")
             ]
 
-            # Load log and index in a DataFrame
-            # TODO: Setup log such that if none passed, only generated on first call,
-            #  if possible to generate, and also just used passed all_log, all_ind as
-            #  first option
-            self.log_df, _ = self._load_log()
-            self.ind_df, _ = self._load_index()
+            self.log_df = self.load_log_df(all_log_df=all_log_df)
+            self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
 
             # Load calibdb DF (master entries and calibdb files)
+            # TODO: Do we need to restructure like log and ind here ?
             self.master_calib_df = self._load_master_calibdb()
 
     # =========================================================================
     # Functions to load output information
     # =========================================================================
-    def _load_log(self) -> Tuple[pd.DataFrame, List[str]]:
+    def load_log_df(
+        self, all_log_df: Optional[DataFrame] = None, force: bool = False
+    ) -> Union[DataFrame, None]:
         """Get log content in a dataframe
 
         Parse all log files and return a dataframe with only entries that have
         the current recipe in LOGFILE.
 
+        :param all_log_df: Dataframe with log info for multiple recipes
+        :type all_log_df: DataFrame
+        :param force: Force to reload, by default (False) returns self.log_df if exists
+        :type force: bool
         :returns: dataframe of log content and list of missing log files
         :rtype: Tuple[pd.DataFrame, list]
         """
-        # Get all logs in a dataframe
-        allpaths = [
-            os.path.join(self.output_path, d, "log.fits")
-            for d in os.listdir(self.output_path)
-        ]
-        log_df = ut.load_fits_df(allpaths)
+        # NOTE: missing_log was removed, list of all missing logs can be generated with
+        #  util load_log_df function by setting `return_missing` to True
 
-        # Use DIRECTORY as index and keep only relevant entries
-        # whith self.recipe or extract recipes called
-        log_df = log_df.set_index(["DIRECTORY"])
+        if not force and self.log_df is not None:
+            return self.log_df
+
+        if self.recipe_name is None:
+            warnings.warn(
+                "Cannot load log dataframe if no recipe is set, returning None",
+                RuntimeWarning,
+            )
+            return None
+
+        if all_log_df is None:
+            all_log_df = ut.load_log_df(self.output_path)
 
         # Important for extract recipes: keep only the recipe under test
-        # !!!: this is only part that will be needed when all_log passed
-        #  probably need same for index
-        log_df = log_df[log_df.LOGFILE.str.contains(self.recipe_name)]
+        log_df = all_log_df[all_log_df.LOGFILE.str.contains(self.recipe_name)]
 
-        # Paths without log files
-        missing_logs = [p for p in allpaths if not os.path.isfile(p)]
+        return log_df
 
-        return log_df, missing_logs
-
-    def _load_index(self) -> Tuple[pd.DataFrame, List[str]]:
+    def load_ind_df(
+        self, all_ind_df: Optional[DataFrame] = None, force: bool = True
+    ) -> Union[DataFrame, None]:
         """Get index contents in a dataframe
 
         Parse all index.fits files and return a dataframe.
 
+        :param all_ind_df: Dataframe with all index entries for multiple recipes
+        :type all_ind_df: Optional[DataFrame]
+        :param force: Force to reload, by default (False) returns self.log_df if exists
+        :type force: bool
         :returns: dataframe of index content and list of missing index files
         :rtype: Tuple[pd.DataFrame, list]
         """
-        # Get all index.fits in a dataframe
-        allpaths = [
-            os.path.join(self.output_path, d, "index.fits")
-            for d in os.listdir(self.output_path)
-        ]
-        ind_df = ut.load_fits_df(allpaths)
+        # NOTE: missing_ind was removed, list of all missing inds can be generated with
+        #  util load_ind_df function by setting `return_missing` to True
 
-        # Use NIGHTNAME as index
-        ind_df = ind_df.set_index(["NIGHTNAME"])
+        if not force and self.ind_df is not None:
+            return self.ind_df
 
-        # Paths without index.fits at all
-        missing_inds = [p for p in allpaths if not os.path.isfile(p)]
+        if self.recipe_name is None:
+            # TODO: Make sure this is true when done
+            warnings.warn(
+                "Cannot load index dataframe if no recipe is set, returning None",
+                RuntimeWarning,
+            )
+            return None
 
-        return ind_df, missing_inds
+        if all_ind_df is None:
+            all_ind_df = ut.load_index_df(self.output_path)
+
+        # TODO: Likely need to filter recipes here
+        # ???: Is extract in keywords or need extra ?
+        ind_df = all_ind_df.copy()
+
+        return ind_df
 
     def _load_master_calibdb(self):
         """
@@ -288,6 +308,10 @@ class DrsTest:
         missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
 
         return missing_ind_df
+
+    # =========================================================================
+    # Properties of the test
+    # =========================================================================
 
     # =========================================================================
     # Utility functions

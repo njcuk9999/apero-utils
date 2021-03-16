@@ -70,7 +70,7 @@ tests = []
 cal_badpix = DrsTest(drs_recipe=["cal_badpix_spirou.py"])
 cal_badpix.name = "Bad Pixel Correction Recipe Test #1"
 # cal_badpix.run_test = BadPixTest()
-# TODO: Add other attributes here
+# TODO: Add other attributes here (after structure is more complete)
 
 tests.append(cal_badpix)
 

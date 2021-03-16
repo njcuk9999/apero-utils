@@ -3,16 +3,13 @@ General functions to use in apero tests
 """
 import glob
 import os
+from typing import List, Optional, Union
 
 import pandas as pd
+from apero.core import constants
 from astropy.io import fits
 from astropy.table import Table
-
-from typing import List, Union, Optional
-
 from pandas import DataFrame
-
-from apero.core import constants
 
 
 def get_nth_parent(path: str, order: int = 1):
