@@ -10,6 +10,7 @@ import gspread_pandas as gspd
 MAN_SHEET_ID = '13idu6tx-Zvzp-G9cjOSz-y5FH3E4a0T4Sdlw0235CNs'
 AUTO_SHEET_ID = '1gvMp1nHmEcKCUpxsTxkx-5m115mLuQIGHhxJCyVoZCM'
 
+verbose = True
 
 skip_tabs = ['README']
 
@@ -17,10 +18,13 @@ sh_man = gspd.spread.Spread(MAN_SHEET_ID)
 
 ws_names = [ws.title for ws in sh_man.sheets if ws.title not in skip_tabs]
 
-colnames = ['ODOMETER', 'PP', 'RV', 'COMMENTS']
+colnames = ['ODOMETER', 'PP', 'RV']
 df_all = pd.DataFrame([], columns=colnames)
 
 for ws_name in ws_names:
+
+    if verbose:
+        print(f"Reading {ws_name}")
 
     # Load worksheet
     df_man = sh_man.sheet_to_df(index=0, sheet=ws_name)
@@ -38,8 +42,8 @@ for ws_name in ws_names:
                      df_man['odometers'].astype(int),
                      df_man['to'].astype(int))
     df_auto = pd.DataFrame(
-            [(o, False, True, c)
-                for c, s, e in zipped_odo for o in range(s, e+1)],
+            [(o, False, True)
+                for _, s, e in zipped_odo for o in range(s, e+1)],
             columns=colnames,
             )
     df_all = df_all.append(df_auto)

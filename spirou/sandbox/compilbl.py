@@ -239,17 +239,17 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
                 for reg in range(4):
                     if reg == 0:
                         g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (
-                                    tbl_per_line['WAVE_START'] < red_end[iband])
+                            tbl_per_line['WAVE_START'] < red_end[iband])
                     if reg == 1:
                         g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (
-                                    tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] < 2044)
+                            tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] < 2044)
                     if reg == 2:
                         g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (
-                                    tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] > 2044)
+                            tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] > 2044)
                     if reg == 3:
                         g = (tbl_per_line['WAVE_START'] > blue_end[iband]) * (
-                                    tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] > 1532) * (
-                                        tbl_per_line['XPIX'] < 2556)
+                            tbl_per_line['WAVE_START'] < red_end[iband]) * (tbl_per_line['XPIX'] > 1532) * (
+                                tbl_per_line['XPIX'] < 2556)
 
                     if np.sum(np.isfinite(tmp_err[g]) * np.isfinite(tmp_rv[g])) < np.sum(g) / 2:
                         continue
