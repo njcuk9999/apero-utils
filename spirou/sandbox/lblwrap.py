@@ -1,5 +1,7 @@
 """
 Thin wrapper for the lbl codes with convienient options.
+
+@author: vandalt
 """
 import argparse
 
