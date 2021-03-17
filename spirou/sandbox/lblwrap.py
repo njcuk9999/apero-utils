@@ -58,7 +58,7 @@ parser.add_argument(
 )
 clargs = parser.parse_args()
 
-tbl = Table.read(clargs.listfile, format="csv")
+tbl = Table.read(clargs.filename, format="csv")
 
 random_order = np.argsort(np.random.random(len(tbl)))
 tbl = tbl[random_order]
@@ -96,4 +96,5 @@ for i in range(len(tbl)):
                 doplot_debug=False,
             )
     except Exception as e:
+        print("Got an error:")
         print(e)
