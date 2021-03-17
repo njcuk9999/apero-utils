@@ -9,6 +9,7 @@ from astropy.table import Table
 from lbl import lbl
 from compilbl import compilbl
 from zeropointcorr import zpcorr
+from diagnosticplots import pdfplots
 
 parser = argparse.ArgumentParser(
     description="Thin wrapper to analyse list of objects with lbl."
@@ -40,17 +41,23 @@ parser.add_argument(
     help="File with zero-point corrections.",
 )
 parser.add_argument(
+    "-p",
+    "--plots",
+    dest="do_plots",
+    action="store_true",
+    help="Produce plots of lbl output (see diagnosticplots.py).",
+)
+parser.add_argument(
     "-f",
     "--force",
     dest="force",
     action="store_true",
-    help="Do not force recalculations if files exist (applied to each step).",
+    help="Force recalculations if files exist (applied to each step).",
 )
 clargs = parser.parse_args()
 
 tbl = Table.read(clargs.listfile, format="csv")
 
-# ???: Why are we re-ordering like this ?
 random_order = np.argsort(np.random.random(len(tbl)))
 tbl = tbl[random_order]
 
@@ -72,18 +79,19 @@ for i in range(len(tbl)):
                 force=clargs.force,
             )
 
-        # TODO: Import diagnosticplots when server available
-        # if tbl["OBJECT"][i].startswith("GL"):
-        #     exoarchive_name = tbl["OBJECT"][i].replace("GL", "GJ ")
-        # elif tbl["OBJECT"][i].startswith("GJ"):
-        #     exoarchive_name = tbl["OBJECT"][i].replace("GJ", "GJ ")
-        # else:
-        #     exoarchive_name = tbl["OBJECT"][i]
-        # pdfplots(
-        #     tbl["OBJECT"][i],
-        #     obj_template=tbl["TEMPLATE"][i],
-        #     exoarchive_name=exoarchive_name,
-        # )
-    # TODO: Determine which exceptions we want to catch here
-    except:
-        print("err")
+        # GL* are named "GJ "* in exoplanet archive
+        if tbl["OBJECT"][i].startswith("GL"):
+            exoarchive_name = tbl["OBJECT"][i].replace("GL", "GJ ")
+        elif tbl["OBJECT"][i].startswith("GJ"):
+            exoarchive_name = tbl["OBJECT"][i].replace("GJ", "GJ ")
+        else:
+            exoarchive_name = tbl["OBJECT"][i]
+        if clargs.do_plots:
+            pdfplots(
+                tbl["OBJECT"][i],
+                obj_template=tbl["TEMPLATE"][i],
+                exoarchive_name=exoarchive_name,
+                doplot_debug=False,
+            )
+    except Exception as e:
+        print(e)
