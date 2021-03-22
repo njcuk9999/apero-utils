@@ -9,7 +9,7 @@ import pandas as pd
 from apero.core import constants
 from astropy.io import fits
 from astropy.table import Table
-from pandas import DataFrame
+from pandas import DataFrame, Series
 
 
 def get_nth_parent(path: str, order: int = 1):
@@ -133,8 +133,9 @@ def load_index_df(
 
 def get_output_files(
     output_parent: str, exclude_fname: Optional[Union[List[str], str]] = None
-) -> pd.Series:
+) -> Series:
     """
+    Load all output files in a pandas series
 
     :param output_parent: Parent output directory to scan
     :type output_parent: str
@@ -143,7 +144,7 @@ def get_output_files(
                           By default, index and log files are ignored.
     :type exclude_fname: Optional[Union[List[str], str]]
     :return: List of full path to output files
-    :rtype: List[str]
+    :rtype: Series
     """
     if exclude_fname is None:
         exclude_fname = ["index", "log"]
@@ -164,7 +165,8 @@ def missing_index_headers(
     instrument: str = "SPIROU",
 ) -> DataFrame:
     """
-    Find files with missing index and store header info in headers
+    Find files with missing index and store header info in a dataframe.
+    The output is compatible with APERO index.
 
     :param ind_df: Dataframe with all index content
     :type ind_df: DataFrame
@@ -208,7 +210,7 @@ def missing_index_headers(
     )
     missing_ind_df["LAST_MODIFIED"] = out_not_in_index.apply(os.path.getmtime).astype(
         str
-    )  # APERO stores these time as string
+    )  # APERO stores these times as string, so we convert them here
     missing_ind_df["FULLPATH"] = out_not_in_index
 
     missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])

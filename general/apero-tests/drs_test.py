@@ -101,7 +101,7 @@ class DrsTest:
         # Overwrite some (most!) parameters with recipe info automatically
         if drs_recipe is not None:
             # The recipe object and test ID
-            self.recipe = drs_recipe
+            self.recipe = drs_recipe.copy(drs_recipe)
             if self.instrument is not None:
                 warnings.warn(
                     "Overwriting kwarg instrument with recipe info", RuntimeWarning
@@ -141,7 +141,6 @@ class DrsTest:
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
 
             # Load calibdb DF (master entries and calibdb files)
-            # TODO: Do we need to restructure like log and ind here ?
             self.master_calib_df = self._load_master_calibdb()
 
     # =========================================================================
@@ -227,7 +226,7 @@ class DrsTest:
         :return: Dataframe with master calibdb entries
         :rtype: pd.DataFrame
         """
-        # PORT: For 0.7 version
+        # NOTE: For 0.7 version
         # from apero.core.core import drs_database
         # from apero.core import constants
         # params = constants.load()
@@ -245,69 +244,6 @@ class DrsTest:
         calib_df = pd.DataFrame(dict(zip(colnames, values)))
 
         return calib_df
-
-    def find_missing_index(self):
-        """
-        Get df of files not in index.fits but found on disk
-        """
-
-        # TODO: Make sure that loading files here is optimized/moved if bottleneck
-        # Search for files not in the index.fits
-        # Paths of the files inside the index.fits
-        indpaths = (
-            self.output_path
-            + self.ind_df.index.get_level_values("NIGHTNAME")
-            + os.path.sep
-            + self.ind_df.FILENAME
-        )
-        # Paths for all .fits files on disk
-        filepaths = [
-            d
-            for d in glob.glob(self.output_path + "*/*.fits")
-            if not (
-                os.path.basename(d).startswith("index")
-                or os.path.basename(d).startswith("log")
-            )
-        ]
-        # Paths for files not in index.fits
-        missing_paths = np.setdiff1d(filepaths, indpaths.tolist())
-        # Load headers
-        headers0 = pd.Series(missing_paths).apply(fits.getheader, ext=0)
-        index_ext1 = np.where(pd.Index(headers0.str.len()).get_loc(4))[0]
-        headers1 = pd.Series(missing_paths[index_ext1], index=index_ext1).apply(
-            fits.getheader, ext=1
-        )
-        headers = headers0
-        headers.update(headers1)
-        header_df = pd.DataFrame(headers.tolist(), index=headers.index)
-
-        pconstant = constants.pload(self.instrument)
-        # list of index.fits columns
-        index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
-        # Header keywords associate with index.fits columns
-        keys = [self.params[col][0] for col in index_cols]
-
-        missing_ind_df = pd.DataFrame(header_df[keys].values, columns=index_cols)
-
-        # Populate the three columns not in the header
-        filename = []
-        nightname = []
-        mtime = []
-        for i in range(len(missing_ind_df)):
-            sep_index = (
-                missing_paths[i].replace(self.output_path, "").index(os.path.sep)
-            )
-            filename.append(
-                missing_paths[i].replace(self.output_path, "")[(sep_index + 1) :]
-            )
-            nightname.append(missing_paths[i].replace(self.output_path, "")[:sep_index])
-            mtime.append(os.path.getmtime(missing_paths[i]))
-        missing_ind_df.insert(loc=0, column="LAST_MODIFIED", value=mtime)
-        missing_ind_df.insert(loc=0, column="NIGHTNAME", value=nightname)
-        missing_ind_df.insert(loc=0, column="FILENAME", value=filename)
-        missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
-
-        return missing_ind_df
 
     # =========================================================================
     # Properties of the test
