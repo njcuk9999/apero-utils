@@ -56,7 +56,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
     #science_path = 'tellurics/' # direcory with per-object telluric-corect (tcorr) files are hidden
 
 
-    if template_file == None:
+    if template_file is None:
         template_file = template_path+'Template_s1d_'+obj_template+'_sc1d_v_file_AB.fits'
 
     template = fits.getdata(template_file)
@@ -196,7 +196,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
 
     # we select a scale of 223 km/s
-    width = int(hp_width/np.array(1/np.nanmedian((template['wavelength']/np.gradient(template['wavelength']))/constants.c)))
+    width = int(hp_width*1000/np.array(1/np.nanmedian((template['wavelength']/np.gradient(template['wavelength']))/constants.c)))
     if (width % 2) ==0:
         width+=1
 
@@ -280,7 +280,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
             # we select a scale of 223 km/s
             width = int(
-                hp_width / np.array(1 / np.nanmedian((wave[iord] / np.gradient(wave[iord])) / constants.c)))
+                hp_width*1000 / np.array(1 / np.nanmedian((wave[iord] / np.gradient(wave[iord])) / constants.c)))
             if (width % 2) == 0:
                 width += 1
 
@@ -346,7 +346,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 ddmodel[ii] = ddspline(et.doppler(wave[ii],-rv)) * bl[ii]* amp
                 dddmodel[ii] = dddspline(et.doppler(wave[ii],-rv)) * bl[ii]* amp
 
-
             #plt.plot(sp.ravel())
             #plt.plot(model.ravel(), alpha=0.5)
             #plt.plot((sp-model).ravel(), alpha=0.5,color = 'red')
@@ -374,7 +373,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                         sig[ipixi] = et.sigma(tmp[i1:i2])
 
                         sig[sig == 0] = np.nan
-                        gg = np.isfinite(sig)
+                    gg = np.isfinite(sig)
                     if np.sum(gg)>2:
                         # we must have at least two bins to do anything useful here
                         rms[ii] = ius(ipix[gg], sig[gg], k=1, ext=3)(np.arange(model.shape[1]))
@@ -437,7 +436,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 imin, imax = int(np.floor(imin)),int(np.ceil(imax))
 
                 if (imax-imin)<5:
-                    keep[i] == False
+                    keep[i] = False
                     continue
                 if imin<0:
                     continue
@@ -628,3 +627,23 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
             print(et.color('\tTime left to completion {0}, {1} / {2} files todo/done\n'.format(et.smart_time(et.nanmean(all_durations)*nleft), nleft,ifile), 'white'))
         else:
             print()
+
+
+
+if __name__ == '__main__':
+
+    from pathlib import Path
+    data_dir = Path('/data/spirou/data/lblea/')
+    blaze_file = '2498F798T802f_pp_blaze_AB.fits'
+
+    # run lbl
+    lbl(obj_sci='GL699', obj_template='GL699',
+        doplot_ccf=False, doplot_debug=False, force=True,
+        lblrv_path=str(data_dir.joinpath('lblrv')) + '/',
+        mask_path=str(data_dir.joinpath('masks')) + '/',
+        template_path=str(data_dir.joinpath('templates')) + '/',
+        science_path=str(data_dir.joinpath('science')) + '/',
+        ref_blaze_file=str(data_dir.joinpath('calib').joinpath(blaze_file)),
+        noise_model=False, check_fp=False,
+        science_search_string='*e2dsff*AB.fits',
+        template_file=None, hp_width=223)
