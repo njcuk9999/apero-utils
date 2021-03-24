@@ -5,8 +5,11 @@ import glob
 import os
 from typing import List, Optional, Union
 
+import numpy as np
 import pandas as pd
 from apero.core import constants
+from apero.core.constants import param_functions
+from apero.core.constants.param_functions import ParamDict
 from astropy.io import fits
 from astropy.table import Table
 from pandas import DataFrame, Series
@@ -27,6 +30,30 @@ def get_nth_parent(path: str, order: int = 1):
         parent_path = os.path.dirname(parent_path)
 
     return parent_path
+
+
+def load_db(db_id: str, instrument: str = "SPIROU") -> DataFrame:
+    """
+    Load an APERO database using the database 'ID'
+
+    :param db_id: Database ID (e.g. 'CALIB' for calibdb)
+    :type db_id: str
+    :param instrument: Instrument to use when loading apero params
+    :type instrument: str
+    :return: Dataframe containing the database
+    :rtype: DataFrame
+    """
+    # TODO: Should we have check for db_id, does APERO have list of database names ?
+    db_id = db_id.upper()
+
+    params = constants.load(instrument)
+    db_path = os.path.join(params[f"DRS_{db_id}_DB"], params[f"{db_id}_DB_NAME"])
+
+    colnames = params.listp(f"{db_id}_DB_COLS", dtype=str)
+    db_arr = np.loadtxt(db_path, dtype=str, unpack=True)
+    df = pd.DataFrame(dict(zip(colnames, db_arr)))
+
+    return df
 
 
 def load_fits_df(pathlist: List[str]) -> DataFrame:
@@ -56,11 +83,31 @@ def load_fits_df(pathlist: List[str]) -> DataFrame:
     return df
 
 
+def make_full_index(real_index: DataFrame, missing_index: DataFrame) -> DataFrame:
+
+    real_index = real_index.copy()
+    missing_index = missing_index.copy()
+
+    # NOTE: Maybe index_key should be moved in more accessible scope
+    index_key = "IN_INDEX"
+    real_index[index_key] = True
+    missing_index[index_key] = False
+
+    full_index = real_index.append(missing_index)
+    full_index = full_index.sort_values(["NIGHTNAME", "LAST_MODIFIED"])
+
+    return full_index
+
+
+def global_output_check():
+    pass
+
+
 def load_log_df(
     output_parent: str, log_fname: str = "log.fits", return_missing: bool = False
 ) -> DataFrame:
     """
-    Load all index.fits files in single dataframe
+    Load all log.fits files in single dataframe
 
     :param output_parent: Parent path of output directories
     :type output_parent: str
@@ -131,6 +178,37 @@ def load_index_df(
         return ind_df
 
 
+def get_names_no_index(params: ParamDict) -> List[str]:
+    """
+    Get file (base)names that should not be in index dataframe.
+
+    :param params: APERO params
+    :type params: ParamDict
+    :return: List of file names derived from APERO
+    :rtype: List[str]
+    """
+
+    # Get paths that contain filenames we want to exclude
+    calib_reset_path = param_functions.get_relative_folder(
+        params["DRS_PACKAGE"], params["DRS_RESET_CALIBDB_PATH"]
+    )
+    tellu_reset_path = param_functions.get_relative_folder(
+        params["DRS_PACKAGE"], params["DRS_RESET_TELLUDB_PATH"]
+    )
+    runs_reset_path = param_functions.get_relative_folder(
+        params["DRS_PACKAGE"], params["DRS_RESET_RUN_PATH"]
+    )
+
+    # We know that log and index are also not data
+    # NOTE: index/log will be in db in 0.7+
+    exclude_list = ["index.fits", "log.fits"]
+    exclude_list.extend(os.listdir(calib_reset_path))
+    exclude_list.extend(os.listdir(tellu_reset_path))
+    exclude_list.extend(os.listdir(runs_reset_path))
+
+    return exclude_list
+
+
 def get_output_files(
     output_parent: str, exclude_fname: Optional[Union[List[str], str]] = None
 ) -> Series:
@@ -139,22 +217,18 @@ def get_output_files(
 
     :param output_parent: Parent output directory to scan
     :type output_parent: str
-    :param exclude_fname: File name prefixes to exclude
-                          (i.e. file name without extension).
-                          By default, index and log files are ignored.
+    :param exclude_fname: File names to exclude (none by default).
     :type exclude_fname: Optional[Union[List[str], str]]
     :return: List of full path to output files
     :rtype: Series
     """
-    if exclude_fname is None:
-        exclude_fname = ["index", "log"]
     if isinstance(exclude_fname, str):
         exclude_fname = [exclude_fname]
-    exclude_pattern = "|".join(exclude_fname)
-    all_paths = glob.glob(
-        os.path.join(output_parent, "*", f"[!{exclude_pattern}]*.fits")
-    )
+    all_paths = glob.glob(os.path.join(output_parent, "*", "*.fits"))
     out_series = pd.Series(all_paths)
+    if exclude_fname is not None:
+        exclude_mask = out_series.apply(os.path.basename).isin(exclude_fname)
+        out_series = out_series[~exclude_mask]
 
     return out_series
 
@@ -178,9 +252,16 @@ def missing_index_headers(
     :return: Dataframe with info of missing index files
     :rtype: DataFrame
     """
+    # If not output files are given, we load them from disk,
+    # using apero to discard some filenames
+    params = constants.load(instrument)
+    exclude_fname = get_names_no_index(params)
     if output_files is None:
         parent_dir = get_nth_parent(ind_df.FULLPATH.iloc[0], order=2)
-        output_files = get_output_files(parent_dir)
+        output_files = get_output_files(parent_dir, exclude_fname=exclude_fname)
+    else:
+        exclude_mask = output_files.apply(os.path.basename).isin(exclude_fname)
+        output_files = output_files[~exclude_mask]
 
     # We reset the index to match created dataframe by default
     index_mask = output_files.isin(ind_df.FULLPATH)
@@ -195,7 +276,6 @@ def missing_index_headers(
 
     # Get header keys corresponding to index columns
     pconstant = constants.pload(instrument)
-    params = constants.load(instrument)
     index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
     keys = [params[col][0] for col in index_cols]
 

@@ -3,20 +3,21 @@ DRS Tests that (try to) follow the APERO framework.
 
 @author: vandalt
 """
+import glob
 import os
 import warnings
-import glob
-import numpy as np
 from datetime import datetime
 from typing import List, Optional, Tuple, Union
 
+import numpy as np
 import pandas as pd
+from apero.core import constants
+from apero.core.core.drs_argument import DrsArgument
+from apero.core.core.drs_file import DrsFitsFile
+from apero.core.core.drs_recipe import DrsRecipe
 from astropy.io import fits
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
-
-from apero.core import constants
-from apero.core.core.drs_recipe import DrsRecipe
 
 import test_utils as ut
 
@@ -82,17 +83,17 @@ class DrsTest:
 
         # Set default parameter values, can overwrite later
         self.recipe = None  # Recipe object for test
+        self.fileargs = None  # Recipe args and kwargs that are files
+        self.drs_files = None  # Recipe args and kwargs that are files
         self.name = "Unknown Test for unknown Recipe"  # Full test name
         self.test_id = "unknown_test"  # Short test ID
         self.instrument = instrument  # Instrument may be set as kwarg
         self.recipe_name = None
         self.params = None  # DRS parameters
         self.ismaster = False  # Is it a master recipe?
-        self.fibers = []  # TODO: Implement further only if needed in methods
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
         self.calib_hkeys = []  # All calib header keys
-        self.calls_extract = False  # TODO: Remove if not needed
         self.input_path = ""  # Path to input dir
         self.output_path = ""  # Path to output dir
         self.log_df = None
@@ -101,7 +102,10 @@ class DrsTest:
         # Overwrite some (most!) parameters with recipe info automatically
         if drs_recipe is not None:
             # The recipe object and test ID
-            self.recipe = drs_recipe.copy(drs_recipe)
+            self.recipe = DrsRecipe()
+            self.recipe.copy(drs_recipe)
+            self.fileargs = self.get_fileargs()
+            self.drs_files = [f for farg in self.fileargs for f in farg.files]
             if self.instrument is not None:
                 warnings.warn(
                     "Overwriting kwarg instrument with recipe info", RuntimeWarning
@@ -128,24 +132,75 @@ class DrsTest:
                     list(self.output_dict.values()),
                 )
             )
-            self.calibdb_keys = list(
-                map(lambda o: o.get_dbkey(), list(self.output_dict.values()))
-            )
+            self.calibdb_keys = self.get_dbkeys("calibration")
             self.calib_hkeys = [
                 self.recipe.drs_params[kw][0]
                 for kw in list(self.recipe.drs_params)
                 if kw.startswith("KW_CDB")
-            ]
+            ]  # Previous calibrations
 
+            # TODO: Need to filter ind_df with outputs
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
 
             # Load calibdb DF (master entries and calibdb files)
+            # TODO: Will need to load previous calibs
+            # NOTE: Seems will need to parse **all** headers (better outside I guess)
             self.master_calib_df = self._load_master_calibdb()
 
     # =========================================================================
     # Functions to load output information
     # =========================================================================
+    def get_dbkeys(self, dbname: str) -> List[str]:
+        """
+        Get db keys for a given database (any valid APERO dbname)
+
+        :param dbname: Database name (any valid APERO dbname)
+        :type dbname: str
+        :return: List of db keys for the recipe
+        :rtype: List[str]
+        """
+        if self.drs_files is None:
+            raise TypeError("Cannot load dbkeys if drs_files is 'None'.")
+
+        keylist = []
+        for rfile in self.drs_files:
+            if rfile.dbname is None or rfile.dbkey is None:
+                continue
+
+            if rfile.dbname == dbname:
+                if rfile.fibers is None:
+                    # Some files have just one fiber, so dbkey works out of the box
+                    keylist.append(rfile.get_dbkey())
+                elif isinstance(rfile.fibers, list):
+                    # if multiple fibers, need to set one by one (copy for safety)
+                    for fiber in rfile.fibers:
+                        rfile2 = rfile.newcopy()
+                        rfile2.fiber = fiber
+                        keylist.append(rfile2.get_dbkey())
+                else:
+                    raise TypeError(
+                        f"Got an unexpected fibers attribute for file {rfile}"
+                    )
+
+        return keylist
+
+    def get_fileargs(self) -> List[DrsArgument]:
+        fileargs = [
+            self.recipe.args[key]
+            for key in self.recipe.args
+            if self.recipe.args[key].dtype in ["file", "files"]
+        ]
+        fileargs.extend(
+            [
+                self.recipe.kwargs[key]
+                for key in self.recipe.kwargs
+                if self.recipe.kwargs[key].dtype in ["file", "files"]
+            ]
+        )
+
+        return fileargs
+
     def load_log_df(
         self, all_log_df: Optional[DataFrame] = None, force: bool = False
     ) -> Union[DataFrame, None]:

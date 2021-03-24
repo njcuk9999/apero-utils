@@ -50,6 +50,13 @@ red_log = ut.load_log_df(params[red_key])
 red_index = ut.load_index_df(params[red_key])
 red_missing_index = ut.missing_index_headers(red_index,
                                              instrument=__INSTRUMENT__)
+red_full_index = ut.make_full_index(red_index, red_missing_index)
+master_calib_db = ut.load_db("CALIB", instrument=__INSTRUMENT__)
+
+# TODO: Before per-recipe tests, we have some cleanups to do, could either be a general
+# DrsTest object or just few lines/util function here
+# - Report files not in index
+# - Comapre log and index with small report
 
 # =============================================================================
 # Define tests
