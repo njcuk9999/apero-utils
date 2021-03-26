@@ -17,7 +17,7 @@ sh_man = gspd.spread.Spread(MAN_SHEET_ID)
 
 ws_names = [ws.title for ws in sh_man.sheets if ws.title not in skip_tabs]
 
-colnames = ['ODOMETER', 'PP', 'RV', 'COMMENTS']
+colnames = ['ODOMETER', 'PP', 'RV']
 df_all = pd.DataFrame([], columns=colnames)
 
 for ws_name in ws_names:
@@ -34,12 +34,11 @@ for ws_name in ws_names:
 
     # Reformat into auto sheet columns
     zipped_odo = zip(
-                     df_man['main reason'],
                      df_man['odometers'].astype(int),
                      df_man['to'].astype(int))
     df_auto = pd.DataFrame(
-            [(o, False, True, c)
-                for c, s, e in zipped_odo for o in range(s, e+1)],
+            [(o, False, True)
+                for s, e in zipped_odo for o in range(s, e+1)],
             columns=colnames,
             )
     df_all = df_all.append(df_auto)
