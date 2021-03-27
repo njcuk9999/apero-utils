@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import etienne_tools as et
 
 # get the files for TRAPPIST-1
-files = np.array(glob.glob('e2ds/24*o_pp_e2dsff_tcorr_AB.fits'))[0:20]
+files = np.array(glob.glob('e2ds/24*o_pp_e2dsff_tcorr_AB.fits'))
 
 # create the cube that holds the high frequencies
 highf = np.zeros([4088*49,len(files)])
