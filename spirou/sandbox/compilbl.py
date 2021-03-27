@@ -6,18 +6,21 @@ import etienne_tools as et
 import numpy as np
 from astropy.table import Table
 from astropy.time import Time
+from scipy import stats
 
 
 def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weights=False,
-             get_cumul_plot=False, suffix_rdb=''):
+             get_cumul_plot=False, suffix_rdb='',option = 1):
     """
-    obj_sci = 'TRAPPIST-1'
+    obj_sci = 'GL699'
     obj_template = None
     doplot = False
     force = True
     common_weights = False
     get_cumul_plot = False
-    suffix_rdb = string to be added to the RDB file name
+    suffix_rdb = '' #string to be added to the RDB file name
+    import matplotlib.pyplot as plt
+
     """
 
     if doplot or get_cumul_plot:
@@ -119,6 +122,7 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
                 DDVRMS = np.zeros([len(scifiles), np.sum(g)])
                 DDDV = np.zeros([len(scifiles), np.sum(g)])
                 DDDVRMS = np.zeros([len(scifiles), np.sum(g)])
+                RMSRATIO = np.zeros([len(scifiles), np.sum(g)])
 
             # keep track in two big matrices of the rv and corresponding errors
             tbl_per_line = tbl_per_line_ini[g]
@@ -160,6 +164,10 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
             DDVRMS[i] = tbl_per_line['DDVRMS']
             DDDV[i] = tbl_per_line['DDDV']
             DDDVRMS[i] = tbl_per_line['DDDVRMS']
+            RMSRATIO[i] = tbl_per_line['RMSRATIO']
+
+
+
 
         if get_cumul_plot:
             ax[0].set(xlabel='Velocity [km/s]', ylabel='Distribution function of RVs')
@@ -177,6 +185,9 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
             tbl['vrad'][i] = guess
             tbl['svrad'][i] = bulk_error
 
+
+
+
         # de-biasing line. Matrix that contains a replicated 2d version of the per-epoch mean
         rv_per_epoch_model = np.reshape(np.repeat(tbl['vrad'], rvs.shape[1]), rvs.shape)
 
@@ -184,10 +195,13 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
         per_line_mean = np.zeros(rvs.shape[1])
         per_line_error = np.zeros(rvs.shape[1])
 
+
         # computing the per-line bias
         for i in tqdm(range(len(per_line_mean))):
             tmp1 = rvs[:, i] - rv_per_epoch_model[:, i]
             err1 = dvrms[:, i]
+
+
             try:
                 guess, bulk_error = et.odd_ratio_mean(tmp1, err1)
                 per_line_mean[i] = guess
@@ -196,11 +210,55 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
                 per_line_mean[i] = np.nan
                 per_line_error[i] = np.nan
 
+
+
+
+
+
+
         # we keep the per-line mean to zero
         per_line_mean -= (et.odd_ratio_mean(per_line_mean, per_line_error))[0]
 
+
+
+        if option == 1:
+            nsig = ((rvs - rv_per_epoch_model) / dvrms)
+            p = stats.ttest_1samp(nsig, 0, axis=0,nan_policy = 'omit')[1].data
+
+
+            #keep = np.ones_like(tbl_per_line, dtype = bool)
+            #bad = (tbl_per_line['WAVE_START']>1380)*(tbl_per_line['WAVE_START']<1450)
+            #keep[bad] = False
+
+            #bad = (tbl_per_line['WAVE_START']>1800)*(tbl_per_line['WAVE_START']<1950)
+            #keep[bad] = False
+
+            #bad = (tbl_per_line['WAVE_START']>2200)
+            #keep[bad] = False
+
+
+            #nsig = np.zeros(rvs.shape[1])
+            #for i in tqdm(range(rvs.shape[1])):
+            #    nsig[i] = et.sigma((rvs[:, i] -tbl['vrad'] - per_line_mean[i]) / dvrms[:, i])
+            #    dvrms[:,i]*=nsig[i]
+
+            #dvrms[dvrms<25] = 1e6
+            #keep = np.mean(np.isfinite(rvs),axis=0)>0.5
+
+            keep = p>1e-4
+
+            rvs = rvs[:,keep]
+            dvrms = dvrms[:,keep]
+            per_line_mean = per_line_mean[keep]
+            #
+            tbl_per_line = tbl_per_line[keep]
+            #tbl_per_line = et.td_convert(tbl_per_line)
+
+
         # constructing a 2d model of line biases
         rv_per_line_model = np.reshape(np.tile(per_line_mean, rvs.shape[0]), rvs.shape)
+
+
 
         # updating the table
         for i in tqdm(range(len(scifiles))):
@@ -358,6 +416,8 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
                 if tbl['FILENAME'][i] in drift['FILENAME']:
                     g = np.where(tbl['FILENAME'][i] == drift['FILENAME'])[0]
 
+                    #rvs[i] -= drift['vrad'][g]
+
                     for key in tbl.keys():
                         if 'vrad' == key[0:4]:
                             tbl[key][i] -= drift[key][g]
@@ -377,6 +437,11 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
             name_drift = '_drift.'.join(outname.split('.'))
             print(et.color('writing {}'.format(name_drift), 'blue'))
             tbl.write(name_drift, format='rdb', overwrite=True)
+
+            print(et.color('We write {}'.format(outname.split('.')[0]+ '_rvmap.fits' ),'red'))
+            fits.writeto(outname.split('.')[0] + '_rvmap.fits',rvs,overwrite= True)
+            print(et.color('We write {}'.format(outname.split('.')[0]+'_errmap.fits'),'red'))
+            fits.writeto(outname.split('.')[0] + '_errmap.fits',dvrms,overwrite= True)
 
             udates = np.unique(tbl['DATE-OBS'])
 

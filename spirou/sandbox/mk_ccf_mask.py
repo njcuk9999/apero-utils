@@ -51,7 +51,7 @@ def mk_ccf_mask(template, doplot = False,force = True):
         # get goettigen models if you don't have them.
         for temperature in np.arange(3000, 6100, 100):
             temperature = str(np.int(np.round(temperature, -2)))
-            outname = '{0}/lte0{1}-4.50-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits'.format(path_to_models,temperature)
+            outname = '{0}/lte0{1}-5.00-0.0.PHOENIX-ACES-AGSS-COND-2011-HiRes.fits'.format(path_to_models,temperature)
 
             if not os.path.isfile(outname):
                 os.system(

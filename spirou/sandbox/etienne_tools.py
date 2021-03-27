@@ -282,6 +282,7 @@ def color(message,color):
     COLOURS['YELLOW'] = '\033[1;93;1m'
     COLOURS['BLUE'] = '\033[94;1m'
     COLOURS['MAGENTA'] = '\033[1;95;1m'
+    COLOURS['ORANGE']  = '\033[1;99;1m'
     COLOURS['CYAN'] = '\033[1;96;1m'
     COLOURS['WHITE'] = '\033[97;1m'
     COLOURS['ENDC'] = '\033[0;0m'
@@ -320,6 +321,29 @@ def get_ratio(sp1,sp2):
     #plt.show()
 
     return amp
+
+def doppler_shift(wave,sp,v):
+
+
+    # apply doppler shift to data using spline and Doppler function
+
+    wave2 = doppler(wave,v)
+
+    sp2 = np.zeros_like(sp)+np.nan
+
+    for iord in np.arange(sp.shape[0]):
+        g = np.isfinite(sp[iord])
+        if np.sum(g)<5:
+            continue
+        spl = ius(wave[iord][g],sp[iord][g],k=3,ext=1)
+        spl_mask = ius(wave[iord],np.array(g,dtype = float),k=1,ext=1)
+
+        # keep only points having a contribution from valid pixels>0.99
+        valid = spl_mask(wave2[iord]) > 0.99
+        sp2[iord][valid] = spl(wave2[iord])[valid]
+
+    return sp2
+
 
 def doppler(wave,v):
     # velocity expressed in m/s

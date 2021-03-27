@@ -16,14 +16,14 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
           lblrv_path = 'lblrv/',mask_path = 'masks/',template_path = 'templates/',
           science_path = 'tellurics/',ref_blaze_file = '2498F798T802f_pp_blaze_AB.fits',
           noise_model = False,check_fp = False, science_search_string = '*e2dsff*.fits',
-          template_file = None, hp_width = 223):
+          template_file = None, hp_width = 223, tweak_continuum = False):
     """
     if True:
         obj_sci = 'GL699'
         force = True
         obj_template = 'GL699'
         doplot_ccf = False
-        doplot_debug = False
+        doplot_debug = True
         lblrv_path = 'lblrv/'
         mask_path = 'masks/'
         template_path = 'templates/'
@@ -35,7 +35,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
         check_fp = False
         science_search_string = '*e2dsff*.fits'
         import matplotlib.pyplot as plt
-
+        hp_width = 101 # expressed in km/s
+        tweak_continuum = True
     """
     # pass just one object and we assume that the object is it's own template
     if obj_template is None:
@@ -196,7 +197,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
 
     # we select a scale of 223 km/s
-    width = int(hp_width/np.array(1/np.nanmedian((template['wavelength']/np.gradient(template['wavelength']))/constants.c)))
+    width = int((hp_width*1000)/np.array(1/np.nanmedian((template['wavelength']/np.gradient(template['wavelength']))/constants.c)))
     if (width % 2) ==0:
         width+=1
 
@@ -221,7 +222,6 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
     spline0 = ius(et.doppler(template['wavelength'][valid],-systemic_vel),flux0[valid],k=k_order,ext=1)
     spline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),flux[valid],k=k_order,ext=1)
     dspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),dflux[valid],k=k_order,ext=1)
-
     ddspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),ddflux[valid],k=k_order,ext=1)
     dddspline = ius(et.doppler(template['wavelength'][valid],-systemic_vel),dddflux[valid],k=k_order,ext=1)
 
@@ -280,7 +280,7 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
             # we select a scale of 223 km/s
             width = int(
-                hp_width / np.array(1 / np.nanmedian((wave[iord] / np.gradient(wave[iord])) / constants.c)))
+                (1000*hp_width) / np.array(1 / np.nanmedian((wave[iord] / np.gradient(wave[iord])) / constants.c)))
             if (width % 2) == 0:
                 width += 1
 
@@ -347,11 +347,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                 dddmodel[ii] = dddspline(et.doppler(wave[ii],-rv)) * bl[ii]* amp
 
 
-            #plt.plot(sp.ravel())
-            #plt.plot(model.ravel(), alpha=0.5)
-            #plt.plot((sp-model).ravel(), alpha=0.5,color = 'red')
-            #plt.show()
-            #stop
+
+
 
 
             # keep only legit splined points
@@ -359,6 +356,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 
             for ii in range(sp.shape[0]):
                 tmp = sp[ii]-model[ii]
+                if tweak_continuum:
+                    tmp -= et.lowpassfilter(tmp,width = width)
 
                 if not noise_model:
                     ipix = np.arange(0,model.shape[1],100)
@@ -431,6 +430,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
                         else:
                             if (iord[i] == 35)*(ite_rv == 1):
                                 plt.plot(ww_ord,model_ord, color = 'grey', linewidth=3, alpha = 0.3,label = 'template')
+
+
 
 
                 imin, imax = wave2pix([wave_start[i], wave_end[i]])
