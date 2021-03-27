@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import etienne_tools as et
 
 # get the files for TRAPPIST-1
-files = np.array(glob.glob('e2ds/24*o_pp_e2dsff_tcorr_AB.fits'))
+files = np.array(glob.glob('e2ds/2*o_pp_e2dsff_tcorr_AB.fits'))
 
 # create the cube that holds the high frequencies
 highf = np.zeros([4088*49,len(files)])
@@ -64,7 +64,7 @@ for i in tqdm(range(len(files))):
     im = np.reshape(im.ravel()-et.lowpassfilter(im.ravel()),im.shape)
     # we add back the low frequencies but shift  backward as they are
     # expressed at BERV =0
-    im += et.doppler_shift( et.fits2wave(hdr),lowf_mean, -hdr['BERV']*1000)
+    im += et.doppler_shift( et.fits2wave(hdr),lowf_mean, -hdr['BERV']*1000,k=1)
 
     ax[1].plot(wave[35],im[35],alpha =0.2)
 
@@ -72,7 +72,11 @@ for i in tqdm(range(len(files))):
     outname[-1]= '_corrlowf.'.join(outname[-1].split('.'))
     fits.writeto('/'.join(outname),im,hdr,overwrite = True)
 
-ax[0].set(xlabel = 'Wavelength',title='Before low-f match')
-ax[1].set(xlabel = 'Wavelength',title='After low-f match')
+# smart scale for plot to avoid spikes
+ylim = 0,np.nanpercentile(im[35],95)*1.5
+
+ax[0].set(xlabel = 'Wavelength',title='Before low-f match',ylim = ylim)
+ax[1].set(xlabel = 'Wavelength',title='After low-f match',ylim = ylim)
+
 plt.tight_layout()
 plt.show()

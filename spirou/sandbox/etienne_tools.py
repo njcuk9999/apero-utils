@@ -322,10 +322,11 @@ def get_ratio(sp1,sp2):
 
     return amp
 
-def doppler_shift(wave,sp,v):
-
+def doppler_shift(wave,sp,v,k=3):
 
     # apply doppler shift to data using spline and Doppler function
+    # you may adjust k to avoid avoid spikes at the edge of the valid
+    # domain. k=1 gives a less accurate spline but not spike.
 
     wave2 = doppler(wave,v)
 
@@ -335,7 +336,7 @@ def doppler_shift(wave,sp,v):
         g = np.isfinite(sp[iord])
         if np.sum(g)<5:
             continue
-        spl = ius(wave[iord][g],sp[iord][g],k=3,ext=1)
+        spl = ius(wave[iord][g],sp[iord][g],k=k,ext=1)
         spl_mask = ius(wave[iord],np.array(g,dtype = float),k=1,ext=1)
 
         # keep only points having a contribution from valid pixels>0.99
