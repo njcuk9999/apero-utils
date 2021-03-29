@@ -11,10 +11,11 @@ from bisector import bisector
 # input file for which we want an absolute RV
 file = '2585295o_pp_s1d_w_tcorr_AB.fits'
 #file = '2585275o_pp_s1d_w_tcorr_AB.fits'
+#file = 'Template_s1d_GL699_sc1d_v_file_AB.fits'
 
 doplot = True
 
-teff = 3800
+teff = 3500
 logg = 5.50
 
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -34,6 +35,7 @@ mask = Table.read('HiResFITS/lte0{0}-{1:.2f}-0.0.PHOENIX-ACES-AGSS-COND-2011-HiR
 
 # read s1d or template as a table
 tbl = Table.read(file)
+hdr = fits.getheader(file,ext=1)
 
 if 'Template' not in file:
     # read header to get BERV

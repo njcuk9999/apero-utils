@@ -101,8 +101,6 @@ for logg in ([6.0,5.5,5.0,4.5,4.0]):
 
         tbl = tbl[np.isfinite(tbl['wavelength'])]
 
-
-
         print('\twriting {0}'.format(outname_mask))
         tbl.write(outname_mask, overwrite=True)
 
