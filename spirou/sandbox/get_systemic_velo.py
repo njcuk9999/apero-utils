@@ -57,9 +57,8 @@ weight_mask = np.array(mask['weight'])
 good_mask = (wave_mask>np.min(wave))*(wave_mask<np.max(wave))
 weight_mask,wave_mask = weight_mask[good_mask], wave_mask[good_mask]
 
-# valid
+# valid domain is where we have finite spectrum
 valid_sp = np.isfinite(sp)
-
 
 
 spl_valid = ius(wave,valid_sp,k=1,ext=1)
@@ -100,6 +99,10 @@ if doplot:
 
 print('~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~')
 print('Object : {}'.format(hdr['OBJECT']))
+if 'OBJTEMP' in hdr:
+    print('Header effective temperature {} K'.format(hdr['OBJTEMP']))
+    print('Input effective temperature {} K'.format(teff))
+print()
 print('~~~~ Super-gaussian fit properties ~~~~')
 print(' velocity : {:.2f} km/s'.format(fit[0]/1000))
 
@@ -115,5 +118,5 @@ v0 = ius(depth[np.argsort(depth)],bisector_position[np.argsort(depth)])(0.5)
 fwhm = ius(depth[np.argsort(depth)],width_ccf[np.argsort(depth)])(0.5)
 
 print('~~~~ bisector properties ~~~~')
-print('Radial velocity : {0:.3f} km/s'.format(v0))
-print('FWHM : {0:.3f} km/s'.format(fwhm))
+print(' Radial velocity : {0:.3f} km/s'.format(v0))
+print(' FWHM : {0:.3f} km/s'.format(fwhm))
