@@ -273,7 +273,6 @@ def running_sigma(v,w):
 
     return sigma
 
-
 def color(message,color):
     COLOURS = dict()
     COLOURS['BLACK'] = '\033[90;1m'
@@ -383,6 +382,13 @@ def fit_gauss(x,y,p0):
     return fit
 
 
+def fit_super_gauss(x,y,p0):
+    # values:
+    # cen, ew, amp,expo, zp, slope
+    fit, pcov = curve_fit(super_gauss, x,y,p0 = p0)
+    return fit
+
+
 def get_rough_ccf_rv(wave,sp,wave_mask,weight_line, doplot = False):
 
     if len(wave.shape) == 2: # we have the e2ds file, we reshape it
@@ -464,6 +470,10 @@ def sigma(tmp):
 
 def gauss(x,cen, ew, amp, zp, slope):
     return np.exp(-0.5*(x-cen)**2/ew**2)*amp+zp+(x-cen)*slope
+
+def super_gauss(x,cen, ew, amp,expo, zp, slope):
+    return np.exp(-0.5*(np.abs(x-cen)/ew)**np.abs(expo))*amp+zp+(x-cen)*slope
+
 
 def lowpassfilter(input_vect,width = 101):
     # Computes a low-pass filter of an input vector. This is done while properly handling
