@@ -106,10 +106,8 @@ print()
 print('~~~~ Super-gaussian fit properties ~~~~')
 print(' velocity : {:.2f} km/s'.format(fit[0]/1000))
 
-
 fwhm = 2*fit[1]*(-2*np.log(0.5))**(1/fit[3])
 print(' FWHM : {:.2f} km/s'.format(fwhm/1000))
-
 
 # get bisector properties
 depth, bisector_position, width_ccf = bisector(dv/1000, ccf,doplot=doplot,low_high_cut=0.2 )
