@@ -276,7 +276,7 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
             # ax[0].errorbar(tbl['MJDATE'], tbl['per_epoch_mean_J']-np.nanmedian(tbl['per_epoch_mean_J']) , fmt='.g', yerr=tbl['per_epoch_err_J'],alpha = 0.3,label = 'J')
             ax[0].errorbar(tbl['rjd'], tbl['vrad_H'] - et.nanmedian(tbl['vrad_H']), fmt='.r', yerr=tbl['svrad_H'],
                            alpha=0.2, label='H')
-            ax[0].errorbar(tbl['rjd'], tbl['vrad'] - et.nanmedian(tbl['svrad']), fmt='.k', yerr=tbl['svrad'], alpha=0.8,
+            ax[0].errorbar(tbl['rjd'], tbl['vrad'] - et.nanmedian(tbl['vrad']), fmt='.k', yerr=tbl['svrad'], alpha=0.8,
                            label='all')
             # ax[2].errorbar(tbl['MJDATE'],tbl['per_epoch_DDV'] ,fmt='.k', yerr=tbl['per_epoch_DDVRMS'], alpha = 0.7)
 
@@ -316,12 +316,14 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
 
     # if we are requesting the FPs, then we produce and extra table with drifts
     if obj_sci == 'FP':
+
         for uwavefile in np.unique(tbl['WAVEFILE']):
             g = (tbl['WAVEFILE'] == uwavefile)
             tbl2 = Table(tbl[g])
 
             ref_present = False
             files = np.array(tbl2['FILENAME'])
+
             for i in range(len(files)):
                 if 'a' in files[i]:
                     ref = tbl2[i]
@@ -403,3 +405,10 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
             tbl2.write(name_drift, format='rdb', overwrite=True)
 
     return Table.read(outname)
+
+
+
+if __name__ == '__main__':
+    compilbl(obj_sci='GL699', obj_template='GL699',
+             doplot=True, force=True,  common_weights=False,
+             get_cumul_plot=True, suffix_rdb='')
