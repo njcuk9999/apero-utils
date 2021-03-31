@@ -466,7 +466,7 @@ def get_autocorrelation(file,doplot = True):
         flux = np.array(tbl['flux'])
         flux -= et.lowpassfilter(flux,1000)
 
-        g = (wave>1500)*(wave<1750)
+        g = (wave>2250)*(wave<2350)
         wave = wave[g]
         flux = flux[g]
 
