@@ -25,7 +25,7 @@ from tqdm import tqdm
 # =============================================================================
 EST = TimezoneInfo(-4 * uu.hour)
 
-TODAY = '2021-03-30'
+TODAY = '2021-03-31'
 
 WORKSPACE = '/spirou/cook/db_test'
 
@@ -70,6 +70,12 @@ if __name__ == "__main__":
                 error_times.append(Time(human_time, format='iso').unix)
                 break
 
+    # get the shortest array - for when we stop between the two counters
+    minlen = np.min([len(pcount), len(ccount)])
+    ptime = ptime[:minlen]
+    pcount = pcount[:minlen]
+    ccount = ccount[:minlen]
+
     fig, frames = plt.subplots(ncols=1, nrows=2, sharex='all')
 
     for tx in range(len(error_times)):
@@ -80,6 +86,10 @@ if __name__ == "__main__":
 
     frames[0].set(xlabel='unix time', ylabel='Number of connections to "spirou" database')
     frames[1].set(xlabel='unix_time', ylabel='Number of "netstat -nt" entries')
+
+    title = 'Max processes: {0}   Max netstat: {1}'
+    targs = [np.max(pcount), np.max(ccount)]
+    plt.suptitle(title.format(*targs))
 
     plt.show()
     plt.close()
