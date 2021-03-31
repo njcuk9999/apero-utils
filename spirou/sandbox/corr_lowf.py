@@ -13,13 +13,13 @@ highf = np.zeros([4088*49,len(files)])
 # create the cube that holds the low frequencies
 lowf = np.zeros([4088*49,len(files)])
 
-
 dates = np.zeros(len(files),dtype = 'U99')
 
 for i in tqdm(range(len(files))):
     # read info from file
     im,hdr = fits.getdata(files[i],header = True)
     dates[i] = hdr['DATE'].split('T')[0]
+
     # doppler shift the data
     im2 = et.doppler_shift( et.fits2wave(hdr),im, hdr['BERV']*1000)
 
@@ -36,6 +36,8 @@ prev_date =''
 color = 'green'
 for i in np.arange(highf.shape[1]):
     amps[i] = et.get_ratio(highf[:, i], med_highf)
+    # we normalize the low frequency component so that we can compute the mean lowf below.
+    # high-frequencies will be normalized in the next loop.
     lowf[:,i]/=amps[i]
     prev_date = dates[i]
 
@@ -49,16 +51,16 @@ plt.show()
 # keep in a box the mean low frequency spectrum
 lowf_mean = np.reshape(np.nanmean(lowf,axis=1),im.shape)
 
-fig,ax = plt.subplots(nrows = 2, ncols=1,sharex = True,sharey = True)
+fig, ax = plt.subplots(nrows = 2, ncols=1,sharex = True,sharey = True)
 for i in tqdm(range(len(files))):
     # we read again the image
-    im,hdr = fits.getdata(files[i],header = True)
+    im, hdr = fits.getdata(files[i],header = True)
+
     # we set the amplitude of the image right
     im/=amps[i]
 
     wave = et.fits2wave(hdr)
     ax[0].plot(wave[35],im[35],alpha =0.2)
-
 
     # we keep only the high frequencies
     im = np.reshape(im.ravel()-et.lowpassfilter(im.ravel()),im.shape)
