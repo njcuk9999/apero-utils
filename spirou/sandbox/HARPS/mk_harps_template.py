@@ -11,7 +11,10 @@ from tqdm import tqdm
 
 
 def mk_harps_template(files, outname, obj, teff):
-    
+    # files -> output from a glob.glob with all s1d files
+    # outname -> full name of output template file
+    # obj -> for proper header handling, name of object
+    # teff -> for proper header handling, temperature in K
 
     grid = et.get_magic_grid(wave0=378, wave1=692, dv_grid=500)
 
