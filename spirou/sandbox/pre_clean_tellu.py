@@ -310,6 +310,17 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     else:
         default_water_abso = params['default_water_abso']
 
+    if 'BERV' not in params:
+        BERV = 0.0 #params['BERV']
+    else:
+        BERV = params['BERV']
+
+    if 'recenter_ccf' not in params:
+        recenter_ccf = False
+    else:
+        recenter_ccf =  params['recenter_ccf']
+
+
     if os.path.isfile(template_file):
         template =  Table(fits.getdata(template_file))
         wave_template = template['wavelength']
@@ -349,7 +360,7 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     wave = wave[keep]
 
     if template_flag:
-        template = template_spline(et.doppler(wave,-hdr_e2ds['BERV']*1000) )
+        template = template_spline(et.doppler(wave,-BERV*1000) )
     else:
         template = np.ones_like(wave)
 
@@ -506,9 +517,6 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
             popt, pcov = curve_fit(gauss, dd, ccf_water, p0 = p0)
             dv_water = popt[0]
 
-            #gfit = gauss(dd,*popt)
-            #grad_gfit = np.gradient(gfit)
-            #grad_gfit/=np.nansum(grad_gfit**2)
 
             if (hdr_e2ds['INSTRUME'] == 'HARPS'):#*(template_flag == False):
                 dv_others = dv_water
@@ -522,10 +530,17 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
             ccf_scan_range/=2
 
 
-        #if ite >2:
-        #    ddv = np.nansum(ccf_water*grad_gfit)
-        #    print(ddv,dv_abso)
-        #    dv_abso-=(ddv/2)
+        if recenter_ccf:
+            if ite >2:
+
+                gfit = gauss(dd,*popt)
+                grad_gfit = np.gradient(gfit)
+                grad_gfit/=np.nansum(grad_gfit**2)
+
+
+                ddv = np.nansum(ccf_water*grad_gfit)
+                #print(ddv,dv_abso)
+                dv_abso-=(ddv)
 
 
         # get the amplitude of the middle of the CCF
@@ -599,11 +614,12 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
         expo_others_prev = expo_others
 
         if doplot:
-            # show CCFs to see if the correlation peaks have been 'killed'
-            ax[0].plot(dd,ccf_water,alpha = 0.5)
-            ax[0].set(xlabel = 'dv [km/s]', ylabel = 'ccf power', title = 'Water ccf')
-            ax[1].plot(dd,ccf_others,alpha=0.5)
-            ax[1].set(xlabel = 'dv [km/s]', ylabel = 'ccf power', title = 'Dry ccf')
+            if ite <=1:
+                # show CCFs to see if the correlation peaks have been 'killed'
+                ax[0].plot(dd,ccf_water,alpha = 0.5)
+                ax[0].set(xlabel = 'dv [km/s]', ylabel = 'ccf power', title = 'Water ccf')
+                ax[1].plot(dd,ccf_others,alpha=0.5)
+                ax[1].set(xlabel = 'dv [km/s]', ylabel = 'ccf power', title = 'Dry ccf')
 
         #if ite ==0:
         #    dd = np.array(np.arange(-10*ww,10*ww)+dv_abso,dtype = int)
@@ -617,6 +633,12 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     if ite==19:
         flag_error = True  # we did not converge
 
+    if doplot:
+        # show CCFs to see if the correlation peaks have been 'killed'
+        ax[0].plot(dd,ccf_water,alpha = 0.8,color = 'black')
+        ax[0].set(xlabel = 'dv [km/s]', ylabel = 'ccf power', title = 'Water ccf')
+        ax[1].plot(dd,ccf_others,alpha=0.8,color = 'black')
+        ax[1].set(xlabel = 'dv [km/s]', ylabel = 'ccf power', title = 'Dry ccf')
 
 
     if doplot:
@@ -686,139 +708,24 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     else:
         print('debug mode')
         # this is a debug mode. We return the CCF power just to better adjust the shape of the LSF
-        keep = np.abs(dd-dv0)<5
-        return np.nansum(np.gradient(ccf_water)[keep]**2),np.nansum(np.gradient(ccf_others)[keep]**2)
+        return np.nansum(np.gradient(ccf_water)**2),np.nansum(np.gradient(ccf_others)**2)
 
 
 
-# THIS IS FOR DEBUG ONLY, DO NOT USE [yet!]
-if False:
-    print('Demo of kernel adjustement')
-    plt.close()
-    ex_gau0 = 2.2
-    ww0 = 4.95
-    for ite in range(3):
-        wws = np.arange(-0.2,0.2,.05)+ww0
-        ex_gau = np.array(ex_gau0)
-        p1s = []
-        p2s = []
-        for ww in tqdm(wws, leave = False):
-            file_e2ds = 'all_s1d/2426720o_pp_e2dsff_AB.fits'
-            image_e2ds, hdr_e2ds = fits.getdata(file_e2ds, header=True)
-            wave_e2ds = fits2wave(hdr_e2ds)
-            p1,p2 = fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,doplot=False, force_airmass=False, ww=ww, ex_gau = ex_gau,return_ccf_power = True)
-            print(p1,p2,ww)
-
-            p1s = np.append(p1s,p1)
-            p2s = np.append(p2s, p2)
-        ww0 = wws[np.argmin(p2s)]
-        plt.plot(wws,p1s,'go', label = 'water')
-        plt.plot(wws,p2s,'ro', label = 'others')
-        plt.legend()
-        plt.show()
-
-        print('ww0 = ',ww0, 'ex_gau0 = ',ex_gau0)
-        ex_gaus = np.arange(-0.2,0.2,.05)+ex_gau0
-        ww = np.array(ww0)
-        p1s = []
-        p2s = []
-
-        for ex_gau in tqdm(ex_gaus, leave = False):
-            file_e2ds = 'all_s1d/2426720o_pp_e2dsff_AB.fits'
-            image_e2ds, hdr_e2ds = fits.getdata(file_e2ds, header=True)
-            wave_e2ds = fits2wave(hdr_e2ds)
-            p1,p2 = hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,doplot=False, force_airmass=False, ww=ww, ex_gau = ex_gau,return_ccf_power = True)
-            #print(p1,p2,ww)
-
-            p1s = np.append(p1s,p1)
-            p2s = np.append(p2s, p2)
-        ex_gau0 = ex_gaus[np.argmin(p2s)]
-        plt.plot(ex_gaus,p1s,'go', label = 'water')
-        plt.plot(ex_gaus,p2s,'ro', label = 'others')
-        plt.legend()
-
-        plt.show()
-        print('ww0 = ',ww0, 'ex_gau0 = ',ex_gau0)
-
-if False:
-    files = np.array(glob.glob('/Users/eartigau/2491247o_pp_e2dsff_AB.fits'))
-    force = True
-
-    plt.close()
-
-    expos_water = []
-    expos_others = []
-    objects = np.zeros(len(files),dtype = '<U99')
-    TEMPERAT = np.zeros(len(files))
-    snr35 = np.zeros(len(files))
-    RELHUMID = np.zeros(len(files))
-    airmasses = np.zeros(len(files))
-
-    for i in tqdm(range(len(files))):
-
-        file_e2ds = files[i]#'_e2dsff_'.join(file_s1d.split('_s1d_v_'))
-        outname = 'e2dstc'.join(file_e2ds.split('e2dsff'))
-
-        if os.path.isfile(file_e2ds):
-            if (os.path.isfile('e2dstc'.join(file_e2ds.split('e2dsff')))) and (force == False):
-                print(outname+' exists...')
-                continue
-
-            image_e2ds, hdr_e2ds = fits.getdata(file_e2ds, header=True)
-            wave_e2ds = fits2wave(hdr_e2ds)
-
-            corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, dv_water, dv_others = hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,
-                                                                                 doplot=True, force_airmass=False)
-
-            hdr_e2ds['EXPO_H2O'] = expo_water, 'Water abso exponent, pre-clean'
-            hdr_e2ds['EXPO_DRY'] = expo_others, 'Dry abso exponent, pre-clean'
-            hdr_e2ds['DV_H2O'] = dv_water, 'Water abso velocity (km/s), pre-clean'
-            hdr_e2ds['DV_DRY'] = dv_others, 'Dry abso  velocity (km/s), pre-clean'
-
-            """
-            RELHUMID[i] = hdr_e2ds['RELHUMID']
-            TEMPERAT[i] = hdr_e2ds['TEMPERAT']
-            snr35[i] = hdr_e2ds['EXTSN035']
-            objects[i] = hdr_e2ds['OBJECT']
-            airmasses[i] = hdr_e2ds['AIRMASS']
-            """
-
-            hdr_e2ds['DV_WATER'] = dv_water,'TAPAS abso velocity, water'
-            hdr_e2ds['DV_OTHER'] = dv_water,'TAPAS abso velocity, non-water'
-
-            hdr_e2ds['ABSWATER'] = expo_water,'TAPAS absorption coeff, water'
-            hdr_e2ds['ABSOTHER'] = expo_others,'TAPAS absorption coeff, non-water'
-
-            print('\n')
-            print(file_e2ds)
-            print(outname)
-            print(hdr_e2ds['OBJECT'])
-            print('\n')
-
-            fits.writeto('recontc'.join(outname.split('e2dstc')), abso_e2ds, hdr_e2ds, overwrite=True)
-            fits.writeto('sky'.join(outname.split('e2dstc')), sky_model, hdr_e2ds, overwrite=True)
-            fits.writeto(outname, corrected_e2ds, hdr_e2ds, overwrite=True)
-
-
-if True:
-
-    template_file = '/Volumes/courlan/HARPS_abso/templates/Template_GL699_HARPS.fits'
-
-    #file = '/Volumes/courlan/HARPS_abso/HARPS.2019-06-23T06:33:40.397_e2ds_A.fits'
-    files = glob.glob('/Volumes/courlan/HARPS_abso/s1d/GL699/*fits')#[::10]
+def process_harps_tellu(files,template_file):
 
     params = dict()
-
     params['doplot'] = False
     params['force_airmass'] = True
     params['snr_min'] = -1
-    params['water_bounds'] = [0.1, 15]
-    params['others_bounds'] = [0.1, 15]
+    params['water_bounds'] = [0.05, 15]
+    params['others_bounds'] = [0.05, 15]
     params['clean_oh'] = False
     params['wave0'] = 350
     params['wave1'] = 750
-    params['ww'] = 3.4
-    params['ex_gau'] = 2.6
+    params['ww'] = 1.4
+    params['BERV'] = 0
+    params['ex_gau'] = 2.2
     params['return_ccf_power'] = False
     params['tapas_npy_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS.npy'
     params['water_ccf_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS_water.csv'
@@ -826,12 +733,13 @@ if True:
     params['dv0'] = 0
     params['ccf_scan_range'] = 200
     params['template_file'] = template_file
-    params['default_water_abso'] = 1.0
+    params['default_water_abso'] = 0.5
     params['return_ccf_power'] = False
     params['mask_domain'] = [550,700]
+    params['force'] = False
+    params['recenter_ccf'] = True
 
     for i in tqdm(range(len(files))):
-
 
         file = files[i]
         if 'tcorr' in file:
@@ -842,7 +750,7 @@ if True:
         if 's1d' in file:
             outname = '/s1d_tcorr/'.join(file.split('/s1d/'))
 
-        if os.path.isfile(outname):
+        if os.path.isfile(outname)*params['force']:
             continue
 
         if 'e2ds' in file:
@@ -850,26 +758,48 @@ if True:
             image_e2ds, hdr_e2ds = fits.getdata(file,header = True)
             hdr_e2ds = et.harps2spirou(hdr_e2ds)
             wave_e2ds = et.fits2wave(hdr_e2ds)
+            params['BERV'] = hdr_e2ds['BERV'] # only relevant for e2ds in HARPS
 
         else:
             image_e2ds, hdr_e2ds = fits.getdata(file, header=True)
             hdr_e2ds = et.harps2spirou(hdr_e2ds)
-            hdr_e2ds['BERV'] = 0
+
             wave_e2ds = (np.arange(len(image_e2ds)) * hdr_e2ds['CDELT1'] + hdr_e2ds['CRVAL1']) / 10.0
 
             image_e2ds = np.reshape(image_e2ds, [1, len(image_e2ds)])
             wave_e2ds = np.reshape(wave_e2ds, [1, len(wave_e2ds)])
 
-        """
-        for ex_gau in np.arange(1.5,3.0,.1):
-            params['ex_gau'] = ex_gau
-            ccf1, ccf2 =  hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params=params)
-            plt.plot(ex_gau,ccf1,'go')
-            print(ex_gau,ccf1,ccf2)
-        plt.show()
-        """
+
+        if False:
+            params['return_ccf_power'] = True
+            params['doplot'] = False
+
+
+            if True:
+                params['ww'] =1.4
+                params['ex_gau'] = 2.2
+
+                for ww in np.arange(1.0,2.0,.1):
+                    params['ww'] = ww
+                    ccf1, ccf2 =  hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params=params)
+                    plt.plot(ww,ccf1,'go')
+                    print(ww,ccf1,ccf2)
+                plt.show()
+
+                params['ww'] =1.4
+                params['ex_gau'] = 2.2
+
+                for ex_gau in np.arange(0.5,3.0,.2):
+                    params['ex_gau'] = ex_gau
+                    ccf1, ccf2 =  hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params=params)
+                    plt.plot(ex_gau,ccf1,'go')
+                    print(ex_gau,ccf1,ccf2)
+                plt.show()
+
+
         corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, dv_water, dv_others = \
             hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params=params)
+
 
         hdr_e2ds['TAU_H2O'] = expo_water
         hdr_e2ds['TAU_OTHE'] = expo_others

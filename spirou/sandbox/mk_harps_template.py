@@ -16,26 +16,51 @@ def mk_harps_template(files, outname, obj, teff):
     # obj -> for proper header handling, name of object
     # teff -> for proper header handling, temperature in K
 
+    files = np.array(files)
+
     grid = et.get_magic_grid(wave0=378, wave1=692, dv_grid=500)
 
-    cube = np.zeros([len(grid), len(files)])
+    berv = np.zeros_like(files,dtype = int)
+    print('loading berv values')
+    for i in tqdm(range(len(files))):
+        berv[i] = np.round(fits.getheader(files[i])['BERV'])
+
+
+    uberv = np.unique(np.round(berv))
+
+    cube = np.zeros([len(grid), len(uberv)])+np.nan
 
     tbl2 = Table()
     tbl2['FILES'] = files
     print('load all files')
-    for i in tqdm(range(len(files))):
-        sp, hdr = fits.getdata(files[i], header=True)
+    for i in tqdm(range(len(uberv))):
+        g = (berv == uberv[i])
 
-        berv = hdr['HIERARCH ESO DRS BERV']
-        wave1 = (np.arange(len(sp)) * hdr['CDELT1'] + hdr['CRVAL1']) / 10.0
-        sp /= np.nanmedian(sp[(wave1 > 600) * (wave1 < 630)])
-        sp[sp == 0] = np.nan
+        if np.sum(g) == 1:
+            continue
 
-        g = np.isfinite(sp)
-        tmp1 = ius(wave1[g], sp[g], k=3, ext=1)(grid)
-        tmp2 = ius(wave1, (np.isfinite(sp) * 1.0), k=1, ext=1)(grid)
-        tmp1[tmp2 < 0.99] = np.nan
-        cube[:, i] = tmp1
+        cube2 = np.zeros([len(grid), np.sum(g)])
+        files2 = files[g]
+
+        for j in tqdm(range(len(files2)),leave = False):
+            sp, hdr = fits.getdata(files2[j], header=True)
+            #berv = hdr['HIERARCH ESO DRS BERV']
+            wave1 = (np.arange(len(sp)) * hdr['CDELT1'] + hdr['CRVAL1']) / 10.0
+            sp /= np.nanmedian(sp[(wave1 > 600) * (wave1 < 630)])
+            sp[sp == 0] = np.nan
+
+            g = np.isfinite(sp)
+            tmp1 = ius(wave1[g], sp[g], k=3, ext=1)(grid)
+            tmp2 = ius(wave1, (np.isfinite(sp) * 1.0), k=1, ext=1)(grid)
+            tmp1[tmp2 < 0.99] = np.nan
+            cube2[:, j] = tmp1
+
+        cube2[cube2 == 0] = np.nan
+        nfinite = np.mean(np.isfinite(cube2), axis=1)
+        med = np.nanmedian(cube2, axis=1)
+        med[nfinite < 0.5] = np.nan
+
+        cube[:,i] = med
 
     cube[cube == 0] = np.nan
     nfinite = np.mean(np.isfinite(cube), axis=1)
