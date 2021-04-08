@@ -5,17 +5,15 @@ DRS Tests that (try to) follow the APERO framework.
 """
 import glob
 import os
-import warnings
 from datetime import datetime
-from typing import List, Optional, Tuple, Union
+from typing import List, Optional, Union
 
+import warnings
 import numpy as np
 import pandas as pd
 from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
-from apero.core.core.drs_file import DrsFitsFile
 from apero.core.core.drs_recipe import DrsRecipe
-from astropy.io import fits
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
 
@@ -37,8 +35,7 @@ def removext(name: str, ext: str = ".py") -> str:
     :param name: file/recipe name
     :type name: str
     :param ext: filetype extension, default is ".py"
-    :type ext: str
-    :returns: cleaned up name
+    :type ext: str :returns: cleaned up name
     :rtype:  str
     """
     if not ext.startswith("."):
@@ -59,6 +56,8 @@ class DrsTest:
         testnum: int = 1,
         all_log_df: Optional[DataFrame] = None,
         all_index_df: Optional[DataFrame] = None,
+        all_master_calib_df: Optional[DataFrame] = None,
+        all_cdb_used_df: Optional[DataFrame] = None,
     ):
         """
 
@@ -93,11 +92,12 @@ class DrsTest:
         self.ismaster = False  # Is it a master recipe?
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
-        self.calib_hkeys = []  # All calib header keys
         self.input_path = ""  # Path to input dir
         self.output_path = ""  # Path to output dir
         self.log_df = None
         self.ind_df = None
+        self.calib_df = None
+        self.cdb_used_df = None
 
         # Overwrite some (most!) parameters with recipe info automatically
         if drs_recipe is not None:
@@ -133,20 +133,14 @@ class DrsTest:
                 )
             )
             self.calibdb_keys = self.get_dbkeys("calibration")
-            self.calib_hkeys = [
-                self.recipe.drs_params[kw][0]
-                for kw in list(self.recipe.drs_params)
-                if kw.startswith("KW_CDB")
-            ]  # Previous calibrations
 
             # TODO: Need to filter ind_df with outputs
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
 
             # Load calibdb DF (master entries and calibdb files)
-            # TODO: Will need to load previous calibs
-            # NOTE: Seems will need to parse **all** headers (better outside I guess)
-            self.master_calib_df = self._load_master_calibdb()
+            self.calib_df = self.load_calib_df(all_calib_df=all_master_calib_df)
+            self.cdb_used_df = self.load_cdb_used(all_cdb_used_df=all_cdb_used_df)
 
     # =========================================================================
     # Functions to load output information
@@ -254,6 +248,7 @@ class DrsTest:
         # NOTE: missing_ind was removed, list of all missing inds can be generated with
         #  util load_ind_df function by setting `return_missing` to True
 
+        # Don't reload if told not to
         if not force and self.ind_df is not None:
             return self.ind_df
 
@@ -268,37 +263,64 @@ class DrsTest:
         if all_ind_df is None:
             all_ind_df = ut.load_index_df(self.output_path)
 
-        # TODO: Likely need to filter recipes here
-        # ???: Is extract in keywords or need extra ?
-        ind_df = all_ind_df.copy()
+        if self.log_df is None:
+            raise AttributeError("A non-null log_df is required to filter the index")
+
+        # We use the log to filter the index
+        # NOTE: Might have an indepent way in v0.7
+        ind_df = all_ind_df[all_ind_df.KW_PID.isin(self.log_df.PID)]
 
         return ind_df
 
-    def _load_master_calibdb(self):
+    def load_calib_df(
+        self, all_calib_df: Optional[DataFrame] = None, force: bool = True
+    ) -> Union[DataFrame, None]:
         """
         Load Master calibdb
 
         :return: Dataframe with master calibdb entries
         :rtype: pd.DataFrame
         """
-        # NOTE: For 0.7 version
-        # from apero.core.core import drs_database
-        # from apero.core import constants
-        # params = constants.load()
-        # calibdb = drs_database.CalibDatabase(params)
-        # calibdb.load_db()
-        # calib_table = calibdb.database.get('*', calibdb.database.tname,
-        #                                    return_pandas=True)
+        if not force and self.calib_df is not None:
+            return self.ind_df
 
-        calibdb_file_path = os.path.join(
-            self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
-        )
+        if all_calib_df is None:
+            all_calib_df = ut.load_db("CALIB")
 
-        colnames = self.params.listp("CALIB_DB_COLS", dtype=str)
-        values = np.loadtxt(calibdb_file_path, unpack=True, dtype=str)
-        calib_df = pd.DataFrame(dict(zip(colnames, values)))
+        if self.calibdb_keys is None:
+            msg = (
+                "Cannot load index dataframe if no calibdb keys are set,"
+                " returning None"
+            )
+            warnings.warn(msg, RuntimeWarning)
+            return None
+
+        calib_df = all_calib_df[all_calib_df["key"].isin(self.calibdb_keys)]
 
         return calib_df
+
+    def load_cdb_used_df(
+        self, all_cdb_used_df: Optional[DataFrame] = None, force: bool = True
+    ) -> Union[DataFrame, None]:
+        if not force and self.cdb_used_df is not None:
+            return self.cdb_used_df
+
+        if self.ind_df is None:
+            msg = (
+                "Cannot load previous calibs if index dataframe is not set."
+                " Returning None"
+            )
+            warnings.warn(msg, RuntimeWarning)
+
+        if all_cdb_used_df is None:
+            all_cdb_used_df = ut.get_cdb_df(self.ind_df, self.params)
+
+        # We keep only calib files whose index is in the APERO index dataframe
+        ind_night_file = self.ind_df.reset_index()[["NIGHTNAME", "FILENAME"]]
+        keep_ind = pd.MultiIndex.from_frame(ind_night_file)
+        cdb_used_df = all_cdb_used_df.loc[keep_ind]
+
+        return cdb_used_df
 
     # =========================================================================
     # Properties of the test

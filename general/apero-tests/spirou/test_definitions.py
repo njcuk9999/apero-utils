@@ -6,9 +6,9 @@ Definition of SPIRou recipe tests following APERO framework
 from apero.core import constants
 from apero.core.instruments.spirou.recipe_definitions import recipes
 
+from .. import test_utils as ut
 # TODO: Make sure this works for dev
 from ..drs_test import DrsTest
-from .. import test_utils as ut
 
 # Something similar?
 # from .preprocessing import PPTest
@@ -38,7 +38,7 @@ __release__ = Constants["DRS_RELEASE"]
 
 RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
 
-red_key = 'DRS_DATA_REDUC'
+red_key = "DRS_DATA_REDUC"
 
 # =============================================================================
 # Pre-load data for operations that are relatively expensive
@@ -51,12 +51,18 @@ red_index = ut.load_index_df(params[red_key])
 red_missing_index = ut.missing_index_headers(red_index,
                                              instrument=__INSTRUMENT__)
 red_full_index = ut.make_full_index(red_index, red_missing_index)
-master_calib_db = ut.load_db("CALIB", instrument=__INSTRUMENT__)
+master_calib_db = ut.load_db("CALIB",
+                             instrument=__INSTRUMENT__)  # All calibdb entries
 
-# TODO: Before per-recipe tests, we have some cleanups to do, could either be a general
-# DrsTest object or just few lines/util function here
+# Some global tests are done here (before per-recipe)
+# NOTE: This should change in 0.7. Will have new way to match files per recipe
 # - Report files not in index
-# - Comapre log and index with small report
+# - Compare log and index with small report
+# - Return index files that have a PID match in the logs
+#   (the ones that can be processed at index level)
+red_index = ut.global_index_check(red_full_index, red_log)
+red_cdb_used_df = ut.get_cdb_df(
+    red_index, params)  # CDB keys and time difference with output files
 
 # =============================================================================
 # Define tests
