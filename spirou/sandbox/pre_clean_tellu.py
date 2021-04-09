@@ -11,6 +11,12 @@ from scipy.signal import medfilt
 from scipy.optimize import curve_fit
 from scipy import constants
 import etienne_tools as et
+import pwd
+from mk_harps_template import *
+
+
+if pwd.getpwuid(os.getuid()).pw_name != 'spirou':
+    import matplotlib.pyplot as plt
 
 
 #from fits2wave import fits2wave
@@ -50,7 +56,7 @@ def get_abso_sp(wave, expo_others, expo_water, spl_others, spl_water, ww = 4.95,
     ker /= np.sum(ker) # normalize your kernel
 
     # create a magic grid onto which we spline our transmission, same as for the s1d_v
-    c = (constants.c/1000)
+    c = (constants.c.value/1000)
     len_magic = int(np.ceil(np.log(wave1 / wave0) * c / dv_grid))
     magic_grid = np.exp(np.arange(len_magic) / len_magic * np.log(wave1 / wave0)) * wave0
 
@@ -70,6 +76,11 @@ def get_abso_sp(wave, expo_others, expo_water, spl_others, spl_water, ww = 4.95,
     trans = trans_others*trans_water
     # convolving after product (to avoid the infamous commutativity problem
     trans_convolved = np.convolve(trans, ker, mode='same')
+
+    #print(dv_abso)
+    #
+    #plt.plot(et.doppler(magic_grid,1000*dv_abso),trans_convolved)
+    #plt.show()
 
     # spline that onto the input grid and allow a velocity shift
     spl2 = InterpolatedUnivariateSpline(et.doppler(magic_grid,1000*dv_abso),trans_convolved)
@@ -514,6 +525,8 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
 
         if ite ==0:
             p0 = [dd[np.argmin(ccf_water)],4, np.nanmin(ccf_water)]
+            #plt.plot(dd,ccf_water)
+            #plt.show()
             popt, pcov = curve_fit(gauss, dd, ccf_water, p0 = p0)
             dv_water = popt[0]
 
@@ -712,10 +725,10 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
 
 
 
-def process_harps_tellu(files,template_file):
+def process_harps_tellu(files,template_file,doplot = False):
 
     params = dict()
-    params['doplot'] = False
+    params['doplot'] = doplot
     params['force_airmass'] = True
     params['snr_min'] = -1
     params['water_bounds'] = [0.05, 15]
@@ -727,30 +740,42 @@ def process_harps_tellu(files,template_file):
     params['BERV'] = 0
     params['ex_gau'] = 2.2
     params['return_ccf_power'] = False
-    params['tapas_npy_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS.npy'
-    params['water_ccf_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS_water.csv'
-    params['others_ccf_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS_others.csv'
+
+    if pwd.getpwuid(os.getuid()).pw_name == 'spirou':
+        params['tapas_npy_file'] = '/spirou/TAPAS/tapas_HARPS.npy'
+        params['water_ccf_file'] = '/spirou/TAPAS/tapas_HARPS_water.csv'
+        params['others_ccf_file'] = '/spirou/TAPAS/tapas_HARPS_others.csv'
+
+    if pwd.getpwuid(os.getuid()).pw_name == 'eartigau':
+        params['tapas_npy_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS.npy'
+        params['water_ccf_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS_water.csv'
+        params['others_ccf_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS_others.csv'
+
+
     params['dv0'] = 0
-    params['ccf_scan_range'] = 200
+    params['ccf_scan_range'] = 300
     params['template_file'] = template_file
     params['default_water_abso'] = 0.5
     params['return_ccf_power'] = False
-    params['mask_domain'] = [550,700]
+    params['mask_domain'] = [620,700]
     params['force'] = False
-    params['recenter_ccf'] = True
+    params['recenter_ccf'] = False
+
+    files = np.array(files)
 
     for i in tqdm(range(len(files))):
 
         file = files[i]
-        if 'tcorr' in file:
-            continue
 
-        if 'e2ds' in file:
-            outname = '/e2ds_tcorr/'.join(file.split('/e2ds/'))
-        if 's1d' in file:
-            outname = '/s1d_tcorr/'.join(file.split('/s1d/'))
+        outdir = '/'.join(file.split('/')[0:-1])+'_tcorr'
+        if not os.path.isdir(outdir):
+            cmd = 'mkdir '+outdir
+            print(cmd)
+            os.system(cmd)
+        outname = outdir+'/'+file.split('/')[-1]
 
-        if os.path.isfile(outname)*params['force']:
+
+        if os.path.isfile(outname)*(params['force'] == False):
             continue
 
         if 'e2ds' in file:
@@ -797,14 +822,32 @@ def process_harps_tellu(files,template_file):
                 plt.show()
 
 
-        corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, dv_water, dv_others = \
-            hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params=params)
+        try:
+            corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, dv_water, dv_others = \
+                hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params=params)
 
 
-        hdr_e2ds['TAU_H2O'] = expo_water
-        hdr_e2ds['TAU_OTHE'] = expo_others
+            hdr_e2ds['TAU_H2O'] = expo_water
+            hdr_e2ds['TAU_OTHE'] = expo_others
 
-        if 's1d' in outname:
-            corrected_e2ds = corrected_e2ds.ravel()
-        fits.writeto(outname, corrected_e2ds, hdr_e2ds, overwrite=True)
+            if 's1d' in outname:
+                corrected_e2ds = corrected_e2ds.ravel()
+            fits.writeto(outname, corrected_e2ds, hdr_e2ds, overwrite=True)
+        except:
+            print('err {}'.format(outname))
 
+
+
+def batch():
+    obj = 'PROXIMA'
+    process_harps_tellu(glob.glob('/Volumes/courlan/HARPS_abso/s1d/{}/*.fits'.format(obj)),'/Volumes/courlan/HARPS_abso/templates/Template_{}_HARPS.fits'.format(obj),doplot = False)
+    mk_harps_template(glob.glob('/Volumes/courlan/HARPS_abso/s1d/{}_tcorr/*.fits'.format(obj)),'/Volumes/courlan/HARPS_abso/templates/Template_{}_HARPS.fits'.format(obj),obj,3500)
+    process_harps_tellu(glob.glob('/Volumes/courlan/HARPS_abso/e2ds/{}/*.fits'.format(obj)),'/Volumes/courlan/HARPS_abso/templates/Template_{}_HARPS.fits'.format(obj),doplot = False)
+
+
+    obj = 'GL699'
+    process_harps_tellu(glob.glob('s1d/{}/*.fits'.format(obj)),'templates/Template_{}_HARPS.fits'.format(obj),doplot = False)
+    mk_harps_template(glob.glob('s1d/{}_tcorr/*.fits'.format(obj)),'templates/Template_{}_tcorr_HARPS.fits'.format(obj),obj,3500)
+    process_harps_tellu(glob.glob('e2ds/{}/*.fits'.format(obj)),'templates/Template_{}_tcorr_HARPS.fits'.format(obj),doplot = False)
+
+batch()

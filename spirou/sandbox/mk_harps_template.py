@@ -2,7 +2,7 @@ import numpy as np
 from astropy.io import fits
 from astropy.table import Table
 import glob
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 import etienne_tools as et
 from astropy import constants
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
@@ -55,17 +55,20 @@ def mk_harps_template(files, outname, obj, teff):
             tmp1[tmp2 < 0.99] = np.nan
             cube2[:, j] = tmp1
 
-        cube2[cube2 == 0] = np.nan
+        #cube2[cube2 == 0] = np.nan
         nfinite = np.mean(np.isfinite(cube2), axis=1)
         med = np.nanmedian(cube2, axis=1)
-        med[nfinite < 0.5] = np.nan
+        #med[nfinite < 0.5] = np.nan
 
         cube[:,i] = med
 
-    cube[cube == 0] = np.nan
+    #cube[cube == 0] = np.nan
     nfinite = np.mean(np.isfinite(cube), axis=1)
     med = np.nanmedian(cube, axis=1)
-    med[nfinite < 0.5] = np.nan
+    #med[nfinite < 0.5] = np.nan
+
+    #plt.plot(med)
+    #plt.show()
 
     tbl = Table()
     tbl['wavelength'] = grid
