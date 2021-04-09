@@ -547,6 +547,28 @@ def lowpassfilter(input_vect,width = 101):
 
     return lowpass
 
+def air_index(wavelength, t=15., p=760.,Unit='nm'):
+
+    #
+    # Gracieusté de Romain Allart qui l'a eue d'on ne sait où
+    #
+    # for harps, transform the wavelength in vacuum on the air
+    # wavelength in nm, t=temperature en C, p=pression en millibar
+    #
+
+    if Unit=='Ang':
+        wavelength=wavelength/10.
+    elif Unit=='nm':
+        wavelength=wavelength
+    else:
+        print('Error: wrong units to convert from vaccum to air')
+    n = 1e-6 * p * (1 + (1.049-0.0157*t)*1e-6*p) / 720.883 / (1 + 0.003661*t) * \
+        (64.328 + 29498.1/(146-(1e3/wavelength)**2) + 255.4/(41-(1e3/wavelength)**2))
+    n = n + 1
+
+    return n
+
+
 def fits2wave(file_or_header):
     info = """
         Provide a fits header or a fits file

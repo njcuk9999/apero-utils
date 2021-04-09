@@ -47,7 +47,7 @@ This will be your data set name afterward
 
 # parameters to update
 NIRPS_drift_folder = '/Volumes/courlan/nirps_drift/'
-dataset = 'datax'
+dataset = 'data4'
 
 if not os.path.isdir(NIRPS_drift_folder + dataset):
     raise ValueError(

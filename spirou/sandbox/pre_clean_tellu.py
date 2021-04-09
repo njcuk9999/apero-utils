@@ -77,13 +77,16 @@ def get_abso_sp(wave, expo_others, expo_water, spl_others, spl_water, ww = 4.95,
     # convolving after product (to avoid the infamous commutativity problem
     trans_convolved = np.convolve(trans, ker, mode='same')
 
-    #print(dv_abso)
-    #
-    #plt.plot(et.doppler(magic_grid,1000*dv_abso),trans_convolved)
-    #plt.show()
-
     # spline that onto the input grid and allow a velocity shift
-    spl2 = InterpolatedUnivariateSpline(et.doppler(magic_grid,1000*dv_abso),trans_convolved)
+    if wave1<1000:
+        # we have HARPS data that is computed in air
+        wave_spline =  et.doppler(magic_grid,1000*dv_abso)
+        wave_spline /= et.air_index(wave_spline,Unit='nm')
+    else:
+        wave_spline =  et.doppler(magic_grid,1000*dv_abso)
+
+    spl2 = InterpolatedUnivariateSpline( wave_spline  ,trans_convolved)
+
 
     # if this is a 2d array from an e2ds, we loop on the orders
     sz = wave.shape
@@ -200,7 +203,7 @@ def graceful_error_in_tellu(image_e2ds, wave_e2ds, hdr_e2ds):
     return corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, 0, 0
 
 
-def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
+def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water, params = dict()):
 
     # Pass an e2ds  image and return the telluric-corrected data. This is a rough model fit and
     # we will need to perform PCA correction on top of it.
@@ -269,10 +272,6 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     else:
         return_ccf_power = params['return_ccf_power']
 
-    if 'tapas_npy_file' not in params:
-        tapas_npy_file = 'tapas.npy' # default for SPIRou
-    else:
-        tapas_npy_file = params['tapas_npy_file']
 
     if 'water_ccf_file' not in params:
         water_ccf_file = ''
@@ -331,6 +330,12 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     else:
         recenter_ccf =  params['recenter_ccf']
 
+    if 'berv_offset' not in params:
+        berv_offset = False
+    else:
+        berv_offset =  params['berv_offset']
+
+
 
     if os.path.isfile(template_file):
         template =  Table(fits.getdata(template_file))
@@ -371,14 +376,15 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     wave = wave[keep]
 
     if template_flag:
-        template = template_spline(et.doppler(wave,-BERV*1000) )
+        if not berv_offset:
+            template = template_spline(et.doppler(wave,-BERV*1000) )
+        else:
+            template = template_spline(et.doppler(wave,0) )
+
     else:
         template = np.ones_like(wave)
 
 
-    # get the tapas splines, no need to re-compute it at each iteration. We could be even smarter and do it above
-    # this function
-    spl_others, spl_water = get_tapas_spl(tapas_npy_file = tapas_npy_file,dv0 = dv0)
 
 
     flag_error = False # to be used for QCing
@@ -411,6 +417,8 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
 
 
     dv_abso = 0.0
+    dv_water = 0.0
+    dv_others = 0.0
 
     # define ploting params if doplot ==  True
     if doplot:
@@ -421,10 +429,19 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     keep = (mask_others['ll_mask_s']>mask_domain[0])*(mask_others['ll_mask_s']<mask_domain[1])
     mask_others = mask_others[keep]
 
+
+
     mask_water = Table.read(water_ccf_file)
     keep = (mask_water['ll_mask_s']>mask_domain[0])*(mask_water['ll_mask_s']<mask_domain[1])
     mask_water = mask_water[keep]
 
+    if wave1<1000: # we have HARPS data, express things in air
+        mask_water['ll_mask_s'] /= et.air_index(mask_water['ll_mask_s'],Unit='nm')
+        mask_others['ll_mask_s'] /= et.air_index(mask_others['ll_mask_s'],Unit='nm')
+
+    if berv_offset:
+        mask_water['ll_mask_s'] = et.doppler(mask_water['ll_mask_s'],-BERV*1000)
+        mask_others['ll_mask_s'] = et.doppler(mask_others['ll_mask_s'],-BERV*1000)
 
 
     # start with no correction of abso to get the ccf
@@ -448,23 +465,24 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
     # first guess at velocity of absorption is 0 km/s
     dv_abso = 0.0
 
+    # scanning range for the ccf computation
+    dd = np.arange(-ccf_scan_range, ccf_scan_range + 1) #+ dv_abso
+    # placeholder for the ccfs
+    ccf_others = np.zeros_like(dd, dtype=float)
+    ccf_water = np.zeros_like(dd, dtype=float)
+
+
     ite = 0 # stop at 20th iteration, normally it converges in ~6
+
+    wave_trans = np.array(wave)
+    if berv_offset:
+        wave_trans = et.doppler(wave_trans, BERV * 1000)
+
     while dexpo>1e-4 and (ite<20):
 
-        # scanning range for the ccf computation
-        dd = np.arange(-ccf_scan_range, ccf_scan_range + 1) + dv_abso
-        # placeholder for the ccfs
-        ccf_others = np.zeros_like(dd, dtype=float)
-        ccf_water = np.zeros_like(dd, dtype=float)
-
-        trans = get_abso_sp(wave,expo_others, expo_water, spl_others, spl_water, ww = ww,
+        trans = get_abso_sp(wave_trans,expo_others, expo_water, spl_others, spl_water, ww = ww,
                             ex_gau = ex_gau, dv_abso = dv_abso, wave0 = wave0, wave1 = wave1)
         sp_tmp = sp/trans
-
-        #plt.plot(wave,sp_tmp/np.nanmedian(sp_tmp))
-        #plt.plot(wave,template/np.nanmedian(template))
-        #plt.show()
-
         sp_tmp/=template
 
         valid = np.isfinite(sp_tmp)
@@ -505,8 +523,11 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
         ccf_others = np.nansum(all_others, axis=0)
 
 
-        ccf_water -= np.polyval(et.robust_polyfit(dd,ccf_water,2,3)[0],dd)
-        ccf_others -= np.polyval(et.robust_polyfit(dd,ccf_others,2,3)[0],dd)
+        ccf_water -= np.polyval(et.robust_polyfit(dd,ccf_water,1,3)[0],dd)
+        ccf_others -= np.polyval(et.robust_polyfit(dd,ccf_others,1,3)[0],dd)
+
+        #ccf_water -= np.median(ccf_water)
+        #ccf_others -= np.median(ccf_others)
 
         # subtract the median of the ccf outside the core of the gaussian. We take this to be the 'external' part of
         # of the scan range
@@ -523,37 +544,37 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
         #    # if CCF is NaN, we have the graceful exit
         #    #return graceful_error_in_tellu(image_e2ds, wave_e2ds,hdr_e2ds)
 
-        if ite ==0:
-            p0 = [dd[np.argmin(ccf_water)],4, np.nanmin(ccf_water)]
-            #plt.plot(dd,ccf_water)
-            #plt.show()
-            popt, pcov = curve_fit(gauss, dd, ccf_water, p0 = p0)
-            dv_water = popt[0]
-
-
-            if (hdr_e2ds['INSTRUME'] == 'HARPS'):#*(template_flag == False):
-                dv_others = dv_water
-
-            else:
-                p0 = [0,4, np.nanmin(ccf_others)]
-                popt, pcov = curve_fit(gauss, dd, ccf_others, p0 = p0)
-                dv_others = popt[0]
-                #print('dv water = {0} km/s, dv dry = {1} km/s'.format(dv_water, dv_others))
-            dv_abso = (dv_others+dv_water)/2.0 # mean of water and others
-            ccf_scan_range/=2
-
-
         if recenter_ccf:
-            if ite >2:
+            if ite ==0:
+                p0 = [dd[np.argmin(ccf_water)],4, np.nanmin(ccf_water)]
+                #plt.plot(dd,ccf_water)
+                #plt.show()
+                popt, pcov = curve_fit(gauss, dd, ccf_water, p0 = p0)
+                dv_water = popt[0]
 
-                gfit = gauss(dd,*popt)
-                grad_gfit = np.gradient(gfit)
-                grad_gfit/=np.nansum(grad_gfit**2)
+
+                if (hdr_e2ds['INSTRUME'] == 'HARPS'):#*(template_flag == False):
+                    dv_others = dv_water
+
+                else:
+                    p0 = [0,4, np.nanmin(ccf_others)]
+                    popt, pcov = curve_fit(gauss, dd, ccf_others, p0 = p0)
+                    dv_others = popt[0]
+                    #print('dv water = {0} km/s, dv dry = {1} km/s'.format(dv_water, dv_others))
+                dv_abso = (dv_others+dv_water)/2.0 # mean of water and others
+                #ccf_scan_range/=2
 
 
-                ddv = np.nansum(ccf_water*grad_gfit)
-                #print(ddv,dv_abso)
-                dv_abso-=(ddv)
+                if ite >2:
+
+                    gfit = gauss(dd,*popt)
+                    grad_gfit = np.gradient(gfit)
+                    grad_gfit/=np.nansum(grad_gfit**2)
+
+
+                    ddv = np.nansum(ccf_water*grad_gfit)
+                    #print(ddv,dv_abso)
+                    dv_abso-=(ddv)
 
 
         # get the amplitude of the middle of the CCF
@@ -701,8 +722,14 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
         plt.tight_layout()
         plt.show()
 
+
+    wave_trans = np.array(wave_e2ds)
+    if berv_offset:
+        wave_trans = et.doppler(wave_trans, BERV * 1000)
+
+
     # get the final absorption spectrum to be used on the science data. No trimming done on the wave grid
-    abso_e2ds = get_abso_sp(wave_e2ds, expo_others, expo_water, spl_others, spl_water, ww = ww,
+    abso_e2ds = get_abso_sp(wave_trans, expo_others, expo_water, spl_others, spl_water, ww = ww,
            ex_gau = ex_gau, dv_abso = dv_abso, wave0 = wave0, wave1 = wave1)#, dv0 = dv0)
 
     # all absorption deeper than exp(-1) ~ 30% is considered too deeep to be corrected. We set values there to NaN
@@ -725,7 +752,7 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params = dict()):
 
 
 
-def process_harps_tellu(files,template_file,doplot = False):
+def process_harps_tellu(files,template_file,doplot = False,force = False,berv_offset = False):
 
     params = dict()
     params['doplot'] = doplot
@@ -753,21 +780,35 @@ def process_harps_tellu(files,template_file,doplot = False):
 
 
     params['dv0'] = 0
-    params['ccf_scan_range'] = 300
+    params['ccf_scan_range'] = 50
     params['template_file'] = template_file
     params['default_water_abso'] = 0.5
     params['return_ccf_power'] = False
-    params['mask_domain'] = [620,700]
-    params['force'] = False
+    params['mask_domain'] = [500,700]
+    params['force'] = force
     params['recenter_ccf'] = False
+
+    params['berv_offset'] = berv_offset
 
     files = np.array(files)
 
+    # get the tapas splines, no need to re-compute it at each iteration. We could be even smarter and do it above
+    # this function
+    spl_others, spl_water = get_tapas_spl(tapas_npy_file = params['tapas_npy_file'],dv0 = params['dv0'])
+
+
     for i in tqdm(range(len(files))):
+
 
         file = files[i]
 
-        outdir = '/'.join(file.split('/')[0:-1])+'_tcorr'
+        if 's1d' in file:
+            params['berv_offset'] = True
+        else:
+            params['berv_offset'] = False
+
+
+        outdir = '/'.join(file.split('/')[0:-1])+'-tc'
         if not os.path.isdir(outdir):
             cmd = 'mkdir '+outdir
             print(cmd)
@@ -783,7 +824,6 @@ def process_harps_tellu(files,template_file,doplot = False):
             image_e2ds, hdr_e2ds = fits.getdata(file,header = True)
             hdr_e2ds = et.harps2spirou(hdr_e2ds)
             wave_e2ds = et.fits2wave(hdr_e2ds)
-            params['BERV'] = hdr_e2ds['BERV'] # only relevant for e2ds in HARPS
 
         else:
             image_e2ds, hdr_e2ds = fits.getdata(file, header=True)
@@ -793,6 +833,8 @@ def process_harps_tellu(files,template_file,doplot = False):
 
             image_e2ds = np.reshape(image_e2ds, [1, len(image_e2ds)])
             wave_e2ds = np.reshape(wave_e2ds, [1, len(wave_e2ds)])
+
+        params['BERV'] = hdr_e2ds['BERV'] # only relevant for e2ds in HARPS
 
 
         if False:
@@ -821,10 +863,9 @@ def process_harps_tellu(files,template_file,doplot = False):
                     print(ex_gau,ccf1,ccf2)
                 plt.show()
 
-
-        try:
+        if True:
             corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, dv_water, dv_others = \
-                hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds, params=params)
+                hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water, params=params)
 
 
             hdr_e2ds['TAU_H2O'] = expo_water
@@ -833,21 +874,34 @@ def process_harps_tellu(files,template_file,doplot = False):
             if 's1d' in outname:
                 corrected_e2ds = corrected_e2ds.ravel()
             fits.writeto(outname, corrected_e2ds, hdr_e2ds, overwrite=True)
-        except:
+        else:
             print('err {}'.format(outname))
 
 
 
 def batch():
-    obj = 'PROXIMA'
-    process_harps_tellu(glob.glob('/Volumes/courlan/HARPS_abso/s1d/{}/*.fits'.format(obj)),'/Volumes/courlan/HARPS_abso/templates/Template_{}_HARPS.fits'.format(obj),doplot = False)
-    mk_harps_template(glob.glob('/Volumes/courlan/HARPS_abso/s1d/{}_tcorr/*.fits'.format(obj)),'/Volumes/courlan/HARPS_abso/templates/Template_{}_HARPS.fits'.format(obj),obj,3500)
-    process_harps_tellu(glob.glob('/Volumes/courlan/HARPS_abso/e2ds/{}/*.fits'.format(obj)),'/Volumes/courlan/HARPS_abso/templates/Template_{}_HARPS.fits'.format(obj),doplot = False)
+    objs = ['GL699','HD39194','PROXIMA']
+
+    path = '/Volumes/courlan/HARPS_abso/'
+
+    doplot = False
+
+    for obj in objs:
+        process_harps_tellu(glob.glob(path+'s1d/{}/*.fits'.format(obj)),'',doplot = doplot)
+
+        template = path+'templates/Template_{}-tc_HARPS.fits'.format(obj)
+        mk_harps_template(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,obj,3500,force = False)
+
+        for ite in range(2):
+            process_harps_tellu(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,doplot = doplot,force = True)
+            mk_harps_template(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,obj,3500,force = True)
 
 
-    obj = 'GL699'
-    process_harps_tellu(glob.glob('s1d/{}/*.fits'.format(obj)),'templates/Template_{}_HARPS.fits'.format(obj),doplot = False)
-    mk_harps_template(glob.glob('s1d/{}_tcorr/*.fits'.format(obj)),'templates/Template_{}_tcorr_HARPS.fits'.format(obj),obj,3500)
-    process_harps_tellu(glob.glob('e2ds/{}/*.fits'.format(obj)),'templates/Template_{}_tcorr_HARPS.fits'.format(obj),doplot = False)
+        #mk_harps_template(glob.glob(path+'s1d/{}/*.fits'.format(obj)),
+        #                  path+'templates/Template_{}_HARPS.fits'.format(obj),obj,3500)
 
-batch()
+
+        #process_harps_tellu(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,doplot = doplot)
+
+
+
