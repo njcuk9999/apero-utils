@@ -100,29 +100,19 @@ def get_abso_sp(wave, expo_others, expo_water, spl_others, spl_water, ww = 4.95,
 
     return out
 
-def get_tapas_spl(tapas_npy_file = 'tapas.npy',dv0 = 0):
+def get_tapas_spl(params):
+    tapas_npy_file = str(params['tapas_npy_file'])
+    dv0 = params['dv0']
+
     # ----------------------------------------------------------------------------------------------------------------
     # read table with TAPAS model for 6 molecules. We may want to keep it as a numpy array to make it faster.
     # will need to be replaced with numpy readouts consistent with the rest of the DRS
     # ----------------------------------------------------------------------------------------------------------------
-    if os.path.isfile(tapas_npy_file) == False:
-        tbl_tapas = Table.read('tapas_all_sp.fits.gz')
-        trans_others =  tbl_tapas['trans_ch4']*tbl_tapas['trans_o3']*tbl_tapas['trans_n2o']*tbl_tapas['trans_o2']*tbl_tapas['trans_co2']
-        # construct a transmission spectrum for all species other than water
-        trans_others[trans_others<0] = 0
-        tapas_wave = tbl_tapas['wavelength']
-        trans_water = tbl_tapas['trans_h2o']
 
-        tmp_tapas = np.zeros([3,len(tapas_wave)])
-        tmp_tapas[0] = tapas_wave
-        tmp_tapas[1] = trans_others
-        tmp_tapas[2] = trans_water
-        np.save(tapas_npy_file, tmp_tapas)
-    else:
-        tmp_tapas = np.load(tapas_npy_file)
-        tapas_wave = tmp_tapas[0]
-        trans_others = tmp_tapas[1]
-        trans_water = tmp_tapas[2]
+    tmp_tapas = np.load(tapas_npy_file)
+    tapas_wave = tmp_tapas[0]
+    trans_others = tmp_tapas[1]
+    trans_water = tmp_tapas[2]
 
     #define spline function for both, optionally shift the grid
     spl_others = InterpolatedUnivariateSpline(et.doppler(tapas_wave,dv0*1000), trans_others, k=1, ext=3)
@@ -176,6 +166,7 @@ def clean_oh_pca(image_e2ds, wave_e2ds):
     # return the clean image and sky model
     return image_e2ds - sky_model.reshape([49,4088]), sky_model.reshape([49,4088])
 
+"""
 def graceful_error_in_tellu(image_e2ds, wave_e2ds, hdr_e2ds):
     # default parameters for a crash-less exit of the fit_tellu function.
     print('\n\n ERROR ... we have the graceful exit!')
@@ -201,9 +192,10 @@ def graceful_error_in_tellu(image_e2ds, wave_e2ds, hdr_e2ds):
 
     # return corrected e2ds, mask, absorption, expo_water, expo_others
     return corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, 0, 0
+"""
 
 
-def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water, params = dict()):
+def hybrid_fit_tellu(params, image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water):
 
     # Pass an e2ds  image and return the telluric-corrected data. This is a rough model fit and
     # we will need to perform PCA correction on top of it.
@@ -227,115 +219,27 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water, para
     # we set bounds to the limits of the reasonable domain for both parameters. Reaching the limit will raise an error
     # flag.
 
-    if 'doplot' not in params:
-        doplot = False
-    else:
-        doplot = params['doplot']
-
-    if 'force_airmass' not in params:
-        force_airmass = False
-    else:
-        force_airmass = params['force_airmass']
-
-    if 'snr_min' not in params:
-        snr_min = 10
-    else:
-        snr_min = params['snr_min']
-
-    if 'water_bounds' not in params:
-        water_bounds = [0.1,15]
-    else:
-        water_bounds = params['water_bounds']
-
-    if 'others_bounds' not in params:
-        others_bounds = [0.1,15]
-    else:
-        others_bounds = params['others_bounds']
-
-    if 'clean_oh' not in params:
-        clean_oh = True
-    else:
-        clean_oh = params['clean_oh']
-
-    if 'ww' not in params:
-        ww = 4.95 # default for SPIRou
-    else:
-        ww = params['ww']
-
-    if 'ex_gau' not in params:
-        ex_gau = 2.20 # default for SPIRou
-    else:
-        ex_gau = params['ex_gau']
-
-    if 'return_ccf_power' not in params:
-        return_ccf_power = False # default for SPIRou
-    else:
-        return_ccf_power = params['return_ccf_power']
-
-
-    if 'water_ccf_file' not in params:
-        water_ccf_file = ''
-    else:
-        water_ccf_file = params['water_ccf_file']
-
-    if 'others_ccf_file' not in params:
-        others_ccf_file = ''
-    else:
-        others_ccf_file = params['others_ccf_file']
-
-    if 'wave0' not in params:
-        wave0 = 955
-    else:
-        wave0 = params['wave0']
-
-    if 'wave1' not in params:
-        wave1 = 2500
-    else:
-        wave1 = params['wave1']
-
-    if 'dv0' not in params:
-        dv0 = 0
-    else:
-        dv0 = params['dv0'] # zeroth velocity of the wavelength grid
-
-
-    if 'ccf_scan_range' not in params:
-        ccf_scan_range = 200
-    else:
-        ccf_scan_range = int(params['ccf_scan_range'])
-
-    if 'template_file' not in params:
-        template_file = ''
-    else:
-        template_file = params['template_file']
-
-    if 'mask_domain' not in params:
-        mask_domain = [350,2500]
-    else:
-        mask_domain = params['mask_domain']
-
-
-    if 'default_water_abso' not in params:
-        default_water_abso = 4.0 # typical water abso exponent. Compare to values in headers for high-snr targets later
-    else:
-        default_water_abso = params['default_water_abso']
-
-    if 'BERV' not in params:
-        BERV = 0.0 #params['BERV']
-    else:
-        BERV = params['BERV']
-
-    if 'recenter_ccf' not in params:
-        recenter_ccf = False
-    else:
-        recenter_ccf =  params['recenter_ccf']
-
-    if 'berv_offset' not in params:
-        berv_offset = False
-    else:
-        berv_offset =  params['berv_offset']
-
-
+    doplot = params['doplot']
+    force_airmass = params['force_airmass']
+    snr_min = params['snr_min']
+    water_bounds = params['water_bounds']
+    others_bounds = params['others_bounds']
+    clean_oh = params['clean_oh']
+    ww = params['ww']
+    ex_gau = params['ex_gau']
+    return_ccf_power = params['return_ccf_power']
+    water_ccf_file = params['water_ccf_file']
+    others_ccf_file = params['others_ccf_file']
+    wave0 = params['wave0']
+    wave1 = params['wave1']
+    dv0 = params['dv0'] # zeroth velocity of the wavelength grid
+    ccf_scan_range = int(params['ccf_scan_range'])
+    template_file = params['template_file']
+    mask_domain = params['mask_domain']
+    default_water_abso = params['default_water_abso']
+    BERV = params['BERV']
+    recenter_ccf = params['recenter_ccf']
+    berv_offset = params['berv_offset']
 
     if os.path.isfile(template_file):
         template =  Table(fits.getdata(template_file))
@@ -752,61 +656,21 @@ def hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water, para
 
 
 
-def process_harps_tellu(files,template_file,doplot = False,force = False,berv_offset = False):
-
-    params = dict()
-    params['doplot'] = doplot
-    params['force_airmass'] = True
-    params['snr_min'] = -1
-    params['water_bounds'] = [0.05, 15]
-    params['others_bounds'] = [0.05, 15]
-    params['clean_oh'] = False
-    params['wave0'] = 350
-    params['wave1'] = 750
-    params['ww'] = 1.4
-    params['BERV'] = 0
-    params['ex_gau'] = 2.2
-    params['return_ccf_power'] = False
-
-    if pwd.getpwuid(os.getuid()).pw_name == 'spirou':
-        params['tapas_npy_file'] = '/spirou/TAPAS/tapas_HARPS.npy'
-        params['water_ccf_file'] = '/spirou/TAPAS/tapas_HARPS_water.csv'
-        params['others_ccf_file'] = '/spirou/TAPAS/tapas_HARPS_others.csv'
-
-    if pwd.getpwuid(os.getuid()).pw_name == 'eartigau':
-        params['tapas_npy_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS.npy'
-        params['water_ccf_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS_water.csv'
-        params['others_ccf_file'] = '/Volumes/courlan/TAPAS/tapas_HARPS_others.csv'
-
-
-    params['dv0'] = 0
-    params['ccf_scan_range'] = 50
-    params['template_file'] = template_file
-    params['default_water_abso'] = 0.5
-    params['return_ccf_power'] = False
-    params['mask_domain'] = [500,700]
-    params['force'] = force
-    params['recenter_ccf'] = False
-
-    params['berv_offset'] = berv_offset
+def process_harps_tellu(params, files):
 
     files = np.array(files)
 
     # get the tapas splines, no need to re-compute it at each iteration. We could be even smarter and do it above
     # this function
-    spl_others, spl_water = get_tapas_spl(tapas_npy_file = params['tapas_npy_file'],dv0 = params['dv0'])
-
+    spl_others, spl_water = get_tapas_spl(params)
 
     for i in tqdm(range(len(files))):
-
-
         file = files[i]
 
         if 's1d' in file:
             params['berv_offset'] = True
         else:
             params['berv_offset'] = False
-
 
         outdir = '/'.join(file.split('/')[0:-1])+'-tc'
         if not os.path.isdir(outdir):
@@ -815,12 +679,10 @@ def process_harps_tellu(files,template_file,doplot = False,force = False,berv_of
             os.system(cmd)
         outname = outdir+'/'+file.split('/')[-1]
 
-
         if os.path.isfile(outname)*(params['force'] == False):
             continue
 
         if 'e2ds' in file:
-            #file = '/Volumes/courlan/HARPS_abso/HARPS.2010-01-29T07:29:33.449_e2ds_A.fits'
             image_e2ds, hdr_e2ds = fits.getdata(file,header = True)
             hdr_e2ds = et.harps2spirou(hdr_e2ds)
             wave_e2ds = et.fits2wave(hdr_e2ds)
@@ -828,7 +690,6 @@ def process_harps_tellu(files,template_file,doplot = False,force = False,berv_of
         else:
             image_e2ds, hdr_e2ds = fits.getdata(file, header=True)
             hdr_e2ds = et.harps2spirou(hdr_e2ds)
-
             wave_e2ds = (np.arange(len(image_e2ds)) * hdr_e2ds['CDELT1'] + hdr_e2ds['CRVAL1']) / 10.0
 
             image_e2ds = np.reshape(image_e2ds, [1, len(image_e2ds)])
@@ -865,8 +726,7 @@ def process_harps_tellu(files,template_file,doplot = False,force = False,berv_of
 
         if True:
             corrected_e2ds, mask, abso_e2ds, sky_model,  expo_water, expo_others, dv_water, dv_others = \
-                hybrid_fit_tellu(image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water, params=params)
-
+                hybrid_fit_tellu(params, image_e2ds, wave_e2ds, hdr_e2ds,spl_others, spl_water)
 
             hdr_e2ds['TAU_H2O'] = expo_water
             hdr_e2ds['TAU_OTHE'] = expo_others
@@ -878,30 +738,27 @@ def process_harps_tellu(files,template_file,doplot = False,force = False,berv_of
             print('err {}'.format(outname))
 
 
+def batch(yaml_params='tellu_clean_params.yaml'):
+    objs = ['GL699','EPSINDIA','PROXIMA']
 
-def batch():
-    objs = ['GL699','HD39194','PROXIMA']
+    params = et.load_yaml(yaml_params)
+    path = params['path_to_lbl_folder']
 
-    path = '/Volumes/courlan/HARPS_abso/'
-
-    doplot = False
-
+    params['doplot'] = False
     for obj in objs:
-        process_harps_tellu(glob.glob(path+'s1d/{}/*.fits'.format(obj)),'',doplot = doplot)
+        template = ''
+        params['template_file'] = template
+        params['force'] = True
+        process_harps_tellu(params, glob.glob(path+'s1d/{}/*.fits'.format(obj)))
 
-        template = path+'templates/Template_{}-tc_HARPS.fits'.format(obj)
-        mk_harps_template(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,obj,3500,force = False)
+        for ite in range(1):
+            template = path+'templates/Template_{}-tc_HARPS.fits'.format(obj)
+            params['template_file'] = template
 
-        for ite in range(2):
-            process_harps_tellu(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,doplot = doplot,force = True)
             mk_harps_template(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,obj,3500,force = True)
+            process_harps_tellu(params,glob.glob(path+'s1d/{}/*.fits'.format(obj)))
 
-
-        #mk_harps_template(glob.glob(path+'s1d/{}/*.fits'.format(obj)),
-        #                  path+'templates/Template_{}_HARPS.fits'.format(obj),obj,3500)
-
-
-        #process_harps_tellu(glob.glob(path+'s1d/{}/*.fits'.format(obj)),template,doplot = doplot)
+        process_harps_tellu(params, glob.glob(path+'e2ds/{}/*.fits'.format(obj)))
 
 
 

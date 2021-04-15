@@ -10,6 +10,29 @@ from numba import jit
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 import requests
 import os
+import yaml
+
+
+def load_yaml(filename: str) -> dict:
+    """
+    Load a yaml file as a dictionary
+    :param filename: str, the filename (absolute path) of the yaml file
+    :returns: dictionary dict, the dictionary loaded from yaml file
+    """
+    with open(filename, 'r') as yfile:
+        dictionary = yaml.load(yfile, Loader=yaml.FullLoader)
+    return dictionary
+
+def write_yaml(dictionary: dict, filename: str):
+    """
+    Write a yaml file from a dictionary
+    :param dictionary: dict, the dictionary to write
+    :param filename: str, the filename (absolute path) of the yaml file
+    :return: None - writes yaml file 'filename'
+    """
+    # save file
+    with open(filename, 'w') as yfile:
+        yaml.dump(dictionary, yfile)
 
 def mk_hash_name(hash_name,path,suffix = '_pp.fits',check_exist = True):
     # create a file list from Neil's hash
@@ -473,6 +496,9 @@ def gauss(x,cen, ew, amp, zp, slope):
 
 def super_gauss(x,cen, ew, amp,expo, zp, slope):
     return np.exp(-0.5*(np.abs(x-cen)/ew)**np.abs(expo))*amp+zp+(x-cen)*slope
+
+def centered_super_gauss(x,ew, amp,expo):
+    return np.exp(-0.5*(np.abs(x)/ew)**np.abs(expo))*amp
 
 
 def lowpassfilter(input_vect,width = 101):
