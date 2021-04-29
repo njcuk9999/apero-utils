@@ -633,17 +633,37 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
 if __name__ == '__main__':
 
     from pathlib import Path
-    data_dir = Path('/data/spirou/data/lblea/')
-    blaze_file = '2498F798T802f_pp_blaze_AB.fits'
 
-    # run lbl
-    lbl(obj_sci='GL699', obj_template='GL699',
-        doplot_ccf=False, doplot_debug=False, force=True,
-        lblrv_path=str(data_dir.joinpath('lblrv')) + '/',
-        mask_path=str(data_dir.joinpath('masks')) + '/',
-        template_path=str(data_dir.joinpath('templates')) + '/',
-        science_path=str(data_dir.joinpath('science')) + '/',
-        ref_blaze_file=str(data_dir.joinpath('calib').joinpath(blaze_file)),
-        noise_model=False, check_fp=False,
-        science_search_string='*e2dsff*AB.fits',
-        template_file=None, hp_width=223)
+    case = 'HARPS'
+
+
+    if case == 'SPIROU':
+        data_dir = Path('/data/spirou/data/lblea/')
+        blaze_file = '2498F798T802f_pp_blaze_AB.fits'
+        # run lbl
+        lbl(obj_sci='GL699', obj_template='GL699',
+            doplot_ccf=False, doplot_debug=False, force=True,
+            lblrv_path=str(data_dir.joinpath('lblrv')) + '/',
+            mask_path=str(data_dir.joinpath('masks')) + '/',
+            template_path=str(data_dir.joinpath('templates')) + '/',
+            science_path=str(data_dir.joinpath('science')) + '/',
+            ref_blaze_file=str(data_dir.joinpath('calib').joinpath(blaze_file)),
+            noise_model=False, check_fp=False,
+            science_search_string='*e2dsff*AB.fits',
+            template_file=None, hp_width=223)
+
+    if case == 'HARPS':
+        data_dir = Path('/data/harps/lblea/')
+        blaze_file = 'HARPS.2014-09-02T21_06_48.529_blaze_A.fits'
+        # run lbl
+        lbl(obj_sci='PROXIMA', obj_template='PROXIMA',
+            doplot_ccf=False, doplot_debug=False, force=True,
+            lblrv_path=str(data_dir.joinpath('lblrv')) + '/',
+            mask_path=str(data_dir.joinpath('masks')) + '/',
+            template_path=str(data_dir.joinpath('templates')) + '/',
+            science_path=str(data_dir.joinpath('science')) + '/',
+            ref_blaze_file=str(data_dir.joinpath('calib').joinpath(blaze_file)),
+            noise_model=False, check_fp=False,
+            science_search_string='*e2ds*A.fits',
+            template_file='templates/Template_PROXIMA_HARPS.fits',
+            hp_width=223)

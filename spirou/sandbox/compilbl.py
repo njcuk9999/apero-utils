@@ -409,6 +409,14 @@ def compilbl(obj_sci, obj_template=None, doplot=False, force=True, common_weight
 
 
 if __name__ == '__main__':
-    compilbl(obj_sci='GL699', obj_template='GL699',
-             doplot=True, force=True,  common_weights=False,
-             get_cumul_plot=True, suffix_rdb='')
+    case = 'HARPS'
+
+    if case == 'SPIROU':
+        compilbl(obj_sci='GL699', obj_template='GL699',
+                 doplot=True, force=True,  common_weights=False,
+                 get_cumul_plot=True, suffix_rdb='')
+
+    if case == 'HARPS':
+        compilbl(obj_sci='PROXIMA', obj_template='PROXIMA',
+                 doplot=True, force=True,  common_weights=False,
+                 get_cumul_plot=True, suffix_rdb='')
