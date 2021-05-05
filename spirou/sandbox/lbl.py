@@ -201,8 +201,9 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
     if (width % 2) ==0:
         width+=1
 
-    # we high-pass on a scale of ~101 pixels in the e2ds
-    flux -= et.lowpassfilter(flux, width=width)
+    if width != 0:
+        # we high-pass on a scale of ~101 pixels in the e2ds
+        flux -= et.lowpassfilter(flux, width=width)
 
     dflux = np.gradient(flux)/ np.gradient(np.log(template['wavelength'])) / constants.c
     # 2nd derivative
@@ -284,7 +285,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
             if (width % 2) == 0:
                 width += 1
 
-            sp[iord] -= et.lowpassfilter(sp[iord], width = width)
+            if width != 0:
+                sp[iord] -= et.lowpassfilter(sp[iord], width = width)
 
 
         if 'FP' not in obj_sci:
@@ -357,7 +359,8 @@ def lbl(obj_sci,obj_template = None,doplot_ccf = False,doplot_debug = False, for
             for ii in range(sp.shape[0]):
                 tmp = sp[ii]-model[ii]
                 if tweak_continuum:
-                    tmp -= et.lowpassfilter(tmp,width = width)
+                    if width != 0:
+                        tmp -= et.lowpassfilter(tmp,width = width)
 
                 if not noise_model:
                     ipix = np.arange(0,model.shape[1],100)

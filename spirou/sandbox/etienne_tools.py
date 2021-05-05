@@ -741,7 +741,7 @@ def sed_ratio(sp1,sp2,doplot = False):
 
 
 
-@jit(nopython=True)
+#@jit(nopython=True)
 def odd_ratio_mean(value,err, odd_ratio = 1e-4, nmax = 10):
     #
     # Provide values and corresponding errors and compute a

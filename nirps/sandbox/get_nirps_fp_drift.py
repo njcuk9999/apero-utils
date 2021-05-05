@@ -17,6 +17,32 @@ def fit_gauss(x, y, p0):
 def gauss(x, cen, ew, amp, zp):
     return np.exp(-0.5 * (x - cen) ** 2 / ew ** 2) * amp + zp
 
+def remove_bgnd_e2ds_fp(e2ds):
+    with warnings.catch_warnings(record=True) as _:
+        for iord in range(e2ds.shape[0]):
+            sp = np.array(e2ds[iord])
+            low = np.zeros_like(sp)
+            high = np.zeros_like(sp)
+
+            for reg in range(e2ds.shape[1]):
+                i1 = reg-50
+                i2 = reg+50
+                if i1 <0:
+                    i1 = 0
+                if i2>e2ds.shape[1]:
+                    i2 = e2ds.shape[1]
+
+                pp = np.nanpercentile(sp[i1:i2],[5,95])
+                low[reg] = pp[0]
+                high[reg] = pp[1]
+
+            low = et.lowpassfilter(low, 50)
+            high = et.lowpassfilter(high, 50)
+
+            e2ds[iord] = (sp-low)/(high-low)
+
+    return e2ds
+
 """
 Things to do to use this code :
 
@@ -46,14 +72,14 @@ This will be your data set name afterward
 
 # parameters to update
 NIRPS_drift_folder = '/Volumes/courlan/nirps_drift/'
-datasets = ['data1','data2','data3','data4']
-#datasets = ['data1_geneva','data2_geneva','data3_geneva','data4_geneva']
+#datasets = ['data1','data2','data3','data4']
+datasets = ['data1_geneva','data2_geneva','data3_geneva','data4_geneva']
 
 
 for dataset in datasets:
     if not os.path.isdir(NIRPS_drift_folder + dataset):
         raise ValueError(
-            et.color('\n\nHey, the folder {} does not exist!\nThis is bad bad bad !!!'.format(NIRPS_drift_folder + dataset),
+            et.color('\n\nHey, the folder {} redoes not exist!\nThis is bad bad bad !!!'.format(NIRPS_drift_folder + dataset),
                      'red'))
 
     for fiber in ['A', 'B']:
@@ -115,7 +141,7 @@ for dataset in datasets:
             if not os.path.isfile(tbl_file):
                 tbl = et.td_convert(Table.read(ref_table))
 
-                sp = fits.getdata(files[i])
+                sp = remove_bgnd_e2ds_fp(fits.getdata(files[i]))
                 ord_prev = -1
 
                 # loop through FP peaks and fit gaussians
@@ -343,7 +369,8 @@ for dataset in datasets:
     print('RMS in pix of left-to-right : {}'.format(np.nanstd(moy_right-moy_left)))
 
     plt.savefig('{}_fp_drift.pdf'.format(dataset))
-    plt.show()
+    plt.close()
+    #plt.show()
 
     tbl_drifts.write('{}_fp_drift.csv'.format(dataset),overwrite = True)
 

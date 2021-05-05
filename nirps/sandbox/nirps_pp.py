@@ -116,7 +116,6 @@ def medbin(im,bx,by):
 def get_mask(mask_file):
     # we need to pass a flat image to get the corresponding mask.
 
-
     outname = mask_file.split('.fits')[0]+'_mask.fits'
 
     if os.path.isfile(outname):
@@ -219,7 +218,7 @@ def left_right(im, width = 15, doplot = False):
 
     return im - correlated_noise
 
-def nirps_pp(files,mask_file = '', doplot = False, force = False):
+def nirps_pp(files,mask_file = '',indir='',outdir='',doplot = False, force = False):
     # pre-processing of NIRPS images with only left/right and top/bottom pixels
     # if we pass the name of a flat_flat file as 'mask_file', then we also
     # correct for correlated noise between amps using dark pixels. This should
@@ -232,13 +231,12 @@ def nirps_pp(files,mask_file = '', doplot = False, force = False):
     else:
         xtalk_filter = True
 
-    ref_hdr = fits.getheader('ref_hdr.fits')
-
     if type(files) == str:
         files = glob.glob(files)
 
     for file in files:
         outname = '_pp.fits'.join(file.split('.fits'))
+        outname = outdir+outname
 
         if '_pp.' in file:
             print(file+' is a _pp file')
@@ -250,17 +248,13 @@ def nirps_pp(files,mask_file = '', doplot = False, force = False):
         else:
             print('We pre-process '+file)
 
-            hdr = fits.getheader(file)
-
-
-            im = fits.getdata(file)
+            hdr = fits.getheader(indir+file)
+            im = fits.getdata(indir+file)
             # before we even get started, we remove top/bottom ref pixels
             # to reduce DC level differences between ampliers
             for ite in range(3):
                 im = top_bottom(im,doplot = doplot)
                 im = left_right(im,width = 15,doplot = doplot)
-
-
 
             # we find the low level frequencies
             # we bin in regions of 32x32 pixels. This CANNOT be
@@ -269,173 +263,40 @@ def nirps_pp(files,mask_file = '', doplot = False, force = False):
             # image and chaos afterward
             binsize = 32 # pixels
 
-            if 'MJDEND' not in hdr:
-                hdr['MJDEND'] = 0.00
-                hdr['EXPTIME'] = 5.57*len(hdr['INTT*'])
-
-            hdr['MJDMID'] = hdr['MJDEND'] - hdr['EXPTIME']/2.0/86400.0
-
-            hdr['INF1000'] = file
-            DPRTYPES = ['DARK_DARK','DARK_FP','FLAT_FLAT','DARK_FLAT',
-                        'FLAT_DARK','HC_FP','FP_HC','FP_FP','OBJ_DARK',
-                        'OBJ_FP','HC_DARK','DARK_HC','HC_HC','DARK_FP', 'FP_DARK','LED_LED']
-
-            if 'STAR_DARK' in file:
-                hdr['DPRTYPE'] = 'OBJ_DARK'
-
-            if 'STAR_FP' in file:
-                hdr['DPRTYPE'] = 'OBJ_FP'
-
-            hdr['DPRTYPE'] = 'DARK_DARK'
-
-            for DPRTYPE in DPRTYPES:
-                if DPRTYPE in file:
-                    if DPRTYPE == 'DARK_DARK':
-                        hdr['DPRTYPE'] = 'DARK_DARK_TEL'
-                    elif DPRTYPE == 'HC_HC':
-                        hdr['DPRTYPE'] = 'HCONE_HCONE'
-                    elif DPRTYPE == 'FP_HC':
-                        hdr['DPRTYPE'] = 'FP_HCONE'
-                    elif DPRTYPE == 'HC_FP':
-                        hdr['DPRTYPE'] = 'HCONE_FP'
-                    elif DPRTYPE == 'DARK_HC':
-                        hdr['DPRTYPE'] = 'DARK_HCONE'
-                    elif DPRTYPE == 'HC_DARK':
-                        hdr['DPRTYPE'] = 'HCONE_DARK'
-                    elif DPRTYPE == 'FP_DARK':
-                        hdr['DPRTYPE'] = 'FP_DARK'
-                    elif DPRTYPE == 'DARK_FP':
-                        hdr['DPRTYPE'] = 'DARK_FP'
-                    elif DPRTYPE == 'LED_LED':
-                        hdr['DPRTYPE'] = 'LED_LED'
-
-
-            if 'DPRTYPE' not in hdr:
-                print('error, with DPRTYPE for ',file)
-                return
-
-            if 'OBJECT' not in hdr:
-                hdr['OBJECT'] = 'none'
-
-            if 'RDNOISE' not in hdr:
-                hdr['RDNOISE']= 10.0,'rdnoise *not* provided, added by _pp'
-
-            if 'GAIN' not in hdr:
-                hdr['GAIN']= 1.000,'gain *not* provided, added by _pp'
-
-            if 'SATURATE' not in hdr:
-                hdr['SATURATE']= 60000,'saturate *not* provided, added by _pp'
-
-            if 'PVERSION' not in hdr:
-                hdr['PVERSION'] = 'NIRPS_SIMU_PP'
-
-            if 'OBSTYPE' not in hdr:
-                if hdr['DPRTYPE'][0:4] == 'FLAT':
-                    hdr['OBSTYPE'] = 'FLAT'
-
-                if hdr['DPRTYPE'][0:4] == 'DARK':
-                    hdr['OBSTYPE'] = 'DARK'
-
-                if hdr['DPRTYPE'][0:2] == 'FP':
-                    hdr['OBSTYPE'] = 'ALIGN'
-
-                if hdr['DPRTYPE'][0:2] == 'HC':
-                    hdr['OBSTYPE'] = 'COMPARISON'
-
-                if hdr['DPRTYPE'][0:3] == 'OBJ':
-                    hdr['OBSTYPE'] = 'OBJECT'
-
-                if hdr['DPRTYPE'][0:3] == 'LED':
-                    hdr['OBSTYPE'] = 'LED'
-
-            if hdr['DPRTYPE'][0:3] == 'OBJ':
-                hdr['TRG_TYPE'] = 'TARGET'
-            else:
-                hdr['TRG_TYPE'] = ''
-
-            necessary_kwrd = ['OBSTYPE','TRG_TYPE','OBJECT','OBJRA','OBJDEC','OBJECT','OBJEQUIN','OBJRAPM','OBJDECPM','AIRMASS','RELHUMID','OBJTEMP','GAIA_ID','OBJPLX','OBSRV','GAIN','RDNOISE','FRMTIME','EXPTIME','PI_NAME','CMPLTEXP','NEXP','MJDATE','MJDEND','SBCREF_P','SBCCAS_P','SBCALI_P','SBCDEN_P','DATE-OBS','UTC-OBS','SATURATE','TEMPERAT','SB_POL_T']
-
-            missing = False
-            for key in necessary_kwrd:
-                if key not in hdr:
-                    print('missing keyword : {0}'.format(key))
-                    missing = True
-
-                    if key in ref_hdr:
-                        hdr[key] = ref_hdr[key]
-
-            if hdr['OBSTYPE'] == 'LED':
-                # we cannot correct the capacitive coupling between amplifiers if we have an LED image
-                xtalk_filter = False
-
-
             if xtalk_filter:
+                # we fetch the mask
                 mask = get_mask(mask_file)
 
+                # create the matrix that will become the high-passed image
                 im2 = np.array(im)
-                im2[mask] = np.nan
+                im2[mask == 1] = np.nan
 
                 # median-bin and expand back to original size
-                lowf = zoom(medbin(im2,binsize,binsize),4096//binsize)
-                # subtract low-frequency from masked image
+                tmp = medbin(im2,binsize,binsize)
+                tmp[~np.isfinite(tmp)] = 0
+                lowf = zoom(tmp,4096//binsize)
 
-                # find the amplifier x-talk map
-                xtalk = med32(im2-lowf,doplot = doplot)
-                im2 -= xtalk
-                # subtract both low-frequency and x-talk from input image
-                im -= xtalk
+                # subtract low-frequency from masked image
+                im2 -= lowf
+
+                # remove correlated profile in Y axis
+                yprofile1d = np.nanmedian(im2,axis=1)
+                yprofile = np.repeat(yprofile1d, 4096).reshape(4096, 4096)
+                im -= yprofile
+
+                # first pixel of each amplifier
+                first_col_x = (np.append(np.arange(16)*256,np.arange(16)*256-1+256))
+                first_col_x.sort()
+
+                # median-filter the first and last ref pixel, which trace the
+                # behavior
+                amp0 = (median_filter(im[:,0],7) + median_filter(im[:,4095],7))/2
+
+                for i in first_col_x:
+                    im[:,i] -= amp0
+
+            im = rot8(im,7) #ng add
 
             fits.writeto(outname,im, hdr, overwrite = True)
-
-            return
-
-            """
-            # rotates the image so that it matches the order geometry of SPIRou and HARPS
-            # redder orders at the bottom and redder wavelength within each order on the left
-
-            # NIRPS = 5
-            # SPIROU = 3
-            im = rot8(im,5)
-
-
-
-            b = fits.getdata(file,ext = 2)
-            errslope = fits.getdata(file,ext = 3)
-            n = fits.getdata(file,ext = 4)
-
-            b = rot8(b,5)
-            errslope = rot8(errslope,5)
-            n = rot8(n,5)
-
-
-            hdu1 = fits.PrimaryHDU()
-            hdu1.header = hdr
-            hdu1.header['NEXTEND'] = 4
-            hdu2 = fits.ImageHDU(im)
-            hdu2.header['UNITS'] = ('ADU/S', 'Slope of fit, flux vs time')
-            hdu2.header['EXTNAME'] = ('slope', 'Slope of fit, flux vs time')
-
-            hdu3 = fits.ImageHDU(b)
-            hdu3.header['UNITS'] = ('ADU', 'Intercept of the pixel/time fit.')
-            hdu3.header['EXTNAME'] = ('intercept', 'Intercept of the pixel/time fit.')
-
-            hdu4 = fits.ImageHDU(errslope)
-            hdu4.header['UNITS'] = ('ADU/S', 'Formal error on slope fit')
-            hdu4.header['EXTNAME'] = ('errslope', 'Formal error on slope fit')
-
-            hdu5 = fits.ImageHDU(n)
-            hdu5.header['UNITS'] = ('Nimages', 'N readouts below saturation')
-            hdu5.header['EXTNAME'] = ('count', 'N readouts below saturation')
-
-            new_hdul = fits.HDUList([hdu1, hdu2, hdu3, hdu4, hdu5])
-
-            # just to avoid an error message with writeto
-            if os.path.isfile(outname):
-                print('file : ' + outname + ' exists, we are overwriting it')
-                os.system('rm ' + outname + '')
-
-            new_hdul.writeto(outname, overwrite=True)
-            """
-
 
     return []

@@ -42,3 +42,11 @@ for ndata in range(1,5):
     ax.set(xlabel = 'MJDATE',ylabel = 'Velocity [m/s]', title =  ', '.join(np.unique(tbl1['date'])), ylim = [-2,2])
     plt.savefig('dataset_{}.pdf'.format(ndata))
     plt.show()
+
+
+file = 'data2_fp_drift.csv'
+file2 = 'csv_old/data2_fp_drift.csv'
+tbl1 = Table.read(file)
+tbl2 = Table.read(file2)
+
+
