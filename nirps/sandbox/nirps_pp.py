@@ -85,9 +85,6 @@ def med32(im,doplot = False):
         plt.show()
         cube[np.isfinite(cube2) ==  False] = np.nan
 
-        #fits.writeto('cube.fits',cube,overwrite =  True)
-        #fits.writeto('cube2.fits',cube2,overwrite =  True)
-
     med = np.nanmedian(cube, axis=0)
 
     # pad back onto the output image
@@ -114,8 +111,10 @@ def medbin(im,bx,by):
     return out
 
 def get_mask(mask_file):
-    # we need to pass a flat image to get the corresponding mask.
+    # we need to pass a flat image to get the corresponding mask. The code creates a binary _mask file that is read
+    # if it is present on disk
 
+    # name of output mask
     outname = mask_file.split('.fits')[0]+'_mask.fits'
 
     if os.path.isfile(outname):
@@ -123,21 +122,18 @@ def get_mask(mask_file):
 
     # creation of the mask image
     im = fits.getdata(mask_file)
+
     # find pixel that are more than 5 absolute deviations
     # from the image median
     im -= np.nanmedian(im)
-
     sig = np.nanmedian(np.abs(im))
 
     # generate a first estimate of the mask
     mask = im>5*sig
+
     # now apply a proper filtering of the image
     im2 = np.array(im)
     im2[mask] = np.nan
-
-    ################################################
-    # Same code as for an individual science frame #
-    ################################################
 
     # median-bin and expand back to original size
     binsize = 32
@@ -156,6 +152,7 @@ def get_mask(mask_file):
     mask[np.isfinite(mask) == False] = np.nan
     mask = binary_dilation(mask, iterations = 4)
 
+    # write binary mask file
     fits.writeto(outname,np.array(mask,dtype = int), overwrite = True)
 
     return np.array(mask,dtype = int)
@@ -226,22 +223,29 @@ def nirps_pp(files,mask_file = '',indir='',outdir='',doplot = False, force = Fal
     # if you want to see nice plots or force the overwrite of existing pre-process
     # files.
 
+    # we provide or not a file to be used as a mask. Note that you need to point toward the FLAT+FLAT file,
+    # not the mask created afterward. In other words, don't pass the _mask file here, but the input file
+    # generated from it. If you pass '', you only have the top/bottom pixel correction that is applier
     if mask_file == '':
         xtalk_filter = False
     else:
         xtalk_filter = True
 
+    # if more than one file has been passed
     if type(files) == str:
         files = glob.glob(files)
 
     for file in files:
-        outname = '_pp.fits'.join(file.split('.fits'))
-        outname = outdir+outname
-
+        # if already a _pp file, skip
         if '_pp.' in file:
             print(file+' is a _pp file')
             continue
 
+        # outname of files will be same as input but with a _pp suffix
+        outname = '_pp.fits'.join(file.split('.fits'))
+        outname = outdir+outname
+
+        # if _pp file exists, skip unless you set force == True
         if os.path.isfile(outname) and (force == False):
             print('File : '+outname +' exists')
             continue
@@ -289,13 +293,13 @@ def nirps_pp(files,mask_file = '',indir='',outdir='',doplot = False, force = Fal
                 first_col_x.sort()
 
                 # median-filter the first and last ref pixel, which trace the
-                # behavior
+                # behavior of the first-pixel effect
                 amp0 = (median_filter(im[:,0],7) + median_filter(im[:,4095],7))/2
 
                 for i in first_col_x:
                     im[:,i] -= amp0
 
-            im = rot8(im,7) #ng add
+            im = rot8(im,7) # rotate to match ESPRESSO order disposition
 
             fits.writeto(outname,im, hdr, overwrite = True)
 
