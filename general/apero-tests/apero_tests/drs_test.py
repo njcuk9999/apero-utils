@@ -9,7 +9,6 @@ from datetime import datetime
 from typing import List, Optional, Union
 
 import warnings
-import numpy as np
 import pandas as pd
 from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
@@ -180,6 +179,9 @@ class DrsTest:
         return keylist
 
     def get_fileargs(self) -> List[DrsArgument]:
+        """
+        Get list of argument with type 'file[s]' for the recipe
+        """
         fileargs = [
             self.recipe.args[key]
             for key in self.recipe.args

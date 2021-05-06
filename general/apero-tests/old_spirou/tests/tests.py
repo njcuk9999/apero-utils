@@ -6,18 +6,14 @@ Test abstract class and factory for APERO.
 import glob
 import os
 from abc import ABC, abstractmethod
-from datetime import datetime
 from typing import Optional, Union, List, Tuple
 
 import pandas as pd
-from apero.core import constants
 from apero.core.instruments.spirou.recipe_definitions import recipes
 from astropy.io import fits
 from astropy.table import Table
-from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from .log import Log
-from . import TEMPLATEDIR, OUTDIR
 from . import utils as ut
 
 RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
