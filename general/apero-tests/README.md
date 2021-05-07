@@ -2,6 +2,11 @@
 
 Series of tests to make sure everything was properly reduced by APERO.
 
+## Development and running the tests
+The tests are meant to be integrated in apero and are not a package on their own (i.e. are developed in apero-utils) so handling relative import and paths is a bit awkward.
+
+Make sure they are in your `PYTHONPATH` (with conda, this is just `conda develop /path/to/apero-tests`).
+
 ## Structure
 - The `main.py` script runs tests one by one and stores the output.
 - HTML templates created with jinja2 are in `templates`.
