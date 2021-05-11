@@ -4,6 +4,7 @@ General functions to use in apero tests
 import glob
 import os
 import warnings
+from pathlib import Path
 from typing import List, Optional, Union
 
 import numpy as np
@@ -57,8 +58,7 @@ def load_db(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     db_id = db_id.upper()
 
     params = constants.load(instrument)
-    db_path = os.path.join(params[f"DRS_{db_id}_DB"],
-                           params[f"{db_id}_DB_NAME"])
+    db_path = os.path.join(params[f"DRS_{db_id}_DB"], params[f"{db_id}_DB_NAME"])
 
     colnames = params.listp(f"{db_id}_DB_COLS", dtype=str)
     db_arr = np.loadtxt(db_path, dtype=str, unpack=True)
@@ -94,8 +94,7 @@ def load_fits_df(pathlist: List[str]) -> DataFrame:
     return df
 
 
-def make_full_index(real_index: DataFrame,
-                    missing_index: DataFrame) -> DataFrame:
+def make_full_index(real_index: DataFrame, missing_index: DataFrame) -> DataFrame:
 
     real_index = real_index.copy()
     missing_index = missing_index.copy()
@@ -111,42 +110,64 @@ def make_full_index(real_index: DataFrame,
     return full_index
 
 
-def get_cdb_df(index_df: DataFrame, params: ParamDict) -> DataFrame:
+def get_cdb_df(
+    index_df: DataFrame, params: ParamDict, force: bool = False, cache_dir: str = None
+) -> DataFrame:
     """
     Get dataframe with all CDB files for each file in index. Index is file name
     """
+    if cache_dir is not None:
+        p = Path(cache_dir)
+        p.mkdir(parents=True, exist_ok=True)
+        cache_name = f"cdb_mjd_df_{params['INSTRUMENT']}.csv"
+        cache_path = os.path.join(cache_dir, cache_name)
+    else:
+        cache_path = None
+
     index_df = index_df.copy()
 
-    # We load the headers from two possible extensions
-    # NOTE: Might not be necessary in 0.7
-    headers = index_df.FULLPATH.apply(fits.getheader, ext=0)
-    ext1_mask = headers.str.len() == 4
-    headers_ext1 = index_df.FULLPATH[ext1_mask].apply(fits.getheader, ext=1)
-    headers[ext1_mask] = headers_ext1
-    headers_df = pd.DataFrame(headers.tolist())
+    # TODO: Smarter mechanism for cached file
+    if cache_path is not None and os.path.isfile(cache_path) and not force:
+        cdb_mjd_df_cache = pd.read_csv(cache_path, index_col=[0, 1], header=[0, 1])
+    else:
+        cdb_mjd_df_cache = None
 
-    # We only want the CDB* keys. Other useful keys are already in index
-    keys = [params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")]
-    cdb_df = headers_df[keys]
-    unique_cdb_files = get_unique_vals(cdb_df)
-    mjds = unique_cdb_files.apply(get_hkey, args=("MJDMID"))
-    mjds.index = unique_cdb_files
-    mjd_df = cdb_df.replace(mjds.to_dict())
+    if cdb_mjd_df_cache is None:
+        # We load the headers from two possible extensions
+        # NOTE: Might not be necessary in 0.7
+        headers = index_df.FULLPATH.apply(fits.getheader, ext=0)
+        ext1_mask = headers.str.len() == 4
+        headers_ext1 = index_df.FULLPATH[ext1_mask].apply(fits.getheader, ext=1)
+        headers[ext1_mask] = headers_ext1
+        headers_df = pd.DataFrame(headers.tolist())
 
-    cdb_mjd_df = pd.concat([cdb_df, mjd_df],
-                           axis=1,
-                           keys=["CALIB_FILE",
-                                 "DELTA_MJD"]).swaplevel(0, 1, 1)
-    cdb_mjd_df = index_df.FILENAME
+        # We only want the CDB* keys. Other useful keys are already in index
+        keys = [params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")]
+        cdb_df = headers_df[keys]
+        unique_cdb_files = get_unique_vals(cdb_df)
+        unique_cdb_files_fullpath = params["DRS_CALIB_DB"] + unique_cdb_files
+        mjds = unique_cdb_files_fullpath.apply(get_hkey, args=("MJDMID",))
+        mjds.index = unique_cdb_files
+        mjd_df = cdb_df.replace(mjds.to_dict())
 
-    cdb_mjd_df.index = pd.MultiIndex.from_frame(
-        index_df.reset_index()[["NIGHTNAME", "FILENAME"]])
+        cdb_mjd_df = pd.concat(
+            [cdb_df, mjd_df], axis=1, keys=["CALIB_FILE", "DELTA_MJD"]
+        ).swaplevel(0, 1, 1)
 
-    mjd_ind_files = index_df.FULLPATH.apply(get_hkey, args=("MJDMID"))
-    cdb_mjd_df.loc[:, (slice(None), "DELTA_MJD")] = (
-        cdb_mjd_df.loc[:, (slice(None), "DELTA_MJD")].values -
-        mjd_ind_files.values[:, None]
-    )  # using numpy because pandas multi-index operation did not work well
+        cdb_mjd_df.index = pd.MultiIndex.from_frame(
+            index_df.reset_index()[["NIGHTNAME", "FILENAME"]]
+        )
+
+        mjd_ind_files = index_df.FULLPATH.apply(get_hkey, args=("MJDMID",))
+        cdb_mjd_df.loc[:, (slice(None), "DELTA_MJD")] = (
+            cdb_mjd_df.loc[:, (slice(None), "DELTA_MJD")].values
+            - mjd_ind_files.values[:, None]
+        )  # using numpy because pandas multi-index operation did not work well
+
+        if cache_path is not None:
+            cdb_mjd_df.to_csv(cache_path)
+    else:
+        cdb_mjd_df = cdb_mjd_df_cache.copy()
 
     return cdb_mjd_df
 
@@ -161,8 +182,9 @@ def get_hkey(fname, hkey):
         hdf = fits.getheader(fname, ext=1)
         mjd = hdf[hkey]
     except KeyError:
-        warnings.warn(f"Could not find {hkey} in extension 0 or 1, using nan",
-                      RuntimeWarning)
+        warnings.warn(
+            f"Could not find {hkey} in extension 0 or 1, using nan", RuntimeWarning
+        )
         mjd = np.nan
 
     return mjd
@@ -208,30 +230,32 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
     # TODO: This can be displayed in a bokeh table with some specific columns
     # TODO: Maybe restructure when have better idea of whole framework
     global_bad_index = full_index[index_problem_mask]
-    group_columns = [
-        "PID_TYPE", "KW_OUTPUT", "KW_DPRTYPE", "IN_INDEX", "IN_LOG"
-    ]
+    group_columns = ["PID_TYPE", "KW_OUTPUT", "KW_DPRTYPE", "IN_INDEX", "IN_LOG"]
     count_column = "FILENAME"
     try:
         global_bad_index_summary = global_bad_index.groupby(
-            group_columns, dropna=False)[count_column].count()
+            group_columns, dropna=False
+        )[count_column].count()
     except TypeError:
-        pd_msg = ("Your pandas version does not support NaN grouping. "
-                  "Some entries might be missing from the index summary")
+        pd_msg = (
+            "Your pandas version does not support NaN grouping. "
+            "Some entries might be missing from the index summary"
+        )
         warnings.warn(pd_msg, RuntimeWarning)
-        global_bad_index_summary = global_bad_index.groupby(
-            group_columns)[count_column].count()
+        global_bad_index_summary = global_bad_index.groupby(group_columns)[
+            count_column
+        ].count()
 
     # TODO: Do the checks/output here
     print(global_bad_index_summary)
 
     # TODO: When have way of knowing which recipe, return also non-log but recipe
-    return full_index[index_problem_mask]
+    return full_index[~index_problem_mask]
 
 
-def load_log_df(output_parent: str,
-                log_fname: str = "log.fits",
-                return_missing: bool = False) -> DataFrame:
+def load_log_df(
+    output_parent: str, log_fname: str = "log.fits", return_missing: bool = False
+) -> DataFrame:
     """
     Load all log.fits files in single dataframe
 
@@ -248,8 +272,7 @@ def load_log_df(output_parent: str,
     # ???: Keep info of output_parent in df ?
 
     allpaths = [
-        os.path.join(output_parent, d, log_fname)
-        for d in os.listdir(output_parent)
+        os.path.join(output_parent, d, log_fname) for d in os.listdir(output_parent)
     ]
     log_df = load_fits_df(allpaths)
 
@@ -265,9 +288,9 @@ def load_log_df(output_parent: str,
         return log_df
 
 
-def load_index_df(output_parent: str,
-                  index_fname: str = "index.fits",
-                  return_missing: bool = False) -> DataFrame:
+def load_index_df(
+    output_parent: str, index_fname: str = "index.fits", return_missing: bool = False
+) -> DataFrame:
     """
     Load all index.fits files in a single dataframe
 
@@ -285,16 +308,14 @@ def load_index_df(output_parent: str,
     # ???: Keep info of output_parent in df ?
     # Get all index.fits in a dataframe
     allpaths = [
-        os.path.join(output_parent, d, index_fname)
-        for d in os.listdir(output_parent)
+        os.path.join(output_parent, d, index_fname) for d in os.listdir(output_parent)
     ]
     ind_df = load_fits_df(allpaths)
 
     # Add full paths to dataframe
     parent_path = os.path.dirname(os.path.dirname(allpaths[0]))
     sep = os.path.sep
-    ind_df[
-        "FULLPATH"] = parent_path + sep + ind_df.NIGHTNAME + sep + ind_df.FILENAME
+    ind_df["FULLPATH"] = parent_path + sep + ind_df.NIGHTNAME + sep + ind_df.FILENAME
 
     # Use NIGHTNAME as index
     ind_df = ind_df.set_index(["NIGHTNAME"])
@@ -319,11 +340,14 @@ def get_names_no_index(params: ParamDict) -> List[str]:
 
     # Get paths that contain filenames we want to exclude
     calib_reset_path = param_functions.get_relative_folder(
-        params["DRS_PACKAGE"], params["DRS_RESET_CALIBDB_PATH"])
+        params["DRS_PACKAGE"], params["DRS_RESET_CALIBDB_PATH"]
+    )
     tellu_reset_path = param_functions.get_relative_folder(
-        params["DRS_PACKAGE"], params["DRS_RESET_TELLUDB_PATH"])
+        params["DRS_PACKAGE"], params["DRS_RESET_TELLUDB_PATH"]
+    )
     runs_reset_path = param_functions.get_relative_folder(
-        params["DRS_PACKAGE"], params["DRS_RESET_RUN_PATH"])
+        params["DRS_PACKAGE"], params["DRS_RESET_RUN_PATH"]
+    )
 
     # We know that log and index are also not data
     # NOTE: index/log will be in db in 0.7+
@@ -336,8 +360,8 @@ def get_names_no_index(params: ParamDict) -> List[str]:
 
 
 def get_output_files(
-        output_parent: str,
-        exclude_fname: Optional[Union[List[str], str]] = None) -> Series:
+    output_parent: str, exclude_fname: Optional[Union[List[str], str]] = None
+) -> Series:
     """
     Load all output files in a pandas series
 
@@ -363,6 +387,8 @@ def missing_index_headers(
     ind_df: DataFrame,
     output_files: Optional[pd.Series] = None,
     instrument: str = "SPIROU",
+    force: bool = False,
+    cache_dir: str = None,
 ) -> DataFrame:
     """
     Find files with missing index and store header info in a dataframe.
@@ -378,14 +404,21 @@ def missing_index_headers(
     :return: Dataframe with info of missing index files
     :rtype: DataFrame
     """
+    if cache_dir is not None:
+        p = Path(cache_dir)
+        p.mkdir(parents=True, exist_ok=True)
+        cache_name = f"missing_index_df_{instrument}.csv"
+        cache_path = os.path.join(cache_dir, cache_name)
+    else:
+        cache_path = None
+
     # If not output files are given, we load them from disk,
     # using apero to discard some filenames
     params = constants.load(instrument)
-    exclude_fname = get_names_no_index(params)
+    exclude_fname = get_names_no_index(params)  # Exclude log.fits and stuff like that
     if output_files is None:
         parent_dir = get_nth_parent(ind_df.FULLPATH.iloc[0], order=2)
-        output_files = get_output_files(parent_dir,
-                                        exclude_fname=exclude_fname)
+        output_files = get_output_files(parent_dir, exclude_fname=exclude_fname)
     else:
         exclude_mask = output_files.apply(os.path.basename).isin(exclude_fname)
         output_files = output_files[~exclude_mask]
@@ -394,34 +427,47 @@ def missing_index_headers(
     index_mask = output_files.isin(ind_df.FULLPATH)
     out_not_in_index = output_files[~index_mask].reset_index(drop=True)
 
-    # Some files (images) have file in ext=0, others (tables) in ext=1
-    # NOTE: This may change in future versions ?
-    # TODO: have this iin two place: move to function ?
-    headers = out_not_in_index.apply(fits.getheader, ext=0)
-    ext1_mask = headers.str.len() == 4
-    headers_ext1 = out_not_in_index[ext1_mask].apply(fits.getheader, ext=1)
-    headers[ext1_mask] = headers_ext1
+    # If there is a cached file, we load it and compare it with the excluded files
+    # TODO: Smarter mechanism for cached file
+    if cache_path is not None and os.path.isfile(cache_path) and not force:
+        missing_ind_df_cache = pd.read_csv(cache_path, index_col=0)
+    else:
+        missing_ind_df_cache = None
 
-    # Get header keys corresponding to index columns
-    pconstant = constants.pload(instrument)
-    index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
-    keys = [params[col][0] for col in index_cols]
+    if missing_ind_df_cache is None:
+        # Some files (images) have file in ext=0, others (tables) in ext=1
+        # NOTE: This may change in future versions ?
+        # TODO: have this iin two place: move to function ?
+        headers = out_not_in_index.apply(fits.getheader, ext=0)
+        ext1_mask = headers.str.len() == 4
+        headers_ext1 = out_not_in_index[ext1_mask].apply(fits.getheader, ext=1)
+        headers[ext1_mask] = headers_ext1
 
-    # Get dataframe in index format (tolist expands header values automatically)
-    missing_headers_df = DataFrame(headers.tolist())
-    missing_ind_df = DataFrame(missing_headers_df[keys].values,
-                               columns=index_cols)
+        # Get header keys corresponding to index columns
+        pconstant = constants.pload(instrument)
+        index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
+        keys = [params[col][0] for col in index_cols]
 
-    # Add fields that are not in the headers
-    missing_ind_df["FILENAME"] = out_not_in_index.apply(os.path.basename)
-    missing_ind_df["NIGHTNAME"] = out_not_in_index.apply(
-        os.path.dirname).apply(os.path.basename)
-    missing_ind_df["LAST_MODIFIED"] = out_not_in_index.apply(
-        os.path.getmtime).astype(
-            str)  # APERO stores these times as string, so we convert them here
-    missing_ind_df["FULLPATH"] = out_not_in_index
+        # Get dataframe in index format (tolist expands header values automatically)
+        missing_headers_df = DataFrame(headers.tolist())
+        missing_ind_df = DataFrame(missing_headers_df[keys].values, columns=index_cols)
 
-    missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
-    missing_ind_df = missing_ind_df[ind_df.columns]
+        # Add fields that are not in the headers
+        missing_ind_df["FILENAME"] = out_not_in_index.apply(os.path.basename)
+        missing_ind_df["NIGHTNAME"] = out_not_in_index.apply(os.path.dirname).apply(
+            os.path.basename
+        )
+        missing_ind_df["LAST_MODIFIED"] = out_not_in_index.apply(os.path.getmtime).astype(
+            str
+        )  # APERO stores these times as string, so we convert them here
+        missing_ind_df["FULLPATH"] = out_not_in_index
+
+        missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
+        missing_ind_df = missing_ind_df[ind_df.columns]
+
+        if cache_path is not None:
+            missing_ind_df.to_csv(cache_path)
+    else:
+        missing_ind_df = missing_ind_df_cache.copy()
 
     return missing_ind_df
