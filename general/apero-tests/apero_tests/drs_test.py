@@ -10,8 +10,8 @@ from typing import List, Optional, Union
 
 import pandas as pd
 from apero.core.core.drs_argument import DrsArgument
-from apero.core.core.drs_recipe import DrsRecipe
 from apero.core.core.drs_file import DrsFitsFile
+from apero.core.core.drs_recipe import DrsRecipe
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
 
@@ -44,6 +44,17 @@ def removext(name: str, ext: str = ".py") -> str:
         name = name[:-3]
 
     return name
+
+
+class Check:
+    def __init__(self, title=None, result=None, comments=None, details=None):
+        """
+        Small python object with info for a specific check in the DRS Tests
+        """
+        self.title = title
+        self.result = result
+        self.comments = comments
+        self.details = details
 
 
 class DrsTest:
@@ -139,8 +150,9 @@ class DrsTest:
 
             # Get keys for outputs
             self.output_dict = self.recipe.outputs
-            self.output_drs_files = [o for o in list(self.output_dict.values())
-                                     if isinstance(o, DrsFitsFile)]
+            self.output_drs_files = [
+                o for o in list(self.output_dict.values()) if isinstance(o, DrsFitsFile)
+            ]
             self.output_hkeys = list(
                 map(
                     lambda o: o.required_header_keys["KW_OUTPUT"],
@@ -285,9 +297,10 @@ class DrsTest:
         if self.log_df is None:
             raise AttributeError("A non-null log_df is required to filter the index")
 
-        # We use the log to filter the index
-        # NOTE: Might have an indepent way in v0.7
+        # We use the log to filter the index, also keep only output hkeys
+        # NOTE: Might have an indepent way that does not use log in v0.7
         ind_df = all_ind_df[all_ind_df.KW_PID.isin(self.log_df.PID)]
+        ind_df = ind_df[ind_df.KW_OUTPUT.isin(self.output_hkeys)]
 
         return ind_df
 
@@ -342,43 +355,36 @@ class DrsTest:
         return cdb_used_df
 
     # =========================================================================
-    # Properties of the test (e.g. number of files and things like that)
-    # =========================================================================
-    @property
-    def num_calls_total(self) -> int:
-        """Total number of calls including master"""
-        return len(self.log_df)
-
-    @property
-    def num_calls_master(self) -> int:
-        """Number of calls that include master"""
-        master_mask = self.log_df.RUNSTRING.str.contains("--master")
-        return master_mask.sum()
-
-    @property
-    def num_calls(self) -> int:
-        """Number of calls excluding master"""
-        return self.num_calls_total - self.num_calls_master
-
-    @property
-    def num_outputs_total(self) -> int:
-        """Total number of output files per output file type"""
-        if not self.ind_df.empty:
-            return self.ind_df.groupby("KW_OUTPUT").FILENAME.count()
-        else:
-            return pd.Series(0, index=self.output_hkeys, name="FILENAME")
-
-    @property
-    def num_outputs_unique(self) -> int:
-        """Total number of output files per output file type"""
-        if not self.ind_df.empty:
-            return self.ind_df.groupby("KW_OUTPUT").FILENAME.nunique()
-        else:
-            return pd.Series(0, index=self.output_hkeys, name="FILENAME")
-
-    # =========================================================================
     # Functions to run individual checks
     # =========================================================================
+    def count_output_files(self, unique=False):
+        """
+        Count number of output files in the index dataframe
+        """
+        if not self.ind_df.empty:
+            if unique:
+                return self.ind_df.groupby(
+                    ["KW_OUTPUT", "KW_DPRTYPE", "KW_FIBER"]
+                ).FILENAME.nunique()
+            else:
+                return self.ind_df.groupby("KW_OUTPUT").FILENAME.count()
+        else:
+            return pd.Series(0, index=self.output_hkeys, name="FILENAME")
+
+    def count_log_entries(self):
+        """
+        Count number of log entries
+        """
+        master_mask = self.log_df.RUNSTRING.str.contains("--master")
+        master_count = (
+            self.log_df[master_mask]
+            .groupby(["RECIPE", "SUBLEVEL", "LEVEL_CRIT"])
+            .count()
+        ).KIND
+        tot_count = (
+            self.log_df.groupby(["RECIPE", "SUBLEVEL", "LEVEL_CRIT"]).count().KIND
+        )
+        return tot_count.sub(master_count, fill_value=0).astype(int)
 
     # =========================================================================
     # Utility functions
@@ -407,24 +413,54 @@ class DrsTest:
     def run_test(self):
         """Run the test given a proper recipe test script"""
 
+        # TODO: Outputs/log counts
+        # TODO: Automatically add comments and details, probably better to gen checks
+        # in methods
+        check_list = []
+
+        # TODO: Add --master comment for log calls
+        check_num_calls = Check(
+            title="# calls in logs",
+            result=self.count_log_entries(),
+        )
+        check_list.append(check_num_calls)
+
+        check_output = Check(
+            title=f"# of outputs in {self.output_path}",
+            result=self.count_output_files(unique=False),
+        )
+        check_list.append(check_output)
+
+        check_output_unique = Check(
+            title=f"# of outputs in {self.output_path}",
+            result=self.count_output_files(unique=True),
+        )
+        check_list.append(check_output_unique)
+
+        # TODO: QC Checks
+
+        # TODO: (calib)DB checks
+
+
         html_dict = {
             # Summary header info
             "name": self.name,
             "setup": self.setup,
             "instrument": self.instrument,
-            "recipe": self.recipe,
+            "recipe": self.recipe_name,
             "date": self.date,
             "output_path": self.output_path,
-            "output_hkeys": self.output_hkeys,
+            "output_list": self.output_hkeys,
             "calibdb_list": self.calibdb_keys,
             "calibdb_path": os.path.join(
                 self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
             ),
-            # TODO: Get links per recipe, maybe in real docs
-            'docs_link': "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes"
-        }
+            # TODO: Get links per recipe automatically, maybe in real docs
+            "docs_link": "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes",
 
-        # TODO: Add actual test, now only empty html is created
+            # Checks
+            "check_list": check_list,
+        }
 
         self.gen_html(html_dict)
 
@@ -442,7 +478,8 @@ class DrsTest:
         )
 
         # Create template for test
-        template = env.get_template(".".join([self.test_id, "html"]))
+        # template = env.get_template(".".join([self.test_id, "html"]))
+        template = env.get_template("test_report.html")
 
         html_text = template.render(html_dict)
 

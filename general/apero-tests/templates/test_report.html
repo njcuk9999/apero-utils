@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>APERO Tests</title>
+    <style>
+      table {
+        width:75%;
+      }
+      table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+      }
+      th, td {
+        padding: 15px;
+        text-align: left;
+      }
+      #t01 tr:nth-child(even) {
+        background-color: #eee;
+      }
+      #t01 tr:nth-child(odd) {
+       background-color: #fff;
+      }
+      #t01 th {
+        background-color: white;
+        color: black;
+      }
+    </style>
+  </head>
+  <body>
+    <div>
+      <a href="../summary.html">Go back</a>
+    </div>
+    <h3>{{ name }}</h3>
+    <p><b>Setup: {{ setup }}</b><br>
+    <p><b>Instrument: {{ instrument }}</b><br>
+    <p><b>Date: {{ date }}</b><br>
+    <br>
+    <p>Script: {{ recipe }}.py<br>
+    <p>Output header keys: {{ ', '.join(output_list) }}<br>
+    <p>Calibration database entries: {{ ', '.join(calibdb_list) }}<br>
+    <p><a href='{{ docs_link }}'>Link</a> to recipe description</p>
+    <br></br>
+
+    <table id="t01">
+      <colgroup>
+         <col span="1" style="width: 5%;">
+         <col span="1" style="width: 55%;">
+         <col span="1" style="width: 15%;">
+         <col span="1" style="width: 20%;">
+         <col span="1" style="width: 5%;">
+      </colgroup>
+
+      <!-- Header column -->
+      <tr>
+        <th>Check</th>
+        <th>Description</th>
+        <th>Result</th>
+        <th>Comments</th>
+        <th>Details</th>
+      </tr>
+
+      <!-- Check 1 -->
+      {% for check in check_list %}
+      <tr>
+        <td>Check {{ loop.index }}</td>
+        {% if check.title is not none %}
+        <td> {{ check.title }} </td>
+        {% else %}
+          <td></td>
+        {% endif %}
+        {% if check.result is not none %}
+        <td> {{ check.result }} </td>
+        {% else %}
+          <td></td>
+        {% endif %}
+        {% if check.comments is not none %}
+        <td> {{ check.comments }} </td>
+        {% else %}
+          <td></td>
+        {% endif %}
+        {% if check.details is not none %}
+        <td> {{ check.details }} </td>
+        {% else %}
+          <td></td>
+        {% endif %}
+      </tr>
+      {% endfor %}
+
+    </table>
+  </body>
+</html>
