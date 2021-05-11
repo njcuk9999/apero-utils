@@ -3,20 +3,19 @@ DRS Tests that (try to) follow the APERO framework.
 
 @author: vandalt
 """
-import glob
 import os
+import warnings
 from datetime import datetime
 from typing import List, Optional, Union
 
-import warnings
 import pandas as pd
-from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
 from apero.core.core.drs_recipe import DrsRecipe
+from apero.core.core.drs_file import DrsFitsFile
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
 
-import test_utils as ut
+import apero_tests.utils as ut
 
 # from . import OUTDIR, TEMPLATEDIR
 
@@ -25,6 +24,7 @@ import test_utils as ut
 PARENTDIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
 OUTDIR = os.path.join(PARENTDIR, "out")
+CACHEDIR = os.path.join(PARENTDIR, "cache")
 
 
 def removext(name: str, ext: str = ".py") -> str:
@@ -59,6 +59,10 @@ class DrsTest:
         all_cdb_used_df: Optional[DataFrame] = None,
     ):
         """
+        Test class that contains information about test results for a given recipe.
+
+        The all_* dataframes are useful if many recipes are checked and users want to
+        parse the database only once.
 
         :param instrument: Instrument of the tested recipe
         :type instrument: Optional[str]
@@ -69,6 +73,14 @@ class DrsTest:
         :param testnum: Number ID N of the test (Nth test for recipe),
                         default is 1
         :type testnum: int
+        :param all_log_df: DataFrame with logs for all recipes
+        :type  all_log_df: Optional[DataFrame]
+        :param all_index_df: DataFrame with index for all recipes
+        :type all_index_df: Optional[DataFrame]
+        :param all_master_calib_df: DataFrame with master calib info for all recipes
+        :type all_master_calib_df: Optional[DataFrame]
+        :param all_cdb_used_df: DataFrame with info about used calibs for all recipes
+        :type all_cdb_used_df: Optional[DataFrame]
         """
         # Get setup path
         if setup is None:
@@ -82,13 +94,15 @@ class DrsTest:
         # Set default parameter values, can overwrite later
         self.recipe = None  # Recipe object for test
         self.fileargs = None  # Recipe args and kwargs that are files
-        self.drs_files = None  # Recipe args and kwargs that are files
+        self.arg_drs_files = None  # Recipe args and kwargs that are files
         self.name = "Unknown Test for unknown Recipe"  # Full test name
         self.test_id = "unknown_test"  # Short test ID
         self.instrument = instrument  # Instrument may be set as kwarg
         self.recipe_name = None
         self.params = None  # DRS parameters
         self.ismaster = False  # Is it a master recipe?
+        self.output_dict = None
+        self.output_drs_files = None
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
         self.input_path = ""  # Path to input dir
@@ -104,7 +118,7 @@ class DrsTest:
             self.recipe = DrsRecipe()
             self.recipe.copy(drs_recipe)
             self.fileargs = self.get_fileargs()
-            self.drs_files = [f for farg in self.fileargs for f in farg.files]
+            self.arg_drs_files = [f for farg in self.fileargs for f in farg.files]
             if self.instrument is not None:
                 warnings.warn(
                     "Overwriting kwarg instrument with recipe info", RuntimeWarning
@@ -125,39 +139,42 @@ class DrsTest:
 
             # Get keys for outputs
             self.output_dict = self.recipe.outputs
+            self.output_drs_files = [o for o in list(self.output_dict.values())
+                                     if isinstance(o, DrsFitsFile)]
             self.output_hkeys = list(
                 map(
                     lambda o: o.required_header_keys["KW_OUTPUT"],
-                    list(self.output_dict.values()),
+                    self.output_drs_files,
                 )
             )
             self.calibdb_keys = self.get_dbkeys("calibration")
 
-            # TODO: Need to filter ind_df with outputs
+            # NOTE: index is filtered with log to keep only relevant entries.
+            # A global test is used to report outputs that match no logs
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
 
             # Load calibdb DF (master entries and calibdb files)
             self.calib_df = self.load_calib_df(all_calib_df=all_master_calib_df)
-            self.cdb_used_df = self.load_cdb_used(all_cdb_used_df=all_cdb_used_df)
+            self.cdb_used_df = self.load_cdb_used_df(all_cdb_used_df=all_cdb_used_df)
 
     # =========================================================================
     # Functions to load output information
     # =========================================================================
     def get_dbkeys(self, dbname: str) -> List[str]:
         """
-        Get db keys for a given database (any valid APERO dbname)
+        Get output db keys for a given database (any valid APERO dbname)
 
         :param dbname: Database name (any valid APERO dbname)
         :type dbname: str
         :return: List of db keys for the recipe
         :rtype: List[str]
         """
-        if self.drs_files is None:
+        if self.output_drs_files is None:
             raise TypeError("Cannot load dbkeys if drs_files is 'None'.")
 
         keylist = []
-        for rfile in self.drs_files:
+        for rfile in self.output_drs_files:
             if rfile.dbname is None or rfile.dbkey is None:
                 continue
 
@@ -325,7 +342,42 @@ class DrsTest:
         return cdb_used_df
 
     # =========================================================================
-    # Properties of the test
+    # Properties of the test (e.g. number of files and things like that)
+    # =========================================================================
+    @property
+    def num_calls_total(self) -> int:
+        """Total number of calls including master"""
+        return len(self.log_df)
+
+    @property
+    def num_calls_master(self) -> int:
+        """Number of calls that include master"""
+        master_mask = self.log_df.RUNSTRING.str.contains("--master")
+        return master_mask.sum()
+
+    @property
+    def num_calls(self) -> int:
+        """Number of calls excluding master"""
+        return self.num_calls_total - self.num_calls_master
+
+    @property
+    def num_outputs_total(self) -> int:
+        """Total number of output files per output file type"""
+        if not self.ind_df.empty:
+            return self.ind_df.groupby("KW_OUTPUT").FILENAME.count()
+        else:
+            return pd.Series(0, index=self.output_hkeys, name="FILENAME")
+
+    @property
+    def num_outputs_unique(self) -> int:
+        """Total number of output files per output file type"""
+        if not self.ind_df.empty:
+            return self.ind_df.groupby("KW_OUTPUT").FILENAME.nunique()
+        else:
+            return pd.Series(0, index=self.output_hkeys, name="FILENAME")
+
+    # =========================================================================
+    # Functions to run individual checks
     # =========================================================================
 
     # =========================================================================
@@ -354,8 +406,27 @@ class DrsTest:
     # =========================================================================
     def run_test(self):
         """Run the test given a proper recipe test script"""
-        # TODO: General runtest method for external calls
-        raise NotImplementedError("The run_test method has not yet been implemented")
+
+        html_dict = {
+            # Summary header info
+            "name": self.name,
+            "setup": self.setup,
+            "instrument": self.instrument,
+            "recipe": self.recipe,
+            "date": self.date,
+            "output_path": self.output_path,
+            "output_hkeys": self.output_hkeys,
+            "calibdb_list": self.calibdb_keys,
+            "calibdb_path": os.path.join(
+                self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
+            ),
+            # TODO: Get links per recipe, maybe in real docs
+            'docs_link': "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes"
+        }
+
+        # TODO: Add actual test, now only empty html is created
+
+        self.gen_html(html_dict)
 
     def gen_html(self, html_dict: dict):
         """Generate HTML summary from jinja2 template.
