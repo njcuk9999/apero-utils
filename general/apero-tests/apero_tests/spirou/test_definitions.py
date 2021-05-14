@@ -222,22 +222,6 @@ tests.append(cal_wave_night)
 
 
 # -----------------------------------------------------------------------------
-# Leak (per night) Test
-# -----------------------------------------------------------------------------
-cal_leak = DrsTest(
-    drs_recipe=RECIPE_DICT["cal_leak_spirou.py"],
-    all_log_df=red_log,
-    all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
-    all_cdb_used_df=red_cdb_used_df,
-)
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
-
-tests.append(cal_leak)
-
-
-# -----------------------------------------------------------------------------
 # Extraction Tests
 # -----------------------------------------------------------------------------
 cal_extract = DrsTest(
@@ -251,6 +235,22 @@ cal_extract = DrsTest(
 # cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_extract)
+
+
+# -----------------------------------------------------------------------------
+# Leak (per night) Test
+# -----------------------------------------------------------------------------
+cal_leak = DrsTest(
+    drs_recipe=RECIPE_DICT["cal_leak_spirou.py"],
+    all_log_df=red_log,
+    all_index_df=red_index,
+    all_master_calib_df=master_calib_db,
+    all_cdb_used_df=red_cdb_used_df,
+)
+# TODO: Add other attributes here (after structure is more complete)
+# cal_badpix.run_test = BadPixTest()
+
+tests.append(cal_leak)
 
 
 # TODO: Add compat for science recipes

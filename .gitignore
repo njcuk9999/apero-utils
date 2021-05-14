@@ -134,3 +134,4 @@ general/apero-tests/out
 # Other
 .sync/
 .idea/
+.vim-arsync
