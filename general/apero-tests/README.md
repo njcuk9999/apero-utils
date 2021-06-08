@@ -3,11 +3,11 @@
 Series of tests to make sure everything was properly reduced by APERO.
 
 ## Development and running the tests
-The tests are meant to be integrated in apero and are not a package on their own (i.e. are developed in apero-utils) so handling relative import and paths is a bit awkward.
+The tests are meant to be integrated in apero and are not a package on their own (i.e. are developed in apero-utils), but for development purposes, `apero_tests` is treated as a standalone package.
 
 Make sure they are in your `PYTHONPATH` (with conda, this is just `conda develop /path/to/apero-tests`).
 
-## Structure
+## Structure (OUTDATED)
 - The `main.py` script runs tests one by one and stores the output.
 - HTML templates created with jinja2 are in `templates`.
 - The code for all tests is in the `tests` directory
@@ -25,7 +25,7 @@ A brief summary is generated in `summary.html` (in the output directory, `out` b
 A more detailed overview of each test is accessible from there, including links to interactive
 plots and tables.
 
-## List of Tests
+## List of Tests (OUTDATED)
 1. Preprocessing Recipe Test #1
 2. Dark Master Recipe Test #1
 3. Bad Pixel Correction Recipe Test #1

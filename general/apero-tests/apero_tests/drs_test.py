@@ -27,25 +27,6 @@ OUTDIR = os.path.join(PARENTDIR, "out")
 CACHEDIR = os.path.join(PARENTDIR, "cache")
 
 
-def removext(name: str, ext: str = ".py") -> str:
-    """
-    Remove extension of a file/recipe name
-
-    :param name: file/recipe name
-    :type name: str
-    :param ext: filetype extension, default is ".py"
-    :type ext: str :returns: cleaned up name
-    :rtype:  str
-    """
-    if not ext.startswith("."):
-        ext = "." + ext
-
-    while name.endswith(ext):
-        name = name[:-3]
-
-    return name
-
-
 class Check:
     def __init__(self, title=None, result=None, comments=None, details=None):
         """
@@ -135,7 +116,7 @@ class DrsTest:
                     "Overwriting kwarg instrument with recipe info", RuntimeWarning
                 )
             self.instrument = self.recipe.instrument
-            self.recipe_name = removext(self.recipe.name, ext=".py")
+            self.recipe_name = ut.removext(self.recipe.name, ext=".py")
             self.test_id = self.recipe_name + f"_test{testnum}"
             self.name = f"Test for recipe {self.recipe_name}"
 
@@ -237,8 +218,7 @@ class DrsTest:
         :param all_log_df: Dataframe with log info for multiple recipes
         :type all_log_df: DataFrame
         :param force: Force to reload, by default (False) returns self.log_df if exists
-        :type force: bool
-        :returns: dataframe of log content and list of missing log files
+        :type force: bool :returns: dataframe of log content and list of missing log files
         :rtype: Tuple[pd.DataFrame, list]
         """
         # NOTE: missing_log was removed, list of all missing logs can be generated with
@@ -248,11 +228,7 @@ class DrsTest:
             return self.log_df
 
         if self.recipe_name is None:
-            warnings.warn(
-                "Cannot load log dataframe if no recipe is set, returning None",
-                RuntimeWarning,
-            )
-            return None
+            raise ValueError("Cannot load log dataframe if no recipe is set")
 
         if all_log_df is None:
             all_log_df = ut.load_log_df(self.output_path)
@@ -283,13 +259,9 @@ class DrsTest:
         if not force and self.ind_df is not None:
             return self.ind_df
 
+        # TODO: Make sure this is true when done
         if self.recipe_name is None:
-            # TODO: Make sure this is true when done
-            warnings.warn(
-                "Cannot load index dataframe if no recipe is set, returning None",
-                RuntimeWarning,
-            )
-            return None
+            raise ValueError("Cannot load log dataframe if no recipe is set")
 
         if all_ind_df is None:
             all_ind_df = ut.load_index_df(self.output_path)
@@ -357,7 +329,7 @@ class DrsTest:
     # =========================================================================
     # Functions to run individual checks
     # =========================================================================
-    def count_output_files(self, unique=False):
+    def count_output_files(self, unique=False) -> pd.Series:
         """
         Count number of output files in the index dataframe
         """
@@ -371,7 +343,7 @@ class DrsTest:
         else:
             return pd.Series(0, index=self.output_hkeys, name="FILENAME")
 
-    def count_log_entries(self):
+    def count_log_entries(self) -> pd.Series:
         """
         Count number of log entries
         """
@@ -421,13 +393,13 @@ class DrsTest:
         # TODO: Add --master comment for log calls
         check_num_calls = Check(
             title="# calls in logs",
-            result=self.count_log_entries(),
+            result=self.count_log_entries().to_string(),
         )
         check_list.append(check_num_calls)
 
         check_output = Check(
             title=f"# of outputs in {self.output_path}",
-            result=self.count_output_files(unique=False),
+            result=self.count_output_files(unique=False).to_string(),
         )
         check_list.append(check_output)
 
@@ -455,7 +427,8 @@ class DrsTest:
             "calibdb_path": os.path.join(
                 self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
             ),
-            # TODO: Get links per recipe automatically, maybe in real docs
+            # TODO: Get links per recipe automatically
+            # TODO: Maybe link to full docs, not github
             "docs_link": "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes",
 
             # Checks

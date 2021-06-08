@@ -17,6 +17,25 @@ from astropy.table import Table
 from pandas import DataFrame, Series
 
 
+def removext(name: str, ext: str = ".py") -> str:
+    """
+    Remove extension of a file/recipe name
+
+    :param name: file/recipe name
+    :type name: str
+    :param ext: filetype extension, default is ".py"
+    :type ext: str :returns: cleaned up name
+    :rtype:  str
+    """
+    if not ext.startswith("."):
+        ext = "." + ext
+
+    while name.endswith(ext):
+        name = name[:-3]
+
+    return name
+
+
 def get_nth_parent(path: str, order: int = 1):
     """
     Get nth order parent of path by applying os.dirname repeatedly.
