@@ -6,6 +6,7 @@ DRS Tests that (try to) follow the APERO framework.
 import os
 import warnings
 from datetime import datetime
+from pathlib import Path
 from typing import List, Optional, Union
 
 import pandas as pd
@@ -15,6 +16,7 @@ from apero.core.core.drs_recipe import DrsRecipe
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
 
+import apero_tests.subtest as st
 import apero_tests.utils as ut
 
 # from . import OUTDIR, TEMPLATEDIR
@@ -25,17 +27,6 @@ PARENTDIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
 OUTDIR = os.path.join(PARENTDIR, "out")
 CACHEDIR = os.path.join(PARENTDIR, "cache")
-
-
-class Check:
-    def __init__(self, title=None, result=None, comments=None, details=None):
-        """
-        Small python object with info for a specific check in the DRS Tests
-        """
-        self.title = title
-        self.result = result
-        self.comments = comments
-        self.details = details
 
 
 class DrsTest:
@@ -99,6 +90,7 @@ class DrsTest:
         self.calibdb_keys = []  # Calibdb keys
         self.input_path = ""  # Path to input dir
         self.output_path = ""  # Path to output dir
+        self.html_path = ""  # Path to HTML report
         self.log_df = None
         self.ind_df = None
         self.calib_df = None
@@ -110,11 +102,12 @@ class DrsTest:
             self.recipe = DrsRecipe()
             self.recipe.copy(drs_recipe)
             self.fileargs = self.get_fileargs()
-            self.arg_drs_files = [f for farg in self.fileargs for f in farg.files]
+            self.arg_drs_files = [
+                f for farg in self.fileargs for f in farg.files
+            ]
             if self.instrument is not None:
-                warnings.warn(
-                    "Overwriting kwarg instrument with recipe info", RuntimeWarning
-                )
+                warnings.warn("Overwriting kwarg instrument with recipe info",
+                              RuntimeWarning)
             self.instrument = self.recipe.instrument
             self.recipe_name = ut.removext(self.recipe.name, ext=".py")
             self.test_id = self.recipe_name + f"_test{testnum}"
@@ -129,17 +122,21 @@ class DrsTest:
             self.input_path = self.dirpaths[self.recipe.inputdir]
             self.output_path = self.dirpaths[self.recipe.outputdir]
 
+            # Path to HTML report
+            self.html_path = Path(OUTDIR, self.test_id,
+                                  ".".join([self.test_id, "html"]))
+
             # Get keys for outputs
             self.output_dict = self.recipe.outputs
             self.output_drs_files = [
-                o for o in list(self.output_dict.values()) if isinstance(o, DrsFitsFile)
+                o for o in list(self.output_dict.values())
+                if isinstance(o, DrsFitsFile)
             ]
             self.output_hkeys = list(
                 map(
                     lambda o: o.required_header_keys["KW_OUTPUT"],
                     self.output_drs_files,
-                )
-            )
+                ))
             self.calibdb_keys = self.get_dbkeys("calibration")
 
             # NOTE: index is filtered with log to keep only relevant entries.
@@ -148,8 +145,10 @@ class DrsTest:
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
 
             # Load calibdb DF (master entries and calibdb files)
-            self.calib_df = self.load_calib_df(all_calib_df=all_master_calib_df)
-            self.cdb_used_df = self.load_cdb_used_df(all_cdb_used_df=all_cdb_used_df)
+            self.calib_df = self.load_calib_df(
+                all_calib_df=all_master_calib_df)
+            self.cdb_used_df = self.load_cdb_used_df(
+                all_cdb_used_df=all_cdb_used_df)
 
     # =========================================================================
     # Functions to load output information
@@ -183,8 +182,7 @@ class DrsTest:
                         keylist.append(rfile2.get_dbkey())
                 else:
                     raise TypeError(
-                        f"Got an unexpected fibers attribute for file {rfile}"
-                    )
+                        f"Got an unexpected fibers attribute for file {rfile}")
 
         return keylist
 
@@ -193,23 +191,19 @@ class DrsTest:
         Get list of argument with type 'file[s]' for the recipe
         """
         fileargs = [
-            self.recipe.args[key]
-            for key in self.recipe.args
+            self.recipe.args[key] for key in self.recipe.args
             if self.recipe.args[key].dtype in ["file", "files"]
         ]
-        fileargs.extend(
-            [
-                self.recipe.kwargs[key]
-                for key in self.recipe.kwargs
-                if self.recipe.kwargs[key].dtype in ["file", "files"]
-            ]
-        )
+        fileargs.extend([
+            self.recipe.kwargs[key] for key in self.recipe.kwargs
+            if self.recipe.kwargs[key].dtype in ["file", "files"]
+        ])
 
         return fileargs
 
-    def load_log_df(
-        self, all_log_df: Optional[DataFrame] = None, force: bool = False
-    ) -> Union[DataFrame, None]:
+    def load_log_df(self,
+                    all_log_df: Optional[DataFrame] = None,
+                    force: bool = False) -> Union[DataFrame, None]:
         """Get log content in a dataframe
 
         Parse all log files and return a dataframe with only entries that have
@@ -238,9 +232,9 @@ class DrsTest:
 
         return log_df
 
-    def load_ind_df(
-        self, all_ind_df: Optional[DataFrame] = None, force: bool = True
-    ) -> Union[DataFrame, None]:
+    def load_ind_df(self,
+                    all_ind_df: Optional[DataFrame] = None,
+                    force: bool = True) -> Union[DataFrame, None]:
         """Get index contents in a dataframe
 
         Parse all index.fits files and return a dataframe.
@@ -267,7 +261,8 @@ class DrsTest:
             all_ind_df = ut.load_index_df(self.output_path)
 
         if self.log_df is None:
-            raise AttributeError("A non-null log_df is required to filter the index")
+            raise AttributeError(
+                "A non-null log_df is required to filter the index")
 
         # We use the log to filter the index, also keep only output hkeys
         # NOTE: Might have an indepent way that does not use log in v0.7
@@ -276,9 +271,9 @@ class DrsTest:
 
         return ind_df
 
-    def load_calib_df(
-        self, all_calib_df: Optional[DataFrame] = None, force: bool = True
-    ) -> Union[DataFrame, None]:
+    def load_calib_df(self,
+                      all_calib_df: Optional[DataFrame] = None,
+                      force: bool = True) -> Union[DataFrame, None]:
         """
         Load Master calibdb
 
@@ -292,10 +287,8 @@ class DrsTest:
             all_calib_df = ut.load_db("CALIB")
 
         if self.calibdb_keys is None:
-            msg = (
-                "Cannot load index dataframe if no calibdb keys are set,"
-                " returning None"
-            )
+            msg = ("Cannot load index dataframe if no calibdb keys are set,"
+                   " returning None")
             warnings.warn(msg, RuntimeWarning)
             return None
 
@@ -303,17 +296,15 @@ class DrsTest:
 
         return calib_df
 
-    def load_cdb_used_df(
-        self, all_cdb_used_df: Optional[DataFrame] = None, force: bool = True
-    ) -> Union[DataFrame, None]:
+    def load_cdb_used_df(self,
+                         all_cdb_used_df: Optional[DataFrame] = None,
+                         force: bool = True) -> Union[DataFrame, None]:
         if not force and self.cdb_used_df is not None:
             return self.cdb_used_df
 
         if self.ind_df is None:
-            msg = (
-                "Cannot load previous calibs if index dataframe is not set."
-                " Returning None"
-            )
+            msg = ("Cannot load previous calibs if index dataframe is not set."
+                   " Returning None")
             warnings.warn(msg, RuntimeWarning)
 
         if all_cdb_used_df is None:
@@ -336,8 +327,8 @@ class DrsTest:
         if not self.ind_df.empty:
             if unique:
                 return self.ind_df.groupby(
-                    ["KW_OUTPUT", "KW_DPRTYPE", "KW_FIBER"]
-                ).FILENAME.nunique()
+                    ["KW_OUTPUT", "KW_DPRTYPE",
+                     "KW_FIBER"]).FILENAME.nunique()
             else:
                 return self.ind_df.groupby("KW_OUTPUT").FILENAME.count()
         else:
@@ -348,23 +339,17 @@ class DrsTest:
         Count number of log entries
         """
         master_mask = self.log_df.RUNSTRING.str.contains("--master")
-        master_count = (
-            self.log_df[master_mask]
-            .groupby(["RECIPE", "SUBLEVEL", "LEVEL_CRIT"])
-            .count()
-        ).KIND
-        tot_count = (
-            self.log_df.groupby(["RECIPE", "SUBLEVEL", "LEVEL_CRIT"]).count().KIND
-        )
+        master_count = (self.log_df[master_mask].groupby(
+            ["RECIPE", "SUBLEVEL", "LEVEL_CRIT"]).count()).KIND
+        tot_count = (self.log_df.groupby(["RECIPE", "SUBLEVEL",
+                                          "LEVEL_CRIT"]).count().KIND)
         return tot_count.sub(master_count, fill_value=0).astype(int)
 
     # =========================================================================
     # Utility functions
     # =========================================================================
     def get_dir_path(self):
-        """
-        Get dictionary mapping keywords to data directories
-        """
+        """ Get dictionary mapping keywords to data directories """
         dirpaths = dict()
         if self.params is not None:
             dirpaths["raw"] = self.params["DRS_DATA_RAW"]
@@ -383,56 +368,90 @@ class DrsTest:
     # Function to run tests and write their output
     # =========================================================================
     def run_test(self):
-        """Run the test given a proper recipe test script"""
+        """Run the test for the recipe"""
 
-        # TODO: Outputs/log counts
-        # TODO: Automatically add comments and details, probably better to gen checks
-        # in methods
-        check_list = []
+        subtest_list = []
 
-        # TODO: Add --master comment for log calls
-        check_num_calls = Check(
-            title="# calls in logs",
-            result=self.count_log_entries().to_string(),
-        )
-        check_list.append(check_num_calls)
+        # Count log entries
+        subtest_list.append(st.CountLogTest(self.log_df))
 
-        check_output = Check(
-            title=f"# of outputs in {self.output_path}",
-            result=self.count_output_files(unique=False).to_string(),
-        )
-        check_list.append(check_output)
+        # Count all outputs
+        subtest_list.append(
+            st.CountOutTest(self.ind_df, self.output_path, self.output_hkeys))
 
-        check_output_unique = Check(
-            title=f"# of outputs in {self.output_path}",
-            result=self.count_output_files(unique=True),
-        )
-        check_list.append(check_output_unique)
+        # Count unique outputs
+        subtest_list.append(
+            st.CountOutTest(self.ind_df,
+                            self.output_path,
+                            self.output_hkeys,
+                            unique=True))
 
-        # TODO: QC Checks
+        # TODO Compare output and log results
 
-        # TODO: (calib)DB checks
+        # QC failed count
+        subtest_list.append(st.CountQCTest(self.log_df, self.html_path))
+
+        # QC Plot
+        subtest_list.append(
+            st.PlotQCTest(self.log_df, self.html_path, self.recipe_name))
+
+        # Not ended count
+        subtest_list.append(st.CountEndedTest(self.log_df, self.html_path))
+
+        # TODO: calibDB checks
+
+        # TODO: Compare calibdb checks
+
+        # Run all subtests one by one
+        final_list = []
+        for i, subtest in enumerate(subtest_list):
+            # Ensure unique subtest IDs within one DrsTest
+            # This is important for subtests that have their own directory
+            # or file. Too keep informative IDs when possible, we add number
+            # to existing ID
+            subtest.id = subtest.id + str(i)
+            # Some might have outputs directly assiged and no run -> try/except
+            try:
+                subtest.run()
+            except NotImplementedError:
+                pass
+
+            # No need to keep "None" results. Means the subtest has no info
+            if subtest.result is not None:
+                final_list.append(subtest)
+        subtest_list = final_list
+
 
 
         html_dict = {
             # Summary header info
-            "name": self.name,
-            "setup": self.setup,
-            "instrument": self.instrument,
-            "recipe": self.recipe_name,
-            "date": self.date,
-            "output_path": self.output_path,
-            "output_list": self.output_hkeys,
-            "calibdb_list": self.calibdb_keys,
-            "calibdb_path": os.path.join(
-                self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
-            ),
+            "name":
+            self.name,
+            "setup":
+            self.setup,
+            "instrument":
+            self.instrument,
+            "recipe":
+            self.recipe_name,
+            "date":
+            self.date,
+            "output_path":
+            self.output_path,
+            "output_list":
+            self.output_hkeys,
+            "calibdb_list":
+            self.calibdb_keys,
+            "calibdb_path":
+            os.path.join(self.params["DRS_CALIB_DB"],
+                         self.params["CALIB_DB_NAME"]),
             # TODO: Get links per recipe automatically
             # TODO: Maybe link to full docs, not github
-            "docs_link": "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes",
+            "docs_link":
+            "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes",
 
             # Checks
-            "check_list": check_list,
+            "subtest_list":
+            subtest_list,
         }
 
         self.gen_html(html_dict)
@@ -456,8 +475,5 @@ class DrsTest:
 
         html_text = template.render(html_dict)
 
-        output_path = os.path.join(
-            OUTDIR, self.test_id, ".".join([self.test_id, "html"])
-        )
-        with open(output_path, "w") as f:
+        with open(self.html_path, "w") as f:
             f.write(html_text)

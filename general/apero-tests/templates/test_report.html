@@ -6,7 +6,7 @@
     <title>APERO Tests</title>
     <style>
       table {
-        width:75%;
+        width:90%;
       }
       table, th, td {
         border: 1px solid black;
@@ -46,9 +46,9 @@
     <table id="t01">
       <colgroup>
          <col span="1" style="width: 5%;">
-         <col span="1" style="width: 55%;">
-         <col span="1" style="width: 15%;">
-         <col span="1" style="width: 20%;">
+         <col span="1" style="width: 30%;">
+         <col span="1" style="width: 30%;">
+         <col span="1" style="width: 30%;">
          <col span="1" style="width: 5%;">
       </colgroup>
 
@@ -62,26 +62,26 @@
       </tr>
 
       <!-- Check 1 -->
-      {% for check in check_list %}
+      {% for subtest in subtest_list %}
       <tr>
         <td>{{ loop.index }}</td>
-        {% if check.title is not none %}
-        <td> {{ check.title }} </td>
+        {% if subtest.description is not none %}
+        <td> {{ subtest.description }} </td>
         {% else %}
           <td></td>
         {% endif %}
-        {% if check.result is not none %}
-        <td> {{ check.result }} </td>
+        {% if subtest.result is not none %}
+        <td> {{ subtest.result }} </td>
         {% else %}
           <td></td>
         {% endif %}
-        {% if check.comments is not none %}
-        <td> {{ check.comments }} </td>
+        {% if subtest.comments is not none %}
+        <td> {{ subtest.comments }} </td>
         {% else %}
           <td></td>
         {% endif %}
-        {% if check.details is not none %}
-        <td> {{ check.details }} </td>
+        {% if subtest.details is not none %}
+          <td><a href='{{ subtest.details }}'>Inspect</a></td>
         {% else %}
           <td></td>
         {% endif %}
