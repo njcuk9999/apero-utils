@@ -188,9 +188,10 @@ class CountQCTest(SubTest):
 
 
 class PlotQCTest(SubTest):
-
-    def __init__(self, log_df: DataFrame, test_html_path: str, recipe_name: str):
-        super().__init__(description="Plot of the various QCs as a function of time")
+    def __init__(self, log_df: DataFrame, test_html_path: str,
+                 recipe_name: str):
+        super().__init__(
+            description="Plot of the various QCs as a function of time")
 
         self.log_df = log_df
         self.test_html_path = test_html_path
@@ -223,11 +224,8 @@ class PlotQCTest(SubTest):
         self.result = "See the Details column"
 
         self.details = ut.inspect_plot(
-            self.test_html_path,
-            self.id,
-            data_dict_qc_plot,
-            f'{self.recipe_name}.py Quality Control'
-        )
+            self.test_html_path, self.id, data_dict_qc_plot,
+            f'{self.recipe_name}.py Quality Control')
 
 
 class CountEndedTest(SubTest):
@@ -253,6 +251,36 @@ class CountEndedTest(SubTest):
                 'ERRORS': log_ended_false.ERRORS.values,
                 'LOGFILE': log_ended_false.LOGFILE.values,
             }
-            self.details = ut.inspect_table(
-                self.test_html_path, self.id, data_dict_check_ended,
-                'Nights that Failed to finish')
+            self.details = ut.inspect_table(self.test_html_path, self.id,
+                                            data_dict_check_ended,
+                                            'Nights that Failed to finish')
+
+
+class CountCalibEntries(SubTest):
+    def __init__(self, calib_df: DataFrame, calib_keys: List[str]):
+
+        super().__init__(description="# of entries in calib DB")
+
+        self.calib_df = calib_df
+        self.calib_keys = calib_keys
+
+    def run(self):
+
+        zero_count = pd.Series(0, index=self.calib_keys)
+
+        if not self.calib_df.empty:
+            master_mask = self.calib_df["master"].astype(bool)
+            if master_mask.sum() == 0:
+                master_calib_count = zero_count.copy()
+            else:
+                master_calib_df = self.calib_df[master_mask]
+                master_calib_count = master_calib_df.groupby("key").size()
+                self.comments = f"Additional entries with master == 1: {master_calib_count}"
+
+            calib_count = self.calib_df.groupby("key").size()
+            calib_count -= master_calib_count
+
+        else:
+            calib_count = zero_count.copy()
+
+        self.result = calib_count

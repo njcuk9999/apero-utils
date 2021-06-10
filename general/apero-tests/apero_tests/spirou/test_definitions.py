@@ -57,6 +57,7 @@ red_missing_index = ut.missing_index_headers(
 )
 red_full_index = ut.make_full_index(red_index, red_missing_index)
 master_calib_db = ut.load_db("CALIB", instrument=__INSTRUMENT__)  # All calibdb entries
+master_cdb_index = ut.load_db
 
 # Some global tests are done here (before per-recipe)
 # NOTE: This should change in 0.7. Will have new way to match files per recipe

@@ -90,6 +90,8 @@ def load_db(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     db_arr = np.loadtxt(db_path, dtype=str, unpack=True)
     df = pd.DataFrame(dict(zip(colnames, db_arr)))
 
+    # TODO: When sure that apero uses pandas >=1.0, use convert_dtypes here
+
     return df
 
 

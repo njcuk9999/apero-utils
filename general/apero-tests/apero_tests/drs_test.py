@@ -294,6 +294,10 @@ class DrsTest:
 
         calib_df = all_calib_df[all_calib_df["key"].isin(self.calibdb_keys)]
 
+        # ???: Maybe this won't be required with pandas >= 1.0 and
+        # convert_dtypes (see utils function)
+        calib_df["master"] = calib_df["master"].astype(int)
+
         return calib_df
 
     def load_cdb_used_df(self,
@@ -398,9 +402,13 @@ class DrsTest:
         # Not ended count
         subtest_list.append(st.CountEndedTest(self.log_df, self.html_path))
 
-        # TODO: calibDB checks
+        # TODO: calibDB output count
+        subtest_list.append(
+            st.CountCalibEntries(self.calib_df, self.calibdb_keys))
 
         # TODO: Compare calibdb checks
+
+        # TODO: Calibdb
 
         # Run all subtests one by one
         final_list = []
@@ -420,8 +428,6 @@ class DrsTest:
             if subtest.result is not None:
                 final_list.append(subtest)
         subtest_list = final_list
-
-
 
         html_dict = {
             # Summary header info
