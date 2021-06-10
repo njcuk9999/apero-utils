@@ -95,6 +95,7 @@ class DrsTest:
         self.ind_df = None
         self.calib_df = None
         self.cdb_used_df = None
+        self.subtest_list = None
 
         # Overwrite some (most!) parameters with recipe info automatically
         if drs_recipe is not None:
@@ -149,6 +150,10 @@ class DrsTest:
                 all_calib_df=all_master_calib_df)
             self.cdb_used_df = self.load_cdb_used_df(
                 all_cdb_used_df=all_cdb_used_df)
+
+
+            # Generate list of default subtests
+            self.set_subtests()
 
     # =========================================================================
     # Functions to load output information
@@ -322,34 +327,6 @@ class DrsTest:
         return cdb_used_df
 
     # =========================================================================
-    # Functions to run individual checks
-    # =========================================================================
-    def count_output_files(self, unique=False) -> pd.Series:
-        """
-        Count number of output files in the index dataframe
-        """
-        if not self.ind_df.empty:
-            if unique:
-                return self.ind_df.groupby(
-                    ["KW_OUTPUT", "KW_DPRTYPE",
-                     "KW_FIBER"]).FILENAME.nunique()
-            else:
-                return self.ind_df.groupby("KW_OUTPUT").FILENAME.count()
-        else:
-            return pd.Series(0, index=self.output_hkeys, name="FILENAME")
-
-    def count_log_entries(self) -> pd.Series:
-        """
-        Count number of log entries
-        """
-        master_mask = self.log_df.RUNSTRING.str.contains("--master")
-        master_count = (self.log_df[master_mask].groupby(
-            ["RECIPE", "SUBLEVEL", "LEVEL_CRIT"]).count()).KIND
-        tot_count = (self.log_df.groupby(["RECIPE", "SUBLEVEL",
-                                          "LEVEL_CRIT"]).count().KIND)
-        return tot_count.sub(master_count, fill_value=0).astype(int)
-
-    # =========================================================================
     # Utility functions
     # =========================================================================
     def get_dir_path(self):
@@ -371,9 +348,7 @@ class DrsTest:
     # =========================================================================
     # Function to run tests and write their output
     # =========================================================================
-    def run_test(self):
-        """Run the test for the recipe"""
-
+    def set_subtests(self):
         subtest_list = []
 
         # Count log entries
@@ -410,9 +385,15 @@ class DrsTest:
 
         # TODO: Calibdb
 
+
+        self.subtest_list = subtest_list
+
+    def run_test(self):
+        """Run the test for the recipe"""
+
         # Run all subtests one by one
         final_list = []
-        for i, subtest in enumerate(subtest_list):
+        for i, subtest in enumerate(self.subtest_list):
             # Ensure unique subtest IDs within one DrsTest
             # This is important for subtests that have their own directory
             # or file. Too keep informative IDs when possible, we add number
