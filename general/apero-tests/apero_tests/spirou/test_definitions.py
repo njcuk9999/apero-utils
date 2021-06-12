@@ -256,17 +256,76 @@ tests.append(cal_leak)
 
 # TODO: Add compat for science recipes
 # -----------------------------------------------------------------------------
+# Fit Telluric Test
+# -----------------------------------------------------------------------------
+
+obj_fit_tellu = DrsTest(
+    drs_recipe=RECIPE_DICT["obj_fit_tellu_spirou.py"],
+    all_log_df=red_log,
+    all_index_df=red_index,
+    all_master_calib_df=master_calib_db,
+    all_cdb_used_df=red_cdb_used_df,
+)
+
+# TODO: for each tellu entry how many are in the telluDB?
+# which OBJECTs was mk_tellu run on?
+# was the correct template used (if used) should be that objects template
+# how many have a template, how many don't?
+
+tests.append(obj_fit_tellu)
+
+
+# -----------------------------------------------------------------------------
 # Make Telluric Test
 # -----------------------------------------------------------------------------
 
-# -----------------------------------------------------------------------------
-# Fit Telluric Test
-# -----------------------------------------------------------------------------
+obj_mk_tellu = DrsTest(
+    drs_recipe=RECIPE_DICT["obj_mk_tellu_spirou.py"],
+    all_log_df=red_log,
+    all_index_df=red_index,
+    all_master_calib_df=master_calib_db,
+    all_cdb_used_df=red_cdb_used_df,
+)
+
+# TODO: for each tellu entry how many are in the telluDB?
+# which OBJECTs was mk_tellu run on?
+# was the correct template used (if used) should be that objects template
+# how many have a template, how many don't?
+
+tests.append(obj_mk_tellu)
+
 
 # -----------------------------------------------------------------------------
 # Make Template Test
 # -----------------------------------------------------------------------------
 
+obj_mk_template = DrsTest(
+    drs_recipe=RECIPE_DICT["obj_mk_template_spirou.py"],
+    all_log_df=red_log,
+    all_index_df=red_index,
+    all_master_calib_df=master_calib_db,
+    all_cdb_used_df=red_cdb_used_df,
+)
+
+# TODO: for each tellu entry how many are in the telluDB?
+# TODO: how many objects were used in each template? does this match up to the 
+# number of tcorr files (output of fit_tellu)?
+
+tests.append(obj_mk_template)
+
+
 # -----------------------------------------------------------------------------
 # CCF Test
 # -----------------------------------------------------------------------------
+
+cal_ccf = DrsTest(
+    drs_recipe=RECIPE_DICT["cal_ccf_spirou.py"],
+    all_log_df=red_log,
+    all_index_df=red_index,
+    all_master_calib_df=master_calib_db,
+    all_cdb_used_df=red_cdb_used_df,
+)
+
+# TODO: what ccf step/ccf width/ccf target rv were used for each
+
+tests.append(cal_ccf)
