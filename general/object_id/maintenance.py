@@ -47,6 +47,7 @@ BAD_NAMES = [
     ".*Test",
     "Engineering",
     "Calibration",
+    "Nowhere"
 ]
 # Known rejected names
 REJ_NAMES = [
@@ -101,13 +102,16 @@ def get_object_info(
         df_dfits = pd.concat(dfits_frames, ignore_index=True)
         df_dfits.FILE = df_dfits.FILE.apply(os.path.basename)
         df_dfits = df_dfits[["FILE"] + keys]
+        dfits_files = df_dfits.FILE.tolist()
     else:
         df_dfits = pd.DataFrame([])
+        dfits_files = []
 
     # Find files to read
+    known_files = loc_files + dfits_files
     full_list = glob.glob(fpattern)
     all_files = [os.path.basename(f) for f in full_list]
-    loc_mask = np.isin(all_files, loc_files)
+    loc_mask = np.isin(all_files, known_files)
     iter_list = np.array(full_list)[~loc_mask].tolist()
 
     # Initialize dict
@@ -137,7 +141,7 @@ def get_object_info(
     # Append to local df if any
     if len(loc_files) > 0:
         df = df_loc.append(df, ignore_index=True)
-    if len(df_dfits) > 0:
+    if len(dfits_files) > 0:
         df = df.append(df_dfits, ignore_index=True)
     df = df.sort_values("FILE")
     df = df.drop_duplicates("FILE")  # Could have duplicates from externalf fits
@@ -233,7 +237,7 @@ def check_gaia(names, df_sheet):
     new_names = names[~gaia_id.isin(df_sheet.GAIADR2ID.dropna())]
     df_new = pd.DataFrame([new_names, new_gaia_id]).T
     df_new = df_new.dropna(subset=["GAIADR2ID"])  # Drop nan IDs
-    df_new.MANUAL_EDIT = False
+    df_new['MANUAL_EDIT'] = False
     if df_new.shape[0] > 0:
         # Append new and sort sheet (function does both)
         df_sheet = ut.sheet_append(df_new, df_sheet)

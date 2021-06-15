@@ -51,7 +51,7 @@ clargs = parser.parse_args()
 # Fetch object info from headers (or load local csv file with this info)
 if clargs.pattern is not None:
     df_loc = mtn.get_object_info(
-        clargs.pattern, local_file=clargs.file, dfits_dir=clargs.difts_dir
+        clargs.pattern, local_file=clargs.file, dfits_dir=clargs.dfits_dir
     )
     if clargs.save:
         df_loc.to_csv(mtn.LOCAL_FILE, index=False)
