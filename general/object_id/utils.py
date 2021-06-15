@@ -3,10 +3,12 @@ Utility functions to manage object ID sheet.
 
 @author: vandalt
 """
+import re
 import warnings
-import requests
+
 import numpy as np
 import pandas as pd
+import requests
 from astropy.table import Table
 from astroquery.mast import Catalogs
 from astroquery.simbad import Simbad
@@ -26,6 +28,7 @@ COLNAMES = ['OBJECT',
             'FOUND',
             'MANUAL_EDIT',
             'COMMENTS']
+FITS_FLOAT_COLS = ['RA_DEG', 'DEC_DEG', 'MJDEND', 'OBJRV', 'OBJTEMP']
 ID_COLS = ['GAIADR2ID', 'TWOMASSID']
 VAL_COLS = ['RV', 'TEFF']
 NA_COLS = ID_COLS + VAL_COLS
@@ -636,3 +639,31 @@ def twomass_from_simbad(df):
                                       )
 
     return df
+
+
+def read_dfits_tbl(fname: str) -> Table:
+    tbl = Table.read(fname, format="ascii.tab")
+
+    # Strip spaces in column names
+    tmp_tbl = Table()
+    for colname in tbl.colnames:
+        tmp_tbl[colname.strip()] = tbl[colname]
+    tbl = tmp_tbl
+
+    pattern = re.compile("^col\d*$")
+    for colname in tbl.colnames:
+        if pattern.match(colname):
+            del tbl[colname]
+
+    for colname in tbl.colnames:
+        for i, val in enumerate(tbl[colname]):
+            try:
+                tbl[colname][i] = val.strip()
+            except:
+                AttributeError
+        if colname in FITS_FLOAT_COLS:
+            # If the column has empty string, fill with nan
+            tbl[colname][tbl[colname] == ""] = np.nan
+            tbl[colname] = tbl[colname].astype(float)
+
+    return tbl

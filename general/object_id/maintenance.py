@@ -92,8 +92,11 @@ def get_object_info(
     if dfits_dir is not None:
         dfits_frames = []
         for dfile in glob.glob(os.path.join(dfits_dir, "*.txt")):
+            # dfits_frames.append(
+            #     Table.read(dfile, format="ascii.tab").to_pandas(use_nullable_int=False)
+            # )
             dfits_frames.append(
-                Table.read(dfile, format="ascii.tab").to_pandas(use_nullable_int=False)
+                ut.read_dfits_tbl(dfile).to_pandas(use_nullable_int=False)
             )
         df_dfits = pd.concat(dfits_frames, ignore_index=True)
         df_dfits.FILE = df_dfits.FILE.apply(os.path.basename)
