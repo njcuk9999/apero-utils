@@ -1,0 +1,7 @@
+#!/usr/bin/bash
+
+# Perl command to remove useless spaces in dfits tab-separated txt output
+
+# First two expressions remove spaces that have tab before or after
+# Last expression removes tabs followed by a newline
+perl -pi.back -e "s/[^\S\t\r\n]*(?=\t)|(?<=\t)[^\S\t\r\n]*|\t(?=\n)//g" $@
