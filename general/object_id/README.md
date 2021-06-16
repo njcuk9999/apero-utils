@@ -6,6 +6,9 @@ functions.
 See the [Wiki](https://github.com/njcuk9999/apero-utils/wiki) for information on [APERO object identification](https://github.com/njcuk9999/apero-utils/wiki/APERO-Object-Identification) and [using Google sheets with Python](https://github.com/njcuk9999/apero-utils/wiki/Working-with-Google-Sheets).
 
 ## Files
+- `cleandfits` is a short bash script to pre-format the dfits output as astropy table tab-separated table (stripping spaces around columns)
+  - Simply run it with the files as arguments (e.g. `cleandfits *.txt`). Files will be backed up by adding the `.bak format`
+  - Not necesseary, the code should handle dfits outputs. This is just provided as a utility script for convenience.
 - `full_update.py`: Performs a full update of the sheet using local data. This performs the following tasks:
   - Fetch data from `.fits` headers or use a pre-constructed local `.csv` file.
   - Include new objects in the main sheet.
