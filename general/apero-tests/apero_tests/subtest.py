@@ -222,7 +222,6 @@ class PlotQCTest(SubTest):
             data_dict_qc_plot[key] = series.tolist()
 
         self.result = "See the Details column"
-
         self.details = ut.inspect_plot(
             self.test_html_path, self.id, data_dict_qc_plot,
             f'{self.recipe_name}.py Quality Control')
@@ -265,7 +264,6 @@ class CountCalibEntries(SubTest):
         self.calib_keys = calib_keys
 
     def run(self):
-
         zero_count = pd.Series(0, index=self.calib_keys)
 
         if not self.calib_df.empty:
@@ -281,6 +279,24 @@ class CountCalibEntries(SubTest):
             calib_count -= master_calib_count
 
         else:
-            calib_count = zero_count.copy()
+            self.result = None
+            return
 
         self.result = calib_count
+
+class CountTelluEntries(SubTest):
+    def __init__(self, tellu_df: DataFrame):
+
+        super().__init__(description="# of entries in tellu DB")
+
+        self.tellu_df = tellu_df
+
+    def run(self):
+        if not self.tellu_df.empty:
+            tellu_count = self.tellu_df.groupby("key").size()
+
+        else:
+            self.result = None
+            return
+
+        self.result = tellu_count
