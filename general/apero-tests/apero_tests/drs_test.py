@@ -39,6 +39,7 @@ class DrsTest:
         all_log_df: Optional[DataFrame] = None,
         all_index_df: Optional[DataFrame] = None,
         all_master_calib_df: Optional[DataFrame] = None,
+        all_tellu_df: Optional[DataFrame] = None,
         all_cdb_used_df: Optional[DataFrame] = None,
     ):
         """
@@ -62,6 +63,8 @@ class DrsTest:
         :type all_index_df: Optional[DataFrame]
         :param all_master_calib_df: DataFrame with master calib info for all recipes
         :type all_master_calib_df: Optional[DataFrame]
+        :param all_tellu_df: DataFrame with tellu info for all recipes
+        :type all_tellu_df: Optional[DataFrame]
         :param all_cdb_used_df: DataFrame with info about used calibs for all recipes
         :type all_cdb_used_df: Optional[DataFrame]
         """
@@ -94,6 +97,7 @@ class DrsTest:
         self.log_df = None
         self.ind_df = None
         self.calib_df = None
+        self.tellu_df = None
         self.cdb_used_df = None
         self.subtest_list = None
 
@@ -139,6 +143,7 @@ class DrsTest:
                     self.output_drs_files,
                 ))
             self.calibdb_keys = self.get_dbkeys("calibration")
+            self.telludb_keys = self.get_dbkeys("telluric")
 
             # NOTE: index is filtered with log to keep only relevant entries.
             # A global test is used to report outputs that match no logs
@@ -151,6 +156,9 @@ class DrsTest:
             self.cdb_used_df = self.load_cdb_used_df(
                 all_cdb_used_df=all_cdb_used_df)
 
+            # Load telludb DF
+            self.tellu_df = self.load_tellu_df(
+                all_tellu_df=all_tellu_df)
 
             # Generate list of default subtests
             self.set_subtests()
@@ -305,6 +313,31 @@ class DrsTest:
 
         return calib_df
 
+    def load_tellu_df(self,
+                      all_tellu_df: Optional[DataFrame] = None,
+                      force: bool = True) -> Union[DataFrame, None]:
+        """
+        Load telludb
+
+        :return: Dataframe with telludb entries
+        :rtype: pd.DataFrame
+        """
+        if not force and self.tellu_df is not None:
+            return self.ind_df
+
+        if all_tellu_df is None:
+            all_tellu_df = ut.load_db("TELLU")
+
+        if self.telludb_keys is None:
+            msg = ("Cannot load index dataframe if no telludb keys are set,"
+                   " returning None")
+            warnings.warn(msg, RuntimeWarning)
+            return None
+
+        tellu_df = all_tellu_df[all_tellu_df["key"].isin(self.telludb_keys)]
+
+        return tellu_df
+
     def load_cdb_used_df(self,
                          all_cdb_used_df: Optional[DataFrame] = None,
                          force: bool = True) -> Union[DataFrame, None]:
@@ -325,6 +358,9 @@ class DrsTest:
         cdb_used_df = all_cdb_used_df.loc[keep_ind]
 
         return cdb_used_df
+
+
+
 
     # =========================================================================
     # Utility functions
@@ -377,7 +413,7 @@ class DrsTest:
         # Not ended count
         subtest_list.append(st.CountEndedTest(self.log_df, self.html_path))
 
-        # TODO: calibDB output count
+        # calibDB output count
         subtest_list.append(
             st.CountCalibEntries(self.calib_df, self.calibdb_keys))
 
@@ -386,6 +422,10 @@ class DrsTest:
         # TODO: Calibdb
 
         # TODO: Telludb
+
+        # telluDB output count
+        subtest_list.append(
+            st.CountTelluEntries(self.tellu_df))
 
         self.subtest_list = subtest_list
 
