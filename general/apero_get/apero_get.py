@@ -20,14 +20,18 @@ from apero.core.core import drs_database
 # =============================================================================
 # list all object names that should be found
 kw_objnames = ['HD189733', 'WASP-127']
+# kw_objnames = ['TOI 1449']
 # list all DPRTYPEs that should be found
 kw_dprtypes = ['OBJ_FP', 'OBJ_DARK', 'POLAR_FP', 'POLAR_DARK']
 # list all drs output types that should be found
 kw_outputs = ['EXT_E2DS_FF']
+kw_outputs = ['EXT_E2DS_FF', 'TELLU_OBJ', 'SC1D_V_FILE', 'SC1D_W_FILE']
+kw_outputs = ['TELLU_OBJ', 'TELLU_RECON']
 # list all fibers required
 kw_fibers = ['AB']
 # outpath (where we should copy these to)
 OUTPATH = '/home/boucher/spirou/planetModels/HD_189733_b/full_210523'
+#OUTPATH = '/spirou2/full_210523_objs'
 # copy (debug set to False)
 COPY = True
 
