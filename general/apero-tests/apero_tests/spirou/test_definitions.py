@@ -36,6 +36,7 @@ __release__ = Constants["DRS_RELEASE"]
 
 RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
 
+pp_key = "DRS_DATA_WORKING"
 red_key = "DRS_DATA_REDUC"
 
 # =============================================================================
@@ -45,6 +46,8 @@ red_key = "DRS_DATA_REDUC"
 #  for parent dir (reduced, tmp, etc.)
 # TODO: Better handle non-reduced log/index stuff (see ??? above)
 params = constants.load(__INSTRUMENT__)
+pp_log = ut.load_log_df(params[pp_key])
+pp_index = ut.load_index_df(params[pp_key])
 red_log = ut.load_log_df(params[red_key])
 red_index = ut.load_index_df(params[red_key])
 
@@ -52,12 +55,17 @@ red_index = ut.load_index_df(params[red_key])
 # NOTE: For now this includes DEBUG files, which we all discard right after.
 # We load them for consistency (because some DEBUG are already in index),
 # but could add an option to skip them
+pp_missing_index = ut.missing_index_headers(
+    pp_index, instrument=__INSTRUMENT__, cache_dir=CACHEDIR
+)
+pp_full_index = ut.make_full_index(pp_index, pp_missing_index)
 red_missing_index = ut.missing_index_headers(
     red_index, instrument=__INSTRUMENT__, cache_dir=CACHEDIR
 )
 red_full_index = ut.make_full_index(red_index, red_missing_index)
 master_calib_db = ut.load_db("CALIB", instrument=__INSTRUMENT__)  # All calibdb entries
-master_cdb_index = ut.load_db
+tellu_df = ut.load_db("TELLU", instrument=__INSTRUMENT__) # All telludb entries
+#master_cdb_index = ut.load_db
 
 # Some global tests are done here (before per-recipe)
 # NOTE: This should change in 0.7. Will have new way to match files per recipe
@@ -67,7 +75,7 @@ master_cdb_index = ut.load_db
 #   (the ones that can be processed at index level)
 red_index = ut.global_index_check(red_full_index, red_log)
 debug_mask = red_index.FILENAME.str.startswith("DEBUG")
-red_index = red_index[~debug_mask]  # DEBUGs are not used in testes
+red_index = red_index[~debug_mask]  # DEBUGs are not used in tests
 red_cdb_used_df = ut.get_cdb_df(
     red_index, params, cache_dir=CACHEDIR
 )  # CDB keys and time difference with output files
@@ -77,14 +85,25 @@ red_cdb_used_df = ut.get_cdb_df(
 # =============================================================================
 tests = []
 
-# TODO: Make compatible with pp and dark master testse
+
+# TODO: Make compatible with pp and dark master tests
 # -----------------------------------------------------------------------------
 # Preprocessing Test
 # -----------------------------------------------------------------------------
+cal_preprocess = DrsTest(
+    drs_recipe=RECIPE_DICT["cal_preprocess_spirou.py"],
+    pp_flag = True,
+    all_log_df=pp_log,
+    all_index_df=pp_index,
+)
+
+tests.append(cal_preprocess)
+
 
 # -----------------------------------------------------------------------------
 # Dark Master Test
 # -----------------------------------------------------------------------------
+
 
 # -----------------------------------------------------------------------------
 # Badpixel Test
@@ -94,10 +113,9 @@ cal_badpix = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_badpix)
 
@@ -109,6 +127,7 @@ cal_loc = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
@@ -119,13 +138,13 @@ tests.append(cal_loc)
 # -----------------------------------------------------------------------------
 cal_shape_master = DrsTest(
     drs_recipe=RECIPE_DICT["cal_shape_master_spirou.py"],
+    master_flag = True,
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_shape_master)
 
@@ -137,10 +156,9 @@ cal_shape = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_shape)
 
@@ -152,10 +170,9 @@ cal_flat = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_flat)
 
@@ -168,6 +185,7 @@ cal_thermal = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
@@ -179,13 +197,13 @@ tests.append(cal_thermal)
 # -----------------------------------------------------------------------------
 cal_leak_master = DrsTest(
     drs_recipe=RECIPE_DICT["cal_leak_master_spirou.py"],
+    master_flag = True,
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_leak_master)
 
@@ -195,13 +213,13 @@ tests.append(cal_leak_master)
 # -----------------------------------------------------------------------------
 cal_wave_master = DrsTest(
     drs_recipe=RECIPE_DICT["cal_wave_master_spirou.py"],
+    master_flag = True,
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_wave_master)
 
@@ -214,10 +232,9 @@ cal_wave_night = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_wave_night)
 
@@ -230,10 +247,9 @@ cal_extract = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_extract)
 
@@ -246,33 +262,11 @@ cal_leak = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Add other attributes here (after structure is more complete)
-# cal_badpix.run_test = BadPixTest()
 
 tests.append(cal_leak)
-
-
-# TODO: Add compat for science recipes
-# -----------------------------------------------------------------------------
-# Fit Telluric Test
-# -----------------------------------------------------------------------------
-
-obj_fit_tellu = DrsTest(
-    drs_recipe=RECIPE_DICT["obj_fit_tellu_spirou.py"],
-    all_log_df=red_log,
-    all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
-    all_cdb_used_df=red_cdb_used_df,
-)
-
-# TODO: for each tellu entry how many are in the telluDB?
-# which OBJECTs was mk_tellu run on?
-# was the correct template used (if used) should be that objects template
-# how many have a template, how many don't?
-
-tests.append(obj_fit_tellu)
 
 
 # -----------------------------------------------------------------------------
@@ -284,15 +278,35 @@ obj_mk_tellu = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
-# TODO: for each tellu entry how many are in the telluDB?
-# which OBJECTs was mk_tellu run on?
+# TODO: which OBJECTs was mk_tellu run on?
 # was the correct template used (if used) should be that objects template
 # how many have a template, how many don't?
 
 tests.append(obj_mk_tellu)
+
+
+# -----------------------------------------------------------------------------
+# Fit Telluric Test
+# -----------------------------------------------------------------------------
+
+obj_fit_tellu = DrsTest(
+    drs_recipe=RECIPE_DICT["obj_fit_tellu_spirou.py"],
+    all_log_df=red_log,
+    all_index_df=red_index,
+    all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
+    all_cdb_used_df=red_cdb_used_df,
+)
+
+# TODO: which OBJECTs was mk_tellu run on?
+# was the correct template used (if used) should be that objects template
+# how many have a template, how many don't?
+
+tests.append(obj_fit_tellu)
 
 
 # -----------------------------------------------------------------------------
@@ -304,10 +318,10 @@ obj_mk_template = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
-# TODO: for each tellu entry how many are in the telluDB?
 # TODO: how many objects were used in each template? does this match up to the 
 # number of tcorr files (output of fit_tellu)?
 
@@ -323,6 +337,7 @@ cal_ccf = DrsTest(
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
