@@ -172,7 +172,12 @@ def get_cdb_df(
 
         # We only want the CDB* keys. Other useful keys are already in index
         keys = [params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")]
-        cdb_df = headers_df[keys]
+
+        # Only apply if CDB* keys are in the headers
+        if all([item in headers_df.columns for item in keys]):
+            cdb_df = headers_df[keys]
+        else:
+            return index_df
         unique_cdb_files = get_unique_vals(cdb_df)
         unique_cdb_files_fullpath = params["DRS_CALIB_DB"] + unique_cdb_files
         mjds = unique_cdb_files_fullpath.apply(get_hkey, args=("MJDMID",))
@@ -528,14 +533,15 @@ def inspect_table(test_html_path: Path, subtest: str, data_dict: Dict,
     )
     table_title = Div(
         text=f'<font size="+1"> <b>{title}</b> </font>',
+        width = 800,
         height=50,
     )
     data_table = DataTable(source=source,
                            columns=columns,
                            index_header = '',
-                           autosize_mode='none',
-                           width = 700,
-                           height=700,
+                           autosize_mode='fit_columns',
+                           width = 800,
+                           height=400,
                            editable=True)
 
     download = Button(label="Download to CSV", button_type="success", width=80)
@@ -572,7 +578,65 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
         "save"
     ]
 
-    if 'Order' in data_dict:
+    if 'Odometer' in data_dict:
+
+        # night to datetime
+        for i in range(len(data_dict['Night'])):
+            if '_persi' in data_dict['Night'][i]:
+                data_dict['Night'][i] = data_dict['Night'][i][:10]
+        data_dict['PLOTDATE'] = pd.to_datetime(data_dict['Night'])
+
+        # y variable list
+        axis_map = data_dict.copy()
+        axis_map.pop('Night')
+        axis_map.pop('PLOTDATE')
+        axis_map.pop('Odometer')
+
+        axis_map_list = list(axis_map.keys())
+
+        # create widget
+        y_axis_widget = Select(title="Quality Control",
+                               options=axis_map_list,
+                               value=axis_map_list[0],
+                               width=260)
+
+        # data set
+        data_dict['x'] = data_dict['PLOTDATE']
+        data_dict['y'] = data_dict[axis_map_list[0]]
+        source_visible = ColumnDataSource(data_dict)
+
+        # bokeh Hover
+        TOOLTIPS = """
+        <table>
+          <tr>
+            <td><span style="color: #2874a6;">Night</span></td>
+            <td>@Night</td>
+         </tr>
+          <tr>
+            <td><span style="color: #2874a6;">Odometer</span></td>
+            <td>@Odometer</td>
+         </tr>
+         <tr>
+            <td><span style="color: #2874a6;">QC Value</span></td>
+            <td>@y</td>
+          </tr>
+        </table>
+        """
+
+        # plot
+        p = figure(plot_width=1200,
+                   plot_height=700,
+                   tools=TOOLS,
+                   toolbar_location="left",
+                   x_axis_label='Night',
+                   x_axis_type="datetime",
+                   tooltips = TOOLTIPS,
+                   title=title)
+        p.title.text_font_size = '12pt'
+        p.xaxis.axis_label_text_font_size = '12pt'
+        p.yaxis.visible = False
+
+    elif 'Order' in data_dict:
 
         # y variable list
         axis_map = data_dict.copy()
@@ -669,8 +733,9 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
         p.title.text_font_size = '12pt'
         p.xaxis.axis_label_text_font_size = '12pt'
         p.yaxis.visible = False
+
     else:
-        KeyError('Expected Order or Night key for x axis')
+        KeyError('Expected Odometer, Order or Night key for x axis')
 
     p.circle('x', 'y', source=source_visible, line_width=2)
 
