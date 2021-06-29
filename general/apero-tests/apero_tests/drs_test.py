@@ -36,6 +36,8 @@ class DrsTest:
         drs_recipe: Optional[DrsRecipe] = None,
         setup: Optional[str] = None,
         testnum: int = 1,
+        pp_flag: bool = False,
+        master_flag: bool = False,
         all_log_df: Optional[DataFrame] = None,
         all_index_df: Optional[DataFrame] = None,
         all_master_calib_df: Optional[DataFrame] = None,
@@ -57,6 +59,8 @@ class DrsTest:
         :param testnum: Number ID N of the test (Nth test for recipe),
                         default is 1
         :type testnum: int
+        :pp_flag: TEMPORARY flag where PP test is different
+        :master_flag: TEMPORARY flag where master recipe tests are different
         :param all_log_df: DataFrame with logs for all recipes
         :type  all_log_df: Optional[DataFrame]
         :param all_index_df: DataFrame with index for all recipes
@@ -122,6 +126,10 @@ class DrsTest:
             self.params = self.recipe.drs_params
             self.ismaster = self.recipe.master
 
+            # PP and Master flag
+            self.pp_flag = pp_flag
+            self.master_flag = master_flag
+
             # Path to input and output directories
             self.dirpaths = self.get_dir_path()
             self.input_path = self.dirpaths[self.recipe.inputdir]
@@ -137,24 +145,29 @@ class DrsTest:
                 o for o in list(self.output_dict.values())
                 if isinstance(o, DrsFitsFile)
             ]
-            self.output_hkeys = list(
-                map(
-                    lambda o: o.required_header_keys["KW_OUTPUT"],
-                    self.output_drs_files,
-                ))
-            self.calibdb_keys = self.get_dbkeys("calibration")
-            self.telludb_keys = self.get_dbkeys("telluric")
+
+            if not self.pp_flag:
+                self.output_hkeys = list(
+                    map(
+                        lambda o: o.required_header_keys["KW_OUTPUT"],
+                        self.output_drs_files,
+                    ))
 
             # NOTE: index is filtered with log to keep only relevant entries.
             # A global test is used to report outputs that match no logs
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
+            
+            self.calibdb_keys = self.get_dbkeys("calibration")
+            self.telludb_keys = self.get_dbkeys("telluric")
 
             # Load calibdb DF (master entries and calibdb files)
             self.calib_df = self.load_calib_df(
                 all_calib_df=all_master_calib_df)
-            self.cdb_used_df = self.load_cdb_used_df(
-                all_cdb_used_df=all_cdb_used_df)
+
+            if not self.pp_flag:
+                self.cdb_used_df = self.load_cdb_used_df(
+                    all_cdb_used_df=all_cdb_used_df)
 
             # Load telludb DF
             self.tellu_df = self.load_tellu_df(
@@ -243,6 +256,10 @@ class DrsTest:
         # Important for extract recipes: keep only the recipe under test
         log_df = all_log_df[all_log_df.LOGFILE.str.contains(self.recipe_name)]
 
+        if self.pp_flag:
+            log_df['ARGS'] = log_df.ARGS.str.replace('persi_', '')
+            log_df['ODOMETER'] = log_df.ARGS.str.split('.fits').str[0].str[-8:]
+
         return log_df
 
     def load_ind_df(self,
@@ -280,7 +297,9 @@ class DrsTest:
         # We use the log to filter the index, also keep only output hkeys
         # NOTE: Might have an indepent way that does not use log in v0.7
         ind_df = all_ind_df[all_ind_df.KW_PID.isin(self.log_df.PID)]
-        ind_df = ind_df[ind_df.KW_OUTPUT.isin(self.output_hkeys)]
+
+        if not self.pp_flag:
+            ind_df = ind_df[ind_df.KW_OUTPUT.isin(self.output_hkeys)]
 
         return ind_df
 
@@ -293,6 +312,7 @@ class DrsTest:
         :return: Dataframe with master calibdb entries
         :rtype: pd.DataFrame
         """
+
         if not force and self.calib_df is not None:
             return self.ind_df
 
@@ -356,7 +376,7 @@ class DrsTest:
         ind_night_file = self.ind_df.reset_index()[["NIGHTNAME", "FILENAME"]]
         keep_ind = pd.MultiIndex.from_frame(ind_night_file)
         cdb_used_df = all_cdb_used_df.loc[keep_ind]
-
+        
         return cdb_used_df
 
 
@@ -386,6 +406,11 @@ class DrsTest:
     # =========================================================================
     def set_subtests(self):
         subtest_list = []
+
+        if self.pp_flag:
+            pass
+        # Count all raw files. THIS IS NOT IN AN INDEX.FITS
+        
 
         # Count log entries
         subtest_list.append(st.CountLogTest(self.log_df))
