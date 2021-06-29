@@ -174,7 +174,22 @@ class CountQCTest(SubTest):
         log_qc_failed = self.log_df[~self.log_df.PASSED_ALL_QC]
         self.result = len(log_qc_failed)
 
-        if self.result > 0:
+        odometer_flag = 'ODOMETER' in log_qc_failed.columns
+
+        if self.result > 0 and odometer_flag:
+            self.comments = 'One or more recipe have failed QC.'
+            self
+            log_reset = log_qc_failed.reset_index()
+            data_dict_check_qc = {
+                'Night': log_reset.DIRECTORY.values,
+                'Odometer': log_qc_failed.ODOMETER.values,
+                'QC_STRING': log_qc_failed.QC_STRING.values,
+            }
+            self.details = ut.inspect_table(
+                self.test_html_path, self.id, data_dict_check_qc,
+                'Odometers that Failed One or More Quality Control')
+
+        if self.result > 0 and not odometer_flag:
             self.comments = 'One or more recipe have failed QC.'
             self
             log_reset = log_qc_failed.reset_index()
@@ -191,7 +206,7 @@ class PlotQCTest(SubTest):
     def __init__(self, log_df: DataFrame, test_html_path: str,
                  recipe_name: str):
         super().__init__(
-            description="Plot of the various QCs as a function of time")
+            description="Plot of the various QCs as a function of odometer, order or time")
 
         self.log_df = log_df
         self.test_html_path = test_html_path
@@ -215,11 +230,23 @@ class PlotQCTest(SubTest):
         except KeyError:
             pass
 
-        # NOTE: Some (wavemaster) have duplicate QC_NAMES, why?]
-        # For now, it overwrites.
-        data_dict_qc_plot = {'Night': qc_values.index.tolist()}
-        for key, series in qc_values.iteritems():
-            data_dict_qc_plot[key] = series.tolist()
+        odometer_flag = 'ODOMETER' in self.log_df.columns
+        order_flag = len(qc_names) == 49
+
+        if odometer_flag:
+            data_dict_qc_plot = {'Night': qc_values.index.tolist()}
+            data_dict_qc_plot['Odometer'] = self.log_df.ODOMETER.tolist()
+            for key, series in qc_values.iteritems():
+                data_dict_qc_plot[key] = series.tolist()
+
+        elif order_flag:
+            data_dict_qc_plot = {'Order': list(range(1, 50)),
+                                   qc_names[0]: qc_values.values[0]}
+
+        else:
+            data_dict_qc_plot = {'Night': qc_values.index.tolist()}
+            for key, series in qc_values.iteritems():
+                data_dict_qc_plot[key] = series.tolist()
 
         self.result = "See the Details column"
         self.details = ut.inspect_plot(
