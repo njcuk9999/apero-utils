@@ -61,6 +61,27 @@ class SubTest:
         raise NotImplementedError(msg)
 
 
+class CountRawTest(SubTest):
+    def __init__(self,
+                 input_path: str):
+        """
+        Subtest that counts the number of raw files on disk.
+
+        The result is the count.
+
+        :param input_path: Path to raw file directory
+        """
+        self.input_path = input_path
+
+        super().__init__(description=f"# of raw files in {self.input_path}")
+
+    def run(self):
+
+        exclude_list = ["index.fits", "log.fits"]
+        raw_series = ut.get_output_files(self.input_path, exclude_fname=exclude_list)
+        self.result = raw_series.size
+
+
 class CountLogTest(SubTest):
     def __init__(self,
                  log_df: DataFrame,
@@ -101,7 +122,6 @@ class CountLogTest(SubTest):
         log_count = tot_count.sub(master_count, fill_value=0).astype(int)
 
         self.result = log_count
-        self.comments = f"Additional recipes called with {self.master_flag}: {master_count}"
 
 
 class CountOutTest(SubTest):
