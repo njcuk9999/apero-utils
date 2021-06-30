@@ -124,7 +124,7 @@ def load_fits_df(pathlist: List[str]) -> DataFrame:
 
 
 def make_full_index(real_index: DataFrame, missing_index: DataFrame) -> DataFrame:
-
+ 
     real_index = real_index.copy()
     missing_index = missing_index.copy()
 
@@ -438,6 +438,7 @@ def missing_index_headers(
     :return: Dataframe with info of missing index files
     :rtype: DataFrame
     """
+
     if cache_dir is not None:
         p = Path(cache_dir)
         p.mkdir(parents=True, exist_ok=True)
@@ -450,6 +451,7 @@ def missing_index_headers(
     # using apero to discard some filenames
     params = constants.load(instrument)
     exclude_fname = get_names_no_index(params)  # Exclude log.fits and stuff like that
+
     if output_files is None:
         parent_dir = get_nth_parent(ind_df.FULLPATH.iloc[0], order=2)
         output_files = get_output_files(parent_dir, exclude_fname=exclude_fname)
@@ -472,6 +474,11 @@ def missing_index_headers(
         # Some files (images) have file in ext=0, others (tables) in ext=1
         # NOTE: This may change in future versions ?
         # TODO: have this iin two place: move to function ?
+
+        # If no missing files
+        if len(out_not_in_index) == 0:
+           return out_not_in_index
+
         headers = out_not_in_index.apply(fits.getheader, ext=0)
         ext1_mask = headers.str.len() == 4
         headers_ext1 = out_not_in_index[ext1_mask].apply(fits.getheader, ext=1)
