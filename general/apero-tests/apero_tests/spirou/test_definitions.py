@@ -55,10 +55,13 @@ red_index = ut.load_index_df(params[red_key])
 # NOTE: For now this includes DEBUG files, which we all discard right after.
 # We load them for consistency (because some DEBUG are already in index),
 # but could add an option to skip them
+
+# TODO: the pp missing index and red missing index should be different cache files...
 pp_missing_index = ut.missing_index_headers(
     pp_index, instrument=__INSTRUMENT__, cache_dir=CACHEDIR
 )
 pp_full_index = ut.make_full_index(pp_index, pp_missing_index)
+
 red_missing_index = ut.missing_index_headers(
     red_index, instrument=__INSTRUMENT__, cache_dir=CACHEDIR
 )
@@ -73,6 +76,7 @@ tellu_df = ut.load_db("TELLU", instrument=__INSTRUMENT__) # All telludb entries
 # - Compare log and index with small report
 # - Return index files that have a PID match in the logs
 #   (the ones that can be processed at index level)
+pp_index = ut.global_index_check(pp_full_index, pp_log)
 red_index = ut.global_index_check(red_full_index, red_log)
 debug_mask = red_index.FILENAME.str.startswith("DEBUG")
 red_index = red_index[~debug_mask]  # DEBUGs are not used in tests
@@ -103,6 +107,16 @@ tests.append(cal_preprocess)
 # -----------------------------------------------------------------------------
 # Dark Master Test
 # -----------------------------------------------------------------------------
+cal_dark_master = DrsTest(
+    drs_recipe=RECIPE_DICT["cal_dark_master_spirou.py"],
+    all_log_df=red_log,
+    all_index_df=red_index,
+    all_master_calib_df=master_calib_db,
+    all_tellu_df=tellu_df,
+    all_cdb_used_df=red_cdb_used_df,
+)
+
+tests.append(cal_dark_master)
 
 
 # -----------------------------------------------------------------------------
@@ -138,7 +152,6 @@ tests.append(cal_loc)
 # -----------------------------------------------------------------------------
 cal_shape_master = DrsTest(
     drs_recipe=RECIPE_DICT["cal_shape_master_spirou.py"],
-    master_flag = True,
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
@@ -197,7 +210,6 @@ tests.append(cal_thermal)
 # -----------------------------------------------------------------------------
 cal_leak_master = DrsTest(
     drs_recipe=RECIPE_DICT["cal_leak_master_spirou.py"],
-    master_flag = True,
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
@@ -213,7 +225,6 @@ tests.append(cal_leak_master)
 # -----------------------------------------------------------------------------
 cal_wave_master = DrsTest(
     drs_recipe=RECIPE_DICT["cal_wave_master_spirou.py"],
-    master_flag = True,
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
