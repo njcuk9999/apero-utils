@@ -66,9 +66,13 @@ red_missing_index = ut.missing_index_headers(
     red_index, instrument=__INSTRUMENT__, cache_dir=CACHEDIR
 )
 red_full_index = ut.make_full_index(red_index, red_missing_index)
-master_calib_db = ut.load_db("CALIB", instrument=__INSTRUMENT__)  # All calibdb entries
-tellu_df = ut.load_db("TELLU", instrument=__INSTRUMENT__) # All telludb entries
-#master_cdb_index = ut.load_db
+master_calib_db = ut.load_db(
+    "CALIB", instrument=__INSTRUMENT__
+)  # All calibdb entries
+tellu_df = ut.load_db(
+    "TELLU", instrument=__INSTRUMENT__
+)  # All telludb entries
+# master_cdb_index = ut.load_db
 
 # Some global tests are done here (before per-recipe)
 # NOTE: This should change in 0.7. Will have new way to match files per recipe
@@ -96,7 +100,7 @@ tests = []
 # -----------------------------------------------------------------------------
 cal_preprocess = DrsTest(
     drs_recipe=RECIPE_DICT["cal_preprocess_spirou.py"],
-    pp_flag = True,
+    pp_flag=True,
     all_log_df=pp_log,
     all_index_df=pp_index,
 )
@@ -333,7 +337,7 @@ obj_mk_template = DrsTest(
     all_cdb_used_df=red_cdb_used_df,
 )
 
-# TODO: how many objects were used in each template? does this match up to the 
+# TODO: how many objects were used in each template? does this match up to the
 # number of tcorr files (output of fit_tellu)?
 
 tests.append(obj_mk_template)

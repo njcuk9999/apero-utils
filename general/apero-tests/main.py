@@ -107,7 +107,8 @@ html_dict = {
 
 # build main .html summary
 env = Environment(
-    loader=FileSystemLoader(TEMPLATEDIR), autoescape=select_autoescape(["html", "xml"])
+    loader=FileSystemLoader(TEMPLATEDIR),
+    autoescape=select_autoescape(["html", "xml"]),
 )
 
 summary_file = "summary.html"

@@ -113,8 +113,10 @@ class DrsTest:
                 f for farg in self.fileargs for f in farg.files
             ]
             if self.instrument is not None:
-                warnings.warn("Overwriting kwarg instrument with recipe info",
-                              RuntimeWarning)
+                warnings.warn(
+                    "Overwriting kwarg instrument with recipe info",
+                    RuntimeWarning,
+                )
             self.instrument = self.recipe.instrument
             self.recipe_name = ut.removext(self.recipe.name, ext=".py")
             self.test_id = self.recipe_name + f"_test{testnum}"
@@ -133,13 +135,15 @@ class DrsTest:
             self.output_path = self.dirpaths[self.recipe.outputdir]
 
             # Path to HTML report
-            self.html_path = Path(OUTDIR, self.test_id,
-                                  ".".join([self.test_id, "html"]))
+            self.html_path = Path(
+                OUTDIR, self.test_id, ".".join([self.test_id, "html"])
+            )
 
             # Get keys for outputs
             self.output_dict = self.recipe.outputs
             self.output_drs_files = [
-                o for o in list(self.output_dict.values())
+                o
+                for o in list(self.output_dict.values())
                 if isinstance(o, DrsFitsFile)
             ]
 
@@ -148,27 +152,29 @@ class DrsTest:
                     map(
                         lambda o: o.required_header_keys["KW_OUTPUT"],
                         self.output_drs_files,
-                    ))
+                    )
+                )
 
             # NOTE: index is filtered with log to keep only relevant entries.
             # A global test is used to report outputs that match no logs
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
-            
+
             self.calibdb_keys = self.get_dbkeys("calibration")
             self.telludb_keys = self.get_dbkeys("telluric")
 
             # Load calibdb DF (master entries and calibdb files)
             self.calib_df = self.load_calib_df(
-                all_calib_df=all_master_calib_df)
+                all_calib_df=all_master_calib_df
+            )
 
             if not self.pp_flag:
                 self.cdb_used_df = self.load_cdb_used_df(
-                    all_cdb_used_df=all_cdb_used_df)
+                    all_cdb_used_df=all_cdb_used_df
+                )
 
             # Load telludb DF
-            self.tellu_df = self.load_tellu_df(
-                all_tellu_df=all_tellu_df)
+            self.tellu_df = self.load_tellu_df(all_tellu_df=all_tellu_df)
 
             # Generate list of default subtests
             self.set_subtests()
@@ -205,7 +211,8 @@ class DrsTest:
                         keylist.append(rfile2.get_dbkey())
                 else:
                     raise TypeError(
-                        f"Got an unexpected fibers attribute for file {rfile}")
+                        f"Got an unexpected fibers attribute for file {rfile}"
+                    )
 
         return keylist
 
@@ -214,19 +221,23 @@ class DrsTest:
         Get list of argument with type 'file[s]' for the recipe
         """
         fileargs = [
-            self.recipe.args[key] for key in self.recipe.args
+            self.recipe.args[key]
+            for key in self.recipe.args
             if self.recipe.args[key].dtype in ["file", "files"]
         ]
-        fileargs.extend([
-            self.recipe.kwargs[key] for key in self.recipe.kwargs
-            if self.recipe.kwargs[key].dtype in ["file", "files"]
-        ])
+        fileargs.extend(
+            [
+                self.recipe.kwargs[key]
+                for key in self.recipe.kwargs
+                if self.recipe.kwargs[key].dtype in ["file", "files"]
+            ]
+        )
 
         return fileargs
 
-    def load_log_df(self,
-                    all_log_df: Optional[DataFrame] = None,
-                    force: bool = False) -> Union[DataFrame, None]:
+    def load_log_df(
+        self, all_log_df: Optional[DataFrame] = None, force: bool = False
+    ) -> Union[DataFrame, None]:
         """Get log content in a dataframe
 
         Parse all log files and return a dataframe with only entries that have
@@ -254,14 +265,14 @@ class DrsTest:
         log_df = all_log_df[all_log_df.LOGFILE.str.contains(self.recipe_name)]
 
         if self.pp_flag:
-            log_df['ARGS'] = log_df.ARGS.str.replace('persi_', '')
-            log_df['ODOMETER'] = log_df.ARGS.str.split('.fits').str[0].str[-8:]
+            log_df["ARGS"] = log_df.ARGS.str.replace("persi_", "")
+            log_df["ODOMETER"] = log_df.ARGS.str.split(".fits").str[0].str[-8:]
 
         return log_df
 
-    def load_ind_df(self,
-                    all_ind_df: Optional[DataFrame] = None,
-                    force: bool = True) -> Union[DataFrame, None]:
+    def load_ind_df(
+        self, all_ind_df: Optional[DataFrame] = None, force: bool = True
+    ) -> Union[DataFrame, None]:
         """Get index contents in a dataframe
 
         Parse all index.fits files and return a dataframe.
@@ -289,7 +300,8 @@ class DrsTest:
 
         if self.log_df is None:
             raise AttributeError(
-                "A non-null log_df is required to filter the index")
+                "A non-null log_df is required to filter the index"
+            )
 
         # We use the log to filter the index, also keep only output hkeys
         # NOTE: Might have an indepent way that does not use log in v0.7
@@ -300,9 +312,9 @@ class DrsTest:
 
         return ind_df
 
-    def load_calib_df(self,
-                      all_calib_df: Optional[DataFrame] = None,
-                      force: bool = True) -> Union[DataFrame, None]:
+    def load_calib_df(
+        self, all_calib_df: Optional[DataFrame] = None, force: bool = True
+    ) -> Union[DataFrame, None]:
         """
         Load Master calibdb
 
@@ -317,8 +329,10 @@ class DrsTest:
             all_calib_df = ut.load_db("CALIB")
 
         if self.calibdb_keys is None:
-            msg = ("Cannot load index dataframe if no calibdb keys are set,"
-                   " returning None")
+            msg = (
+                "Cannot load index dataframe if no calibdb keys are set,"
+                " returning None"
+            )
             warnings.warn(msg, RuntimeWarning)
             return None
 
@@ -330,9 +344,9 @@ class DrsTest:
 
         return calib_df
 
-    def load_tellu_df(self,
-                      all_tellu_df: Optional[DataFrame] = None,
-                      force: bool = True) -> Union[DataFrame, None]:
+    def load_tellu_df(
+        self, all_tellu_df: Optional[DataFrame] = None, force: bool = True
+    ) -> Union[DataFrame, None]:
         """
         Load telludb
 
@@ -346,8 +360,10 @@ class DrsTest:
             all_tellu_df = ut.load_db("TELLU")
 
         if self.telludb_keys is None:
-            msg = ("Cannot load index dataframe if no telludb keys are set,"
-                   " returning None")
+            msg = (
+                "Cannot load index dataframe if no telludb keys are set,"
+                " returning None"
+            )
             warnings.warn(msg, RuntimeWarning)
             return None
 
@@ -355,15 +371,17 @@ class DrsTest:
 
         return tellu_df
 
-    def load_cdb_used_df(self,
-                         all_cdb_used_df: Optional[DataFrame] = None,
-                         force: bool = True) -> Union[DataFrame, None]:
+    def load_cdb_used_df(
+        self, all_cdb_used_df: Optional[DataFrame] = None, force: bool = True
+    ) -> Union[DataFrame, None]:
         if not force and self.cdb_used_df is not None:
             return self.cdb_used_df
 
         if self.ind_df is None:
-            msg = ("Cannot load previous calibs if index dataframe is not set."
-                   " Returning None")
+            msg = (
+                "Cannot load previous calibs if index dataframe is not set."
+                " Returning None"
+            )
             warnings.warn(msg, RuntimeWarning)
 
         if all_cdb_used_df is None:
@@ -373,17 +391,14 @@ class DrsTest:
         ind_night_file = self.ind_df.reset_index()[["NIGHTNAME", "FILENAME"]]
         keep_ind = pd.MultiIndex.from_frame(ind_night_file)
         cdb_used_df = all_cdb_used_df.loc[keep_ind]
-        
+
         return cdb_used_df
-
-
-
 
     # =========================================================================
     # Utility functions
     # =========================================================================
     def get_dir_path(self):
-        """ Get dictionary mapping keywords to data directories """
+        """Get dictionary mapping keywords to data directories"""
         dirpaths = dict()
         if self.params is not None:
             dirpaths["raw"] = self.params["DRS_DATA_RAW"]
@@ -404,7 +419,6 @@ class DrsTest:
     def set_subtests(self):
         subtest_list = []
 
-        
         # Count all raw files
         if self.pp_flag:
             subtest_list.append(st.CountRawTest(self.input_path))
@@ -414,14 +428,15 @@ class DrsTest:
 
         # Count all outputs
         subtest_list.append(
-            st.CountOutTest(self.ind_df, self.output_path, self.output_hkeys))
+            st.CountOutTest(self.ind_df, self.output_path, self.output_hkeys)
+        )
 
         # Count unique outputs
         subtest_list.append(
-            st.CountOutTest(self.ind_df,
-                            self.output_path,
-                            self.output_hkeys,
-                            unique=True))
+            st.CountOutTest(
+                self.ind_df, self.output_path, self.output_hkeys, unique=True
+            )
+        )
 
         # TODO Compare output and log results
 
@@ -430,14 +445,16 @@ class DrsTest:
 
         # QC Plot
         subtest_list.append(
-            st.PlotQCTest(self.log_df, self.html_path, self.recipe_name))
+            st.PlotQCTest(self.log_df, self.html_path, self.recipe_name)
+        )
 
         # Not ended count
         subtest_list.append(st.CountEndedTest(self.log_df, self.html_path))
 
         # calibDB output count
         subtest_list.append(
-            st.CountCalibEntries(self.calib_df, self.calibdb_keys))
+            st.CountCalibEntries(self.calib_df, self.calibdb_keys)
+        )
 
         # TODO: Compare calibdb checks
 
@@ -446,8 +463,7 @@ class DrsTest:
         # TODO: Telludb
 
         # telluDB output count
-        subtest_list.append(
-            st.CountTelluEntries(self.tellu_df))
+        subtest_list.append(st.CountTelluEntries(self.tellu_df))
 
         self.subtest_list = subtest_list
 
@@ -475,33 +491,22 @@ class DrsTest:
 
         html_dict = {
             # Summary header info
-            "name":
-            self.name,
-            "setup":
-            self.setup,
-            "instrument":
-            self.instrument,
-            "recipe":
-            self.recipe_name,
-            "date":
-            self.date,
-            "output_path":
-            self.output_path,
-            "output_list":
-            self.output_hkeys,
-            "calibdb_list":
-            self.calibdb_keys,
-            "calibdb_path":
-            os.path.join(self.params["DRS_CALIB_DB"],
-                         self.params["CALIB_DB_NAME"]),
+            "name": self.name,
+            "setup": self.setup,
+            "instrument": self.instrument,
+            "recipe": self.recipe_name,
+            "date": self.date,
+            "output_path": self.output_path,
+            "output_list": self.output_hkeys,
+            "calibdb_list": self.calibdb_keys,
+            "calibdb_path": os.path.join(
+                self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
+            ),
             # TODO: Get links per recipe automatically
             # TODO: Maybe link to full docs, not github
-            "docs_link":
-            "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes",
-
+            "docs_link": "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes",
             # Checks
-            "subtest_list":
-            subtest_list,
+            "subtest_list": subtest_list,
         }
 
         self.gen_html(html_dict)

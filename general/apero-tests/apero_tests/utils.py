@@ -3,10 +3,10 @@ General functions to use in apero tests
 """
 import glob
 import os
-from os.path import dirname, join
 import warnings
+from os.path import dirname, join
 from pathlib import Path
-from typing import List, Optional, Union, Dict
+from typing import Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -15,14 +15,14 @@ from apero.core.constants import param_functions
 from apero.core.constants.param_functions import ParamDict
 from astropy.io import fits
 from astropy.table import Table
-from pandas import DataFrame, Series
 from bokeh.io.output import output_file
 from bokeh.io.saving import save
 from bokeh.layouts import column, layout
-from bokeh.models import (ColumnDataSource, CustomJS, DataTable, LinearAxis,
-                          TableColumn, Button)
+from bokeh.models import (Button, ColumnDataSource, CustomJS, DataTable,
+                          LinearAxis, TableColumn)
 from bokeh.models.widgets import Div, Select
 from bokeh.plotting import figure
+from pandas import DataFrame, Series
 
 
 def removext(name: str, ext: str = ".py") -> str:
@@ -85,7 +85,9 @@ def load_db(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     db_id = db_id.upper()
 
     params = constants.load(instrument)
-    db_path = os.path.join(params[f"DRS_{db_id}_DB"], params[f"{db_id}_DB_NAME"])
+    db_path = os.path.join(
+        params[f"DRS_{db_id}_DB"], params[f"{db_id}_DB_NAME"]
+    )
 
     colnames = params.listp(f"{db_id}_DB_COLS", dtype=str)
     db_arr = np.loadtxt(db_path, dtype=str, unpack=True)
@@ -123,8 +125,10 @@ def load_fits_df(pathlist: List[str]) -> DataFrame:
     return df
 
 
-def make_full_index(real_index: DataFrame, missing_index: DataFrame) -> DataFrame:
- 
+def make_full_index(
+    real_index: DataFrame, missing_index: DataFrame
+) -> DataFrame:
+
     real_index = real_index.copy()
     missing_index = missing_index.copy()
 
@@ -140,7 +144,10 @@ def make_full_index(real_index: DataFrame, missing_index: DataFrame) -> DataFram
 
 
 def get_cdb_df(
-    index_df: DataFrame, params: ParamDict, force: bool = False, cache_dir: str = None
+    index_df: DataFrame,
+    params: ParamDict,
+    force: bool = False,
+    cache_dir: str = None,
 ) -> DataFrame:
     """
     Get dataframe with all CDB files for each file in index. Index is file name
@@ -157,7 +164,9 @@ def get_cdb_df(
 
     # TODO: Smarter mechanism for cached file
     if cache_path is not None and os.path.isfile(cache_path) and not force:
-        cdb_mjd_df_cache = pd.read_csv(cache_path, index_col=[0, 1], header=[0, 1])
+        cdb_mjd_df_cache = pd.read_csv(
+            cache_path, index_col=[0, 1], header=[0, 1]
+        )
     else:
         cdb_mjd_df_cache = None
 
@@ -166,12 +175,16 @@ def get_cdb_df(
         # NOTE: Might not be necessary in 0.7
         headers = index_df.FULLPATH.apply(fits.getheader, ext=0)
         ext1_mask = headers.str.len() == 4
-        headers_ext1 = index_df.FULLPATH[ext1_mask].apply(fits.getheader, ext=1)
+        headers_ext1 = index_df.FULLPATH[ext1_mask].apply(
+            fits.getheader, ext=1
+        )
         headers[ext1_mask] = headers_ext1
         headers_df = pd.DataFrame(headers.tolist())
 
         # We only want the CDB* keys. Other useful keys are already in index
-        keys = [params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")]
+        keys = [
+            params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")
+        ]
 
         # Only apply if CDB* keys are in the headers
         if all([item in headers_df.columns for item in keys]):
@@ -217,7 +230,8 @@ def get_hkey(fname, hkey):
         mjd = hdf[hkey]
     except KeyError:
         warnings.warn(
-            f"Could not find {hkey} in extension 0 or 1, using nan", RuntimeWarning
+            f"Could not find {hkey} in extension 0 or 1, using nan",
+            RuntimeWarning,
         )
         mjd = np.nan
 
@@ -264,7 +278,13 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
     # TODO: This can be displayed in a bokeh table with some specific columns
     # TODO: Maybe restructure when have better idea of whole framework
     global_bad_index = full_index[index_problem_mask]
-    group_columns = ["PID_TYPE", "KW_OUTPUT", "KW_DPRTYPE", "IN_INDEX", "IN_LOG"]
+    group_columns = [
+        "PID_TYPE",
+        "KW_OUTPUT",
+        "KW_DPRTYPE",
+        "IN_INDEX",
+        "IN_LOG",
+    ]
     count_column = "FILENAME"
     try:
         global_bad_index_summary = global_bad_index.groupby(
@@ -282,13 +302,14 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
 
     # TODO: Do the checks/output here
 
-
     # TODO: When have way of knowing which recipe, return also non-log but recipe
     return full_index[~index_problem_mask]
 
 
 def load_log_df(
-    output_parent: str, log_fname: str = "log.fits", return_missing: bool = False
+    output_parent: str,
+    log_fname: str = "log.fits",
+    return_missing: bool = False,
 ) -> DataFrame:
     """
     Load all log.fits files in single dataframe
@@ -306,7 +327,8 @@ def load_log_df(
     # ???: Keep info of output_parent in df ?
 
     allpaths = [
-        os.path.join(output_parent, d, log_fname) for d in os.listdir(output_parent)
+        os.path.join(output_parent, d, log_fname)
+        for d in os.listdir(output_parent)
     ]
     log_df = load_fits_df(allpaths)
 
@@ -323,7 +345,9 @@ def load_log_df(
 
 
 def load_index_df(
-    output_parent: str, index_fname: str = "index.fits", return_missing: bool = False
+    output_parent: str,
+    index_fname: str = "index.fits",
+    return_missing: bool = False,
 ) -> DataFrame:
     """
     Load all index.fits files in a single dataframe
@@ -342,14 +366,17 @@ def load_index_df(
     # ???: Keep info of output_parent in df ?
     # Get all index.fits in a dataframe
     allpaths = [
-        os.path.join(output_parent, d, index_fname) for d in os.listdir(output_parent)
+        os.path.join(output_parent, d, index_fname)
+        for d in os.listdir(output_parent)
     ]
     ind_df = load_fits_df(allpaths)
 
     # Add full paths to dataframe
     parent_path = os.path.dirname(os.path.dirname(allpaths[0]))
     sep = os.path.sep
-    ind_df["FULLPATH"] = parent_path + sep + ind_df.NIGHTNAME + sep + ind_df.FILENAME
+    ind_df["FULLPATH"] = (
+        parent_path + sep + ind_df.NIGHTNAME + sep + ind_df.FILENAME
+    )
 
     # Use NIGHTNAME as index
     ind_df = ind_df.set_index(["NIGHTNAME"])
@@ -450,11 +477,15 @@ def missing_index_headers(
     # If not output files are given, we load them from disk,
     # using apero to discard some filenames
     params = constants.load(instrument)
-    exclude_fname = get_names_no_index(params)  # Exclude log.fits and stuff like that
+    exclude_fname = get_names_no_index(
+        params
+    )  # Exclude log.fits and stuff like that
 
     if output_files is None:
         parent_dir = get_nth_parent(ind_df.FULLPATH.iloc[0], order=2)
-        output_files = get_output_files(parent_dir, exclude_fname=exclude_fname)
+        output_files = get_output_files(
+            parent_dir, exclude_fname=exclude_fname
+        )
     else:
         exclude_mask = output_files.apply(os.path.basename).isin(exclude_fname)
         output_files = output_files[~exclude_mask]
@@ -477,7 +508,7 @@ def missing_index_headers(
 
         # If no missing files
         if len(out_not_in_index) == 0:
-           return out_not_in_index
+            return out_not_in_index
 
         headers = out_not_in_index.apply(fits.getheader, ext=0)
         ext1_mask = headers.str.len() == 4
@@ -491,14 +522,18 @@ def missing_index_headers(
 
         # Get dataframe in index format (tolist expands header values automatically)
         missing_headers_df = DataFrame(headers.tolist())
-        missing_ind_df = DataFrame(missing_headers_df[keys].values, columns=index_cols)
+        missing_ind_df = DataFrame(
+            missing_headers_df[keys].values, columns=index_cols
+        )
 
         # Add fields that are not in the headers
         missing_ind_df["FILENAME"] = out_not_in_index.apply(os.path.basename)
-        missing_ind_df["NIGHTNAME"] = out_not_in_index.apply(os.path.dirname).apply(
-            os.path.basename
-        )
-        missing_ind_df["LAST_MODIFIED"] = out_not_in_index.apply(os.path.getmtime).astype(
+        missing_ind_df["NIGHTNAME"] = out_not_in_index.apply(
+            os.path.dirname
+        ).apply(os.path.basename)
+        missing_ind_df["LAST_MODIFIED"] = out_not_in_index.apply(
+            os.path.getmtime
+        ).astype(
             str
         )  # APERO stores these times as string, so we convert them here
         missing_ind_df["FULLPATH"] = out_not_in_index
@@ -514,8 +549,9 @@ def missing_index_headers(
     return missing_ind_df
 
 
-def inspect_table(test_html_path: Path, subtest: str, data_dict: Dict,
-                  title: str) -> str:
+def inspect_table(
+    test_html_path: Path, subtest: str, data_dict: Dict, title: str
+) -> str:
     """
     Write an html table from a data set in a dictionary.
     """
@@ -540,29 +576,39 @@ def inspect_table(test_html_path: Path, subtest: str, data_dict: Dict,
     )
     table_title = Div(
         text=f'<font size="+1"> <b>{title}</b> </font>',
-        width = 800,
+        width=800,
         height=50,
     )
-    data_table = DataTable(source=source,
-                           columns=columns,
-                           index_header = '',
-                           autosize_mode='fit_columns',
-                           width = 800,
-                           height=400,
-                           editable=True)
+    data_table = DataTable(
+        source=source,
+        columns=columns,
+        index_header="",
+        autosize_mode="fit_columns",
+        width=800,
+        height=400,
+        editable=True,
+    )
 
     download = Button(label="Download to CSV", button_type="success", width=80)
-    
-    download.js_on_click(CustomJS(args=dict(source=source),
-    code=open(os.path.join(os.path.dirname(__file__),"download.js")).read()))
 
-    grid_layout = layout([[parent_link], [table_title], [data_table, download]])
+    download.js_on_click(
+        CustomJS(
+            args=dict(source=source),
+            code=open(
+                os.path.join(os.path.dirname(__file__), "download.js")
+            ).read(),
+        )
+    )
+
+    grid_layout = layout(
+        [[parent_link], [table_title], [data_table, download]]
+    )
 
     output_file(save_path, title=subtest)
     save(grid_layout)
 
     # keep only subtest dir and file to put in parent html as link
-    html_path = '/'.join(save_path.parts[-2:])
+    html_path = "/".join(save_path.parts[-2:])
 
     return html_path
 
@@ -581,35 +627,43 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
 
     # bokeh tools
     TOOLS = [
-        "crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
-        "save"
+        "crosshair",
+        "hover",
+        "pan",
+        "box_zoom",
+        "undo",
+        "redo",
+        "reset",
+        "save",
     ]
 
-    if 'Odometer' in data_dict:
+    if "Odometer" in data_dict:
 
         # night to datetime
-        for i in range(len(data_dict['Night'])):
-            if '_persi' in data_dict['Night'][i]:
-                data_dict['Night'][i] = data_dict['Night'][i][:10]
-        data_dict['PLOTDATE'] = pd.to_datetime(data_dict['Night'])
+        for i in range(len(data_dict["Night"])):
+            if "_persi" in data_dict["Night"][i]:
+                data_dict["Night"][i] = data_dict["Night"][i][:10]
+        data_dict["PLOTDATE"] = pd.to_datetime(data_dict["Night"])
 
         # y variable list
         axis_map = data_dict.copy()
-        axis_map.pop('Night')
-        axis_map.pop('PLOTDATE')
-        axis_map.pop('Odometer')
+        axis_map.pop("Night")
+        axis_map.pop("PLOTDATE")
+        axis_map.pop("Odometer")
 
         axis_map_list = list(axis_map.keys())
 
         # create widget
-        y_axis_widget = Select(title="Quality Control",
-                               options=axis_map_list,
-                               value=axis_map_list[0],
-                               width=260)
+        y_axis_widget = Select(
+            title="Quality Control",
+            options=axis_map_list,
+            value=axis_map_list[0],
+            width=260,
+        )
 
         # data set
-        data_dict['x'] = data_dict['PLOTDATE']
-        data_dict['y'] = data_dict[axis_map_list[0]]
+        data_dict["x"] = data_dict["PLOTDATE"]
+        data_dict["y"] = data_dict[axis_map_list[0]]
         source_visible = ColumnDataSource(data_dict)
 
         # bokeh Hover
@@ -631,37 +685,41 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
         """
 
         # plot
-        p = figure(plot_width=1200,
-                   plot_height=700,
-                   tools=TOOLS,
-                   toolbar_location="left",
-                   x_axis_label='Night',
-                   x_axis_type="datetime",
-                   tooltips = TOOLTIPS,
-                   title=title)
-        p.title.text_font_size = '12pt'
-        p.xaxis.axis_label_text_font_size = '12pt'
+        p = figure(
+            plot_width=1200,
+            plot_height=700,
+            tools=TOOLS,
+            toolbar_location="left",
+            x_axis_label="Night",
+            x_axis_type="datetime",
+            tooltips=TOOLTIPS,
+            title=title,
+        )
+        p.title.text_font_size = "12pt"
+        p.xaxis.axis_label_text_font_size = "12pt"
         p.yaxis.visible = False
 
-    elif 'Order' in data_dict:
+    elif "Order" in data_dict:
 
         # y variable list
         axis_map = data_dict.copy()
-        axis_map.pop('Order')
+        axis_map.pop("Order")
 
         axis_map_list = list(axis_map.keys())
 
         # create widget
-        y_axis_widget = Select(title="Quality Control",
-                               options=axis_map_list,
-                               value=axis_map_list[0],
-                               width=260)
+        y_axis_widget = Select(
+            title="Quality Control",
+            options=axis_map_list,
+            value=axis_map_list[0],
+            width=260,
+        )
 
         # data set
-        data_dict['x'] = data_dict['Order']
-        data_dict['y'] = data_dict[axis_map_list[0]]
+        data_dict["x"] = data_dict["Order"]
+        data_dict["y"] = data_dict[axis_map_list[0]]
         source_visible = ColumnDataSource(data_dict)
-        
+
         # bokeh Hover
         TOOLTIPS = """
         <table>
@@ -677,41 +735,45 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
         """
 
         # plot
-        p = figure(plot_width=1200,
-                   plot_height=700,
-                   tools=TOOLS,
-                   toolbar_location="left",
-                   x_axis_label='Order',
-                   tooltips = TOOLTIPS,
-                   title=title)
-        p.title.text_font_size = '12pt'
-        p.xaxis.axis_label_text_font_size = '12pt'
+        p = figure(
+            plot_width=1200,
+            plot_height=700,
+            tools=TOOLS,
+            toolbar_location="left",
+            x_axis_label="Order",
+            tooltips=TOOLTIPS,
+            title=title,
+        )
+        p.title.text_font_size = "12pt"
+        p.xaxis.axis_label_text_font_size = "12pt"
         p.yaxis.visible = False
 
-    elif 'Night' in data_dict:
+    elif "Night" in data_dict:
 
         # night to datetime
-        for i in range(len(data_dict['Night'])):
-            if '_persi' in data_dict['Night'][i]:
-                data_dict['Night'][i] = data_dict['Night'][i][:10]
-        data_dict['PLOTDATE'] = pd.to_datetime(data_dict['Night'])
+        for i in range(len(data_dict["Night"])):
+            if "_persi" in data_dict["Night"][i]:
+                data_dict["Night"][i] = data_dict["Night"][i][:10]
+        data_dict["PLOTDATE"] = pd.to_datetime(data_dict["Night"])
 
         # y variable list
         axis_map = data_dict.copy()
-        axis_map.pop('Night')
-        axis_map.pop('PLOTDATE')
+        axis_map.pop("Night")
+        axis_map.pop("PLOTDATE")
 
         axis_map_list = list(axis_map.keys())
 
         # create widget
-        y_axis_widget = Select(title="Quality Control",
-                               options=axis_map_list,
-                               value=axis_map_list[0],
-                               width=260)
+        y_axis_widget = Select(
+            title="Quality Control",
+            options=axis_map_list,
+            value=axis_map_list[0],
+            width=260,
+        )
 
         # data set
-        data_dict['x'] = data_dict['PLOTDATE']
-        data_dict['y'] = data_dict[axis_map_list[0]]
+        data_dict["x"] = data_dict["PLOTDATE"]
+        data_dict["y"] = data_dict[axis_map_list[0]]
         source_visible = ColumnDataSource(data_dict)
 
         # bokeh Hover
@@ -729,26 +791,29 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
         """
 
         # plot
-        p = figure(plot_width=1200,
-                   plot_height=700,
-                   tools=TOOLS,
-                   toolbar_location="left",
-                   x_axis_label='Night',
-                   x_axis_type="datetime",
-                   tooltips = TOOLTIPS,
-                   title=title)
-        p.title.text_font_size = '12pt'
-        p.xaxis.axis_label_text_font_size = '12pt'
+        p = figure(
+            plot_width=1200,
+            plot_height=700,
+            tools=TOOLS,
+            toolbar_location="left",
+            x_axis_label="Night",
+            x_axis_type="datetime",
+            tooltips=TOOLTIPS,
+            title=title,
+        )
+        p.title.text_font_size = "12pt"
+        p.xaxis.axis_label_text_font_size = "12pt"
         p.yaxis.visible = False
 
     else:
-        KeyError('Expected Odometer, Order or Night key for x axis')
+        KeyError("Expected Odometer, Order or Night key for x axis")
 
-    p.circle('x', 'y', source=source_visible, line_width=2)
+    p.circle("x", "y", source=source_visible, line_width=2)
 
-    y_axis = LinearAxis(axis_label=y_axis_widget.value,
-                        axis_label_text_font_size='12pt')
-    p.add_layout(y_axis, 'left')
+    y_axis = LinearAxis(
+        axis_label=y_axis_widget.value, axis_label_text_font_size="12pt"
+    )
+    p.add_layout(y_axis, "left")
 
     # javascript callback
     js_code = """
@@ -762,12 +827,12 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
 
               p.reset.emit()
               """
-    callback_y_axis = CustomJS(args=dict(source_visible=source_visible,
-                                         y_axis=y_axis,
-                                         p=p),
-                               code=js_code)
+    callback_y_axis = CustomJS(
+        args=dict(source_visible=source_visible, y_axis=y_axis, p=p),
+        code=js_code,
+    )
 
-    y_axis_widget.js_on_change('value', callback_y_axis)
+    y_axis_widget.js_on_change("value", callback_y_axis)
 
     # html doc
     parent_link = Div(
@@ -780,7 +845,7 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
     save(grid_layout)
 
     # keep only subtest dir and file to put in parent html
-    html_path = '/'.join(save_path.parts[-2:])
+    html_path = "/".join(save_path.parts[-2:])
 
     return html_path
 
@@ -803,15 +868,23 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     # list unique column names
     col_names = np.unique(cdb_df.columns.get_level_values(0))[::-1]
     # data dict to bokeh
-    source = ColumnDataSource(cdb_df.reset_index(level='FILENAME'))
+    source = ColumnDataSource(cdb_df.reset_index(level="FILENAME"))
     # remove added underscore
-    source.data['FILENAME'] = source.data.pop('FILENAME_')
+    source.data["FILENAME"] = source.data.pop("FILENAME_")
     # night to datetime
-    source.data['PLOTDATE'] = pd.to_datetime(source.data['NIGHTNAME'])
+    source.data["PLOTDATE"] = pd.to_datetime(source.data["NIGHTNAME"])
 
     # bokeh tools
-    TOOLS = ["crosshair", "hover", "pan", "box_zoom", "undo", "redo", "reset",
-             "save"]
+    TOOLS = [
+        "crosshair",
+        "hover",
+        "pan",
+        "box_zoom",
+        "undo",
+        "redo",
+        "reset",
+        "save",
+    ]
 
     # bokeh Hover
     TOOLTIPS = """
@@ -828,33 +901,35 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     """
 
     # create widget
-    y_axis_widget = Select(title = "CDBTYPE",
-                    options = list(col_names),
-                    value = col_names[0],
-                    width = 260)
+    y_axis_widget = Select(
+        title="CDBTYPE", options=list(col_names), value=col_names[0], width=260
+    )
 
     # data set (x and y variables)
-    source.data['x'] = source.data['PLOTDATE']
-    source.data['y'] = source.data[col_names[0] + '_' + 'DELTA_MJD']
+    source.data["x"] = source.data["PLOTDATE"]
+    source.data["y"] = source.data[col_names[0] + "_" + "DELTA_MJD"]
 
     # plot
-    p = figure(plot_width = 1200,
-               plot_height = 700,
-               tools = TOOLS,
-               toolbar_location = 'right',
-               x_axis_label = 'NIGHTNAME',
-               x_axis_type = 'datetime',
-               tooltips = TOOLTIPS,
-               title = title)
-    p.title.text_font_size = '12pt'
-    p.xaxis.axis_label_text_font_size = '12pt'
+    p = figure(
+        plot_width=1200,
+        plot_height=700,
+        tools=TOOLS,
+        toolbar_location="right",
+        x_axis_label="NIGHTNAME",
+        x_axis_type="datetime",
+        tooltips=TOOLTIPS,
+        title=title,
+    )
+    p.title.text_font_size = "12pt"
+    p.xaxis.axis_label_text_font_size = "12pt"
     p.yaxis.visible = False
 
-    p.circle('x', 'y', source = source, line_width = 2)
+    p.circle("x", "y", source=source, line_width=2)
 
-    y_axis = LinearAxis(axis_label = 'DELTA_MJD',
-                        axis_label_text_font_size = '12pt')
-    p.add_layout(y_axis, 'left')
+    y_axis = LinearAxis(
+        axis_label="DELTA_MJD", axis_label_text_font_size="12pt"
+    )
+    p.add_layout(y_axis, "left")
 
     # javascript callback
     js_code = """
@@ -865,10 +940,9 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
               p.reset.emit()
               """
 
-    callback_y_axis = CustomJS(args = dict(source = source, p = p),
-                               code = js_code)
+    callback_y_axis = CustomJS(args=dict(source=source, p=p), code=js_code)
 
-    y_axis_widget.js_on_change('value', callback_y_axis)
+    y_axis_widget.js_on_change("value", callback_y_axis)
 
     # html doc
     parent_link = Div(
@@ -881,6 +955,6 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     save(grid_layout)
 
     # keep only subtest dir and file to put in parent html
-    html_path = '/'.join(save_path.parts[-2:])
+    html_path = "/".join(save_path.parts[-2:])
 
     return html_path

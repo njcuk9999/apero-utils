@@ -10,12 +10,14 @@ class SubTest:
     # TODO: result should probably more restricted,
     # probably Union[Mapping, Sequence]
     # TODO: Restrict details type/formatting
-    def __init__(self,
-                 subtest_id: Optional[str] = None,
-                 description: Optional[str] = None,
-                 result: Any = None,
-                 comments: Optional[str] = None,
-                 details: Optional[str] = None):
+    def __init__(
+        self,
+        subtest_id: Optional[str] = None,
+        description: Optional[str] = None,
+        result: Any = None,
+        comments: Optional[str] = None,
+        details: Optional[str] = None,
+    ):
         """
         Individual SubTest to test an APERO DRS recipe.
 
@@ -56,14 +58,15 @@ class SubTest:
                                      base SubTest class
         """
         # Using __name__ in case a children class also has no `run()`
-        msg = (f"The run method is not implemented for {type(self).__name__}."
-               " Create a children class or assign result directly.")
+        msg = (
+            f"The run method is not implemented for {type(self).__name__}."
+            " Create a children class or assign result directly."
+        )
         raise NotImplementedError(msg)
 
 
 class CountRawTest(SubTest):
-    def __init__(self,
-                 input_path: str):
+    def __init__(self, input_path: str):
         """
         Subtest that counts the number of raw files on disk.
 
@@ -78,15 +81,19 @@ class CountRawTest(SubTest):
     def run(self):
 
         exclude_list = ["index.fits", "log.fits"]
-        raw_series = ut.get_output_files(self.input_path, exclude_fname=exclude_list)
+        raw_series = ut.get_output_files(
+            self.input_path, exclude_fname=exclude_list
+        )
         self.result = raw_series.size
 
 
 class CountLogTest(SubTest):
-    def __init__(self,
-                 log_df: DataFrame,
-                 master_flag: str = "--master",
-                 group_kwds: Optional[Sequence[str]] = None):
+    def __init__(
+        self,
+        log_df: DataFrame,
+        master_flag: str = "--master",
+        group_kwds: Optional[Sequence[str]] = None,
+    ):
         """
         Subtest that counts the number of calls in the log for a recipe.
 
@@ -125,12 +132,14 @@ class CountLogTest(SubTest):
 
 
 class CountOutTest(SubTest):
-    def __init__(self,
-                 ind_df: DataFrame,
-                 output_path: str,
-                 output_hkeys: List[str],
-                 unique: bool = False,
-                 group_kwds: Optional[Sequence[str]] = None):
+    def __init__(
+        self,
+        ind_df: DataFrame,
+        output_path: str,
+        output_hkeys: List[str],
+        unique: bool = False,
+        group_kwds: Optional[Sequence[str]] = None,
+    ):
         """
         Subtest that counts the number of output files for a recipe
 
@@ -171,20 +180,23 @@ class CountOutTest(SubTest):
         if not self.ind_df.empty:
             if self.unique:
                 self.result = self.ind_df.groupby(
-                    self.group_kwds).FILENAME.nunique()
+                    self.group_kwds
+                ).FILENAME.nunique()
             else:
                 self.result = self.ind_df.groupby(
-                    self.group_kwds).FILENAME.count()
+                    self.group_kwds
+                ).FILENAME.count()
         else:
-            self.result = pd.Series(0,
-                                    index=self.output_hkeys,
-                                    name="FILENAME")
+            self.result = pd.Series(
+                0, index=self.output_hkeys, name="FILENAME"
+            )
 
 
 class CountQCTest(SubTest):
     def __init__(self, log_df: DataFrame, test_html_path: str):
         super().__init__(
-            description="# of log entries that failed one or more QC")
+            description="# of log entries that failed one or more QC"
+        )
 
         self.log_df = log_df
         self.test_html_path = test_html_path
@@ -194,48 +206,56 @@ class CountQCTest(SubTest):
         log_qc_failed = self.log_df[~self.log_df.PASSED_ALL_QC]
         self.result = len(log_qc_failed)
 
-        odometer_flag = 'ODOMETER' in log_qc_failed.columns
+        odometer_flag = "ODOMETER" in log_qc_failed.columns
 
         if self.result > 0 and odometer_flag:
-            self.comments = 'One or more recipe have failed QC.'
+            self.comments = "One or more recipe have failed QC."
             self
             log_reset = log_qc_failed.reset_index()
             data_dict_check_qc = {
-                'Night': log_reset.DIRECTORY.values,
-                'Odometer': log_qc_failed.ODOMETER.values,
-                'QC_STRING': log_qc_failed.QC_STRING.values,
+                "Night": log_reset.DIRECTORY.values,
+                "Odometer": log_qc_failed.ODOMETER.values,
+                "QC_STRING": log_qc_failed.QC_STRING.values,
             }
             self.details = ut.inspect_table(
-                self.test_html_path, self.id, data_dict_check_qc,
-                'Odometers that Failed One or More Quality Control')
+                self.test_html_path,
+                self.id,
+                data_dict_check_qc,
+                "Odometers that Failed One or More Quality Control",
+            )
 
         if self.result > 0 and not odometer_flag:
-            self.comments = 'One or more recipe have failed QC.'
+            self.comments = "One or more recipe have failed QC."
             self
             log_reset = log_qc_failed.reset_index()
             data_dict_check_qc = {
-                'Night': log_reset.DIRECTORY.values,
-                'QC_STRING': log_qc_failed.QC_STRING.values,
+                "Night": log_reset.DIRECTORY.values,
+                "QC_STRING": log_qc_failed.QC_STRING.values,
             }
             self.details = ut.inspect_table(
-                self.test_html_path, self.id, data_dict_check_qc,
-                'Nights that Failed Quality Control')
+                self.test_html_path,
+                self.id,
+                data_dict_check_qc,
+                "Nights that Failed Quality Control",
+            )
 
 
 class PlotQCTest(SubTest):
-    def __init__(self, log_df: DataFrame, test_html_path: str,
-                 recipe_name: str):
+    def __init__(
+        self, log_df: DataFrame, test_html_path: str, recipe_name: str
+    ):
         super().__init__(
-            description="Plot of the various QCs as a function of odometer, order or time")
+            description="Plot of the various QCs as a function of odometer, order or time"
+        )
 
         self.log_df = log_df
         self.test_html_path = test_html_path
         self.recipe_name = recipe_name
 
     def run(self):
-        qc_names = self.log_df.QC_NAMES.str.split(r'\|\|', expand=True)
+        qc_names = self.log_df.QC_NAMES.str.split(r"\|\|", expand=True)
         qc_names = qc_names.iloc[0]  # Keep only one row
-        qc_values = self.log_df.QC_VALUES.str.split(r'\|\|', expand=True)
+        qc_values = self.log_df.QC_VALUES.str.split(r"\|\|", expand=True)
         qc_values.columns = qc_names
         try:
             # NOTE: .convert_dtypes will do in pd versions >= 1.0.0
@@ -250,28 +270,33 @@ class PlotQCTest(SubTest):
         except KeyError:
             pass
 
-        odometer_flag = 'ODOMETER' in self.log_df.columns
+        odometer_flag = "ODOMETER" in self.log_df.columns
         order_flag = len(qc_names) == 49
 
         if odometer_flag:
-            data_dict_qc_plot = {'Night': qc_values.index.tolist()}
-            data_dict_qc_plot['Odometer'] = self.log_df.ODOMETER.tolist()
+            data_dict_qc_plot = {"Night": qc_values.index.tolist()}
+            data_dict_qc_plot["Odometer"] = self.log_df.ODOMETER.tolist()
             for key, series in qc_values.iteritems():
                 data_dict_qc_plot[key] = series.tolist()
 
         elif order_flag:
-            data_dict_qc_plot = {'Order': list(range(1, 50)),
-                                   qc_names[0]: qc_values.values[0]}
+            data_dict_qc_plot = {
+                "Order": list(range(1, 50)),
+                qc_names[0]: qc_values.values[0],
+            }
 
         else:
-            data_dict_qc_plot = {'Night': qc_values.index.tolist()}
+            data_dict_qc_plot = {"Night": qc_values.index.tolist()}
             for key, series in qc_values.iteritems():
                 data_dict_qc_plot[key] = series.tolist()
 
         self.result = "See the Details column"
         self.details = ut.inspect_plot(
-            self.test_html_path, self.id, data_dict_qc_plot,
-            f'{self.recipe_name}.py Quality Control')
+            self.test_html_path,
+            self.id,
+            data_dict_qc_plot,
+            f"{self.recipe_name}.py Quality Control",
+        )
 
 
 class CountEndedTest(SubTest):
@@ -289,17 +314,20 @@ class CountEndedTest(SubTest):
         self.result = len(log_ended_false)
 
         if self.result > 0:
-            self.comments = 'One or more recipe have failed QC.'
+            self.comments = "One or more recipe have failed QC."
             self
             log_reset = log_ended_false.reset_index()
             data_dict_check_ended = {
-                'Night': log_reset.DIRECTORY.values,
-                'ERRORS': log_ended_false.ERRORS.values,
-                'LOGFILE': log_ended_false.LOGFILE.values,
+                "Night": log_reset.DIRECTORY.values,
+                "ERRORS": log_ended_false.ERRORS.values,
+                "LOGFILE": log_ended_false.LOGFILE.values,
             }
-            self.details = ut.inspect_table(self.test_html_path, self.id,
-                                            data_dict_check_ended,
-                                            'Nights that Failed to finish')
+            self.details = ut.inspect_table(
+                self.test_html_path,
+                self.id,
+                data_dict_check_ended,
+                "Nights that Failed to finish",
+            )
 
 
 class CountCalibEntries(SubTest):
@@ -330,6 +358,7 @@ class CountCalibEntries(SubTest):
             return
 
         self.result = calib_count
+
 
 class CountTelluEntries(SubTest):
     def __init__(self, tellu_df: DataFrame):
