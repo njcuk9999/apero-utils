@@ -37,7 +37,6 @@ class DrsTest:
         setup: Optional[str] = None,
         testnum: int = 1,
         pp_flag: bool = False,
-        master_flag: bool = False,
         all_log_df: Optional[DataFrame] = None,
         all_index_df: Optional[DataFrame] = None,
         all_master_calib_df: Optional[DataFrame] = None,
@@ -59,8 +58,7 @@ class DrsTest:
         :param testnum: Number ID N of the test (Nth test for recipe),
                         default is 1
         :type testnum: int
-        :pp_flag: TEMPORARY flag where PP test is different
-        :master_flag: TEMPORARY flag where master recipe tests are different
+        :pp_flag: TEMPORARY flag for PP tests when different
         :param all_log_df: DataFrame with logs for all recipes
         :type  all_log_df: Optional[DataFrame]
         :param all_index_df: DataFrame with index for all recipes
@@ -126,9 +124,8 @@ class DrsTest:
             self.params = self.recipe.drs_params
             self.ismaster = self.recipe.master
 
-            # PP and Master flag
+            # PP flag
             self.pp_flag = pp_flag
-            self.master_flag = master_flag
 
             # Path to input and output directories
             self.dirpaths = self.get_dir_path()
@@ -407,10 +404,10 @@ class DrsTest:
     def set_subtests(self):
         subtest_list = []
 
-        if self.pp_flag:
-            pass
-        # Count all raw files. THIS IS NOT IN AN INDEX.FITS
         
+        # Count all raw files
+        if self.pp_flag:
+            subtest_list.append(st.CountRawTest(self.input_path))
 
         # Count log entries
         subtest_list.append(st.CountLogTest(self.log_df))
