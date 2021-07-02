@@ -135,9 +135,13 @@ def make_full_index(
     # NOTE: Maybe index_key should be moved in more accessible scope
     index_key = "IN_INDEX"
     real_index[index_key] = True
-    missing_index[index_key] = False
 
-    full_index = real_index.append(missing_index)
+    if len(missing_index) > 0:
+        # NOTE: Need to add index_key here to avoid having len > 0
+        missing_index[index_key] = False
+        full_index = real_index.append(missing_index)
+    else:
+        full_index = real_index.copy()
     full_index = full_index.sort_values(["NIGHTNAME", "LAST_MODIFIED"])
 
     return full_index
