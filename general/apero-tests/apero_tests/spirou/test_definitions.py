@@ -44,7 +44,6 @@ red_key = "DRS_DATA_REDUC"
 # =============================================================================
 # ???: Maybe in future  we could have a single index df with extra index level
 #  for parent dir (reduced, tmp, etc.)
-# TODO: Better handle non-reduced log/index stuff (see ??? above)
 params = constants.load(__INSTRUMENT__)
 pp_log = ut.load_log_df(params[pp_key])
 pp_index = ut.load_index_df(params[pp_key])
@@ -56,14 +55,19 @@ red_index = ut.load_index_df(params[red_key])
 # We load them for consistency (because some DEBUG are already in index),
 # but could add an option to skip them
 
-# TODO: the pp missing index and red missing index should be different cache files...
 pp_missing_index = ut.missing_index_headers(
-    pp_index, instrument=__INSTRUMENT__, cache_dir=CACHEDIR
+    pp_index,
+    instrument=__INSTRUMENT__,
+    cache_dir=CACHEDIR,
+    cache_suffix="_pp",
 )
 pp_full_index = ut.make_full_index(pp_index, pp_missing_index)
 
 red_missing_index = ut.missing_index_headers(
-    red_index, instrument=__INSTRUMENT__, cache_dir=CACHEDIR
+    red_index,
+    instrument=__INSTRUMENT__,
+    cache_dir=CACHEDIR,
+    cache_suffix="_red",
 )
 red_full_index = ut.make_full_index(red_index, red_missing_index)
 master_calib_db = ut.load_db(

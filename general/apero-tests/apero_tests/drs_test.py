@@ -147,6 +147,7 @@ class DrsTest:
                 if isinstance(o, DrsFitsFile)
             ]
 
+            # TODO: Handle all recipes without KW_OUTPUT in empty required_header_keys
             if not self.pp_flag:
                 self.output_hkeys = list(
                     map(

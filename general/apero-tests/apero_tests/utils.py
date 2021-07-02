@@ -444,12 +444,14 @@ def get_output_files(
     return out_series
 
 
+
 def missing_index_headers(
     ind_df: DataFrame,
     output_files: Optional[pd.Series] = None,
     instrument: str = "SPIROU",
     force: bool = False,
     cache_dir: str = None,
+    cache_suffix: str = None,
 ) -> DataFrame:
     """
     Find files with missing index and store header info in a dataframe.
@@ -462,14 +464,21 @@ def missing_index_headers(
     :type output_files: Optional[List[str]]
     :param instrument: Instrument name for APERO. Default is SPIROU.
     :type instrument: str
+    :param force: Force reading all files even if cache is available, defaults to False
+    :type force: bool, optional
+    :param cache_dir: Directory where the cache file should be found, defaults to None
+    :type cache_dir: str, optional
+    :param cache_suffix: Suffix to add right before the cache file extension, defaults to None
+    :type cache_suffix: str, optional
     :return: Dataframe with info of missing index files
     :rtype: DataFrame
     """
 
+    # TODO: We could have a better naming/ID method for cache to make various runs more robust.
     if cache_dir is not None:
         p = Path(cache_dir)
         p.mkdir(parents=True, exist_ok=True)
-        cache_name = f"missing_index_df_{instrument}.csv"
+        cache_name = f"missing_index_df_{instrument}{cache_suffix}.csv"
         cache_path = os.path.join(cache_dir, cache_name)
     else:
         cache_path = None
@@ -494,8 +503,9 @@ def missing_index_headers(
     index_mask = output_files.isin(ind_df.FULLPATH)
     out_not_in_index = output_files[~index_mask].reset_index(drop=True)
 
-    # If there is a cached file, we load it and compare it with the excluded files
-    # TODO: Smarter mechanism for cached file
+    # If there is a cached file, we load it and return it directly
+    # TODO: Add a mechanism to use the cache properly, by combining and
+    # re-saving, not just skipping reading any file is there is cache
     if cache_path is not None and os.path.isfile(cache_path) and not force:
         missing_ind_df_cache = pd.read_csv(cache_path, index_col=0)
     else:
@@ -504,7 +514,7 @@ def missing_index_headers(
     if missing_ind_df_cache is None:
         # Some files (images) have file in ext=0, others (tables) in ext=1
         # NOTE: This may change in future versions ?
-        # TODO: have this iin two place: move to function ?
+        # TODO: have this in two place: move to function ?
 
         # If no missing files
         if len(out_not_in_index) == 0:
