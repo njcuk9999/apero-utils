@@ -29,12 +29,13 @@ loggroup = 'APEROG-PID-00016267204261398790-URSX_apero_processing_group'
 # =============================================================================
 class LogFile:
     pid: Union[str, None]         # the log pid for this log file
+    unixtime: Union[Time, None]   # the unix time associated with the pid
     start: Union[Time, None]      # start time
     end: Union[Time, None]        # end time
     duration: Union[float, None]  # duration in seconds
     recipe: str                   # recipe name
     run_id: Union[str, None]      # run id if present
-    success: bool = False
+    success: bool = False         # whether code ran
 
     def __init__(self, logfile: str):
         self.logfile = logfile
@@ -61,10 +62,23 @@ class LogFile:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def process(self):
+    def readlog(self) -> List[str]:
+        """
+        Read the log file (is there a quicker way?)
+        :return: list of strings, the log file
+        """
         # open file
         with open(self.logfile, 'r') as logfile:
             lines = logfile.readlines()
+        return lines
+
+    def process(self):
+        """
+        Process reading all the information from the log file
+        :return: None updates attributes
+        """
+        # read log file
+        lines = self.readlog()
         # ---------------------------------------------------------------------
         # get pid and unix time
         self.pid, self.unixtime = _get_pid(lines)
@@ -116,7 +130,9 @@ def _get_times(unixtime: Time, lines: List[str]) -> List[datetime]:
     """
     # set current time to the unix time found before
     current_time = Time(unixtime)
+    # get the current hour (integer)
     current_hour = current_time.datetime.hour
+    # create the current day string (YYYY-mm-dd)
     current_day = current_time.iso.split()[0]
     # store date times
     datetimes = []
@@ -133,7 +149,10 @@ def _get_times(unixtime: Time, lines: List[str]) -> List[datetime]:
         targs = [current_day, rawtimestr]
         tguess = datetime.fromisoformat('{0} {1}'.format(*targs))
         if rawtimehour < current_hour:
+            # add one day to dtime (datetime)
             dtime = tguess + timedelta(days=1)
+            # update the current day str (YYYY-mm-dd)
+            current_day = dtime.isoformat().split('T')[0]
         else:
             dtime = tguess
 
@@ -176,11 +195,13 @@ def _get_success(lines: List[str]) -> bool:
 # =============================================================================
 def get_stats(logs: List[LogFile]) -> Dict[str, Any]:
     durations = list(map(lambda x: x.duration, logs))
+    pids = list(map(lambda x: x.pid, logs))
     start_times = list(map(lambda x: x.start, logs))
     end_times = list(map(lambda x: x.end, logs))
     stats = dict()
     stats['MEAN'] = np.nanmean(durations)
     stats['MEDIAN'] = np.nanmedian(durations)
+    stats['LONGEST'] = logs[np.argmax(durations)]
     stats['STD'] = np.nanstd(durations)
     stats['NUMBER'] = len(durations)
     stats['CPU_TIME_SS'] = np.sum(durations)
@@ -211,11 +232,12 @@ def print_stats(recipe: str, stats: Dict[str, Any]):
 # Start of code
 # =============================================================================
 if __name__ == "__main__":
-
     # get log groups
     log_groups = glob.glob('APEROG*')
     # get log files
+    print('Getting list of logs in time order...')
     files = glob.glob(log_groups[-1] + '/*.log')
+    files.sort()
     # store astropy times
     logs = dict()
     # print progress
