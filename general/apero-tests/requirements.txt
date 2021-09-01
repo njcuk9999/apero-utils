@@ -1,0 +1,5 @@
+numpy
+pandas
+astropy
+jinja2
+bokeh
