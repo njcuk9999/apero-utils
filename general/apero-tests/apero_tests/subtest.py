@@ -7,8 +7,8 @@ import apero_tests.utils as ut
 
 
 class SubTest:
-    # TODO: result should probably more restricted,
-    # probably Union[Mapping, Sequence]
+    # TODO: result should probably be more restricted,
+    # maybe Optional[Union[Mapping, Sequence]]
     # TODO: Restrict details type/formatting
     def __init__(
         self,

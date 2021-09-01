@@ -22,7 +22,10 @@ instrument = params["INSTRUMENT"]  # instrument
 
 def summary(test: DrsTest):
     """
-    Write the html summary for a given test
+    Create summary info for a test.
+
+    :param test: Test to summarize
+    :type test: DrsTest
     """
 
     f = open(os.path.join(OUTDIR, test, test + ".html"), "r")
@@ -69,9 +72,9 @@ for i, test in enumerate(tests):
 print("All tests done")
 
 # =============================================================================
-# Write html summary
+# Write HTML summary
 # =============================================================================
-# build table element
+# build HTML table element
 summary_list = []
 for i, test in enumerate(tests):
     test_path = Path(OUTDIR, test.test_id, test.test_id + ".html")
@@ -97,6 +100,7 @@ delta_date = date_final - date_ini
 
 date_final = date_final.strftime("%Y-%m-%d %H:%M:%S")
 
+# This dictionary is used to fill jinja template with real values
 html_dict = {
     "setup": setup,
     "instrument": instrument,

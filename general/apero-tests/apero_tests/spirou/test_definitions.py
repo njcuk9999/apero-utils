@@ -53,7 +53,8 @@ red_index = ut.load_index_df(params[red_key])
 # If some files are on disk but not in index, we load their header and add them
 # NOTE: For now this includes DEBUG files, which we all discard right after.
 # We load them for consistency (because some DEBUG are already in index),
-# but could add an option to skip them
+# but could add an option to skip them. Might matter for actual big datasets.
+# Might matter less once we have SQL in 0.7
 
 pp_missing_index = ut.missing_index_headers(
     pp_index,

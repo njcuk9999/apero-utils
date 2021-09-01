@@ -4,7 +4,6 @@ General functions to use in apero tests
 import glob
 import os
 import warnings
-from os.path import dirname, join
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
@@ -17,7 +16,7 @@ from astropy.io import fits
 from astropy.table import Table
 from bokeh.io.output import output_file
 from bokeh.io.saving import save
-from bokeh.layouts import column, layout
+from bokeh.layouts import layout
 from bokeh.models import (Button, ColumnDataSource, CustomJS, DataTable,
                           LinearAxis, TableColumn)
 from bokeh.models.widgets import Div, Select
@@ -50,7 +49,8 @@ def get_nth_parent(path: str, order: int = 1):
 
     :param path: Input path
     :type path: str
-    :param order: Number of directories up (number of times os.dirname is applied).
+    :param order: Number of directories up (number of times os.dirname is
+                  applied).
                   Default is 1.
     :type order: int
     """
@@ -81,7 +81,7 @@ def load_db(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     # calib_table = calibdb.database.get('*', calibdb.database.tname,
     #                                    return_pandas=True)
 
-    # TODO: Should we have check for db_id, does APERO have list of database names ?
+    # TODO: Should we have check for db_id, does APERO have list of db names ?
     db_id = db_id.upper()
 
     params = constants.load(instrument)
@@ -264,7 +264,7 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
 
     full_index = full_index.copy()
 
-    # ???: Should these keys not be hardcoded or is it ok once in index and log ?
+    # ???: Should these keys not be hardcoded or ok once in index and log ?
     # Some masks for all characteristics we want to check
     nan_pid_mask = full_index.KW_PID.isnull()
     blank_pid_mask = full_index.KW_PID == "--"
@@ -306,7 +306,8 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
 
     # TODO: Do the checks/output here
 
-    # TODO: When have way of knowing which recipe, return also non-log but recipe
+    # TODO: When have way of knowing which recipe, return also based on recipe
+    # (not just log)
     return full_index[~index_problem_mask]
 
 
@@ -448,7 +449,6 @@ def get_output_files(
     return out_series
 
 
-
 def missing_index_headers(
     ind_df: DataFrame,
     output_files: Optional[pd.Series] = None,
@@ -468,17 +468,20 @@ def missing_index_headers(
     :type output_files: Optional[List[str]]
     :param instrument: Instrument name for APERO. Default is SPIROU.
     :type instrument: str
-    :param force: Force reading all files even if cache is available, defaults to False
+    :param force: Force reading all files even if cache is available,
+                  defaults to False
     :type force: bool, optional
-    :param cache_dir: Directory where the cache file should be found, defaults to None
+    :param cache_dir: Directory where the cache file should be found,
+                      defaults to None
     :type cache_dir: str, optional
-    :param cache_suffix: Suffix to add right before the cache file extension, defaults to None
+    :param cache_suffix: Suffix to add right before the cache file extension,
+                         defaults to None
     :type cache_suffix: str, optional
     :return: Dataframe with info of missing index files
     :rtype: DataFrame
     """
 
-    # TODO: We could have a better naming/ID method for cache to make various runs more robust.
+    # TODO: Could have better naming/ID method s.t. repeated runs update OK
     if cache_dir is not None:
         p = Path(cache_dir)
         p.mkdir(parents=True, exist_ok=True)
@@ -534,7 +537,7 @@ def missing_index_headers(
         index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
         keys = [params[col][0] for col in index_cols]
 
-        # Get dataframe in index format (tolist expands header values automatically)
+        # Get df in index format (tolist expands header values automatically)
         missing_headers_df = DataFrame(headers.tolist())
         missing_ind_df = DataFrame(
             missing_headers_df[keys].values, columns=index_cols
@@ -945,6 +948,7 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     )
     p.add_layout(y_axis, "left")
 
+    # TODO: Maybe move this to separate file for re-usability and clarity
     # javascript callback
     js_code = """
               var selected_y_axis = cb_obj.value

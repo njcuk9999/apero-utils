@@ -28,6 +28,9 @@ TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
 OUTDIR = os.path.join(PARENTDIR, "out")
 CACHEDIR = os.path.join(PARENTDIR, "cache")
 
+# TODO: Maybe link to full docs, not github
+RECIPE_DOCS_LINK = "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes"
+
 
 class DrsTest:
     def __init__(
@@ -44,10 +47,11 @@ class DrsTest:
         all_cdb_used_df: Optional[DataFrame] = None,
     ):
         """
-        Test class that contains information about test results for a given recipe.
+        Test class that contains information about test results for a given
+        recipe.
 
-        The all_* dataframes are useful if many recipes are checked and users want to
-        parse the database only once.
+        The all_* dataframes are useful if many recipes are checked and users
+        want to parse the database only once.
 
         :param instrument: Instrument of the tested recipe
         :type instrument: Optional[str]
@@ -63,11 +67,13 @@ class DrsTest:
         :type  all_log_df: Optional[DataFrame]
         :param all_index_df: DataFrame with index for all recipes
         :type all_index_df: Optional[DataFrame]
-        :param all_master_calib_df: DataFrame with master calib info for all recipes
+        :param all_master_calib_df: DataFrame with master calib info for all
+                                    recipes
         :type all_master_calib_df: Optional[DataFrame]
         :param all_tellu_df: DataFrame with tellu info for all recipes
         :type all_tellu_df: Optional[DataFrame]
-        :param all_cdb_used_df: DataFrame with info about used calibs for all recipes
+        :param all_cdb_used_df: DataFrame with info about used calibs for all
+                                recipes
         :type all_cdb_used_df: Optional[DataFrame]
         """
         # Get setup path
@@ -147,7 +153,8 @@ class DrsTest:
                 if isinstance(o, DrsFitsFile)
             ]
 
-            # TODO: Handle all recipes without KW_OUTPUT in empty required_header_keys
+            # TODO: Handle all recipes without KW_OUTPUT in empty
+            # required_header_keys
             if not self.pp_flag:
                 self.output_hkeys = list(
                     map(
@@ -202,12 +209,12 @@ class DrsTest:
 
             if rfile.dbname == dbname:
                 if rfile.fibers is None:
-                    # Some files have just one fiber, so dbkey works out of the box
+                    # Some files have just one fiber, dbkey works directly
                     keylist.append(rfile.get_dbkey())
                 elif isinstance(rfile.fibers, list):
-                    # if multiple fibers, need to set one by one (copy for safety)
+                    # If multiple fibers, need to set one by one
                     for fiber in rfile.fibers:
-                        rfile2 = rfile.newcopy()
+                        rfile2 = rfile.newcopy()  # copy for safety
                         rfile2.fiber = fiber
                         keylist.append(rfile2.get_dbkey())
                 else:
@@ -246,13 +253,16 @@ class DrsTest:
 
         :param all_log_df: Dataframe with log info for multiple recipes
         :type all_log_df: DataFrame
-        :param force: Force to reload, by default (False) returns self.log_df if exists
-        :type force: bool :returns: dataframe of log content and list of missing log files
+        :param force: Force to reload, by default (False) returns self.log_df
+                      if exists
+        :type force: bool :returns: dataframe of log content and list of
+                           missing log files
         :rtype: Tuple[pd.DataFrame, list]
         """
-        # NOTE: missing_log was removed, list of all missing logs can be generated with
-        #  util load_log_df function by setting `return_missing` to True
+        # NOTE: missing_log was removed.
+        #  Use utils.load_log_df with `return_missing=True` for that.
 
+        # Don't reload if told not to
         if not force and self.log_df is not None:
             return self.log_df
 
@@ -278,15 +288,17 @@ class DrsTest:
 
         Parse all index.fits files and return a dataframe.
 
-        :param all_ind_df: Dataframe with all index entries for multiple recipes
+        :param all_ind_df: Dataframe with all index entries for multiple
+                           recipes
         :type all_ind_df: Optional[DataFrame]
-        :param force: Force to reload, by default (False) returns self.log_df if exists
+        :param force: Force to reload, by default (False) returns self.log_df
+                      if exists
         :type force: bool
         :returns: dataframe of index content and list of missing index files
         :rtype: Tuple[pd.DataFrame, list]
         """
-        # NOTE: missing_ind was removed, list of all missing inds can be generated with
-        #  util load_ind_df function by setting `return_missing` to True
+        # NOTE: missing_ind was removed.
+        #  Use utils.load_ind_df with `return_missing=True` for that.
 
         # Don't reload if told not to
         if not force and self.ind_df is not None:
@@ -399,7 +411,9 @@ class DrsTest:
     # Utility functions
     # =========================================================================
     def get_dir_path(self):
-        """Get dictionary mapping keywords to data directories"""
+        """
+        Get dictionary mapping keywords to data directories
+        """
         dirpaths = dict()
         if self.params is not None:
             dirpaths["raw"] = self.params["DRS_DATA_RAW"]
@@ -418,6 +432,9 @@ class DrsTest:
     # Function to run tests and write their output
     # =========================================================================
     def set_subtests(self):
+        """
+        Create a all subtestes for this recipe and put them in a list
+        """
         subtest_list = []
 
         # Count all raw files
@@ -469,7 +486,9 @@ class DrsTest:
         self.subtest_list = subtest_list
 
     def run_test(self):
-        """Run the test for the recipe"""
+        """
+        Run all subtests and generate HTML summary for the recipe
+        """
 
         # Run all subtests one by one
         final_list = []
@@ -504,8 +523,7 @@ class DrsTest:
                 self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
             ),
             # TODO: Get links per recipe automatically
-            # TODO: Maybe link to full docs, not github
-            "docs_link": "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes",
+            "docs_link": RECIPE_DOCS_LINK,
             # Checks
             "subtest_list": subtest_list,
         }
