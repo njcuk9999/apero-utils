@@ -1,9 +1,8 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 """
-# CODE NAME HERE
-
-# CODE DESCRIPTION HERE
+Code to get all filetypes for a list of objects for all APERO reductions
+inside "workdir"
 
 Created on 2021-08-31
 
@@ -19,19 +18,24 @@ from tqdm import tqdm
 # =============================================================================
 # Define variables
 # =============================================================================
+# define where to get these files from
 workdir = '/scratch2/drs-data/'
+# define where to copy these files to
 output = '/spirou2/minidata/'
-
+# define the targets (as in DRSOBJN)
 targets = ['GL699']
+# define file types (glob path with wildcards from the reduced directory)
+filetypes = ['*/2*o_pp_e2dsff_AB.fits', '*/2*o_pp_e2dsff_C.fits',
+             '*/2*o_pp_e2dsff_tcorr_AB.fits',
+             'other/Template_s1d_*AB.fits', 'other/Template_s1d_*C.fits']
+
 
 # =============================================================================
 # Start of code
 # =============================================================================
 if __name__ == "__main__":
-
     # get directories
     directories = glob.glob(workdir + 'minidata*')
-
     # loop around directories
     for directory in directories:
         # print progress
@@ -45,14 +49,10 @@ if __name__ == "__main__":
         os.mkdir(outdir)
         # get pattern
         pattern = directory + '/reduced/'
-
         # get files
-        e2ds_files = glob.glob(pattern + '*/2*o_pp_e2dsff_AB.fits')
-        tcorr_files = glob.glob(pattern + '*/2*o_pp_e2dsff_tcorr_AB.fits')
-        templates = glob.glob(pattern + 'other/Template_s1d_*AB.fits')
-
-        all_files = e2ds_files + tcorr_files + templates
-
+        all_files = []
+        for filetype in filetypes:
+            all_files += glob.glob(pattern + filetype)
         # loop around files and add to outdir (if correct target)
         for filename in tqdm(all_files):
             # get header for this file

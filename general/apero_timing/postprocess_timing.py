@@ -21,7 +21,10 @@ from tqdm import tqdm
 # =============================================================================
 # Define variables
 # =============================================================================
-if os.uname().nodename == 'cook':
+case = 3
+
+
+if case == 1:
     # minimum time to filter by
     min_time = 2
     # log dir
@@ -30,7 +33,7 @@ if os.uname().nodename == 'cook':
     workspace = os.path.join(workspace, logdir)
     # whether plots are log y
     log_y = False
-else:
+elif case == 2:
     # minimum time to filter by
     min_time = 120
     # log dir
@@ -39,6 +42,15 @@ else:
     workspace = os.path.join(workspace, logdir)
     # whether plots are log y
     log_y = True
+elif case == 3:
+    # minimum time to filter by
+    min_time = 60
+    # log dir
+    workspace = '/spirou/drs-data/full_210802/msg/processing/'
+    logdir = 'APEROG-PID-00016304381051960400-5LOP_apero_processing_group'
+    workspace = os.path.join(workspace, logdir)
+    # whether plots are log y
+    log_y = False
 
 
 # =============================================================================
