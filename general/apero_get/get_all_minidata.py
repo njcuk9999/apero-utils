@@ -23,7 +23,9 @@ workdir = '/scratch2/drs-data/'
 # define where to copy these files to
 output = '/spirou2/minidata/'
 # define the targets (as in DRSOBJN)
-targets = ['GL699']
+# targets = ['GL699']
+# targets = None --> all targets
+targets = None
 # define file types (glob path with wildcards from the reduced directory)
 filetypes = ['*/2*o_pp_e2dsff_AB.fits', '*/2*o_pp_e2dsff_C.fits',
              '*/2*o_pp_e2dsff_tcorr_AB.fits',
@@ -64,8 +66,9 @@ if __name__ == "__main__":
                 objname = str(header['DRSOBJN'])
             del header
             # do not continue if objname not in targets
-            if objname not in targets:
-                continue
+            if targets is not None:
+                if objname not in targets:
+                    continue
             # reate out path
             outpath = os.path.join(outdir, objname)
             # create object name dir
