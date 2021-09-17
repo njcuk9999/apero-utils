@@ -20,6 +20,7 @@ from tqdm import tqdm
 # =============================================================================
 # define where to get these files from
 workdir = '/scratch2/drs-data/'
+workdir = '/spirou2/minidata20210916/'
 # define where to copy these files to
 output = '/spirou2/minidata/'
 # reset
@@ -66,6 +67,7 @@ if __name__ == "__main__":
         if os.path.exists(outdir) and RESET:
             os.system('rm -rfv {0}'.format(outdir))
             # make out dir
+        if not os.path.exists(outdir):
             os.mkdir(outdir)
         # get pattern
         pattern = directory + '/reduced/'
