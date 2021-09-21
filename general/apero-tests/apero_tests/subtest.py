@@ -60,7 +60,7 @@ class SubTest:
         # Using __name__ in case a children class also has no `run()`
         msg = (
             f"The run method is not implemented for {type(self).__name__}."
-            " Create a children class or assign result directly."
+            " Create a child class or assign result directly."
         )
         raise NotImplementedError(msg)
 
@@ -348,7 +348,8 @@ class CountCalibEntries(SubTest):
             else:
                 master_calib_df = self.calib_df[master_mask]
                 master_calib_count = master_calib_df.groupby("key").size()
-                self.comments = f"Additional entries with master == 1: {master_calib_count}"
+                msg = "Additional entries with master == 1"
+                self.comments = f"{msg}: {master_calib_count}"
 
             calib_count = self.calib_df.groupby("key").size()
             calib_count -= master_calib_count
