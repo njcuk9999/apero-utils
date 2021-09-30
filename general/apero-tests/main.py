@@ -12,6 +12,7 @@ from jinja2 import Environment, FileSystemLoader, select_autoescape
 
 from apero_tests.drs_test import OUTDIR, TEMPLATEDIR, DrsTest
 from apero_tests.spirou.test_definitions import tests
+import apero_tests.utils as ut
 
 # TODO: Make independent of instrument (also import of tests list above)
 # or have 1 file per instrument
@@ -114,6 +115,7 @@ env = Environment(
     loader=FileSystemLoader(TEMPLATEDIR),
     autoescape=select_autoescape(["html", "xml"]),
 )
+env.tests["series"] = ut.is_series
 
 summary_file = "summary.html"
 

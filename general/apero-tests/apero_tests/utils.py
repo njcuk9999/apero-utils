@@ -5,7 +5,7 @@ import glob
 import os
 import warnings
 from pathlib import Path
-from typing import Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -976,3 +976,8 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     html_path = "/".join(save_path.parts[-2:])
 
     return html_path
+
+
+def is_series(o: Any) -> bool:
+
+    return isinstance(o, Series)

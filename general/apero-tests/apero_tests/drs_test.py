@@ -542,6 +542,7 @@ class DrsTest:
             loader=FileSystemLoader(TEMPLATEDIR),
             autoescape=select_autoescape(["html", "xml"]),
         )
+        env.tests["series"] = ut.is_series
 
         # Create template for test
         # template = env.get_template(".".join([self.test_id, "html"]))

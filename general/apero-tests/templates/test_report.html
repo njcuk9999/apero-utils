@@ -70,8 +70,20 @@
         {% else %}
           <td></td>
         {% endif %}
-        {% if subtest.result is not none %}
-        <td> {{ subtest.result }} </td>
+        {% if subtest.result is mapping or subtest.result is series %}
+          <td>
+          {% for key, res in subtest.result.iteritems() %}
+            {{ key }}: {{ res }} <br>
+          {% endfor %}
+          </td>
+        {% elif subtest.result is iterable %}
+          <td>
+          {% for res in subtest.result %}
+            {{ res }} <br>
+          {% endfor %}
+          </td>
+        {% elif subtest.result is not none %}
+          <td> {{ subtest.result }} </td>
         {% else %}
           <td></td>
         {% endif %}
