@@ -20,7 +20,7 @@ from tqdm import tqdm
 # =============================================================================
 # define where to get these files from
 workdir = '/scratch2/drs-data/'
-workdir = '/spirou2/minidata20210916/'
+# workdir = '/spirou2/minidata20210916/'
 # define where to copy these files to
 output = '/spirou2/minidata/'
 # reset
