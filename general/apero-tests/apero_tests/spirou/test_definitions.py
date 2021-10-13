@@ -8,19 +8,6 @@ from apero.core import constants
 from apero.core.instruments.spirou.recipe_definitions import recipes
 from apero_tests.drs_test import CACHEDIR, DrsTest
 
-# Something similar?
-# from .preprocessing import PPTest
-# from .darkmaster import DarkMTest
-
-# from .localisation import LocTest
-# from .shapemaster import ShapeMTest
-# from .shape import ShapeTest
-# from .flat import FlatTest
-# from .thermal import ThermalTest
-# from .leakmaster import LeakMTest
-# from .wavelengthmaster import WaveMTest
-# from .wavelength import WaveTest
-
 # =============================================================================
 # Define variables
 # =============================================================================
@@ -54,9 +41,10 @@ red_index = ut.load_index_df(params[red_key])
 # NOTE: For now this includes DEBUG files, which we all discard right after.
 # We load them for consistency (because some DEBUG are already in index),
 # but could add an option to skip them. Might matter for actual big datasets.
-# Might matter less once we have SQL in 0.7
+# Might matter less once we have SQL in 0.7 because can use query instead of
+# file i/o
 
-pp_missing_index = ut.missing_index_headers(
+pp_missing_index, pp_not_found = ut.missing_index_headers(
     pp_index,
     instrument=__INSTRUMENT__,
     cache_dir=CACHEDIR,
@@ -64,7 +52,7 @@ pp_missing_index = ut.missing_index_headers(
 )
 pp_full_index = ut.make_full_index(pp_index, pp_missing_index)
 
-red_missing_index = ut.missing_index_headers(
+red_missing_index, red_not_found = ut.missing_index_headers(
     red_index,
     instrument=__INSTRUMENT__,
     cache_dir=CACHEDIR,
@@ -85,10 +73,14 @@ tellu_df = ut.load_db(
 # - Compare log and index with small report
 # - Return index files that have a PID match in the logs
 #   (the ones that can be processed at index level)
+# TODO: The results from these should be in the output
+# TODO: Add output of "not_found" series to the same report (critical errors)
 pp_index = ut.global_index_check(pp_full_index, pp_log)
 red_index = ut.global_index_check(red_full_index, red_log)
 debug_mask = red_index.FILENAME.str.startswith("DEBUG")
 red_index = red_index[~debug_mask]  # DEBUGs are not used in tests
+
+# Get calib DB files used for files in index, and time difference
 red_cdb_used_df = ut.get_cdb_df(
     red_index, params, cache_dir=CACHEDIR
 )  # CDB keys and time difference with output files

@@ -456,7 +456,7 @@ def missing_index_headers(
     force: bool = False,
     cache_dir: str = None,
     cache_suffix: str = None,
-) -> DataFrame:
+) -> Tuple[DataFrame, Series]:
     """
     Find files with missing index and store header info in a dataframe.
     The output is compatible with APERO index.
@@ -477,8 +477,9 @@ def missing_index_headers(
     :param cache_suffix: Suffix to add right before the cache file extension,
                          defaults to None
     :type cache_suffix: str, optional
-    :return: Dataframe with info of missing index files
-    :rtype: DataFrame
+    :return: Dataframe with info of missing index files,
+             Series of files not found at all
+    :rtype: Tuple[DataFrame, Series]
     """
 
     # TODO: Could have better naming/ID method s.t. repeated runs update OK
@@ -487,6 +488,8 @@ def missing_index_headers(
         p.mkdir(parents=True, exist_ok=True)
         cache_name = f"missing_index_df_{instrument}{cache_suffix}.csv"
         cache_path = os.path.join(cache_dir, cache_name)
+        nf_cache = f"not_found_{instrument}{cache_suffix}.csv"
+        cache_not_found = os.path.join(cache_dir, nf_cache)
     else:
         cache_path = None
 
@@ -506,15 +509,27 @@ def missing_index_headers(
         exclude_mask = output_files.apply(os.path.basename).isin(exclude_fname)
         output_files = output_files[~exclude_mask]
 
+    # Debug files are not needed
+    debug_mask = output_files.apply(os.path.basename).str.startswith("DEBUG")
+    output_files = output_files[~debug_mask]
+
     # We reset the index to match created dataframe by default
-    index_mask = output_files.isin(ind_df.FULLPATH)
+    index_mask = output_files.apply(os.path.basename).isin(ind_df.FILENAME)
     out_not_in_index = output_files[~index_mask].reset_index(drop=True)
 
     # If there is a cached file, we load it and return it directly
     # TODO: Add a mechanism to use the cache properly, by combining and
     # re-saving, not just skipping reading any file is there is cache
-    if cache_path is not None and os.path.isfile(cache_path) and not force:
+    if (
+        cache_path is not None
+        and os.path.isfile(cache_path)
+        and os.path.isfile(cache_not_found)
+        and not force
+    ):
         missing_ind_df_cache = pd.read_csv(cache_path, index_col=0)
+        not_found_series_cache = pd.read_csv(
+            cache_not_found, index_col=0, squeeze=True
+        )
     else:
         missing_ind_df_cache = None
 
@@ -525,11 +540,41 @@ def missing_index_headers(
 
         # If no missing files
         if len(out_not_in_index) == 0:
-            return out_not_in_index
+            return out_not_in_index, pd.Series([])
 
-        headers = out_not_in_index.apply(fits.getheader, ext=0)
+        # We treat missing files on a per-basename basis
+        out_basename = out_not_in_index.apply(os.path.basename)
+
+        # We iterate unique values to find their obs night
+        dup_mask = out_basename.duplicated()
+        unique_base = out_basename[~dup_mask]
+        unique_full = out_not_in_index[~dup_mask]
+
+        # Get the header for each missing unique basename
+        uheaders = unique_full.apply(fits.getheader, ext=0)
+        ext1_mask = uheaders.str.len() == 4
+        uheaders_ext1 = unique_full[ext1_mask].apply(fits.getheader, ext=1)
+        uheaders[ext1_mask] = uheaders_ext1
+
+        # Get the dates, then combine with basename to get path ends
+        dkey = params["KW_DATE_OBS"][0]
+        og_dates = uheaders.apply(lambda x: x[dkey])
+
+        # Of the expected original dates, get the ones we can find
+        og_ends = og_dates + os.path.sep + unique_base
+        not_in_index_ends = (
+            out_not_in_index.str.split(os.path.sep)
+            .str[-2:]
+            .str.join(os.path.sep)
+        )
+        found_mask = og_ends.isin(not_in_index_ends)
+        prefix_path = get_nth_parent(unique_full.iloc[0], order=2)
+        og_found = prefix_path + os.path.sep + og_ends[found_mask]
+        og_missing = unique_base[~found_mask]
+
+        headers = og_found.apply(fits.getheader, ext=0)
         ext1_mask = headers.str.len() == 4
-        headers_ext1 = out_not_in_index[ext1_mask].apply(fits.getheader, ext=1)
+        headers_ext1 = og_found[ext1_mask].apply(fits.getheader, ext=1)
         headers[ext1_mask] = headers_ext1
 
         # Get header keys corresponding to index columns
@@ -539,31 +584,36 @@ def missing_index_headers(
 
         # Get df in index format (tolist expands header values automatically)
         missing_headers_df = DataFrame(headers.tolist())
-        missing_ind_df = DataFrame(
-            missing_headers_df[keys].values, columns=index_cols
-        )
+        if len(missing_headers_df) > 0:
+            missing_ind_df = DataFrame(
+                missing_headers_df[keys].values, columns=index_cols
+            )
+        else:
+            missing_ind_df = DataFrame([], columns=index_cols)
 
         # Add fields that are not in the headers
-        missing_ind_df["FILENAME"] = out_not_in_index.apply(os.path.basename)
-        missing_ind_df["NIGHTNAME"] = out_not_in_index.apply(
-            os.path.dirname
-        ).apply(os.path.basename)
-        missing_ind_df["LAST_MODIFIED"] = out_not_in_index.apply(
+        missing_ind_df["FILENAME"] = og_found.apply(os.path.basename)
+        missing_ind_df["NIGHTNAME"] = og_found.apply(os.path.dirname).apply(
+            os.path.basename
+        )
+        missing_ind_df["LAST_MODIFIED"] = og_found.apply(
             os.path.getmtime
         ).astype(
             str
         )  # APERO stores these times as string, so we convert them here
-        missing_ind_df["FULLPATH"] = out_not_in_index
+        missing_ind_df["FULLPATH"] = og_found
 
         missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
         missing_ind_df = missing_ind_df[ind_df.columns]
 
         if cache_path is not None:
             missing_ind_df.to_csv(cache_path)
+            og_missing.to_csv(cache_not_found)
     else:
         missing_ind_df = missing_ind_df_cache.copy()
+        og_missing = not_found_series_cache.copy()
 
-    return missing_ind_df
+    return missing_ind_df, og_missing
 
 
 def inspect_table(
@@ -976,7 +1026,6 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     html_path = "/".join(save_path.parts[-2:])
 
     return html_path
-
 
 def is_series(o: Any) -> bool:
 
