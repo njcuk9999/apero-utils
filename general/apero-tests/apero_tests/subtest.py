@@ -4,6 +4,7 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 
 import apero_tests.utils as ut
+from apero_tests.display import inspect_table, inspect_plot
 
 
 class SubTest:
@@ -217,7 +218,7 @@ class CountQCTest(SubTest):
                 "Odometer": log_qc_failed.ODOMETER.values,
                 "QC_STRING": log_qc_failed.QC_STRING.values,
             }
-            self.details = ut.inspect_table(
+            self.details = inspect_table(
                 self.test_html_path,
                 self.id,
                 data_dict_check_qc,
@@ -232,7 +233,7 @@ class CountQCTest(SubTest):
                 "Night": log_reset.DIRECTORY.values,
                 "QC_STRING": log_qc_failed.QC_STRING.values,
             }
-            self.details = ut.inspect_table(
+            self.details = inspect_table(
                 self.test_html_path,
                 self.id,
                 data_dict_check_qc,
@@ -291,7 +292,7 @@ class PlotQCTest(SubTest):
                 data_dict_qc_plot[key] = series.tolist()
 
         self.result = "See the Details column"
-        self.details = ut.inspect_plot(
+        self.details = inspect_plot(
             self.test_html_path,
             self.id,
             data_dict_qc_plot,
@@ -322,7 +323,7 @@ class CountEndedTest(SubTest):
                 "ERRORS": log_ended_false.ERRORS.values,
                 "LOGFILE": log_ended_false.LOGFILE.values,
             }
-            self.details = ut.inspect_table(
+            self.details = inspect_table(
                 self.test_html_path,
                 self.id,
                 data_dict_check_ended,
