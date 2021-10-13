@@ -1,0 +1,2 @@
+# Extra gitignore entries specific to tests
+out*/
