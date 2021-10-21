@@ -1,0 +1,7 @@
+gspread-pandas
+astropy
+numpy
+pandas
+requests
+astroquery
+tqdm

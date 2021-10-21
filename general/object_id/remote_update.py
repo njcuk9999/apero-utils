@@ -47,7 +47,7 @@ clargs = parser.parse_args()
 if clargs.pattern is not None:
     df_loc = mtn.get_object_info(clargs.pattern, local_file=clargs.file)
     if clargs.save:
-        df_loc.to_csv('object_info.csv', index=False)
+        df_loc.to_csv(mtn.LOCAL_FILE, index=False)
 elif clargs.file is not None:
     df_loc = pd.read_csv(clargs.file)
 
