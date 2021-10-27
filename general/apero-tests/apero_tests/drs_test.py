@@ -139,6 +139,9 @@ class DrsTest:
             self.dirpaths = self.get_dir_path()
             self.input_path = self.dirpaths[self.recipe.inputdir]
             self.output_path = self.dirpaths[self.recipe.outputdir]
+            self.calibdb_path = os.path.join(
+                self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
+            )
 
             # Path to HTML report
             self.html_path = Path(
@@ -519,9 +522,7 @@ class DrsTest:
             "output_path": self.output_path,
             "output_list": self.output_hkeys,
             "calibdb_list": self.calibdb_keys,
-            "calibdb_path": os.path.join(
-                self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
-            ),
+            "calibdb_path": self.calibdb_path,
             # TODO: Get links per recipe automatically
             "docs_link": RECIPE_DOCS_LINK,
             # Checks
