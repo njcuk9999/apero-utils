@@ -393,7 +393,11 @@ class DrsTest:
             warnings.warn(msg, RuntimeWarning)
             return None
 
-        calib_df = all_calib_df[all_calib_df["key"].isin(self.calibdb_keys)]
+        # NOTE: Copy is used here so that future assignemnt never affect
+        #       original (suppressing SettingWithCopyWarning)
+        calib_df = all_calib_df[
+            all_calib_df["key"].isin(self.calibdb_keys)
+        ].copy()
 
         # ???: Maybe this won't be required with pandas >= 1.0 and
         # convert_dtypes (see utils function)
