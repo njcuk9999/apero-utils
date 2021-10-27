@@ -174,7 +174,8 @@ class CountOutTest(SubTest):
         if group_kwds is not None:
             self.group_kwds = group_kwds
         else:
-            # TODO: Should we use drs params to get keys here or is literal ok?
+            # ???: Should we use drs params to get keys here or is literal ok?
+            # NOTE: We could remove KW_DPRTYPE in future if not needed
             self.group_kwds = ["KW_OUTPUT", "KW_DPRTYPE", "KW_FIBER"]
 
     def run(self):
