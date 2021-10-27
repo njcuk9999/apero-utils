@@ -7,7 +7,7 @@ import os
 import warnings
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional, Union
+from typing import Dict, List, Optional, Union
 
 import pandas as pd
 from apero.core.core.drs_argument import DrsArgument
@@ -173,6 +173,10 @@ class DrsTest:
 
             self.calibdb_keys = self.get_dbkeys("calibration")
             self.telludb_keys = self.get_dbkeys("telluric")
+            if not self.pp_flag:
+                self.calibdb_to_output = self.get_db_output_mapping(
+                    "calibration"
+                )
 
             # Load calibdb DF (master entries and calibdb files)
             self.calib_df = self.load_calib_df(
@@ -226,6 +230,43 @@ class DrsTest:
                     )
 
         return keylist
+
+    def get_db_output_mapping(self, dbname: str) -> Dict[str, str]:
+        """
+        Get mapping from output db keys to their corresponding KW_OUTPUT
+
+        :param dbname: Database name (any valid APERO dbname)
+        :type dbname: str
+        :return: Mapping from dbkey to KW_OUTPUT
+        :rtype: Dict[str, str]
+        """
+        if self.output_drs_files is None:
+            raise TypeError("Cannot load dbkeys if drs_files is 'None'.")
+
+        keydict = dict()
+        for rfile in self.output_drs_files:
+            out_key = rfile.required_header_keys["KW_OUTPUT"]
+            if rfile.dbname is None or rfile.dbkey is None:
+                continue
+
+            if rfile.dbname == dbname:
+                if rfile.fibers is None:
+                    # Some files have just one fiber, dbkey works directly
+                    db_key = rfile.get_dbkey()
+                    keydict[db_key] = out_key
+                elif isinstance(rfile.fibers, list):
+                    # If multiple fibers, need to set one by one
+                    for fiber in rfile.fibers:
+                        rfile2 = rfile.newcopy()  # copy for safety
+                        rfile2.fiber = fiber
+                        db_key = rfile2.get_dbkey()
+                        keydict[db_key] = out_key
+                else:
+                    raise TypeError(
+                        f"Got an unexpected fibers attribute for file {rfile}"
+                    )
+
+        return keydict
 
     def get_fileargs(self) -> List[DrsArgument]:
         """
