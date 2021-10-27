@@ -70,26 +70,24 @@
         {% else %}
           <td></td>
         {% endif %}
+        <td>
         {% if subtest.result is mapping or subtest.result is series %}
-          <td>
           {% if subtest.result is series %}
             {{ subtest.result.index.names }} <br>
           {% endif %}
           {% for key, res in subtest.result.items() %}
             {{ key }}: {{ res }} <br>
           {% endfor %}
-          </td>
+        {% elif subtest.result is string %}
+           {{ subtest.result }}
         {% elif subtest.result is iterable %}
-          <td>
           {% for res in subtest.result %}
             {{ res }} <br>
           {% endfor %}
-          </td>
         {% elif subtest.result is not none %}
-          <td> {{ subtest.result }} </td>
-        {% else %}
-          <td></td>
+           {{ subtest.result }}
         {% endif %}
+        </td>
         {% if subtest.comments is not none %}
         <td> {{ subtest.comments }} </td>
         {% else %}
