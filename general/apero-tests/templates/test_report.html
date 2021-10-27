@@ -66,13 +66,16 @@
       <tr>
         <td>{{ loop.index }}</td>
         {% if subtest.description is not none %}
-        <td> {{ subtest.description }} </td>
+          <td> {{ subtest.description }} </td>
         {% else %}
           <td></td>
         {% endif %}
         {% if subtest.result is mapping or subtest.result is series %}
           <td>
-          {% for key, res in subtest.result.iteritems() %}
+          {% if subtest.result is series %}
+            {{ subtest.result.index.names }} <br>
+          {% endif %}
+          {% for key, res in subtest.result.items() %}
             {{ key }}: {{ res }} <br>
           {% endfor %}
           </td>
