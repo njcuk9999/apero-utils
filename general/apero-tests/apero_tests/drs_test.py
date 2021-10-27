@@ -350,7 +350,7 @@ class DrsTest:
 
         # TODO: Make sure this is true when done
         if self.recipe_name is None:
-            raise ValueError("Cannot load log dataframe if no recipe is set")
+            raise ValueError("Cannot load index dataframe if no recipe is set")
 
         if all_ind_df is None:
             all_ind_df = ut.load_index_df(self.output_path)
@@ -513,7 +513,7 @@ class DrsTest:
         # Not ended count
         subtest_list.append(st.CountEndedTest(self.log_df, self.html_path))
 
-        # calibDB output count
+        # calibDB entries count
         subtest_list.append(
             st.CountCalibEntries(self.calib_df, self.calibdb_keys)
         )
