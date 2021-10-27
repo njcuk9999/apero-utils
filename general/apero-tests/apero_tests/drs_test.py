@@ -171,12 +171,20 @@ class DrsTest:
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
 
+            # Add QC informatio to index (useful for calibdb comparisons)
+            pid_qc_mapping = self.log_df.groupby("PID").PASSED_ALL_QC.all()
+            qc_mask = pid_qc_mapping.loc[self.ind_df.KW_PID]
+            self.ind_df["QC_PASSED"] = qc_mask.values
+
             self.calibdb_keys = self.get_dbkeys("calibration")
             self.telludb_keys = self.get_dbkeys("telluric")
             if not self.pp_flag:
                 self.calibdb_to_output = self.get_db_output_mapping(
                     "calibration"
                 )
+
+                # This addds CALIB_KEY to index df for future comparisons
+                self.add_calib_to_ind()
 
             # Load calibdb DF (master entries and calibdb files)
             self.calib_df = self.load_calib_df(
@@ -432,6 +440,9 @@ class DrsTest:
 
         return tellu_df
 
+    # def load_db_output(self, db_path: str):
+    #     full_db_list = os.listdir(db_path)
+
     def load_cdb_used_df(
         self, all_cdb_used_df: Optional[DataFrame] = None, force: bool = True
     ) -> Union[DataFrame, None]:
@@ -475,6 +486,15 @@ class DrsTest:
             dirpaths["reduced"] = ""
 
         return dirpaths
+
+    def add_calib_to_ind(self):
+        # Map output keywords to calibdb keys (including fiber as suffix)
+        out_to_calib = {
+            v + f"_{k.split('_')[-1]}": k
+            for k, v in self.calibdb_to_output.items()
+        }
+        out_fiber_series = self.ind_df.KW_OUTPUT + "_" + self.ind_df.KW_FIBER
+        self.ind_df["CALIB_KEY"] = out_fiber_series.map(out_to_calib)
 
     # =========================================================================
     # Function to run tests and write their output
