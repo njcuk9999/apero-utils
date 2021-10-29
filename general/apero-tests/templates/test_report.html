@@ -70,7 +70,11 @@
         {% else %}
           <td></td>
         {% endif %}
-        <td>
+        {% if subtest.color is not none %}
+          <td bgcolor={{ subtest.color }}>
+        {% else %}
+          <td>
+        {% endif %}
         {% if subtest.result is mapping or subtest.result is series %}
           {% if subtest.result is series %}
             {{ subtest.result.index.names }} <br>

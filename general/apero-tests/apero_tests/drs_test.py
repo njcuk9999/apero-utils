@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Dict, List, Optional, Union
 
 import pandas as pd
+from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
 from apero.core.core.drs_file import DrsFitsFile
 from apero.core.core.drs_recipe import DrsRecipe
@@ -94,6 +95,7 @@ class DrsTest:
         self.instrument = instrument  # Instrument may be set as kwarg
         self.recipe_name = None
         self.params = None  # DRS parameters
+        self.pconst = None  # DRS constants
         self.ismaster = False  # Is it a master recipe?
         self.output_dict = None
         self.output_drs_files = None
@@ -130,6 +132,7 @@ class DrsTest:
 
             # General params
             self.params = self.recipe.drs_params
+            self.pconst = constants.pload(self.instrument)
             self.ismaster = self.recipe.master
 
             # PP flag
@@ -460,9 +463,14 @@ class DrsTest:
             all_cdb_used_df = ut.get_cdb_df(self.ind_df, self.params)
 
         # We keep only calib files whose index is in the APERO index dataframe
-        ind_night_file = self.ind_df.reset_index()[["NIGHTNAME", "FILENAME"]]
-        keep_ind = pd.MultiIndex.from_frame(ind_night_file)
-        cdb_used_df = all_cdb_used_df.loc[keep_ind]
+        if len(self.ind_df) > 0:
+            ind_night_file = self.ind_df.reset_index()[
+                ["NIGHTNAME", "FILENAME"]
+            ]
+            keep_ind = pd.MultiIndex.from_frame(ind_night_file)
+            cdb_used_df = all_cdb_used_df.loc[keep_ind]
+        else:
+            cdb_used_df = all_cdb_used_df.iloc[0:0]
 
         return cdb_used_df
 
@@ -488,12 +496,32 @@ class DrsTest:
         return dirpaths
 
     def add_calib_to_ind(self):
+        if "loc" in self.name:
+            import ipdb; ipdb.set_trace()
+
+        # Get all possible fibers
+        sci_fibers, ref_fiber = self.pconst.FIBER_KINDS()
+        all_fibers = sci_fibers + [ref_fiber]
+
+        fiber_series = "_" + self.ind_df.KW_FIBER
+        fiber_series = fiber_series.where(
+            fiber_series.isin([f"_{fib}" for fib in all_fibers]), ""
+        )
+        out_fiber_series = self.ind_df.KW_OUTPUT + fiber_series
+
         # Map output keywords to calibdb keys (including fiber as suffix)
+        out_to_calib = dict()
+        for ck, ok in self.calibdb_to_output.items():
+
         out_to_calib = {
-            v + f"_{k.split('_')[-1]}": k
+            (
+                v
+                if v in out_fiber_series.values
+                else v + f"_{k.split('_')[-1]}"
+            ): k
             for k, v in self.calibdb_to_output.items()
         }
-        out_fiber_series = self.ind_df.KW_OUTPUT + "_" + self.ind_df.KW_FIBER
+
         self.ind_df["CALIB_KEY"] = out_fiber_series.map(out_to_calib)
 
     # =========================================================================
@@ -535,14 +563,23 @@ class DrsTest:
         )
 
         # Not ended count
-        subtest_list.append(st.CountEndedTest(self.log_df, self.html_path))
+        st_ended = st.CountEndedTest(self.log_df, self.html_path)
+        subtest_list.append(st_ended)
 
-        # calibDB entries count
-        subtest_list.append(
-            st.CountCalibEntries(self.calib_df, self.calibdb_keys)
-        )
+        if not self.pp_flag:
+            st_index_calib = st.CountIndexCalib(self.ind_df)
+            subtest_list.append(st_index_calib)
 
-        # TODO: Compare calibdb checks
+            # calibDB entries count
+            st_cdb_entries = st.CountCalibEntries(
+                self.calib_df, self.calibdb_keys
+            )
+            subtest_list.append(st_cdb_entries)
+
+            # TODO: Compare calibdb checks
+            subtest_list.append(
+                st.ComparisonTest(st_index_calib, st_cdb_entries)
+            )
 
         # TODO: Calibdb
 

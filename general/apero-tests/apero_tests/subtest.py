@@ -1,16 +1,22 @@
+import numbers
 from typing import Any, List, Optional, Sequence
 
+import numpy as np
 import pandas as pd
 from pandas.core.frame import DataFrame
 
 import apero_tests.utils as ut
-from apero_tests.display import inspect_table, inspect_plot
+from apero_tests.display import inspect_plot, inspect_table
+
+COMPARISONS = {
+    "eq": np.equal,
+    "gt": np.greater,
+    "lt": np.less,
+}
 
 
 class SubTest:
-    # TODO: result should probably be more restricted,
-    # maybe Optional[Union[Mapping, Sequence]]
-    # TODO: Restrict details type/formatting
+    # TODO: Restrict details type/formatting ?
     def __init__(
         self,
         subtest_id: Optional[str] = None,
@@ -18,6 +24,7 @@ class SubTest:
         result: Any = None,
         comments: Optional[str] = None,
         details: Optional[str] = None,
+        color: Optional[str] = None,
     ):
         """
         Individual SubTest to test an APERO DRS recipe.
@@ -36,7 +43,10 @@ class SubTest:
         :type comments: Optional[str], optional
         :param details: Additional details about subtest (second html page),
                         defaults to None
-        :type details: Any, optional
+        :type details: Optional[str], optional
+        :param color: Color to use for the cell background in test output,
+                      useful to show if passed or fail when applicable
+        :type color: Optional[str], optional
         """
 
         if subtest_id is None:
@@ -50,6 +60,7 @@ class SubTest:
         self.result = result
         self.comments = comments
         self.details = details
+        self.color = color
 
     def run(self):
         """
@@ -130,6 +141,92 @@ class CountLogTest(SubTest):
         log_count = tot_count.sub(master_count, fill_value=0).astype(int)
 
         self.result = log_count
+
+
+class ComparisonTest(SubTest):
+    def __init__(
+        self,
+        subtest1: SubTest,
+        subtest2: SubTest,
+        passed: str = "eq",
+        conditional: Optional[str] = None,
+        subtest_id: Optional[str] = None,
+        description: Optional[str] = None,
+        result: Any = None,
+        comments: Optional[str] = None,
+        details: Optional[str] = None,
+        color: Optional[str] = None,
+    ):
+
+        if passed not in COMPARISONS and passed is not None:
+            raise ValueError(
+                f"Supported passed values are {list(COMPARISONS.keys())}."
+            )
+        if conditional not in COMPARISONS and conditional is not None:
+            raise ValueError(
+                f"Supported conditional values are {list(COMPARISONS.keys())}."
+            )
+
+        if description is None:
+            description = f"Comparison: {subtest1.id} {passed} {subtest2.id} ?"
+
+        super().__init__(
+            subtest_id=subtest_id,
+            description=description,
+            result=result,
+            comments=comments,
+            details=details,
+            color=color,
+        )
+
+        self.passed = passed
+        self.conditional = conditional
+        self.subtest1 = subtest1
+        self.subtest2 = subtest2
+
+
+    def check_types(self):
+        result_types = (numbers.Number, pd.Series)
+        for st in [self.subtest1, self.subtest2]:
+            if st.result is None:
+                raise TypeError(
+                    "Test results should not be None. Make sure to run tests "
+                    "before comparing them (this can be done by reordering "
+                    "the subtest list)."
+                )
+            elif not isinstance(st.result, result_types):
+                msg = (
+                    "Comparison tests work only with the following result"
+                    f"types: {result_types}"
+                )
+                raise TypeError(msg)
+
+    def run(self):
+
+        self.check_types()
+
+        # Check if main condition passed
+        check_passed = COMPARISONS[self.passed](
+            self.subtest1.result, self.subtest2.result
+        )
+
+        self.result = check_passed
+
+        # If conditinal passed is defined (yellow output)
+        if self.conditional is not None:
+            check_conditional = COMPARISONS[self.conditional](
+                self.subtest1.result, self.subtest2.result
+            )
+        else:
+            check_conditional = False
+
+        # Set color based on status
+        if np.all(self.result):
+            self.color = "Lime"
+        elif np.all(check_conditional):
+            self.color = "Yellow"
+        else:
+            self.color = "Red"
 
 
 class CountOutTest(SubTest):
@@ -332,6 +429,26 @@ class CountEndedTest(SubTest):
             )
 
 
+class CountIndexCalib(SubTest):
+    def __init__(
+        self,
+        ind_df: DataFrame,
+        calib_key: str = "CALIB_KEY",
+        qc_key: str = "QC_PASSED",
+    ):
+        super().__init__(
+            description="# of index entries for each calibdb key",
+        )
+        # Keep only index entries that passed QC
+        self.ind_df = ind_df[ind_df[qc_key]]
+        self.key = calib_key
+
+    def run(self):
+        self.result = self.ind_df.groupby(self.key).FILENAME.nunique()
+        if len(self.result) == 0:
+            self.result = 0
+
+
 class CountCalibEntries(SubTest):
     def __init__(self, calib_df: DataFrame, calib_keys: List[str]):
 
@@ -357,7 +474,7 @@ class CountCalibEntries(SubTest):
             calib_count -= master_calib_count
 
         else:
-            self.result = None
+            self.result = 0
             return
 
         self.result = calib_count
@@ -375,7 +492,7 @@ class CountTelluEntries(SubTest):
             tellu_count = self.tellu_df.groupby("key").size()
 
         else:
-            self.result = None
+            self.result = 0
             return
 
         self.result = tellu_count
