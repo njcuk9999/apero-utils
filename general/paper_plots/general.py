@@ -17,6 +17,8 @@ import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import numpy as np
 import os
+from scipy.signal import convolve2d
+import warnings
 
 from apero import lang
 from apero.core import constants
@@ -25,7 +27,9 @@ from apero.core.core import drs_database
 from apero.science import preprocessing as prep
 from apero.io import drs_image
 from apero.core.instruments.spirou import file_definitions
-
+from apero.science.calib import badpix
+from apero.core import math as mp
+from apero.recipes.spirou import apero_extract_spirou
 
 # =============================================================================
 # Define variables
@@ -41,13 +45,14 @@ ObjectDatabase = drs_database.ObjectDatabase
 # define the night of data we want to use
 NIGHT = '2020-08-31'
 # define where we want to save plots
-# PLOT_PATH = '/data/spirou/drs-data/misc/paper_plots'
-PLOT_PATH = '/scratch2/drs-data/misc/paper_plots'
+PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
 # define plots and append those we want
 PLOTS = []
 # PLOTS.append('SIZE_GRID')
-PLOTS.append('RAW_FEATURES')
+# PLOTS.append('RAW_FEATURES')
 # PLOTS.append('BADMAP')
+# PLOTS.append('BACKMAP')
+PLOTS.append('FLATBLAZE')
 
 
 # =============================================================================
@@ -450,8 +455,6 @@ def plot_badpix_plot(params):
     im, norm = imshow_norm(bad_image_full, frame1, origin='lower', aspect='auto',
                            cmap=cmap2, interpolation='None', rasterized=True)
 
-
-
     frame0.tick_params(axis='both', which='both', bottom=False, top=False,
                       left=False, right=False, labelleft=False,
                       labelbottom=False)
@@ -482,6 +485,145 @@ def plot_badpix_plot(params):
     plt.close()
 
 
+# BACKMAP
+def plot_backmap_plot(params):
+    # get constants
+    width = params['BKGR_BOXSIZE']
+    # set a pid
+    params['PID'] = 'TEST'
+    # define hash codes
+    flathash = 'DB67D5C4F5'
+    darkhash = 'C3EB202753'
+    # -------------------------------------------------------------------------
+    # get filenames
+    flat_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            '{0}_pp.fits'.format(flathash))
+    dark_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            '{0}_pp.fits'.format(darkhash))
+    # get images
+    flat_image = fits.getdata(flat_file)
+    dark_image = fits.getdata(dark_file)
+    # get shape of original image
+    nshape = flat_image.shape
+    # -------------------------------------------------------------------------
+    # run the bad pixel code relevant for the plot
+    WLOG(params, 'info', 'Running badpix code required for plot')
+    flat_image1, backmask, backest = _do_bad_pix(params, flat_image, dark_image)
+    # -------------------------------------------------------------------------
+    # get colour maps
+    cmap1 = matplotlib.cm.get_cmap('inferno').copy()
+    cmap2 = matplotlib.cm.get_cmap('Greys_r').copy()
+    cmap3 = matplotlib.cm.get_cmap('Greys').copy()
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    fig, frames = plt.subplots(figsize=(18, 6), ncols=3, nrows=1)
+    frame0 = frames[0]
+    frame1 = frames[1]
+    frame2 = frames[2]
+    # -------------------------------------------------------------------------
+    # three imshow norm plots
+    im, norm = imshow_norm(flat_image1, frame0, origin='lower', aspect='auto',
+                           interval=ZScaleInterval(), stretch=LinearStretch(),
+                           cmap=cmap2, interpolation='None', rasterized=True)
+    im, norm = imshow_norm(backest, frame1, origin='lower', aspect='auto',
+                           cmap=cmap1, interpolation='None', rasterized=True)
+    im, norm = imshow_norm(backmask, frame2, origin='lower', aspect='auto',
+                           cmap=cmap3, interpolation='None', rasterized=True)
+    # -------------------------------------------------------------------------
+    # plot vertical lines on frame0
+    lines = np.arange(0, nshape[0] + width, width) - 4
+    # remove first and last
+    lines = lines[1:-1]
+    for line in lines:
+        frame0.axvline(line, color='r')
+    # -------------------------------------------------------------------------
+    # remove ticks
+    frame0.tick_params(axis='both', which='both', bottom=False, top=False,
+                      left=False, right=False, labelleft=False,
+                      labelbottom=False)
+    frame1.tick_params(axis='both', which='both', bottom=False, top=False,
+                      left=False, right=False, labelleft=False,
+                      labelbottom=False)
+    frame2.tick_params(axis='both', which='both', bottom=False, top=False,
+                      left=False, right=False, labelleft=False,
+                      labelbottom=False)
+
+    frame2.set(xlim=[0, 512], ylim=[512, 1024])
+
+    # adjust edges of figure
+    plt.subplots_adjust(wspace=0, hspace=0, left=0.01, right=0.99,
+                        bottom=0.01, top=0.99)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'backmap.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show()
+    plt.close()
+
+
+# FLAT BLAZE
+def plot_flatblaze_plot(params):
+    # set a pid
+    params['PID'] = 'TEST'
+    # define hash codes
+    flathash = 'DB67D5C4F5'
+    # list orders to plot
+    orders = [5, 15, 25, 35, 45]
+
+    colors = ['orange', 'r', 'g', 'b', 'purple']
+
+    # -------------------------------------------------------------------------
+    # get filenames
+    flat_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            '{0}_pp_flat_AB.fits'.format(flathash))
+    blaze_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            '{0}_pp_blaze_AB.fits'.format(flathash))
+    # get images
+    flat_image = fits.getdata(flat_file)
+    blaze_image = fits.getdata(blaze_file)
+    e2ds_image = flat_image * blaze_image
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    fig = plt.figure(figsize=(12, 8))
+
+
+    frame0 = plt.subplot2grid((3, 1), (0, 0), rowspan=2, colspan=1)
+    frame1 = plt.subplot2grid((3, 1), (2, 0), rowspan=1, colspan=1)
+
+
+    for it, order_num in enumerate(orders):
+
+        norm = np.nanmedian(e2ds_image[order_num])
+
+        frame0.plot(e2ds_image[order_num]/norm, label=f'Order={order_num}',
+                    color=colors[it], alpha=0.5)
+        frame0.plot(blaze_image[order_num]/norm, color=colors[it], linestyle='--')
+        frame1.plot(flat_image[order_num],color=colors[it], alpha=0.75)
+
+    frame0.legend(loc=0)
+    frame0.set(xlabel='Pixel number', ylabel='Normalized E2DS Flux',
+               xlim=[0, 4088])
+    frame1.set(xlabel='Pixel number', ylabel='Residual E2DS-Blaze Flux',
+               xlim=[0, 4088])
+    # adjust edges of figure
+    plt.subplots_adjust(wspace=0, hspace=0.2, left=0.075, right=0.99,
+                        bottom=0.075, top=0.99)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'flat_blaze.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show(block=True)
+    plt.close()
+
+
+
+
 # =============================================================================
 # worker functions (private)
 # =============================================================================
@@ -506,6 +648,117 @@ def _add_colorbar(fig, im, frame, side='bottom'):
 
 
 # =============================================================================
+# backmap functions
+# =============================================================================
+def _do_bad_pix(params, flat_image, dark_image):
+    # ------------------------------------------------------------------
+    # Normalise flat and median of flat
+    # ------------------------------------------------------------------
+    flat_med, flat_image = badpix.normalise_median_flat(params, flat_image)
+    # ------------------------------------------------------------------
+    # Locate bad pixels
+    # ------------------------------------------------------------------
+    # Locate bad pixels from dark and flat
+    bargs = [flat_image, flat_med, dark_image]
+    badpixelmap_a, bstats_a = badpix.locate_bad_pixels(params, *bargs)
+    # Locate bad pixels from full detector flat
+    bargs = [flat_image]
+    badpixelmap_b, bstats_b = badpix.locate_bad_pixels_full(params, *bargs)
+
+    # ------------------------------------------------------------------
+    # Combine bad pixel masks
+    # ------------------------------------------------------------------
+    bad_pixel_map = badpixelmap_a | badpixelmap_b
+    # total number of bad pixels
+    btotal = (mp.nansum(bad_pixel_map) / bad_pixel_map.size) * 100
+    # log result
+    WLOG(params, '', textentry('40-012-00007', args=[btotal]))
+
+    # ------------------------------------------------------------------
+    # Flip images
+    # ------------------------------------------------------------------
+    if params['INPUT_FLIP_IMAGE']:
+        # flip flat
+        flat_image1 = drs_image.flip_image(params, flat_image)
+        # flip bad pixel map
+        bad_pixel_map1 = drs_image.flip_image(params, bad_pixel_map)
+    else:
+        flat_image1, bad_pixel_map1 = flat_image, bad_pixel_map
+
+    # ------------------------------------------------------------------
+    # Resize image
+    # ------------------------------------------------------------------
+    if params['INPUT_RESIZE_IMAGE']:
+        # get resize size
+        sargs = dict(xlow=params['IMAGE_X_LOW'],
+                     xhigh=params['IMAGE_X_HIGH'],
+                     ylow=params['IMAGE_Y_LOW'],
+                     yhigh=params['IMAGE_Y_HIGH'])
+        # resize flat
+        flat_image1 = drs_image.resize(params, flat_image1, **sargs)
+        # resize bad pixel map
+        bad_pixel_map1 = drs_image.resize(params, bad_pixel_map1, **sargs)
+    else:
+        flat_image1 = np.array(flat_image)
+        bad_pixel_map1 = np.array(bad_pixel_map)
+
+    backmask, backest = _create_background_map(params, flat_image1,
+                                               bad_pixel_map1)
+    return flat_image1, backmask, backest
+
+
+def _create_background_map(params, image, badpixmask):
+    # get constants
+    width = params['BKGR_BOXSIZE']
+    percent = params['BKGR_PERCENTAGE']
+    csize = params['BKGR_MASK_CONVOLVE_SIZE']
+    nbad = params['BKGR_N_BAD_NEIGHBOURS']
+    # set image bad pixels to NaN
+    image0 = np.array(image)
+    badmask = np.array(badpixmask, dtype=bool)
+    image0[badmask] = np.nan
+    # image that will contain the background estimate
+    backest = np.zeros_like(image0)
+    # we slice the image in ribbons of width "width".
+    # The slicing is done in the cross-dispersion direction, so we
+    # can simply take a median along the "fast" dispersion to find the
+    # order profile. We pick width to be small enough for the orders not
+    # to show a significant curvature within w pixels
+    for x_it in range(0, image0.shape[1], width):
+        # ribbon to find the order profile
+        ribbon = mp.nanmedian(image0[:, x_it:x_it + width], axis=1)
+
+        for y_it in range(image0.shape[0]):
+            # we perform a running Nth percentile filter along the
+            # order profile. The box of the filter is w. Note that it could
+            # differ in princile from w, its just the same for the sake of
+            # simplicity.
+            ystart = y_it - width // 2
+            yend = y_it + width // 2
+            if ystart < 0:
+                ystart = 0
+            if yend > image0.shape[0] - 1:
+                yend = image0.shape[0] - 1
+            # background estimate
+            backest_pix = np.nanpercentile(ribbon[ystart:yend], percent)
+            backest[y_it, x_it: x_it + width] = backest_pix
+    # the mask is the area that is below then Nth percentile threshold
+    with warnings.catch_warnings(record=True) as _:
+        backmask = np.array(image0 < backest, dtype=float)
+    # we take advantage of the order geometry and for that the "dark"
+    # region of the array be continuous in the "fast" dispersion axis
+    nribbon = convolve2d(backmask, np.ones([1, csize]), mode='same')
+    # we remove from the binary mask all isolated (within 1x7 ribbon)
+    # dark pixels
+    backmask[nribbon == 1] = 0
+    # If a pixel has 3 or more "dark" neighbours, we consider it dark
+    # regardless of its initial value
+    backmask[nribbon >= nbad] = 1
+    # return the background mask
+    return backmask, backest
+
+
+# =============================================================================
 # Start of code
 # =============================================================================
 if __name__ == '__main__':
@@ -518,6 +771,11 @@ if __name__ == '__main__':
         plot_raw_features(params)
     if 'BADMAP' in PLOTS:
         plot_badpix_plot(params)
+    if 'BACKMAP' in PLOTS:
+        plot_backmap_plot(params)
+    if 'FLATBLAZE' in PLOTS:
+        plot_flatblaze_plot(params)
+
 
 # =============================================================================
 # End of code
