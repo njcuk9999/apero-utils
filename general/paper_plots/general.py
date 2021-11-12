@@ -53,7 +53,7 @@ PLOTS = []
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 PLOTS.append('FLATBLAZE')
-
+PLOTS.append('E2DS')
 
 # =============================================================================
 # PLOT functions
@@ -597,21 +597,23 @@ def plot_flatblaze_plot(params):
 
     for it, order_num in enumerate(orders):
 
-        norm = np.nanmedian(e2ds_image[order_num])
+        order_name = 79 - order_num
 
-        frame0.plot(e2ds_image[order_num]/norm, label=f'Order={order_num}',
+        # norm = np.nanmedian(e2ds_image[order_num])
+
+        frame0.plot(e2ds_image[order_num], label=f'Order #{order_name}',
                     color=colors[it], alpha=0.5)
-        frame0.plot(blaze_image[order_num]/norm, color=colors[it], linestyle='--')
+        frame0.plot(blaze_image[order_num], color=colors[it], linestyle='--')
         frame1.plot(flat_image[order_num],color=colors[it], alpha=0.75)
 
     frame0.legend(loc=0)
-    frame0.set(xlabel='Pixel number', ylabel='Normalized E2DS Flux',
+    frame0.set(xlabel='Pixel number', ylabel='E2DS Flux',
                xlim=[0, 4088])
     frame1.set(xlabel='Pixel number', ylabel='Residual E2DS-Blaze Flux',
                xlim=[0, 4088])
     # adjust edges of figure
-    plt.subplots_adjust(wspace=0, hspace=0.2, left=0.075, right=0.99,
-                        bottom=0.075, top=0.99)
+    plt.subplots_adjust(wspace=0, hspace=0.225, left=0.075, right=0.99,
+                        bottom=0.075, top=0.95)
     # -------------------------------------------------------------------------
     # save plot
     outfile = os.path.join(PLOT_PATH, 'flat_blaze.pdf')
@@ -621,6 +623,102 @@ def plot_flatblaze_plot(params):
     plt.show(block=True)
     plt.close()
 
+
+# E2DS
+def plot_e2ds_plot(params):
+
+
+    odocode = '2510303o'
+    # -------------------------------------------------------------------------
+    # get filenames
+    pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
+                            '{0}_pp.fits'.format(odocode))
+    e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            '{0}_pp_e2ds_AB.fits'.format(odocode))
+    e2dsll_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            'DEBUG_{0}_pp_e2dsll_AB.fits'.format(odocode))
+    # -------------------------------------------------------------------------
+    # get images
+    pp_image = fits.getdata(pp_file)
+    # get resize size
+    sargs = dict(xlow=params['IMAGE_X_LOW'],
+                 xhigh=params['IMAGE_X_HIGH'],
+                 ylow=params['IMAGE_Y_LOW'],
+                 yhigh=params['IMAGE_Y_HIGH'])
+    # flip image
+    pp_image = drs_image.flip_image(params, pp_image)
+    # resize pp image
+    pp_image = drs_image.resize(params, pp_image, **sargs)
+
+
+
+    e2dsll_image = fits.getdata(e2dsll_file)
+    e2ds_image = fits.getdata(e2ds_file)
+
+    # get zoom
+    ylow0, yhigh0 = 1450, 1650
+    xlow0, xhigh0 = 700, 850
+
+    pp_image1 = pp_image[ylow0:yhigh0, xlow0:xhigh0]
+
+    # scale box to e2dsll
+    ylow1a, yhigh1a = 825, 925
+    e2dsll_image1 = e2dsll_image[ylow1a:yhigh1a, xlow0:xhigh0]
+
+    # scale box to e2dsll
+    ylow1b, yhigh1b = 25, 30
+
+    e2ds_image1 = e2ds_image[ylow1b:yhigh1b, xlow0:xhigh0]
+
+
+    # -------------------------------------------------------------------------
+    # get colour maps
+    cmap1 = matplotlib.cm.get_cmap('inferno').copy()
+    cmap1.set_bad(color='green')
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    fig, frames = plt.subplots(figsize=(18, 12), ncols=3, nrows=2)
+    frame0 = frames[0][0]
+    frame1 = frames[0][1]
+    frame2 = frames[0][2]
+    frame3 = frames[1][0]
+    frame4 = frames[1][1]
+    frame5 = frames[1][2]
+    # -------------------------------------------------------------------------
+    # three imshow norm plots
+    im, norm = imshow_norm(pp_image, frame0, origin='lower', aspect='auto',
+                           interval=ZScaleInterval(), stretch=LinearStretch(),
+                           cmap=cmap1, interpolation='None', rasterized=True)
+    im, norm = imshow_norm(e2dsll_image, frame1, origin='lower', aspect='auto',
+                           cmap=cmap1, interpolation='None', rasterized=True)
+    im, norm = imshow_norm(e2ds_image, frame2, origin='lower', aspect='auto',
+                           cmap=cmap1, interpolation='None', rasterized=True)
+
+    im, norm = imshow_norm(pp_image1, frame3, origin='lower', aspect='auto',
+                           interval=ZScaleInterval(), stretch=LinearStretch(),
+                           cmap=cmap1, interpolation='None', rasterized=True)
+    im, norm = imshow_norm(e2dsll_image1, frame4, origin='lower', aspect='auto',
+                           cmap=cmap1, interpolation='None', rasterized=True)
+    im, norm = imshow_norm(e2ds_image1, frame5, origin='lower', aspect='auto',
+                           cmap=cmap1, interpolation='None', rasterized=True)
+    # -------------------------------------------------------------------------
+    # remove ticks
+    for frame in frames.ravel():
+        frame.tick_params(axis='both', which='both', bottom=False, top=False,
+                         left=False, right=False, labelleft=False,
+                         labelbottom=False)
+    # adjust edges of figure
+    plt.subplots_adjust(wspace=0, hspace=0, left=0.01, right=0.99,
+                        bottom=0.01, top=0.99)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'e2ds_grid.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show()
+    plt.close()
 
 
 
@@ -775,7 +873,8 @@ if __name__ == '__main__':
         plot_backmap_plot(params)
     if 'FLATBLAZE' in PLOTS:
         plot_flatblaze_plot(params)
-
+    if 'E2DS' in PLOTS:
+        plot_e2ds_plot(params)
 
 # =============================================================================
 # End of code
