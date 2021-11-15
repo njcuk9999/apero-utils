@@ -496,8 +496,6 @@ class DrsTest:
         return dirpaths
 
     def add_calib_to_ind(self):
-        if "loc" in self.name:
-            import ipdb; ipdb.set_trace()
 
         # Get all possible fibers
         sci_fibers, ref_fiber = self.pconst.FIBER_KINDS()
@@ -509,19 +507,12 @@ class DrsTest:
         )
         out_fiber_series = self.ind_df.KW_OUTPUT + fiber_series
 
-        # Map output keywords to calibdb keys (including fiber as suffix)
-        out_to_calib = dict()
-        for ck, ok in self.calibdb_to_output.items():
-
         out_to_calib = {
-            (
-                v
-                if v in out_fiber_series.values
-                else v + f"_{k.split('_')[-1]}"
-            ): k
+            (v + f"_{k.split('_')[-1]}" if k.split('_')[-1] in all_fibers else v): k
             for k, v in self.calibdb_to_output.items()
         }
 
+        # If map OK, this will do
         self.ind_df["CALIB_KEY"] = out_fiber_series.map(out_to_calib)
 
     # =========================================================================

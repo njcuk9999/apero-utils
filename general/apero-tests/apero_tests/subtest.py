@@ -201,13 +201,30 @@ class ComparisonTest(SubTest):
                 )
                 raise TypeError(msg)
 
+    def prepare_series(self):
+        r1, r2 = self.subtest1.result, self.subtest2.result
+        if isinstance(r1, pd.Series) and isinstance(r2, pd.Series):
+            in1_not_in2 = ~r1.index.isin(r2.index)
+            in2_not_in1 = ~r2.index.isin(r1.index)
+
+            if in2_not_in1.any():
+                r1 = r1.append(pd.Series(0, index=r2.index[in2_not_in1]))
+            if in1_not_in2.any():
+                r2 = r2.append(pd.Series(0, index=r1.index[in1_not_in2]))
+
+
+        return r1, r2
+
+
     def run(self):
 
         self.check_types()
 
+        r1, r2 = self.prepare_series()
+
         # Check if main condition passed
         check_passed = COMPARISONS[self.passed](
-            self.subtest1.result, self.subtest2.result
+            r1, r2
         )
 
         self.result = check_passed
@@ -215,7 +232,7 @@ class ComparisonTest(SubTest):
         # If conditinal passed is defined (yellow output)
         if self.conditional is not None:
             check_conditional = COMPARISONS[self.conditional](
-                self.subtest1.result, self.subtest2.result
+                r1, r2
             )
         else:
             check_conditional = False
