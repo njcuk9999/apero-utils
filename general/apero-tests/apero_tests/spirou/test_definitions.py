@@ -5,8 +5,7 @@ Definition of SPIRou recipe tests following APERO framework
 """
 import apero_tests.utils as ut
 from apero.core import constants
-from apero.core.instruments.spirou.recipe_definitions import recipes
-from apero_tests.drs_test import CACHEDIR, DrsTest
+from apero_tests.drs_test import CACHEDIR, DrsTest, RECIPE_DICT
 
 # =============================================================================
 # Define variables
@@ -20,8 +19,6 @@ __version__ = Constants["DRS_VERSION"]
 __author__ = Constants["AUTHORS"]
 __date__ = Constants["DRS_DATE"]
 __release__ = Constants["DRS_RELEASE"]
-
-RECIPE_DICT = dict(zip(list(map(lambda x: x.name, recipes)), recipes))
 
 pp_key = "DRS_DATA_WORKING"
 red_key = "DRS_DATA_REDUC"

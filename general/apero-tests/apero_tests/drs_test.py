@@ -17,6 +17,7 @@ from apero.core.core.drs_recipe import DrsRecipe
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
 
+from apero.core.instruments.spirou.recipe_definitions import recipes
 import apero_tests.subtest as st
 import apero_tests.utils as ut
 
@@ -28,6 +29,9 @@ PARENTDIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
 OUTDIR = os.path.join(PARENTDIR, "out")
 CACHEDIR = os.path.join(PARENTDIR, "cache")
+
+RECIPE_DICT = {x.name: x for x in recipes}
+
 
 # TODO: Maybe link to full docs, not github
 RECIPE_DOCS_LINK = "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes"
@@ -173,6 +177,7 @@ class DrsTest:
             # A global test is used to report outputs that match no logs
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
+            self.model_ind_df = self.generate_model_index()
 
             # Add QC informatio to index (useful for calibdb comparisons)
             pid_qc_mapping = self.log_df.groupby("PID").PASSED_ALL_QC.all()
@@ -522,6 +527,18 @@ class DrsTest:
 
         # If map OK, this will do
         self.ind_df["CALIB_KEY"] = out_fiber_series.map(out_to_calib)
+
+    def generate_model_index(self):
+        """
+        Generate expected index based on the log dataframe
+        """
+        # Drop runs with "--master" because they re-generate the same files
+        # NOTE: Might be different in 0.7
+        master_mask = self.log_df.RUNSTRING.str.contains(self.master_flag)
+        log_df = self.log_df[~master_mask]
+
+        # TODO: Use hack to remove output from thermal and keep only for extract
+        # for i in range(log_df):
 
     # =========================================================================
     # Function to run tests and write their output
