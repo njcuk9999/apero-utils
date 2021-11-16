@@ -184,7 +184,6 @@ class ComparisonTest(SubTest):
         self.subtest1 = subtest1
         self.subtest2 = subtest2
 
-
     def check_types(self):
         result_types = (numbers.Number, pd.Series)
         for st in [self.subtest1, self.subtest2]:
@@ -212,9 +211,7 @@ class ComparisonTest(SubTest):
             if in1_not_in2.any():
                 r2 = r2.append(pd.Series(0, index=r1.index[in1_not_in2]))
 
-
         return r1, r2
-
 
     def run(self):
 
@@ -223,17 +220,13 @@ class ComparisonTest(SubTest):
         r1, r2 = self.prepare_series()
 
         # Check if main condition passed
-        check_passed = COMPARISONS[self.passed](
-            r1, r2
-        )
+        check_passed = COMPARISONS[self.passed](r1, r2)
 
         self.result = check_passed
 
         # If conditinal passed is defined (yellow output)
         if self.conditional is not None:
-            check_conditional = COMPARISONS[self.conditional](
-                r1, r2
-            )
+            check_conditional = COMPARISONS[self.conditional](r1, r2)
         else:
             check_conditional = False
 
@@ -491,6 +484,40 @@ class CheckIndexCalibFiles(SubTest):
         in_calib_mask = self.ind_df.FILENAME.isin(self.calib_list)
 
         self.result = np.all(in_calib_mask)
+
+        # TODO: Add comment with link to in_calib_mask "False" list if failing
+        # (Bokeh table like we had in previous versions)
+
+        # Set color based on status
+        if self.result:
+            self.color = "Lime"
+        else:
+            self.color = "Red"
+
+
+class CheckCalibEntriesFiles(SubTest):
+    def __init__(
+        self,
+        calib_df: DataFrame,
+        calib_list: List[str],
+    ):
+
+        super().__init__(
+            description="Check that calibdb entries are in calibdb dir"
+        )
+
+        # NOTE: For 0.7, there will probably be a way to do more detailed, key-by-key
+        # comparison, but in 0.6 this would require reading many^TM fits files to get
+        # all keys
+
+        self.calib_df = calib_df
+        self.calib_list = calib_list
+
+    def run(self):
+
+        in_dir_mask = self.calib_df.filename.isin(self.calib_list)
+
+        self.result = np.all(in_dir_mask)
 
         # TODO: Add comment with link to in_calib_mask "False" list if failing
         # (Bokeh table like we had in previous versions)
