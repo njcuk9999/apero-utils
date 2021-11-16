@@ -59,10 +59,10 @@ red_missing_index, red_not_found = ut.missing_index_headers(
     cache_suffix="_red",
 )
 red_full_index = ut.make_full_index(red_index, red_missing_index)
-master_calib_db = ut.load_db(
+master_calib_db = ut.load_db_entries(
     "CALIB", instrument=__INSTRUMENT__
 )  # All calibdb entries
-tellu_df = ut.load_db(
+tellu_df = ut.load_db_entries(
     "TELLU", instrument=__INSTRUMENT__
 )  # All telludb entries
 # master_cdb_index = ut.load_db

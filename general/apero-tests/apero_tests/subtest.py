@@ -466,6 +466,42 @@ class CountIndexCalib(SubTest):
             self.result = 0
 
 
+class CheckIndexCalibFiles(SubTest):
+    def __init__(
+        self,
+        ind_df: DataFrame,
+        calib_list: List[str],
+        calib_key: str = "CALIB_KEY",
+        qc_key: str = "QC_PASSED",
+    ):
+
+        super().__init__(
+            description="Check that calib files in index are in calibdb dir"
+        )
+
+        # NOTE: For 0.7, there will probably be a way to do more detailed, key-by-key
+        # comparison, but in 0.6 this would require reading many^TM fits files to get
+        # all keys
+
+        self.ind_df = ind_df[ind_df[qc_key]].dropna(subset=[calib_key])
+        self.calib_list = calib_list
+
+    def run(self):
+
+        in_calib_mask = self.ind_df.FILENAME.isin(self.calib_list)
+
+        self.result = np.all(in_calib_mask)
+
+        # TODO: Add comment with link to in_calib_mask "False" list if failing
+        # (Bokeh table like we had in previous versions)
+
+        # Set color based on status
+        if self.result:
+            self.color = "Lime"
+        else:
+            self.color = "Red"
+
+
 class CountCalibEntries(SubTest):
     def __init__(self, calib_df: DataFrame, calib_keys: List[str]):
 

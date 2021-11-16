@@ -54,9 +54,9 @@ def get_nth_parent(path: str, order: int = 1):
     return parent_path
 
 
-def load_db(db_id: str, instrument: str = "SPIROU") -> DataFrame:
+def load_db_entries(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     """
-    Load an APERO database using the database 'ID'
+    Load an APERO database entries using the database 'ID'
 
     :param db_id: Database ID (e.g. 'CALIB' for calibdb)
     :type db_id: str
@@ -89,6 +89,29 @@ def load_db(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     # TODO: When sure that apero uses pandas >=1.0, use convert_dtypes here
 
     return df
+
+
+def load_db_list(db_id: str, instrument: str = "SPIROU") -> DataFrame:
+    """
+    Load an APERO database using the database 'ID'
+
+    :param db_id: Database ID (e.g. 'CALIB' for calibdb)
+    :type db_id: str
+    :param instrument: Instrument to use when loading apero params
+    :type instrument: str
+    :return: Dataframe containing the database
+    :rtype: DataFrame
+    """
+    # TODO: Should we have check for db_id, does APERO have list of db names ?
+    db_id = db_id.upper()
+
+    params = constants.load(instrument)
+    db_path = Path(params[f"DRS_{db_id}_DB"])
+
+    # NOTE: Might not include only data files,
+    # but need to get files independently of DB entries, so cannot just cross-check
+    plist = list(db_path.glob("*.fits"))
+    return [str(p.name) for p in plist]
 
 
 def load_fits_df(pathlist: List[str]) -> DataFrame:

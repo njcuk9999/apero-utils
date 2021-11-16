@@ -189,6 +189,10 @@ class DrsTest:
                 # This addds CALIB_KEY to index df for future comparisons
                 self.add_calib_to_ind()
 
+            self.calibdb_list = ut.load_db_list(
+                "CALIB", instrument=self.instrument
+            )
+
             # Load calibdb DF (master entries and calibdb files)
             self.calib_df = self.load_calib_df(
                 all_calib_df=all_master_calib_df
@@ -394,11 +398,11 @@ class DrsTest:
             return self.ind_df
 
         if all_calib_df is None:
-            all_calib_df = ut.load_db("CALIB")
+            all_calib_df = ut.load_db_entries("CALIB")
 
         if self.calibdb_keys is None:
             msg = (
-                "Cannot load index dataframe if no calibdb keys are set,"
+                "Cannot load calibdb dataframe if no calibdb keys are set,"
                 " returning None"
             )
             warnings.warn(msg, RuntimeWarning)
@@ -429,7 +433,7 @@ class DrsTest:
             return self.ind_df
 
         if all_tellu_df is None:
-            all_tellu_df = ut.load_db("TELLU")
+            all_tellu_df = ut.load_db_entries("TELLU")
 
         if self.telludb_keys is None:
             msg = (
@@ -508,7 +512,11 @@ class DrsTest:
         out_fiber_series = self.ind_df.KW_OUTPUT + fiber_series
 
         out_to_calib = {
-            (v + f"_{k.split('_')[-1]}" if k.split('_')[-1] in all_fibers else v): k
+            (
+                v + f"_{k.split('_')[-1]}"
+                if k.split("_")[-1] in all_fibers
+                else v
+            ): k
             for k, v in self.calibdb_to_output.items()
         }
 
@@ -567,14 +575,14 @@ class DrsTest:
             )
             subtest_list.append(st_cdb_entries)
 
-            # TODO: Compare calibdb checks
             subtest_list.append(
                 st.ComparisonTest(st_index_calib, st_cdb_entries)
             )
 
-        # TODO: Calibdb
+            subtest_list.append(
+                st.CheckIndexCalibFiles(self.ind_df, self.calibdb_list)
+            )
 
-        # TODO: Telludb
 
         # telluDB output count
         subtest_list.append(st.CountTelluEntries(self.tellu_df))
