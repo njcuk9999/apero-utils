@@ -202,14 +202,12 @@ class ComparisonTest(SubTest):
 
     def prepare_series(self):
         r1, r2 = self.subtest1.result, self.subtest2.result
-        if isinstance(r1, pd.Series) and isinstance(r2, pd.Series):
-            in1_not_in2 = ~r1.index.isin(r2.index)
-            in2_not_in1 = ~r2.index.isin(r1.index)
 
-            if in2_not_in1.any():
-                r1 = r1.append(pd.Series(0, index=r2.index[in2_not_in1]))
-            if in1_not_in2.any():
-                r2 = r2.append(pd.Series(0, index=r1.index[in1_not_in2]))
+        if isinstance(r1, pd.Series) and isinstance(r2, pd.Series):
+            dtype = r1.dtype
+            r1, r2 = r1.align(r2, fill_value=0)
+            r1 = r1.astype(dtype)
+            r2 = r2.astype(dtype)
 
         return r1, r2
 
@@ -246,6 +244,7 @@ class CountOutTest(SubTest):
         output_path: str,
         output_hkeys: List[str],
         unique: bool = False,
+        description: Optional[str] = None,
         group_kwds: Optional[Sequence[str]] = None,
     ):
         """
@@ -261,7 +260,7 @@ class CountOutTest(SubTest):
         :param unique: Return unique count if true, defaults to False
         :type unique: bool, optional
         :param group_kwds: Keys used to group the index before counting,
-                           The default ["KW_OUTPUT", "KW_DPRTYPE", "KW_FIBER"]
+                           The default ["KW_OUTPUT", "KW_FIBER"]
                            is used if None.
         :type group_kwds: Optional[Sequence[str]], optional
         """
@@ -269,10 +268,11 @@ class CountOutTest(SubTest):
         self.unique = unique
         self.output_path = output_path
 
-        if self.unique:
-            description = f"# of unique outputs in {self.output_path}"
-        else:
-            description = f"# of outputs in {self.output_path}"
+        if description is None:
+            if self.unique:
+                description = f"# of unique outputs in {self.output_path}"
+            else:
+                description = f"# of outputs in {self.output_path}"
 
         super().__init__(description=description)
 
@@ -283,7 +283,8 @@ class CountOutTest(SubTest):
         else:
             # ???: Should we use drs params to get keys here or is literal ok?
             # NOTE: We could remove KW_DPRTYPE in future if not needed
-            self.group_kwds = ["KW_OUTPUT", "KW_DPRTYPE", "KW_FIBER"]
+            # self.group_kwds = ["KW_OUTPUT", "KW_DPRTYPE", "KW_FIBER"]
+            self.group_kwds = ["KW_OUTPUT", "KW_FIBER"]
 
     def run(self):
         if not self.ind_df.empty:
@@ -297,7 +298,9 @@ class CountOutTest(SubTest):
                 ).FILENAME.count()
         else:
             self.result = pd.Series(
-                0, index=self.output_hkeys, name="FILENAME"
+                0,
+                index=pd.Index(self.output_hkeys, name="KW_OUTPUT"),
+                name="FILENAME",
             )
 
 
@@ -489,6 +492,7 @@ class CheckIndexCalibFiles(SubTest):
         # (Bokeh table like we had in previous versions)
 
         # Set color based on status
+        # TODO: Define method to set passing (or at least smthg to force color)
         if self.result:
             self.color = "Lime"
         else:

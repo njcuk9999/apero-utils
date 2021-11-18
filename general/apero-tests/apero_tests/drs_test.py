@@ -101,7 +101,6 @@ class DrsTest:
         self.params = None  # DRS parameters
         self.pconst = None  # DRS constants
         self.ismaster = False  # Is it a master recipe?
-        self.output_dict = None
         self.output_drs_files = None
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
@@ -155,13 +154,8 @@ class DrsTest:
                 OUTDIR, self.test_id, ".".join([self.test_id, "html"])
             )
 
-            # Get keys for outputs
-            self.output_dict = self.recipe.outputs
-            self.output_drs_files = [
-                o
-                for o in list(self.output_dict.values())
-                if isinstance(o, DrsFitsFile)
-            ]
+            # Get output files for this recipe
+            self.output_drs_files = self.get_recipe_outputs()
 
             # TODO: Handle all recipes without KW_OUTPUT in empty
             # required_header_keys
@@ -486,6 +480,25 @@ class DrsTest:
     # =========================================================================
     # Utility functions
     # =========================================================================
+    def get_recipe_outputs(
+        self, recipe: Optional[Union[DrsRecipe, str]] = None
+    ):
+        recipe = recipe or self.recipe
+
+        # Try to get recipe from name if we have a string
+        if isinstance(recipe, str):
+            try:
+                recipe = RECIPE_DICT[recipe]
+            except AttributeError:
+                recipe = RECIPE_DICT[recipe + ".py"]
+
+        odict = recipe.outputs
+        outfiles = [
+            o for o in list(odict.values()) if isinstance(o, DrsFitsFile)
+        ]
+
+        return outfiles
+
     def get_dir_path(self):
         """
         Get dictionary mapping keywords to data directories
@@ -528,17 +541,86 @@ class DrsTest:
         # If map OK, this will do
         self.ind_df["CALIB_KEY"] = out_fiber_series.map(out_to_calib)
 
-    def generate_model_index(self):
+    def generate_model_index(self) -> pd.DataFrame:
         """
         Generate expected index based on the log dataframe
         """
         # Drop runs with "--master" because they re-generate the same files
         # NOTE: Might be different in 0.7
-        master_mask = self.log_df.RUNSTRING.str.contains(self.master_flag)
-        log_df = self.log_df[~master_mask]
+        master_mask = self.log_df.RUNSTRING.str.contains("--master")
+        log_df = self.log_df[~master_mask] if not self.ismaster else self.log_df
+        log_df = log_df.copy()
+
+        # Get all recipes in the log
+        recipes = list(log_df.RECIPE.unique())
+        log_recipe_dict = dict()
+
+        # Store recipe info in a dict
+        for rname in recipes:
+            recipe_obj = RECIPE_DICT[rname + ".py"]
+            out_files = self.get_recipe_outputs(recipe=recipe_obj)
+            fibers = [f.fibers for f in out_files]
+
+            rdict = {
+                "name": rname,
+                "recipe_obj": RECIPE_DICT[rname + ".py"],
+                "out_files": self.get_recipe_outputs(recipe=recipe_obj),
+                "fibers": fibers,
+            }
+
+            log_recipe_dict[rname] = rdict
 
         # TODO: Use hack to remove output from thermal and keep only for extract
-        # for i in range(log_df):
+        rows = []
+        row_inds = []
+        for i, (log_night, log_row) in enumerate(log_df.iterrows()):
+
+            recipe_dict = log_recipe_dict[log_row.RECIPE]
+
+            if "fiber" in log_row["LEVEL_CRIT"]:
+                # Get fiber from level crit to avoid repeating entries if recipe
+                # has more than one fiber in output files but this log entry only
+                # generates one fiber
+                # NOTE: Fiber must be a list of lists (list of fibers per output type)
+                fibers = [
+                    [log_row["LEVEL_CRIT"].split("fiber")[-1].split("=")[1]]
+                ] * len(recipe_dict["out_files"])
+            else:
+                # If no fiber from level crit, use values given by recipe
+                fibers = recipe_dict["fibers"]
+
+            # Generate index entry for each DRS output file of recipe
+            # TODO: Get index keys from DRS params
+            for j, ofile in enumerate(recipe_dict["out_files"]):
+
+                # We exclude DEBUG from input
+                if ofile.name.startswith("DEBUG"):
+                    continue
+
+                # Handle fiber list being None
+                fiber_list = fibers[j] or ["--"]
+                kw_output = (
+                    ofile.name
+                    if "KW_OUTPUT" in ofile.required_header_keys
+                    else "--"
+                )
+
+                for k, fiber in enumerate(fiber_list):
+                    fake_fname = log_night + f"_{i}_{j}_{k}"
+                    kw_pid = log_row.PID
+                    kw_fiber = fiber
+
+                    row_dict = {
+                        "FILENAME": fake_fname,  # Just because required for counting
+                        "KW_OUTPUT": kw_output,
+                        "KW_PID": kw_pid,
+                        "KW_FIBER": kw_fiber,
+                    }
+
+                    rows.append(row_dict)
+                    row_inds.append(log_night)
+
+        return pd.DataFrame(rows, index=row_inds)
 
     # =========================================================================
     # Function to run tests and write their output
@@ -562,13 +644,26 @@ class DrsTest:
         )
 
         # Count unique outputs
-        subtest_list.append(
-            st.CountOutTest(
-                self.ind_df, self.output_path, self.output_hkeys, unique=True
-            )
+        st_unique_outputs = st.CountOutTest(
+            self.ind_df, self.output_path, self.output_hkeys, unique=True
         )
+        subtest_list.append(st_unique_outputs)
 
-        # TODO Compare output and log results
+        # Count unique outputs in model index
+        st_unique_model_outputs = st.CountOutTest(
+            self.model_ind_df,
+            self.output_path,
+            self.output_hkeys,
+            unique=True,
+            description="# of unique outputs in model index df",
+        )
+        subtest_list.append(st_unique_model_outputs)
+
+        if "thermal" in self.name:
+            import ipdb; ipdb.set_trace()
+        subtest_list.append(
+            st.ComparisonTest(st_unique_outputs, st_unique_model_outputs)
+        )
 
         # QC failed count
         subtest_list.append(st.CountQCTest(self.log_df, self.html_path))
