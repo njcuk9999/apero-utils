@@ -6,6 +6,7 @@ Definition of SPIRou recipe tests following APERO framework
 import apero_tests.utils as ut
 from apero.core import constants
 from apero_tests.drs_test import CACHEDIR, DrsTest, RECIPE_DICT
+from apero_tests.spirou.some_custom_subtests import CustomBadpixTest
 
 # =============================================================================
 # Define variables
@@ -128,6 +129,9 @@ cal_badpix = DrsTest(
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
+# TODO: Make append method to drstest to type check
+# NOTE: Just an example subtest for future development (checks nothing)
+cal_badpix.subtest_list.append(CustomBadpixTest("This is a message "))
 
 tests.append(cal_badpix)
 
