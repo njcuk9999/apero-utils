@@ -13,7 +13,9 @@ from astropy.time import Time
 from datetime import datetime, timedelta
 from astropy import units as uu
 import glob
+import matplotlib.pyplot as plt
 import numpy as np
+import os
 from tqdm import tqdm
 from typing import Any, Dict, List, Tuple, Union
 
@@ -228,6 +230,73 @@ def print_stats(recipe: str, stats: Dict[str, Any]):
     print(statstr.format(**stats))
 
 
+def plot_hist(logdict: Dict[str, List[LogFile]]):
+
+    # get durations
+    durationdict = dict()
+    # get recipe names
+    rnames = list(logdict.keys())
+    # loop around recipes
+    for it, recipe in enumerate(rnames):
+        # get the list for this recipe
+        loglist = logdict[recipe]
+        # get durations
+        durations = list(map(lambda x: x.duration, loglist))
+        if len(durations) > 1:
+            durationdict[recipe] = durations
+
+    # re-get recipe names
+    rnames = list(durationdict.keys())
+
+    # get number of rows and columns
+    nrows = int(np.ceil(np.sqrt(len(rnames))))
+    ncols = int(np.ceil(len(rnames)/nrows))
+
+    # setup figure
+    plt.close()
+    fig, frames = plt.subplots(ncols=ncols, nrows=nrows)
+
+    used = []
+    # loop around recipes
+    for it, recipe in enumerate(rnames):
+        # print progress
+        print('Plotting recipe={0}'.format(recipe))
+        # get position in grid
+        jt, kt = it % ncols, it // ncols
+
+        used.append([jt, kt])
+        # append
+        # get the frame
+        frame = frames[kt][jt]
+        # get the durations
+        durations =  durationdict[recipe]
+        if len(durations) > 10:
+            # work out the number of bins
+            nbins = np.min([len(durations)//10, 100])
+            # plot the histogram
+            frame.hist(durations, bins=nbins)
+            # set labels
+            frame.set(xlabel='{0} time taken [s]'.format(recipe),
+                      ylabel='Number of recipes')
+    # remove unused plots
+    for it in range(ncols*nrows):
+        # get position in grid
+        jt, kt = it % ncols, it // ncols
+        # turn off unused axis
+        if [jt, kt] not in used:
+            frames[kt][jt].axis('off')
+
+    #
+    plt.subplots_adjust(left=0.04, right=0.98, bottom=0.04, top=0.98)
+    plt.show()
+
+
+
+
+
+
+
+
 # =============================================================================
 # Start of code
 # =============================================================================
@@ -236,14 +305,18 @@ if __name__ == "__main__":
     log_groups = glob.glob('APEROG*')
     # get log files
     print('Getting list of logs in time order...')
-    files = glob.glob(log_groups[-1] + '/*.log')
-    files.sort()
+    log_files = []
+    for root, dirs, files in tqdm(os.walk(log_groups[-1])):
+        for filename in files:
+            if filename.endswith('.log'):
+                log_files.append(os.path.join(root, filename))
+    log_files.sort()
     # store astropy times
     logs = dict()
     # print progress
     print('Analysing log files')
     # loop around log files
-    for filename in tqdm(files):
+    for filename in tqdm(log_files):
         # construct log
         log = LogFile(filename)
         # process log
@@ -262,6 +335,10 @@ if __name__ == "__main__":
         rstats[recipe] = get_stats(logs[recipe])
         # print stats
         print_stats(recipe, rstats[recipe])
+    # -------------------------------------------------------------------------
+    # get histograms
+    plot_hist(logs)
+
 
 # =============================================================================
 # End of code
