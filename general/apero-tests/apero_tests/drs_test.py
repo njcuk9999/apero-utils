@@ -548,7 +548,9 @@ class DrsTest:
         # Drop runs with "--master" because they re-generate the same files
         # NOTE: Might be different in 0.7
         master_mask = self.log_df.RUNSTRING.str.contains("--master")
-        log_df = self.log_df[~master_mask] if not self.ismaster else self.log_df
+        log_df = (
+            self.log_df[~master_mask] if not self.ismaster else self.log_df
+        )
         log_df = log_df.copy()
 
         # Get all recipes in the log
@@ -570,12 +572,40 @@ class DrsTest:
 
             log_recipe_dict[rname] = rdict
 
+        def _get_dprtype(ofile):
+            if isinstance(ofile.intype, DrsFitsFile):
+                # Go up intype until get DPRTYPE. Should end up with None or with a value
+                if "KW_DPRTYPE" in ofile.intype.required_header_keys:
+                    return ofile.intype.required_header_keys["KW_DPRTYPE"]
+                else:
+                    return _get_dprtype(ofile.intype)
+            # If a list or none, just return None
+            # TODO: Probably not great, maybe update in 0.7 ? (Talk to Neil)
+            else:
+                return None
+
         # TODO: Use hack to remove output from thermal and keep only for extract
         rows = []
         row_inds = []
         for i, (log_night, log_row) in enumerate(log_df.iterrows()):
 
             recipe_dict = log_recipe_dict[log_row.RECIPE]
+
+            # For recipe under test, will need to check calls to other recipes
+            # ???: Is it possible that a recipe calls a recipe that calls a recipe ?
+            # Not for now according to Neil, but this is an important assumption here
+            if log_row.RECIPE == self.recipe_name:
+                other_dict = {
+                    k: v
+                    for k, v in log_recipe_dict.items()
+                    if k != log_row.RECIPE
+                }
+                other_files_list = [
+                    r["out_files"] for r in other_dict.values()
+                ]
+                other_files = [f.name for fl in other_files_list for f in fl]
+            else:
+                other_files = []
 
             if "fiber" in log_row["LEVEL_CRIT"]:
                 # Get fiber from level crit to avoid repeating entries if recipe
@@ -599,11 +629,32 @@ class DrsTest:
 
                 # Handle fiber list being None
                 fiber_list = fibers[j] or ["--"]
+
+                # Set KW_OUTPUT
                 kw_output = (
                     ofile.name
                     if "KW_OUTPUT" in ofile.required_header_keys
                     else "--"
                 )
+
+                # Skip files that are not outputs of the recipe
+                if kw_output not in self.output_hkeys:
+                    continue
+
+                # If an output file is in this recipe and in another from the
+                # same log (only useful for "main" recipe of this test)
+                # For e.g., an extract row will always have other_files = []
+                # (see def above)
+                if kw_output in other_files:
+                    continue
+
+                dprtype = _get_dprtype(ofile)
+                # HACK: Will have a better way to do this in 0.7
+                if dprtype is not None and log_row.ARGS.endswith("]"):
+                    # If we can match a DPR type for the call in log and its not the
+                    # right one, skip
+                    if not log_row.ARGS.endswith(f"[{dprtype}]"):
+                        continue
 
                 for k, fiber in enumerate(fiber_list):
                     fake_fname = log_night + f"_{i}_{j}_{k}"
@@ -659,8 +710,6 @@ class DrsTest:
         )
         subtest_list.append(st_unique_model_outputs)
 
-        if "thermal" in self.name:
-            import ipdb; ipdb.set_trace()
         subtest_list.append(
             st.ComparisonTest(st_unique_outputs, st_unique_model_outputs)
         )
