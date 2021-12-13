@@ -446,9 +446,6 @@ class DrsTest:
 
         return tellu_df
 
-    # def load_db_output(self, db_path: str):
-    #     full_db_list = os.listdir(db_path)
-
     def load_cdb_used_df(
         self, all_cdb_used_df: Optional[DataFrame] = None, force: bool = True
     ) -> Union[DataFrame, None]:
@@ -649,7 +646,7 @@ class DrsTest:
                     continue
 
                 dprtype = _get_dprtype(ofile)
-                # HACK: Will have a better way to do this in 0.7
+                # HACK: Will have a better way to do this in 0.7 (talk to Neil)
                 if dprtype is not None and log_row.ARGS.endswith("]"):
                     # If we can match a DPR type for the call in log and its not the
                     # right one, skip
