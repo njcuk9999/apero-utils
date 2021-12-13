@@ -569,7 +569,7 @@ class DrsTest:
 
             log_recipe_dict[rname] = rdict
 
-        def _get_dprtype(ofile):
+        def _get_dprtype(ofile: Union[DrsFitsFile, List[DrsFitsFile], None]):
             if isinstance(ofile.intype, DrsFitsFile):
                 # Go up intype until get DPRTYPE. Should end up with None or with a value
                 if "KW_DPRTYPE" in ofile.intype.required_header_keys:
