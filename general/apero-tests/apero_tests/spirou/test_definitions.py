@@ -6,7 +6,7 @@ Definition of SPIRou recipe tests following APERO framework
 import apero_tests.utils as ut
 from apero.core import constants
 from apero_tests.drs_test import CACHEDIR, DrsTest, RECIPE_DICT
-from apero_tests.spirou.some_custom_subtests import CustomBadpixTest
+from apero_tests.global_subtests import CustomBadpixTest, GlobalIndexCheck
 
 # =============================================================================
 # Define variables
@@ -65,18 +65,20 @@ tellu_df = ut.load_db_entries(
 )  # All telludb entries
 # master_cdb_index = ut.load_db
 
-# Some global tests are done here (before per-recipe)
 # NOTE: This should change in 0.7. Will have new way to match files per recipe
+# Some global tests are done here (before per-recipe)
 # - Report files not in index
 # - Compare log and index with small report
 # - Return index files that have a PID match in the logs
-#   (the ones that can be processed at index level)
+#   (the ones that can be processed at recipe level)
 # TODO: The results from these should be in the output
 # TODO: Add output of "not_found" series to the same report (critical errors)
-pp_index = ut.global_index_check(pp_full_index, pp_log)
-red_index = ut.global_index_check(red_full_index, red_log)
+pp_index, pp_index_no_pid = ut.global_index_check(pp_full_index, pp_log)
+red_index, red_index_no_pid = ut.global_index_check(red_full_index, red_log)
 debug_mask = red_index.FILENAME.str.startswith("DEBUG")
 red_index = red_index[~debug_mask]  # DEBUGs are not used in tests
+
+full_index_no_pid = pp_index_no_pid.append(red_index_no_pid)
 
 # Get calib DB files used for files in index, and time difference
 red_cdb_used_df = ut.get_cdb_df(
@@ -88,8 +90,23 @@ red_cdb_used_df = ut.get_cdb_df(
 # =============================================================================
 tests = []
 
+# -----------------------------------------------------------------------------
+# "Global" test
+# -----------------------------------------------------------------------------
+# This one does not look like the others: it has no recipe and only has a few
+# subtests
+global_test = DrsTest(
+    instrument=__INSTRUMENT__,
+)
+global_test.name = "Global test for all files"
+global_test.test_id = "global_test"
+# TODO: Subtest for files on disk but not in index
+global_test.subtest_list = [GlobalIndexCheck(full_index_no_pid, global_test)]
 
-# TODO: Make compatible with pp and dark master tests
+tests.append(global_test)
+
+
+# TODO: Make sure compatible with pp and dark master tests
 # -----------------------------------------------------------------------------
 # Preprocessing Test
 # -----------------------------------------------------------------------------

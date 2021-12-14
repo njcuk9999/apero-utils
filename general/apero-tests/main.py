@@ -63,10 +63,7 @@ for i, test in enumerate(tests):
     print("Test {0}/{1}".format(i + 1, n))
     print("Testing {0}.py".format(test.recipe_name))
 
-    if test.recipe is not None:
-        test.run_test()
-    else:
-        print("Test {} not implemented".format(test.test_id))
+    test.run_test()
 
     print()
 

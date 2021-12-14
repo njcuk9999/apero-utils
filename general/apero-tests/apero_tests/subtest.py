@@ -338,7 +338,6 @@ class CountQCTest(SubTest):
 
         if self.result > 0 and not odometer_flag:
             self.comments = "One or more recipe have failed QC."
-            self
             log_reset = log_qc_failed.reset_index()
             data_dict_check_qc = {
                 "Night": log_reset.DIRECTORY.values,

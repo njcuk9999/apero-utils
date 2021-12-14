@@ -295,37 +295,13 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
     full_index.loc[nan_pid_mask, "PID_TYPE"] = "NaN"
     full_index.loc[blank_pid_mask, "PID_TYPE"] = "Blank"
 
-    # Full summary of index with things to flags
-    # TODO: This can be displayed in a bokeh table with some specific columns
-    # TODO: Maybe restructure when have better idea of whole framework
-    global_bad_index = full_index[index_problem_mask]
-    group_columns = [
-        "PID_TYPE",
-        "KW_OUTPUT",
-        "KW_DPRTYPE",
-        "IN_INDEX",
-        "IN_LOG",
-    ]
-    count_column = "FILENAME"
-    try:
-        global_bad_index_summary = global_bad_index.groupby(
-            group_columns, dropna=False
-        )[count_column].count()
-    except TypeError:
-        pd_msg = (
-            "Your pandas version does not support NaN grouping. "
-            "Some entries might be missing from the index summary"
-        )
-        warnings.warn(pd_msg, RuntimeWarning)
-        global_bad_index_summary = global_bad_index.groupby(group_columns)[
-            count_column
-        ].count()
-
     # TODO: Do the checks/output here
+    # TODO: This can be displayed in a bokeh table with some specific columns ?
 
     # TODO: When have way of knowing which recipe, return also based on recipe
-    # (not just log)
-    return full_index[~index_problem_mask]
+    # (not just log).
+    # THOMAS-FROM-A-FEW-MONTHS-LATER: not sure what I was talking about, 0.7 maybe ?
+    return full_index[~index_problem_mask], full_index[index_problem_mask]
 
 
 def load_log_df(

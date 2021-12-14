@@ -106,6 +106,7 @@ class DrsTest:
         self.calibdb_keys = []  # Calibdb keys
         self.input_path = ""  # Path to input dir
         self.output_path = ""  # Path to output dir
+        self.calibdb_path = ""
         self.html_path = ""  # Path to HTML report
         self.log_df = None
         self.ind_df = None
@@ -758,6 +759,13 @@ class DrsTest:
         """
         Run all subtests and generate HTML summary for the recipe
         """
+
+        # Keep this here so that if subtests access it via attribute it is set
+        if self.html_path == "":
+            # Path to HTML report
+            self.html_path = Path(
+                OUTDIR, self.test_id, ".".join([self.test_id, "html"])
+            )
 
         # Run all subtests one by one
         final_list = []
