@@ -475,7 +475,7 @@ def missing_index_headers(
     :rtype: Tuple[DataFrame, Series]
     """
 
-    # TODO: Could have better naming/ID method s.t. repeated runs update OK
+    # TODO: Better naming/ID method s.t. repeated runs update OK
     if cache_dir is not None:
         p = Path(cache_dir)
         p.mkdir(parents=True, exist_ok=True)

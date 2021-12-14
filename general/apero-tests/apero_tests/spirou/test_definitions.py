@@ -5,8 +5,8 @@ Definition of SPIRou recipe tests following APERO framework
 """
 import apero_tests.utils as ut
 from apero.core import constants
-from apero_tests.drs_test import CACHEDIR, DrsTest, RECIPE_DICT
-from apero_tests.global_subtests import CustomBadpixTest, GlobalIndexCheck
+from apero_tests.drs_test import CACHEDIR, RECIPE_DICT, DrsTest
+import apero_tests.global_subtests as gt
 
 # =============================================================================
 # Define variables
@@ -79,6 +79,8 @@ debug_mask = red_index.FILENAME.str.startswith("DEBUG")
 red_index = red_index[~debug_mask]  # DEBUGs are not used in tests
 
 full_index_no_pid = pp_index_no_pid.append(red_index_no_pid)
+full_missing_index = pp_missing_index.append(red_missing_index)
+full_not_found = pp_not_found.append(red_not_found)
 
 # Get calib DB files used for files in index, and time difference
 red_cdb_used_df = ut.get_cdb_df(
@@ -101,7 +103,11 @@ global_test = DrsTest(
 global_test.name = "Global test for all files"
 global_test.test_id = "global_test"
 # TODO: Subtest for files on disk but not in index
-global_test.subtest_list = [GlobalIndexCheck(full_index_no_pid, global_test)]
+global_test.subtest_list = [
+    gt.GlobalIndexCheck(full_index_no_pid, global_test),
+    gt.CheckMissingAdded(full_missing_index, global_test),
+    gt.CheckNotFound(full_not_found, global_test)
+]
 
 tests.append(global_test)
 
@@ -148,7 +154,7 @@ cal_badpix = DrsTest(
 )
 # TODO: Make append method to drstest to type check
 # NOTE: Just an example subtest for future development (checks nothing)
-cal_badpix.subtest_list.append(CustomBadpixTest("This is a message "))
+cal_badpix.subtest_list.append(gt.CustomBadpixTest("This is a message "))
 
 tests.append(cal_badpix)
 

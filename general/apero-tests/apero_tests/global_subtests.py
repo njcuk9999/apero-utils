@@ -15,7 +15,7 @@ class CustomBadpixTest(SubTest):
         """
         self.msg = input_msg
 
-        super().__init__(description=f"Test to show something")
+        super().__init__(description="Test to show something")
 
     def run(self):
 
@@ -65,7 +65,7 @@ class GlobalIndexCheck(SubTest):
             "Night": bad_index_reset.NIGHTNAME,
             "File": bad_index_reset.FILENAME,
         }
-        for k in self.group_kwds:
+        for k in self.group_kwds + self.inspect_kwds:
             data_dict_index_pid[k] = bad_index_reset[k]
 
         self.result = global_bad_index_summary
@@ -79,3 +79,71 @@ class GlobalIndexCheck(SubTest):
             data_dict_index_pid,
             title="Files that are in index but have no PID match in log",
         )
+
+
+class CheckMissingAdded(SubTest):
+    def __init__(self, missing_ind_df, parent_test: DrsTest):
+        super().__init__(
+            description="Files on disk that were not in index"
+        )
+
+        self.inspect_kwds = [
+            "KW_OUTPUT",
+            "KW_DPRTYPE",
+            "KW_FIBER",
+            "KW_PID",
+        ]
+        self.missing_ind_df = missing_ind_df
+        self.parent_test = parent_test
+
+    def run(self):
+        n_missing_added = len(self.missing_ind_df)
+
+        self.result = n_missing_added
+
+        if n_missing_added > 0:
+            df_reset = self.missing_ind_df.reset_index()
+            data_dict = {
+                "Night": df_reset.NIGHTNAME,
+                "File": df_reset.FILENAME,
+            }
+            for k in self.inspect_kwds:
+                data_dict[k] = data_dict[k]
+
+            self.details = inspect_table(
+                self.parent_test.html_path,
+                self.id,
+                data_dict,
+                title="Files that were on disk and not in index (added to index df)",
+            )
+        else:
+            self.color = "Lime"
+
+
+class CheckNotFound(SubTest):
+    def __init__(self, not_found: pd.Series, parent_test: DrsTest):
+        super().__init__(
+            description="Copied files with original file not found"
+        )
+
+        self.not_found = not_found
+        self.parent_test = parent_test
+
+    def run(self):
+        n_not_found = len(self.not_found)
+
+        self.result = n_not_found
+
+        if n_not_found > 0:
+            data_dict = {
+                "File": self.not_found.values
+            }
+
+            self.details = inspect_table(
+                self.parent_test.html_path,
+                self.id,
+                data_dict,
+                title="Copied files with original file not found",
+            )
+        else:
+            self.color = "Lime"
