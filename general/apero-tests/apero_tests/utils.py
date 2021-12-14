@@ -212,8 +212,12 @@ def get_cdb_df(
         else:
             return index_df
         unique_cdb_files = get_unique_vals(cdb_df)
-        sep = "" if params["DRS_CALIB_DB"].endswith(os.path.sep) else os.path.sep
-        unique_cdb_files_fullpath = params["DRS_CALIB_DB"] + sep + unique_cdb_files
+        sep = (
+            "" if params["DRS_CALIB_DB"].endswith(os.path.sep) else os.path.sep
+        )
+        unique_cdb_files_fullpath = (
+            params["DRS_CALIB_DB"] + sep + unique_cdb_files
+        )
         mjds = unique_cdb_files_fullpath.apply(get_hkey, args=("MJDMID",))
         mjds.index = unique_cdb_files
         mjd_df = cdb_df.replace(mjds.to_dict())
