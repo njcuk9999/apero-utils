@@ -198,6 +198,9 @@ class DrsTest:
                 all_calib_df=all_master_calib_df
             )
 
+            # Needed for "used calibs" test
+            self.all_calib_df = all_master_calib_df
+
             if not self.pp_flag:
                 self.cdb_used_df = self.load_cdb_used_df(
                     all_cdb_used_df=all_cdb_used_df
@@ -747,7 +750,7 @@ class DrsTest:
             )
 
             subtest_list.append(
-                st.CheckUsedCalibs(self.cdb_used_df, self.html_path)
+                st.CheckUsedCalibs(self.cdb_used_df, self.html_path, self.all_calib_df)
             )
 
         # telluDB output count

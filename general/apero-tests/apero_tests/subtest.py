@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 
 import apero_tests.utils as ut
-from apero_tests.display import inspect_plot, inspect_table, delta_mjd_plot
+from apero_tests.display import delta_mjd_plot, inspect_plot, inspect_table
 
 COMPARISONS = {
     "eq": np.equal,
@@ -564,20 +564,46 @@ class CountCalibEntries(SubTest):
 
 
 class CheckUsedCalibs(SubTest):
-    def __init__(self, used_calib_df: DataFrame, test_html_path: str, delta_mjd_max: float = 7.0):
+    def __init__(
+        self,
+        used_calib_df: DataFrame,
+        test_html_path: str,
+        calib_df: DataFrame,
+        delta_mjd_max: float = 7.0,
+    ):
         super().__init__(
             description=f"# of sci files with |delta MJD| from calib > {delta_mjd_max}"
         )
 
         # Drop calib files not relevant to sci file under test with dropna
-        self.used_calib_df = used_calib_df.dropna(how="all", axis=1)
+        mask = ~used_calib_df.isna().all(axis=0).any(level=0)
+        self.used_calib_df = used_calib_df[mask.index[mask]]
+        self.calib_df = calib_df
         self.test_html_path = test_html_path
         self.dmax = 7.0
 
     def run(self):
 
         if len(self.used_calib_df.columns) > 0:
-            delta_mjd_df = self.used_calib_df.xs("DELTA_MJD", axis=1, level=1).abs()
+            calib_with_fname = self.calib_df.set_index("filename")
+            fdf = self.used_calib_df.xs(
+                "CALIB_FILE", axis=1, level=1
+            ).reset_index(drop=True)
+
+            stacked_fdf = fdf.stack().reset_index(0, drop=True)
+            ind_for_db = stacked_fdf[stacked_fdf.isin(self.calib_df.filename)]
+            calib_ind_used = calib_with_fname.loc[ind_for_db]
+            drop_map = (
+                calib_ind_used.master.astype(int).groupby("filename").all()
+            )
+            drop_mask = fdf.replace(drop_map)
+            drop_mask_all = drop_mask.all()
+            self.used_calib_df = self.used_calib_df[
+                drop_mask_all.index[~drop_mask_all]
+            ]
+            delta_mjd_df = self.used_calib_df.xs(
+                "DELTA_MJD", axis=1, level=1
+            ).abs()
             check_per_ctype = delta_mjd_df > self.dmax
             bool_mask = check_per_ctype.any(axis=1)
             n_fail = bool_mask.sum()
@@ -607,6 +633,7 @@ class CheckUsedCalibs(SubTest):
             inspect_df,
             "Time difference between calib files and science file (hover for file name)",
         )
+
 
 class CountTelluEntries(SubTest):
     def __init__(self, tellu_df: DataFrame):
