@@ -8,7 +8,7 @@ from bokeh.io.output import output_file
 from bokeh.io.saving import save
 from bokeh.layouts import layout
 from bokeh.models import (Button, ColumnDataSource, CustomJS, DataTable,
-                          LinearAxis, TableColumn)
+                          HoverTool, LinearAxis, TableColumn)
 from bokeh.models.widgets import Div, Select
 from bokeh.plotting import figure
 
@@ -341,7 +341,7 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     # bokeh tools
     TOOLS = [
         "crosshair",
-        "hover",
+        # "hover",
         "pan",
         "box_zoom",
         "undo",
@@ -349,20 +349,6 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
         "reset",
         "save",
     ]
-
-    # bokeh Hover
-    TOOLTIPS = """
-    <table>
-      <tr>
-        <td><span style="color: #2874a6;">NIGHTNAME</span></td>
-        <td>@NIGHTNAME</td>
-     </tr>
-      <tr>
-        <td><span style="color: #2874a6;">FILENAME</span></td>
-        <td>@FILENAME</td>
-      </tr>
-    </table>
-    """
 
     # create widget
     y_axis_widget = Select(
@@ -372,6 +358,7 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     # data set (x and y variables)
     source.data["x"] = source.data["PLOTDATE"]
     source.data["y"] = source.data[col_names[0] + "_" + "DELTA_MJD"]
+    source.data["calf"] = source.data[col_names[0] + "_" + "CALIB_FILE"]
 
     # plot
     p = figure(
@@ -381,7 +368,6 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
         toolbar_location="right",
         x_axis_label="NIGHTNAME",
         x_axis_type="datetime",
-        tooltips=TOOLTIPS,
         title=title,
     )
     p.title.text_font_size = "12pt"
@@ -401,6 +387,7 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
               var selected_y_axis = cb_obj.value
               var data_visible = source.data
               data_visible.y = data_visible[selected_y_axis + '_' + 'DELTA_MJD']
+              data_visible.calf = data_visible[selected_y_axis + '_' + 'CALIB_FILE']
               source.change.emit()
               p.reset.emit()
               """
