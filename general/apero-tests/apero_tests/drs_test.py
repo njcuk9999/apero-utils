@@ -745,6 +745,10 @@ class DrsTest:
                 st.CheckCalibEntriesFiles(self.calib_df, self.calibdb_list)
             )
 
+            subtest_list.append(
+                st.CheckUsedCalibs(self.cdb_used_df, self.html_path)
+            )
+
         # telluDB output count
         subtest_list.append(st.CountTelluEntries(self.tellu_df))
 

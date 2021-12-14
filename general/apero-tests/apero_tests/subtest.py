@@ -6,7 +6,7 @@ import pandas as pd
 from pandas.core.frame import DataFrame
 
 import apero_tests.utils as ut
-from apero_tests.display import inspect_plot, inspect_table
+from apero_tests.display import inspect_plot, inspect_table, delta_mjd_plot
 
 COMPARISONS = {
     "eq": np.equal,
@@ -563,6 +563,51 @@ class CountCalibEntries(SubTest):
 
         self.result = calib_count
 
+
+class CheckUsedCalibs(SubTest):
+    def __init__(self, used_calib_df: DataFrame, test_html_path: str, delta_mjd_max: float = 7.0):
+        super().__init__(
+            description=f"# of sci files with |delta MJD| from calib > {delta_mjd_max}"
+        )
+
+        # Drop calib files not relevant to sci file under test with dropna
+        self.used_calib_df = used_calib_df.dropna(how="all", axis=1)
+        self.test_html_path = test_html_path
+        self.dmax = 7.0
+
+    def run(self):
+
+        if len(self.used_calib_df.columns) > 0:
+            delta_mjd_df = self.used_calib_df.xs("DELTA_MJD", axis=1, level=1).abs()
+            check_per_ctype = delta_mjd_df > self.dmax
+            bool_mask = check_per_ctype.any(axis=1)
+            n_fail = bool_mask.sum()
+        else:
+            n_fail = 0
+
+        self.result = n_fail
+
+        if n_fail == 0:
+            self.color = "Lime"
+            return
+        else:
+            self.color = "Red"
+
+        # TODO: Add details
+        inspect_df = self.used_calib_df[bool_mask]
+
+        nights = inspect_df.index.get_level_values("NIGHTNAME")
+        if "other" in nights:
+            nother = nights.value_counts()["other"]
+            inspect_df = inspect_df.drop("other")
+            self.comments = f"Dropped {nother} rows with NIGHTNAME = other."
+
+        self.details = delta_mjd_plot(
+            self.test_html_path,
+            self.id,
+            inspect_df,
+            "Time difference between calib files and science file (hover for file name)",
+        )
 
 class CountTelluEntries(SubTest):
     def __init__(self, tellu_df: DataFrame):
