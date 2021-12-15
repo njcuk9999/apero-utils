@@ -781,11 +781,15 @@ class DrsTest:
             )
 
             subtest_list.append(
-                st.CheckIndexCalibFiles(self.ind_df, self.calibdb_list)
+                st.CheckIndexCalibFiles(
+                    self.ind_df, self.calibdb_list, self.html_path
+                )
             )
 
             subtest_list.append(
-                st.CheckCalibEntriesFiles(self.calib_df, self.calibdb_list)
+                st.CheckCalibEntriesFiles(
+                    self.calib_df, self.calibdb_list, self.html_path
+                )
             )
 
             subtest_list.append(
