@@ -14,10 +14,11 @@ from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
 from apero.core.core.drs_file import DrsFitsFile
 from apero.core.core.drs_recipe import DrsRecipe
+from apero.core.instruments.spirou.recipe_definitions import recipes
+from apero.tools.module.setup.drs_processing import skip_clean_arguments
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
 
-from apero.core.instruments.spirou.recipe_definitions import recipes
 import apero_tests.subtest as st
 import apero_tests.utils as ut
 
@@ -171,6 +172,9 @@ class DrsTest:
             # NOTE: index is filtered with log to keep only relevant entries.
             # A global test is used to report outputs that match no logs
             self.log_df = self.load_log_df(all_log_df=all_log_df)
+            self.ulog_df = self.log_df.drop_duplicates(
+                subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT", "PID"]
+            ).copy()
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
             self.model_ind_df = self.generate_model_index()
 
@@ -546,12 +550,28 @@ class DrsTest:
         """
         Generate expected index based on the log dataframe
         """
+
+        # Use unique log, exact same row generatees exact same file (duh)
+        log_df = self.ulog_df.copy()
+
+        if "thermal" in self.name:
+            import ipdb
+
+            ipdb.set_trace()
+
+        # Drop rows with same runstring (the generate the same output)
+        # Before that, remove some args from runstring if needed
+        log_df.RUNSTRING = log_df.RUNSTRING.apply(skip_clean_arguments)
+        log_df = log_df[
+            ~log_df.duplicated(
+                subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT"]
+            )
+        ]
+
         # Drop runs with "--master" because they re-generate the same files
         # NOTE: Might be different in 0.7
-        master_mask = self.log_df.RUNSTRING.str.contains("--master")
-        log_df = (
-            self.log_df[~master_mask] if not self.ismaster else self.log_df
-        )
+        master_mask = log_df.RUNSTRING.str.contains("--master")
+        log_df = log_df[~master_mask] if not self.ismaster else log_df
         log_df = log_df.copy()
 
         # Get all recipes in the log
@@ -688,7 +708,7 @@ class DrsTest:
             subtest_list.append(st.CountRawTest(self.input_path))
 
         # Count log entries
-        subtest_list.append(st.CountLogTest(self.log_df))
+        subtest_list.append(st.CountLogTest(self.log_df, self.html_path))
 
         # Count all outputs
         subtest_list.append(
@@ -750,7 +770,9 @@ class DrsTest:
             )
 
             subtest_list.append(
-                st.CheckUsedCalibs(self.cdb_used_df, self.html_path, self.all_calib_df)
+                st.CheckUsedCalibs(
+                    self.cdb_used_df, self.html_path, self.all_calib_df
+                )
             )
 
         # telluDB output count

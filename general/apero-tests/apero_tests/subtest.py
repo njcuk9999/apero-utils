@@ -103,6 +103,7 @@ class CountLogTest(SubTest):
     def __init__(
         self,
         log_df: DataFrame,
+        test_html_path: str,
         master_flag: str = "--master",
         group_kwds: Optional[Sequence[str]] = None,
     ):
@@ -127,6 +128,7 @@ class CountLogTest(SubTest):
 
         self.log_df = log_df
         self.master_flag = master_flag
+        self.test_html_path = test_html_path
         if group_kwds is not None:
             self.group_kwds = group_kwds
         else:
@@ -139,6 +141,32 @@ class CountLogTest(SubTest):
         master_count = master_df.groupby(self.group_kwds).count().KIND
         tot_count = self.log_df.groupby(self.group_kwds).count().KIND
         log_count = tot_count.sub(master_count, fill_value=0).astype(int)
+
+        dup_subset = ["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT", "PID"]
+        ulog_df = self.log_df.drop_duplicates(
+            subset=dup_subset
+        ).copy()
+
+        if ulog_df.equals(self.log_df):
+            self.color = "Lime"
+        else:
+            self.comments = "Some entries are duplicated"
+            self.color = "Yellow"
+            ulog_df = self.log_df
+            # Keep one duplicated entry
+            # Keep one duplicated entry
+            dup_log_df = self.log_df[
+                self.log_df.duplicated(subset=dup_subset)
+            ].drop_duplicates(subset=dup_subset)
+
+            dup_dict = dup_log_df.to_dict(orient="list")
+
+            self.details = inspect_table(
+                self.test_html_path,
+                self.id,
+                dup_dict,
+                "Duplicated log entries",
+            )
 
         self.result = log_count
 
@@ -598,9 +626,12 @@ class CheckUsedCalibs(SubTest):
             )
             drop_mask = fdf.replace(drop_map)
             drop_mask_all = drop_mask.all()
-            self.used_calib_df = self.used_calib_df[
-                drop_mask_all.index[~drop_mask_all]
-            ]
+            # Always keep CDBWAVE because means that wavelength solution
+            # in header is old, even if it is indeed a master==1 file
+            if "CDBWAVE" in drop_mask_all.index:
+                drop_mask_all["CDBWAVE"] = False
+            drop_inds = drop_mask_all.index[~drop_mask_all]
+            self.used_calib_df = self.used_calib_df[drop_inds]
             delta_mjd_df = self.used_calib_df.xs(
                 "DELTA_MJD", axis=1, level=1
             ).abs()
