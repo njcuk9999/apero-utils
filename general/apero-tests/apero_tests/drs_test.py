@@ -159,13 +159,17 @@ class DrsTest:
             # Get output files for this recipe
             self.output_drs_files = self.get_recipe_outputs()
 
-            # TODO: Handle all recipes without KW_OUTPUT in empty
-            # required_header_keys
-            if not self.pp_flag:
-                self.output_hkeys = [
-                    o.required_header_keys["KW_OUTPUT"]
-                    for o in self.output_drs_files
-                ]
+            self.output_hkeys = [
+                o.required_header_keys["KW_OUTPUT"]
+                for o in self.output_drs_files
+                if "KW_OUTPUT" in o.required_header_keys
+            ]
+
+            # If out KW_OUTPUT, it will likely be "--" in index. Useful for PP
+            if len(self.output_hkeys) == 0:
+                # ???: Is there something in DRS that gives this null value str
+                # Could use that instead of hardcoding
+                self.output_hkeys = ["--"]
 
             # NOTE: index is filtered with log to keep only relevant entries.
             # A global test is used to report outputs that match no logs
@@ -368,7 +372,6 @@ class DrsTest:
         if not force and self.ind_df is not None:
             return self.ind_df
 
-        # TODO: Make sure this is true when done
         if self.recipe_name is None:
             raise ValueError("Cannot load index dataframe if no recipe is set")
 
@@ -384,8 +387,7 @@ class DrsTest:
         # NOTE: Might have an indepent way that does not use log in v0.7
         ind_df = all_ind_df[all_ind_df.KW_PID.isin(self.log_df.PID)]
 
-        if not self.pp_flag:
-            ind_df = ind_df[ind_df.KW_OUTPUT.isin(self.output_hkeys)]
+        ind_df = ind_df[ind_df.KW_OUTPUT.isin(self.output_hkeys)]
 
         return ind_df
 
@@ -588,7 +590,7 @@ class DrsTest:
 
         def _get_dprtype(ofile: Union[DrsFitsFile, List[DrsFitsFile], None]):
             if isinstance(ofile.intype, DrsFitsFile):
-                # Go up intype until get DPRTYPE. Should end up with None or with a value
+                # Go up intype until get DPRTYPE. Should end with None or value
                 if "KW_DPRTYPE" in ofile.intype.required_header_keys:
                     return ofile.intype.required_header_keys["KW_DPRTYPE"]
                 else:
@@ -598,7 +600,6 @@ class DrsTest:
             else:
                 return None
 
-        # TODO: Use hack to remove output from thermal and keep only for extract
         rows = []
         row_inds = []
         for i, (log_night, log_row) in enumerate(log_df.iterrows()):
@@ -634,7 +635,6 @@ class DrsTest:
                 fibers = recipe_dict["fibers"]
 
             # Generate index entry for each DRS output file of recipe
-            # TODO: Get index keys from DRS params
             for j, ofile in enumerate(recipe_dict["out_files"]):
 
                 # We exclude DEBUG from input
