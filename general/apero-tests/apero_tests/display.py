@@ -281,16 +281,16 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
 
     # javascript callback
     js_code = """
-              var selected_y_axis = cb_obj.value
-              var data_visible = source_visible.data
+        var selected_y_axis = cb_obj.value
+        var data_visible = source_visible.data
 
-              data_visible.y = data_visible[selected_y_axis]
-              source_visible.change.emit()
-              y_axis.axis_label = selected_y_axis
-              y_axis.change.emit()
+        data_visible.y = data_visible[selected_y_axis]
+        source_visible.change.emit()
+        y_axis.axis_label = selected_y_axis
+        y_axis.change.emit()
 
-              p.reset.emit()
-              """
+        p.reset.emit()
+        """
     callback_y_axis = CustomJS(
         args=dict(source_visible=source_visible, y_axis=y_axis, p=p),
         code=js_code,
@@ -389,16 +389,15 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     )
     p.add_layout(y_axis, "left")
 
-    # TODO: Maybe move this to separate file for re-usability and clarity
     # javascript callback
     js_code = """
-              var selected_y_axis = cb_obj.value
-              var data_visible = source.data
-              data_visible.y = data_visible[selected_y_axis + '_' + 'DELTA_MJD']
-              data_visible.calf = data_visible[selected_y_axis + '_' + 'CALIB_FILE']
-              source.change.emit()
-              p.reset.emit()
-              """
+        var selected_y_axis = cb_obj.value
+        var data_visible = source.data
+        data_visible.y = data_visible[selected_y_axis + '_' + 'DELTA_MJD']
+        data_visible.calf = data_visible[selected_y_axis + '_' + 'CALIB_FILE']
+        source.change.emit()
+        p.reset.emit()
+        """
 
     callback_y_axis = CustomJS(args=dict(source=source, p=p), code=js_code)
 

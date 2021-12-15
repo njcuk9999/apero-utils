@@ -16,7 +16,6 @@ COMPARISONS = {
 
 
 class SubTest:
-    # TODO: Restrict details type/formatting ?
     def __init__(
         self,
         subtest_id: Optional[str] = None,
@@ -183,6 +182,32 @@ class ComparisonTest(SubTest):
         details: Optional[str] = None,
         color: Optional[str] = None,
     ):
+        """
+        Subtest that compares two other subtests.
+
+        :param subtest1: First subtest to compare
+        :type subtest1: SubTest
+        :param subtest2: Second subtest to compare
+        :type subtest2: SubTest
+        :param passed: Condition for passed test Must be eq, gt or lt,
+                       defaults to 'eq'
+        :type passed: str, optional
+        :param conditional: Condition for a conditional pass, defaults to None
+        :type conditional: Optional[str], optional
+        :param subtest_id: ID of this subtest, defaults to None
+        :type subtest_id: Optional[str], optional
+        :param description: Description of the test, defaults to None
+        :type description: Optional[str], optional
+        :param result: Test result, defaults to None
+        :type result: Any, optional
+        :param comments: Comments to add in report, defaults to None
+        :type comments: Optional[str], optional
+        :param details: Details about result (usually link to other page),
+                        defaults to None
+        :type details: Optional[str], optional
+        :param color: Color of the test (Lime, Yellow, Red), defaults to None
+        :type color: Optional[str], optional
+        """
 
         if passed not in COMPARISONS and passed is not None:
             raise ValueError(
@@ -332,6 +357,14 @@ class CountOutTest(SubTest):
 
 class CountQCTest(SubTest):
     def __init__(self, log_df: DataFrame, test_html_path: str):
+        """
+        Count files that failed one or more QC
+
+        :param log_df: Log dataframe
+        :type log_df: DataFrame
+        :param test_html_path: HTML report path of parent test
+        :type test_html_path: str
+        """
         super().__init__(
             description="# of log entries that failed one or more QC"
         )
@@ -381,8 +414,21 @@ class PlotQCTest(SubTest):
     def __init__(
         self, log_df: DataFrame, test_html_path: str, recipe_name: str
     ):
+        """
+        Plot QC results for test
+
+        :param log_df: Log dataframe
+        :type log_df: DataFrame
+        :param test_html_path: Path to HTML report of parent test
+        :type test_html_path: str
+        :param recipe_name: Name of the recipe under test
+        :type recipe_name: str
+        """
         super().__init__(
-            description="Plot of the various QCs as a function of odometer, order or time"
+            description=(
+                "Plot of the various QCs as a function of odometer,"
+                " order or time"
+            )
         )
 
         self.log_df = log_df
@@ -437,9 +483,15 @@ class PlotQCTest(SubTest):
 
 
 class CountEndedTest(SubTest):
-    # TODO: Very similar to QC, could probably put most of code together
-    # and change a few args
     def __init__(self, log_df: DataFrame, test_html_path: str):
+        """
+        Count test that failed to finish.
+
+        :param log_df: Log dataframe
+        :type log_df: DataFrame
+        :param test_html_path: Path to HTML report of parent test
+        :type test_html_path: str
+        """
         super().__init__(description="# of log entries that failed to finish")
 
         self.log_df = log_df
@@ -451,7 +503,7 @@ class CountEndedTest(SubTest):
         self.result = len(log_ended_false)
 
         if self.result > 0:
-            self.comments = "One or more recipe have failed QC."
+            self.comments = "One or more recipe have failed to finish."
             self
             log_reset = log_ended_false.reset_index()
             data_dict_check_ended = {
@@ -474,6 +526,18 @@ class CountIndexCalib(SubTest):
         calib_key: str = "CALIB_KEY",
         qc_key: str = "QC_PASSED",
     ):
+        """
+        Count calibration files in index.
+
+        :param ind_df: Index dataframe
+        :type ind_df: DataFrame
+        :param calib_key: Index key that has calibdb keys in index df,
+                          defaults to "CALIB_KEY"
+        :type calib_key: str, optional
+        :param qc_key: Index df column saying if QC has passed for this file,
+                       defaults to "QC_PASSED"
+        :type qc_key: str, optional
+        """
         super().__init__(
             description="# of index entries for each calibdb key",
         )
@@ -492,9 +556,24 @@ class CheckIndexCalibFiles(SubTest):
         self,
         ind_df: DataFrame,
         calib_list: List[str],
+        test_html_path: str,
         calib_key: str = "CALIB_KEY",
         qc_key: str = "QC_PASSED",
     ):
+        """
+        Check that calib files in index appear in calibdb directory
+
+        :param ind_df: Index dataframe
+        :type ind_df: DataFrame
+        :param calib_list: List of files in calibdb dir
+        :type calib_list: List[str]
+        :param calib_key: Index key that has calibdb keys in index df,
+                          defaults to "CALIB_KEY"
+        :type calib_key: str, optional
+        :param qc_key: Index df column saying if QC has passed for this file,
+                       defaults to "QC_PASSED"
+        :type qc_key: str, optional
+        """
 
         super().__init__(
             description="Check that calib files in index are in calibdb dir"
@@ -506,6 +585,7 @@ class CheckIndexCalibFiles(SubTest):
 
         self.ind_df = ind_df[ind_df[qc_key]].dropna(subset=[calib_key])
         self.calib_list = calib_list
+        self.test_html_path = test_html_path
 
     def run(self):
 
@@ -513,11 +593,14 @@ class CheckIndexCalibFiles(SubTest):
 
         self.result = np.all(in_calib_mask)
 
-        # TODO: Add comment with link to in_calib_mask "False" list if failing
-        # (Bokeh table like we had in previous versions)
+        self.details = inspect_table(
+            self.test_html_path,
+            self.id,
+            self.ind_df[~in_calib_mask].to_dict(orient="list"),
+            "Missing files in calibdb directory",
+        )
 
         # Set color based on status
-        # TODO: Define method to set passing (or at least smthg to force color)
         if self.result:
             self.color = "Lime"
         else:
@@ -529,18 +612,28 @@ class CheckCalibEntriesFiles(SubTest):
         self,
         calib_df: DataFrame,
         calib_list: List[str],
+        test_html_path: str,
     ):
+        """
+        Check that calibdb entries are in calibdb dir
+
+        :param calib_df: Dataframe with calibdb info
+        :type calib_df: DataFrame
+        :param calib_list: List of files in calibdb
+        :type calib_list: List[str]
+        """
 
         super().__init__(
             description="Check that calibdb entries are in calibdb dir"
         )
 
-        # NOTE: For 0.7, there will probably be a way to do more detailed, key-by-key
-        # comparison, but in 0.6 this would require reading many^TM fits files to get
-        # all keys
+        # FUTURE: 0.7 will probably have way to do more detailed, key-by-key
+        # comparison, but in 0.6 this would require reading many^TM fits files
+        # to get all keys
 
         self.calib_df = calib_df
         self.calib_list = calib_list
+        self.test_html_path = test_html_path
 
     def run(self):
 
@@ -548,8 +641,12 @@ class CheckCalibEntriesFiles(SubTest):
 
         self.result = np.all(in_dir_mask)
 
-        # TODO: Add comment with link to in_calib_mask "False" list if failing
-        # (Bokeh table like we had in previous versions)
+        self.details = inspect_table(
+            self.test_html_path,
+            self.id,
+            self.calib_df[~in_dir_mask].to_dict(orient="list"),
+            "Missing files in calibdb directory",
+        )
 
         # Set color based on status
         if self.result:
@@ -562,6 +659,16 @@ class CountCalibEntries(SubTest):
     def __init__(
         self, calib_df: DataFrame, calib_keys: List[str], master: bool = False
     ):
+        """
+        Count entries in calibdb
+
+        :param calib_df: Dataframe with calibdb info
+        :type calib_df: DataFrame
+        :param calib_keys: Calib db keys for current test
+        :type calib_keys: List[str]
+        :param master: True if master recipe, defaults to False
+        :type master: bool, optional
+        """
 
         super().__init__(description="# of entries in calib DB")
 
@@ -601,6 +708,20 @@ class CheckUsedCalibs(SubTest):
         calib_df: DataFrame,
         delta_mjd_max: float = 7.0,
     ):
+        """
+        Check if used calibrations were close in time.
+
+        :param used_calib_df: Dataframe of used calibration files and time
+                              diffs
+        :type used_calib_df: DataFrame
+        :param test_html_path: Path of HTML report of parent test.
+        :type test_html_path: str
+        :param calib_df: Dataframe with calibdb info *for all recipes*
+        :type calib_df: DataFrame
+        :param delta_mjd_max: Flag above this time difference (in days),
+                              defaults to 7.0
+        :type delta_mjd_max: float, optional
+        """
         super().__init__(
             description=f"# of sci files with |delta MJD| from calib > {delta_mjd_max}"
         )
@@ -651,7 +772,6 @@ class CheckUsedCalibs(SubTest):
         else:
             self.color = "Red"
 
-        # TODO: Add details
         inspect_df = self.used_calib_df[bool_mask]
 
         nights = inspect_df.index.get_level_values("NIGHTNAME")
@@ -670,6 +790,12 @@ class CheckUsedCalibs(SubTest):
 
 class CountTelluEntries(SubTest):
     def __init__(self, tellu_df: DataFrame):
+        """
+        Count entries in telluDB
+
+        :param tellu_df: Dataframe with tellu db
+        :type tellu_df: DataFrame
+        """
 
         super().__init__(description="# of entries in tellu DB")
 

@@ -65,7 +65,7 @@ def load_db_entries(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     :return: Dataframe containing the database
     :rtype: DataFrame
     """
-    # NOTE: For 0.7 version
+    # FUTURE: For 0.7 version
     # from apero.core.core import drs_database
     # from apero.core import constants
     # params = constants.load()
@@ -182,7 +182,8 @@ def get_cdb_df(
 
     index_df = index_df.copy()
 
-    # TODO: Smarter mechanism for cached file
+    # TODO: Smarter mechanism for cached file. Currently on reading if exist or
+    # generating whole thing otherwise
     if cache_path is not None and os.path.isfile(cache_path) and not force:
         cdb_mjd_df_cache = pd.read_csv(
             cache_path, index_col=[0, 1], header=[0, 1]
@@ -192,7 +193,7 @@ def get_cdb_df(
 
     if cdb_mjd_df_cache is None:
         # We load the headers from two possible extensions
-        # NOTE: Might not be necessary in 0.7
+        # FUTURE: Might not be necessary in 0.7
         headers = index_df.FULLPATH.apply(fits.getheader, ext=0)
         ext1_mask = headers.str.len() == 4
         headers_ext1 = index_df.FULLPATH[ext1_mask].apply(
@@ -299,9 +300,6 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
     full_index.loc[nan_pid_mask, "PID_TYPE"] = "NaN"
     full_index.loc[blank_pid_mask, "PID_TYPE"] = "Blank"
 
-    # TODO: Do the checks/output here
-    # TODO: This can be displayed in a bokeh table with some specific columns ?
-
     # TODO: When have way of knowing which recipe, return also based on recipe
     # (not just log).
     # THOMAS-FROM-A-FEW-MONTHS-LATER: not sure what I was talking about, 0.7 maybe ?
@@ -325,7 +323,7 @@ def load_log_df(
     :return: Dataframe of log files
     :rtype: DataFrame
     """
-    # TODO: In 0.7, this will change to loading a DB
+    # FUTURE: In 0.7, this will change to loading a DB
     # ???: Keep info of output_parent in df ?
 
     allpaths = [
@@ -363,7 +361,7 @@ def load_index_df(
     :return: Dataframe of index files
     :rtype: DataFrame
     """
-    # TODO: In 0.7, this will change to loading a DB
+    # FUTURE: In 0.7, this will change to loading a DB
 
     # ???: Keep info of output_parent in df ?
     # Get all index.fits in a dataframe
@@ -532,8 +530,8 @@ def missing_index_headers(
 
     if missing_ind_df_cache is None:
         # Some files (images) have file in ext=0, others (tables) in ext=1
-        # NOTE: This may change in future versions ?
-        # TODO: have this in two place: move to function ?
+        # FUTURE: This may change in future versions ?
+        # TODO: have this in two place: move to function (?)
 
         # If no missing files
         if len(out_not_in_index) == 0:
@@ -614,5 +612,13 @@ def missing_index_headers(
 
 
 def is_series(o: Any) -> bool:
+    """
+    Function defined because needed in jinja filter.
+
+    :param o: Any object whose type whill be checked
+    :type o: Any
+    :return: True if o is a series, false otherwise
+    :rtype: bool
+    """
 
     return isinstance(o, Series)

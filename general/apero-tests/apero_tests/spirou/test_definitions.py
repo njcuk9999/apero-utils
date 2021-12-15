@@ -3,10 +3,10 @@ Definition of SPIRou recipe tests following APERO framework
 
 @author: vandalt
 """
+import apero_tests.global_subtests as gt
 import apero_tests.utils as ut
 from apero.core import constants
 from apero_tests.drs_test import CACHEDIR, RECIPE_DICT, DrsTest
-import apero_tests.global_subtests as gt
 
 # =============================================================================
 # Define variables
@@ -65,14 +65,12 @@ tellu_df = ut.load_db_entries(
 )  # All telludb entries
 # master_cdb_index = ut.load_db
 
-# NOTE: This should change in 0.7. Will have new way to match files per recipe
+# FUTURE: This should change in 0.7 with new way to match files per recipe
 # Some global tests are done here (before per-recipe)
 # - Report files not in index
 # - Compare log and index with small report
 # - Return index files that have a PID match in the logs
 #   (the ones that can be processed at recipe level)
-# TODO: The results from these should be in the output
-# TODO: Add output of "not_found" series to the same report (critical errors)
 pp_index, pp_index_no_pid = ut.global_index_check(pp_full_index, pp_log)
 red_index, red_index_no_pid = ut.global_index_check(red_full_index, red_log)
 debug_mask = red_index.FILENAME.str.startswith("DEBUG")
@@ -102,17 +100,15 @@ global_test = DrsTest(
 )
 global_test.name = "Global test for all files"
 global_test.test_id = "global_test"
-# TODO: Subtest for files on disk but not in index
 global_test.subtest_list = [
     gt.GlobalIndexCheck(full_index_no_pid, global_test),
     gt.CheckMissingAdded(full_missing_index, global_test),
-    gt.CheckNotFound(full_not_found, global_test)
+    gt.CheckNotFound(full_not_found, global_test),
 ]
 
 tests.append(global_test)
 
 
-# TODO: Make sure compatible with pp and dark master tests
 # -----------------------------------------------------------------------------
 # Preprocessing Test
 # -----------------------------------------------------------------------------
@@ -152,7 +148,6 @@ cal_badpix = DrsTest(
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
-# TODO: Make append method to drstest to type check
 # NOTE: Just an example subtest for future development (checks nothing)
 cal_badpix.subtest_list.append(gt.CustomBadpixTest("This is a message "))
 

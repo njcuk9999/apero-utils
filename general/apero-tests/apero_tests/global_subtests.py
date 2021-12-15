@@ -1,17 +1,23 @@
-from apero_tests.subtest import SubTest
-import pandas as pd
 import warnings
 
-from apero_tests.drs_test import DrsTest
+import pandas as pd
+
 from apero_tests.display import inspect_table
+from apero_tests.drs_test import DrsTest
+from apero_tests.subtest import SubTest
 
 
 class CustomBadpixTest(SubTest):
-    """Quick example"""
+    """
+    Quick example of how to write a very simple test.
+    See below or in subtest.py for more complete ones.
+    """
 
     def __init__(self, input_msg: str):
         """
-        Subtest that does nothing, example for how we can define custom tests
+        Subtest that does nothing, example for how we can define custom tests.
+        It is 100% sure to pass and has a smiley so I'm leaving it here for
+        now, pour le moral :)
         """
         self.msg = input_msg
 
@@ -24,10 +30,18 @@ class CustomBadpixTest(SubTest):
         self.color = "Lime"
 
 
-# TODO: Move this to separate function or subtest (except returned things)
-# Full summary of index with things to flags
 class GlobalIndexCheck(SubTest):
     def __init__(self, global_bad_index: pd.DataFrame, parent_test: DrsTest):
+        """
+        Check that index files have a PID matched in log, otherwise report
+
+        :param global_bad_index: Full bad index (all files without match)
+        :type global_bad_index: pd.DataFrame
+        :param parent_test: Parent test calling the subtest. Needed for HTML
+                            report path, tno using path directly in case it has
+                            not been generated when creating the subtest.
+        :type parent_test: DrsTest
+        """
         super().__init__(
             description="Files in index that have no PID matched in log"
         )
@@ -82,10 +96,16 @@ class GlobalIndexCheck(SubTest):
 
 
 class CheckMissingAdded(SubTest):
-    def __init__(self, missing_ind_df, parent_test: DrsTest):
-        super().__init__(
-            description="Files on disk that were not in index"
-        )
+    def __init__(self, missing_ind_df: pd.DataFrame, parent_test: DrsTest):
+        """
+        Check missing files that were added to the index
+
+        :param missing_ind_df: Dataframe of missing index file
+        :type missing_ind_df: pd.DataFrame
+        :param parent_test: Parent test calling the subtest.
+        :type parent_test: DrsTest
+        """
+        super().__init__(description="Files on disk that were not in index")
 
         self.inspect_kwds = [
             "KW_OUTPUT",
@@ -116,12 +136,22 @@ class CheckMissingAdded(SubTest):
                 data_dict,
                 title="Files that were on disk and not in index (added to index df)",
             )
+            self.color = "Yello"
         else:
             self.color = "Lime"
 
 
 class CheckNotFound(SubTest):
     def __init__(self, not_found: pd.Series, parent_test: DrsTest):
+        """
+        Check if some files were not found on disk. For example, a copied
+        calib files whose original file is missing
+
+        :param not_found: Series of missing files
+        :type not_found: pd.Series
+        :param parent_test: DRS Test that calls the subtest.
+        :type parent_test: DrsTest
+        """
         super().__init__(
             description="Copied files with original file not found"
         )
@@ -135,9 +165,7 @@ class CheckNotFound(SubTest):
         self.result = n_not_found
 
         if n_not_found > 0:
-            data_dict = {
-                "File": self.not_found.values
-            }
+            data_dict = {"File": self.not_found.values}
 
             self.details = inspect_table(
                 self.parent_test.html_path,

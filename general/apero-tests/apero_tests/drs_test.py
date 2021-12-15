@@ -22,10 +22,6 @@ from pandas import DataFrame
 import apero_tests.subtest as st
 import apero_tests.utils as ut
 
-# from . import OUTDIR, TEMPLATEDIR
-
-# TODO: Maybe we can move this so it's accessible to all files, maybe parameter
-# in drs later
 PARENTDIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
 OUTDIR = os.path.join(PARENTDIR, "out")
@@ -34,7 +30,7 @@ CACHEDIR = os.path.join(PARENTDIR, "cache")
 RECIPE_DICT = {x.name: x for x in recipes}
 
 
-# TODO: Maybe link to full docs, not github
+# TODO: Link to documentation instead of Github
 RECIPE_DOCS_LINK = "https://github.com/njcuk9999/apero-drs#8-APERO-Recipes"
 
 
@@ -68,7 +64,8 @@ class DrsTest:
         :param testnum: Number ID N of the test (Nth test for recipe),
                         default is 1
         :type testnum: int
-        :pp_flag: TEMPORARY flag for PP tests when different
+        :pp_flag: True if test is for preprocessing recipe
+        :type pp_flag: bool
         :param all_log_df: DataFrame with logs for all recipes
         :type  all_log_df: Optional[DataFrame]
         :param all_index_df: DataFrame with index for all recipes
@@ -173,6 +170,7 @@ class DrsTest:
 
             # NOTE: index is filtered with log to keep only relevant entries.
             # A global test is used to report outputs that match no logs
+            # (see test_definitions)
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ulog_df = self.log_df.drop_duplicates(
                 subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT", "PID"]
@@ -384,7 +382,7 @@ class DrsTest:
             )
 
         # We use the log to filter the index, also keep only output hkeys
-        # NOTE: Might have an indepent way that does not use log in v0.7
+        # FUTURE: Might have an indepent way that does not use log in v0.7
         ind_df = all_ind_df[all_ind_df.KW_PID.isin(self.log_df.PID)]
 
         ind_df = ind_df[ind_df.KW_OUTPUT.isin(self.output_hkeys)]
@@ -457,6 +455,22 @@ class DrsTest:
     def load_cdb_used_df(
         self, all_cdb_used_df: Optional[DataFrame] = None, force: bool = True
     ) -> Union[DataFrame, None]:
+        """
+        Load dataframe with used calibrations for each files. Calls
+        utils.get_cdb_df() if all_cdb_used_df not passed.
+
+        Dataframe has 2 level column
+        (CDB type on first leve, calib file and DELTA_MJD on second)
+
+        :param all_cdb_used_df: Dataframe with all used calibrations for
+                                reduction, defaults to None
+        :type all_cdb_used_df: Optional[DataFrame], optional
+        :param force: Re-load even if already set as attribute,
+                      defaults to True
+        :type force: bool, optional
+        :return: DataFrame with used calibration info
+        :rtype: Union[DataFrame, None]
+        """
         if not force and self.cdb_used_df is not None:
             return self.cdb_used_df
 
@@ -504,7 +518,7 @@ class DrsTest:
 
         return outfiles
 
-    def get_dir_path(self):
+    def get_dir_path(self) -> Dict:
         """
         Get dictionary mapping keywords to data directories
         """
@@ -523,6 +537,9 @@ class DrsTest:
         return dirpaths
 
     def add_calib_to_ind(self):
+        """
+        Add CALIB_KEY with corresponding calibdb key for each output in index
+        """
 
         # Get all possible fibers
         sci_fibers, ref_fiber = self.pconst.FIBER_KINDS()
@@ -588,7 +605,15 @@ class DrsTest:
 
             log_recipe_dict[rname] = rdict
 
-        def _get_dprtype(ofile: Union[DrsFitsFile, List[DrsFitsFile], None]):
+        def _get_dprtype(
+            ofile: Union[DrsFitsFile, List[DrsFitsFile], None]
+        ) -> str:
+            """
+            Get DPR Type of file recursively
+
+            :param ofile: Output DRS File for which we want DPR_TYPE
+            :type ofile: Union[DrsFitsFile, List[DrsFitsFile], None]
+            """
             if isinstance(ofile.intype, DrsFitsFile):
                 # Go up intype until get DPRTYPE. Should end with None or value
                 if "KW_DPRTYPE" in ofile.intype.required_header_keys:
@@ -596,7 +621,7 @@ class DrsTest:
                 else:
                     return _get_dprtype(ofile.intype)
             # If a list or none, just return None
-            # TODO: Probably not great, maybe update in 0.7 ? (Talk to Neil)
+            # FUTURE: Probably not great, maybe update in 0.7 ? (Talk to Neil)
             else:
                 return None
 
@@ -607,8 +632,8 @@ class DrsTest:
             recipe_dict = log_recipe_dict[log_row.RECIPE]
 
             # For recipe under test, will need to check calls to other recipes
-            # ???: Is it possible that a recipe calls a recipe that calls a recipe ?
-            # Not for now according to Neil, but this is an important assumption here
+            # NOTE: Important assumption that not 2 or more chained calls
+            # The assumption should be OK (for now) according to Neil
             if log_row.RECIPE == self.recipe_name:
                 other_dict = {
                     k: v
@@ -623,10 +648,11 @@ class DrsTest:
                 other_files = []
 
             if "fiber" in log_row["LEVEL_CRIT"]:
-                # Get fiber from level crit to avoid repeating entries if recipe
-                # has more than one fiber in output files but this log entry only
-                # generates one fiber
-                # NOTE: Fiber must be a list of lists (list of fibers per output type)
+                # Get fiber from level_crit to avoid repeating entries if
+                # recipe has more than one fiber in output files but this log
+                # entry only generates one fiber
+                # NOTE: Fiber must be a list of lists
+                # (list of fibers for each output type)
                 fibers = [
                     [log_row["LEVEL_CRIT"].split("fiber")[-1].split("=")[1]]
                 ] * len(recipe_dict["out_files"])
@@ -665,8 +691,8 @@ class DrsTest:
                 dprtype = _get_dprtype(ofile)
                 # HACK: Will have a better way to do this in 0.7 (talk to Neil)
                 if dprtype is not None and log_row.ARGS.endswith("]"):
-                    # If we can match a DPR type for the call in log and its not the
-                    # right one, skip
+                    # If we can match a DPR type for the call in log and it's
+                    # not the right one, we skip
                     if not log_row.ARGS.endswith(f"[{dprtype}]"):
                         continue
 
@@ -676,7 +702,7 @@ class DrsTest:
                     kw_fiber = fiber
 
                     row_dict = {
-                        "FILENAME": fake_fname,  # Just because required for counting
+                        "FILENAME": fake_fname,  # Required for counting
                         "KW_OUTPUT": kw_output,
                         "KW_PID": kw_pid,
                         "KW_FIBER": kw_fiber,
@@ -815,7 +841,6 @@ class DrsTest:
             "output_list": self.output_hkeys,
             "calibdb_list": self.calibdb_keys,
             "calibdb_path": self.calibdb_path,
-            # TODO: Get links per recipe automatically
             "docs_link": RECIPE_DOCS_LINK,
             # Checks
             "subtest_list": subtest_list,
