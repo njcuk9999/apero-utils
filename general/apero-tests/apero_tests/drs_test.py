@@ -162,12 +162,10 @@ class DrsTest:
             # TODO: Handle all recipes without KW_OUTPUT in empty
             # required_header_keys
             if not self.pp_flag:
-                self.output_hkeys = list(
-                    map(
-                        lambda o: o.required_header_keys["KW_OUTPUT"],
-                        self.output_drs_files,
-                    )
-                )
+                self.output_hkeys = [
+                    o.required_header_keys["KW_OUTPUT"]
+                    for o in self.output_drs_files
+                ]
 
             # NOTE: index is filtered with log to keep only relevant entries.
             # A global test is used to report outputs that match no logs
