@@ -143,9 +143,7 @@ class CountLogTest(SubTest):
         log_count = tot_count.sub(master_count, fill_value=0).astype(int)
 
         dup_subset = ["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT", "PID"]
-        ulog_df = self.log_df.drop_duplicates(
-            subset=dup_subset
-        ).copy()
+        ulog_df = self.log_df.drop_duplicates(subset=dup_subset).copy()
 
         if ulog_df.equals(self.log_df):
             self.color = "Lime"
@@ -561,28 +559,32 @@ class CheckCalibEntriesFiles(SubTest):
 
 
 class CountCalibEntries(SubTest):
-    def __init__(self, calib_df: DataFrame, calib_keys: List[str]):
+    def __init__(
+        self, calib_df: DataFrame, calib_keys: List[str], master: bool = False
+    ):
 
         super().__init__(description="# of entries in calib DB")
 
         self.calib_df = calib_df
         self.calib_keys = calib_keys
+        self.ismaster = master
 
     def run(self):
         zero_count = pd.Series(0, index=self.calib_keys)
 
         if not self.calib_df.empty:
-            master_mask = self.calib_df["master"].astype(bool)
-            if master_mask.sum() == 0:
-                master_calib_count = zero_count.copy()
-            else:
-                master_calib_df = self.calib_df[master_mask]
-                master_calib_count = master_calib_df.groupby("key").size()
-                msg = "Additional entries with master == 1"
-                self.comments = f"{msg}: {master_calib_count}"
-
             calib_count = self.calib_df.groupby("key").size()
-            calib_count -= master_calib_count
+            if not self.ismaster:
+                master_mask = self.calib_df["master"].astype(bool)
+                if master_mask.sum() == 0:
+                    master_calib_count = zero_count.copy()
+                else:
+                    master_calib_df = self.calib_df[master_mask]
+                    master_calib_count = master_calib_df.groupby("key").size()
+                    msg = "Additional entries with master == 1"
+                    self.comments = f"{msg}: {master_calib_count}"
+
+                calib_count -= master_calib_count
 
         else:
             self.result = 0

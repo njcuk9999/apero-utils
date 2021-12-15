@@ -554,11 +554,6 @@ class DrsTest:
         # Use unique log, exact same row generatees exact same file (duh)
         log_df = self.ulog_df.copy()
 
-        if "thermal" in self.name:
-            import ipdb
-
-            ipdb.set_trace()
-
         # Drop rows with same runstring (the generate the same output)
         # Before that, remove some args from runstring if needed
         log_df.RUNSTRING = log_df.RUNSTRING.apply(skip_clean_arguments)
@@ -753,7 +748,7 @@ class DrsTest:
 
             # calibDB entries count
             st_cdb_entries = st.CountCalibEntries(
-                self.calib_df, self.calibdb_keys
+                self.calib_df, self.calibdb_keys, master=self.ismaster
             )
             subtest_list.append(st_cdb_entries)
 
