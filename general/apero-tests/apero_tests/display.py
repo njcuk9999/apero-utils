@@ -338,10 +338,18 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     # night to datetime
     source.data["PLOTDATE"] = pd.to_datetime(source.data["NIGHTNAME"])
 
+    htool = HoverTool(
+        tooltips=[
+            ("NIGHTNAME", "@NIGHTNAME"),
+            ("FILENAME", "@FILENAME"),
+            ("Calib file", "@calf"),
+        ]
+    )
+
     # bokeh tools
     TOOLS = [
         "crosshair",
-        # "hover",
+        htool,
         "pan",
         "box_zoom",
         "undo",
