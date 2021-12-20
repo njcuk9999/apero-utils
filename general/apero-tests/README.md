@@ -5,8 +5,8 @@ Series of tests to make sure everything was properly reduced by APERO.
 ## Development and running the tests
 The tests are meant to be integrated in apero and are not a package on their own (i.e. are developed in apero-utils), but for development purposes, `apero_tests` is treated as a standalone package.
 
-Make sure they in your `PYTHONPATH` (with conda, this is just `conda develop /path/to/apero-tests`).
-Or even simpler, run everyting from the parent directory!
+Make sure they are in your `PYTHONPATH` (with conda, this is just `conda develop /path/to/apero-tests`).
+Or even simpler, run everyting from the parent directory.
 
 ## Structure
 - The `main.py` script runs tests one by one and stores the output in an HTML report.
