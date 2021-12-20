@@ -1,5 +1,9 @@
 # APERO Tests
 
+*Note: This branch is a work in progress to make the tests compatible with
+APERO version >= 0.7. Use tests-v06 if you want to add new tests or run the
+tests with APERO 0.6 outputs*
+
 Series of tests to make sure everything was properly reduced by APERO.
 
 ## Development and running the tests
