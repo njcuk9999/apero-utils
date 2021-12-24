@@ -113,6 +113,9 @@ class DrsTest:
         self.cdb_used_df = None
         self.subtest_list = None
 
+        # PP flag
+        self.pp_flag = pp_flag
+
         # Overwrite some (most!) parameters with recipe info automatically
         if drs_recipe is not None:
             # The recipe object and test ID
@@ -136,9 +139,6 @@ class DrsTest:
             self.params = self.recipe.drs_params
             self.pconst = constants.pload(self.instrument)
             self.ismaster = self.recipe.master
-
-            # PP flag
-            self.pp_flag = pp_flag
 
             # Path to input and output directories
             self.dirpaths = self.get_dir_path()
