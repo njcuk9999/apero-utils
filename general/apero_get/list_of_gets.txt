@@ -1,0 +1,69 @@
+apero_get.py --outtypes EXT_E2DS_FF,TELLU_OBJ --fibers=AB --outpath=/home/allart/SpiRou/Data_2_copy/ --objnames=AuMic,GJ1214,GJ3470,K2-25,WASP11,WASP52,HD_189733B,WASP-69,WASP-80
+apero_get.py --outtypes TELLU_RECON --fibers=AB --outpath=/home/allart/SpiRou/Data_2_copy/ --objnames=AuMic,GJ1214,GJ3470,K2-25,WASP11,WASP52,HD_189733B,WASP-69,WASP-80
+apero_get.py --outtypes TELLU_PCLEAN --fibers=AB --outpath=/home/allart/SpiRou/Data_2_copy/ --objnames=AuMic,GJ1214,GJ3470,K2-25,WASP11,WASP52,HD_189733B,WASP-69,WASP-80
+
+
+
+apero_get.py --outtype EXT_S1D_W,EXT_S1D_V,SC1D_W_FILE,SC1D_V_FILE --objnames=WASP-127 --outpath=/home/boucher/spirou/planetModels/HD_189733_b/APERO_07182
+
+
+apero_get.py --outtypes TELLU_OBJ --fibers=AB,A,B --outpath=/space/spirou/obj_full211123 --objnames=Trappist-1
+
+apero_get.py --outtypes EXT_E2DS_FF --fibers=C --outpath=/space/spirou/obj_full211123 --objnames=Trappist-1
+
+apero_get.py --outtypes EXT_E2DS_FF --fibers=C --dprtypes=FP_FP --outpath=/space/spirou/obj_full211123/tmp
+
+
+apero_get.py --outtypes EXT_E2DS_FF,TELLU_OBJ,TELLU_RECON --fibers=AB --outpath=/spirou/pelletier/obj07 --objnames=GJ3470
+
+
+apero_get.py --outtypes
+
+
+  - GL699 (Etienne)
+  - GL687 (Etienne)
+  - GL15A (Etienne)
+  - GJ1289 (Etienne)
+  - GL412A (Etienne)
+  - GL905 (Etienne)
+  - GL411 (Etienne)
+  - GJ1002 (Etienne)
+  - GJ1286 (Etienne)
+  - WASP-127 (Anne)
+  - AuMic  (Romain)
+  - Gj1214  (Romain)
+  - GJ3470  (Romain)
+  - HD_189733B  (Romain)
+  - K2-25  (Romain)
+  - WASP11  (Romain)
+  - WASP52  (Romain)
+  - WASPM69  (Romain)
+  - WASPM80  (Romain)
+  - Trappist-1 (Etienne)
+  - GJ1012 (Etienne)
+  - GL48 (Etienne)
+  - GL169.1A (Etienne)
+  - GL205 (Etienne)
+  - GJ3378 (Etienne)
+  - GJ1105 (Etienne)
+  - GJ1151 (Etienne)
+  - GJ3622 (Etienne)
+  - GL406 (Etienne)
+  - GL408 (Etienne)
+  - GL445 (Etienne)
+  - PM_J08402+3127 (Etienne)
+  - PM_J21463+3813 (Etienne)
+  - GL849 (Etienne)
+  - GJ4333 (Etienne)
+  - GL617B (Etienne)
+  - GL880 (Etienne)
+  - GL514 (Etienne)
+  - GL382 (Etienne)
+  - TOIM1278 (Etienne)
+  - TOIM442 (Etienne)
+  - TOIM1452 (Etienne)
+  - TOIM736 (Etienne)
+
+
+
+  https://download.jetbrains.com/python/pycharm-professional-2021.3.tar.gz?_gl=1*wev29j*_ga*MTY2MTI2ODg5OC4xNjI2ODAzMjE5*_ga_V0XZL7QHEB*MTY0MDEyMDA2Mi4zLjEuMTY0MDEyMDA3MC41Mg..
