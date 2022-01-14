@@ -7,15 +7,20 @@ Created on 1/12/22
 
 @author: cook
 """
+import os
+from tqdm import tqdm
 
 # =============================================================================
 # Define variables
 # =============================================================================
 
-file = 'D:\spirou\misc\full_run_errors_211227\report\APEROL-PID-00016406414334182270-Q163_apero_processing'
+workspace = ('/data/spirou/misc/full_run_errors_211227/report/'
+             'APEROL-PID-00016406414334182270-Q163_apero_processing')
 
-error_nights = ['2018-05-16', '2018-05-17', '2018-05-21', '2018-09-17',
-                '2018-10-23', '2020-03-09', '2020-06-22']
+errorfile = 'E_09_002_00004.log'
+
+bad_nights = ['2018-05-16', '2018-05-17', '2018-05-21', '2018-09-17',
+              '2018-10-23', '2020-03-09', '2020-06-22']
 
 eng_nights = ['2018-04-28', '2018-04-29', '2018-04-30', '2018-05-01',
               '2018-05-19', '2018-05-20', '2018-07-12', '2018-07-13',
@@ -45,7 +50,6 @@ eng_nights = ['2018-04-28', '2018-04-29', '2018-04-30', '2018-05-01',
               '2020-04-30', '2020-05-01', '2020-05-02', '2020-05-04',
               '2020-05-05', '2020-05-06', '2020-07-26', '2020-08-05',
               '2020-09-24', '2020-10-02', '2020-10-27', '2020-10-28',
-
               '2020-10-29', '2021-03-01', '2021-03-25', '2021-03-29',
               '2021-07-23', '2021-09-16', '2021-11-14', '2021-11-15',
               '2021-12-08', '2021-12-20', '2021-12-22']
@@ -62,6 +66,54 @@ if __name__ == "__main__":
 
 
     # get file
+    with open(os.path.join(workspace, errorfile), 'r') as efile:
+        lines = efile.readlines()
+
+    # get all lines starting with '# RUNSTRING =
+    valid_lines = []
+
+    for line in lines:
+        if line.startswith('# RUNSTRING = '):
+            valid_lines.append(line)
+
+
+    # storage
+    bad_lines = dict()
+    eng_lines = dict()
+    other_lines = []
+    found_lines = []
+    # find lines that have dates above
+    for line in tqdm(valid_lines):
+
+        found = False
+
+        # loop through bad nights
+        for bad_night in bad_nights:
+            if bad_night in line:
+                if bad_night in bad_lines:
+                    bad_lines[bad_night] += 1
+                else:
+                    bad_lines[bad_night] = 1
+                found = True
+
+        # loop through eng nights
+        for eng_night in eng_nights:
+            if eng_night in line:
+                if eng_night in eng_lines:
+                    eng_lines[eng_night] += 1
+                else:
+                    eng_lines[eng_night] = 1
+                found = True
+
+        if not found:
+            other_lines.append(line)
+        else:
+            found_lines.append(line)
+
+    print(f'Number explained {len(found_lines)}/{len(valid_lines)}')
+    print(f'Number in bad: {len(bad_lines)} / {len(bad_nights)}')
+    print(f'Number in eng: {len(eng_lines)} / {len(eng_nights)}')
+
 
 # =============================================================================
 # End of code
