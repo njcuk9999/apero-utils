@@ -19,7 +19,7 @@ from tqdm import tqdm
 # define raw directory
 RAW_DIR = '/spirou/cfht_nights/common/raw'
 # define out directory
-OUT_DIR = '/spirou/drs-data/common/raw'
+OUT_DIR = '/spirou2/drs-data/common/rawsym211227'
 
 
 # =============================================================================
