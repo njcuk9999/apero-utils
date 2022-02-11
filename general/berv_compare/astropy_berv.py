@@ -12,8 +12,6 @@ Created on 2022-02-10
 from astropy.time import Time
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance, EarthLocation
-import numpy as np
-import warnings
 
 
 # =============================================================================

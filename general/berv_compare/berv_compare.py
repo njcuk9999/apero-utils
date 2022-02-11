@@ -9,16 +9,19 @@ Created on 2022-02-10
 
 @author: cook
 """
-import warnings
-
 from astropy.coordinates import EarthLocation
+from astropy.io import fits
+from astropy.table import Table
 from astropy.time import Time
+
 import itertools
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
+import os
 import time
+import warnings
 
 import barycorrpy_berv
 import oli_berv
@@ -38,20 +41,20 @@ INPUT_PMRA = -801.55097836847 # mas / yr
 INPUT_PMDE = 10362.3942065465 # mas / yr
 INPUT_PLX = 546.975939730948   # mas
 INPUT_COORD_TIME = 2457388.5   # JD
-
+# ----------------------------------------------------------------------------
 loc = EarthLocation.of_site("Paranal")
 #loc = EarthLocation.of_site("Canada-France-Hawaii Telescope")
 INPUT_LONG = loc.lon.value     # in deg
 INPUT_LAT = loc.lat.value      # in deg
 INPUT_ALT = loc.height.value   # in m
-
+# ----------------------------------------------------------------------------
 START_DATE = Time('2020-01-01 00:00:00', format='iso')
 END_DATE = Time('2021-01-01 00:00:00', format='iso')
-STEPS = 200
-
+STEPS = 100
+# ----------------------------------------------------------------------------
 # ra / dec in degrees (forms a map)
-GRID_RA = np.linspace(0, 359, 20)
-GRID_DEC = np.linspace(-89, 89, 20)
+GRID_RA = np.linspace(0, 359, 10)
+GRID_DEC = np.linspace(-89, 89, 10)
 # pmra in mas / yr
 GRID_PMRA = np.linspace(-6000, 6000, 6)
 # pmde in mas / yr
@@ -59,11 +62,17 @@ GRID_PMDE = np.linspace(-6000, 6000, 6)
 # plx in mas
 GRID_PLX = 10**(np.linspace(0, 3, 6))
 
-# output pdf
-outfile = 'berv_comparison.pdf'
-
 # select mode (simple or grid)
 MODE = 'simple'
+
+# ----------------------------------------------------------------------------
+# where things are saved
+workspace = '/data/nirps_he/misc/berv_comp'
+# output pdf
+outfile = 'berv_comparison_{0}.pdf'
+# output grid
+grid_file = 'grid_{0}.fits'
+
 
 
 # =============================================================================
@@ -159,7 +168,7 @@ def grid_plot(combinations, variables, shapes, labels, sky_shape,
             frame[2].set_title(title.format('pyasl'), y=1.0, pad=-14,
                                      color='white')
 
-        fig.subplots_adjust(left=0.05, right=0.95, bottom=0.05, top=0.95)
+        fig.subplots_adjust(left=0.05, right=0.95, bottom=0.075, top=0.925)
         fig.suptitle('Variable with {0}'.format(comb_name))
         pdf.savefig()
         plt.close()
@@ -322,8 +331,11 @@ def simple_test():
     # -------------------------------------------------------------------------
     # Plot
     # -------------------------------------------------------------------------
+    # construct full path for pdf
+    outpdf = os.path.join(workspace, outfile.format('simple'))
+    # plot pdf
     plt.close()
-    with PdfPages(outfile) as pdf:
+    with PdfPages(outpdf) as pdf:
         simple_plot(times, r_astropy, r_oli, r_pyasl, r_barycorrpy, pdf=pdf,
                     **kwargs)
 
@@ -455,15 +467,51 @@ def grid_test():
             run_time = end - start
 
     # ---------------------------------------------------------------------
+    # save the data
+    # ---------------------------------------------------------------------
+
+
+    # ---------------------------------------------------------------------
     # sky plots
     # ---------------------------------------------------------------------
+    # construct grid name
+    gridname = 'grid_{0}'.format(np.product(sky_shape))
+    # construct full path for pdf
+    outpdf = os.path.join(workspace, outfile.format(gridname))
+    # plot pdf
     plt.close()
-    with PdfPages(outfile) as pdf:
+    with PdfPages(outpdf) as pdf:
         grid_plot(combinations, variables, shapes, labels, sky_shape,
                   r_astropy, r_oli, r_pyasl, r_barycorrpy, pdf)
 
         grid_simple_plot(combinations, times, labels,
                          r_astropy, r_oli, r_pyasl, r_barycorrpy, pdf)
+
+
+def save_grid(combinations, variables, shapes, labels, sky_shape,
+              r_astropy, r_oli, r_pyasl, r_barycorrpy):
+
+    # for variable in combinations:
+    #     hdu0 = fits.PrimaryHDU()
+    #     hdu1 = fits.BinTableHDU(save_comb_table(combinations[variable]))
+
+    pass
+
+def save_comb_table(combination) -> Table:
+
+    ncomb = np.array(combination, dtype=object)
+
+    table = Table()
+    table['coords'] = ncomb[:, 0]
+    table['pmra'] = ncomb[:, 1]
+    table['pmde'] = ncomb[:, 2]
+    table['plx'] = ncomb[:, 3]
+
+    return table
+
+
+def load_grid():
+    pass
 
 
 # =============================================================================

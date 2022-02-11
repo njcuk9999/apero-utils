@@ -9,7 +9,11 @@ Created on 2022-02-10
 
 @author: cook
 """
+from astropy.time import Time
+from astropy import units as uu
+from astropy.coordinates import SkyCoord, Distance
 import numpy as np
+import warnings
 
 # =============================================================================
 # Define variables
@@ -81,8 +85,12 @@ def get_bervs(obstime, coordtime, ra, dec, pmra, pmde, plx,
     :return: berv in km/s and bjd
     :return:
     """
-    return get_berv(obstime, coordtime, ra, dec, pmra, pmde, plx,
-                    obs_long, obs_lat, obs_alt)
+    bervs = []
+    for obstime_it in obstime:
+        berv = get_berv(obstime_it, coordtime, ra, dec, pmra, pmde, plx,
+                        obs_long, obs_lat, obs_alt)
+        bervs.append(berv)
+    return np.array(bervs)
 
 
 def get_berv(obstime, coordtime, ra, dec, pmra, pmde, plx,
@@ -104,7 +112,28 @@ def get_berv(obstime, coordtime, ra, dec, pmra, pmde, plx,
     _ = obs_long, obs_lat, obs_alt
     _ = coordtime
 
-    berv = olibarycorr(obstime, np.array([ra,dec]))
+    # deal with distance
+    if plx == 0:
+        distance = None
+    else:
+        distance = Distance(parallax=plx * uu.mas)
+    # need to propagate ra and dec to J2000
+    coords = SkyCoord(ra=ra * uu.deg, dec=dec * uu.deg,
+                      distance=distance,
+                      pm_ra_cosdec=pmra * uu.mas/uu.yr,
+                      pm_dec=pmde * uu.mas/uu.yr,
+                      obstime=Time(coordtime, format='jd'))
+
+    # work out the delta time between epoch and J2000.0
+    delta_time = obstime - coordtime
+    # get the coordinates in J2000
+    with warnings.catch_warnings(record=True) as w:
+        new_coords = coords.apply_space_motion(dt=delta_time * uu.day)
+    # extract the ra and dec from SkyCoords
+    new_ra = new_coords.ra.value
+    new_dec = new_coords.dec.value
+
+    berv = olibarycorr(obstime, np.array([new_ra, new_dec]))
 
     # bjd = None
 
