@@ -12,9 +12,16 @@ import pandas as pd
 from apero.core import constants
 from apero.core.constants import param_functions
 from apero.core.constants.param_functions import ParamDict
+from apero.core.core import drs_database
 from astropy.io import fits
 from astropy.table import Table
 from pandas import DataFrame, Series
+
+
+DATABASES = {
+    "TELLU": drs_database.IndexDatabase,
+    "CALIB": drs_database.CalibrationDatabase,
+}
 
 
 def removext(name: str, ext: str = ".py") -> str:
@@ -65,28 +72,12 @@ def load_db_entries(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     :return: Dataframe containing the database
     :rtype: DataFrame
     """
-    # FUTURE: For 0.7 version
-    # from apero.core.core import drs_database
-    # from apero.core import constants
-    # params = constants.load()
-    # calibdb = drs_database.CalibDatabase(params)
-    # calibdb.load_db()
-    # calib_table = calibdb.database.get('*', calibdb.database.tname,
-    #                                    return_pandas=True)
 
-    # TODO: Should we have check for db_id, does APERO have list of db names ?
     db_id = db_id.upper()
-
     params = constants.load(instrument)
-    db_path = os.path.join(
-        params[f"DRS_{db_id}_DB"], params[f"{db_id}_DB_NAME"]
-    )
-
-    colnames = params.listp(f"{db_id}_DB_COLS", dtype=str)
-    db_arr = np.loadtxt(db_path, dtype=str, unpack=True)
-    df = pd.DataFrame(dict(zip(colnames, db_arr)))
-
-    # TODO: When sure that apero uses pandas >=1.0, use convert_dtypes here
+    db = DATABASES[db_id](params)
+    db.load_db()
+    df = db.database.get("*", return_pandas=True)
 
     return df
 
