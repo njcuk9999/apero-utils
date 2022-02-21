@@ -13,9 +13,9 @@ import pandas as pd
 from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
 from apero.core.core.drs_file import DrsFitsFile
-from apero.core.core.drs_recipe import DrsRecipe
+from apero.core.utils.drs_recipe import DrsRecipe
 from apero.core.instruments.spirou.recipe_definitions import recipes
-from apero.tools.module.setup.drs_processing import skip_clean_arguments
+from apero.tools.module.processing.drs_processing import skip_clean_arguments
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
 
