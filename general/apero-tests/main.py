@@ -14,6 +14,7 @@ import apero_tests.utils as ut
 from apero_tests.drs_test import OUTDIR, TEMPLATEDIR, DrsTest
 from apero_tests.spirou.test_definitions import tests
 
+
 # TODO: Make independent of instrument
 params = constants.load("SPIROU")
 setup = os.environ["DRS_UCONFIG"]  # setup
