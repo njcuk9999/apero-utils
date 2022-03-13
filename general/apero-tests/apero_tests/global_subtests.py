@@ -76,7 +76,7 @@ class GlobalIndexCheck(SubTest):
 
         bad_index_reset = self.global_bad_index.reset_index()
         data_dict_index_pid = {
-            "Night": bad_index_reset.NIGHTNAME,
+            "Night": bad_index_reset.OBS_DIR,
             "File": bad_index_reset.FILENAME,
         }
         for k in self.group_kwds + self.inspect_kwds:
@@ -124,7 +124,7 @@ class CheckMissingAdded(SubTest):
         if n_missing_added > 0:
             df_reset = self.missing_ind_df.reset_index()
             data_dict = {
-                "Night": df_reset.NIGHTNAME,
+                "Night": df_reset.OBS_DIR,
                 "File": df_reset.FILENAME,
             }
             for k in self.inspect_kwds:

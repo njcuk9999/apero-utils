@@ -336,11 +336,11 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     # remove added underscore
     source.data["FILENAME"] = source.data.pop("FILENAME_")
     # night to datetime
-    source.data["PLOTDATE"] = pd.to_datetime(source.data["NIGHTNAME"])
+    source.data["PLOTDATE"] = pd.to_datetime(source.data["OBS_DIR"])
 
     htool = HoverTool(
         tooltips=[
-            ("NIGHTNAME", "@NIGHTNAME"),
+            ("OBS_DIR", "@OBS_DIR"),
             ("FILENAME", "@FILENAME"),
             ("Calib file", "@calf"),
         ]
@@ -374,7 +374,7 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
         plot_height=700,
         tools=TOOLS,
         toolbar_location="right",
-        x_axis_label="NIGHTNAME",
+        x_axis_label="OBS_DIR",
         x_axis_type="datetime",
         title=title,
     )

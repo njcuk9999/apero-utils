@@ -10,17 +10,18 @@ from typing import Any, List, Optional, Tuple, Union
 import numpy as np
 import pandas as pd
 from apero.core import constants
-from apero.core.constants import param_functions
 from apero.core.constants.param_functions import ParamDict
 from apero.core.core import drs_database
+from apero.core.core import drs_file
 from astropy.io import fits
 from astropy.table import Table
 from pandas import DataFrame, Series
 
-
 DATABASES = {
-    "TELLU": drs_database.IndexDatabase,
+    "TELLU": drs_database.TelluricDatabase,
     "CALIB": drs_database.CalibrationDatabase,
+    "LOG": drs_database.LogDatabase,
+    "INDEX": drs_database.IndexDatabase,
 }
 
 
@@ -84,7 +85,7 @@ def load_db_entries(db_id: str, instrument: str = "SPIROU") -> DataFrame:
 
 def load_db_list(db_id: str, instrument: str = "SPIROU") -> DataFrame:
     """
-    Load an APERO database using the database 'ID'
+    Load list of files in an APERO database using the database 'ID'
 
     :param db_id: Database ID (e.g. 'CALIB' for calibdb)
     :type db_id: str
@@ -132,9 +133,7 @@ def load_fits_df(pathlist: List[str]) -> DataFrame:
     return df
 
 
-def make_full_index(
-    real_index: DataFrame, missing_index: DataFrame
-) -> DataFrame:
+def make_full_index(real_index: DataFrame, missing_index: DataFrame) -> DataFrame:
 
     real_index = real_index.copy()
     missing_index = missing_index.copy()
@@ -149,7 +148,7 @@ def make_full_index(
         full_index = real_index.append(missing_index)
     else:
         full_index = real_index.copy()
-    full_index = full_index.sort_values(["NIGHTNAME", "LAST_MODIFIED"])
+    full_index = full_index.sort_values(["OBS_DIR", "LAST_MODIFIED"])
 
     return full_index
 
@@ -157,7 +156,7 @@ def make_full_index(
 def get_cdb_df(
     index_df: DataFrame,
     params: ParamDict,
-    force: bool = False,
+    overwrite: bool = False,
     cache_dir: str = None,
 ) -> DataFrame:
     """
@@ -175,28 +174,25 @@ def get_cdb_df(
 
     # TODO: Smarter mechanism for cached file. Currently on reading if exist or
     # generating whole thing otherwise
-    if cache_path is not None and os.path.isfile(cache_path) and not force:
-        cdb_mjd_df_cache = pd.read_csv(
-            cache_path, index_col=[0, 1], header=[0, 1]
-        )
+    if cache_path is not None and os.path.isfile(cache_path) and not overwrite:
+        cdb_mjd_df_cache = pd.read_csv(cache_path, index_col=[0, 1], header=[0, 1])
     else:
         cdb_mjd_df_cache = None
 
     if cdb_mjd_df_cache is None:
         # We load the headers from two possible extensions
         # FUTURE: Might not be necessary in 0.7
-        headers = index_df.FULLPATH.apply(fits.getheader, ext=0)
+        # TODO: Ask Neil if can add KW_CDB stuff to ind db to avoid read files
+        headers = index_df.ABSPATH.apply(fits.getheader, ext=0)
         ext1_mask = headers.str.len() == 4
-        headers_ext1 = index_df.FULLPATH[ext1_mask].apply(
-            fits.getheader, ext=1
-        )
+        headers_ext1 = index_df.ABSPATH[ext1_mask].apply(fits.getheader, ext=1)
         headers[ext1_mask] = headers_ext1
+        # TODO: This is very long. Is there a way to optimize it ???
+        # TODO: Main bottleneck is here. Should also save this maybe (for debug)
         headers_df = pd.DataFrame(headers.tolist())
 
         # We only want the CDB* keys. Other useful keys are already in index
-        keys = [
-            params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")
-        ]
+        keys = [params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")]
 
         # Only apply if CDB* keys are in the headers
         if all([item in headers_df.columns for item in keys]):
@@ -204,29 +200,36 @@ def get_cdb_df(
         else:
             return index_df
         unique_cdb_files = get_unique_vals(cdb_df)
-        sep = (
-            "" if params["DRS_CALIB_DB"].endswith(os.path.sep) else os.path.sep
-        )
-        unique_cdb_files_fullpath = (
-            params["DRS_CALIB_DB"] + sep + unique_cdb_files
-        )
+        sep = "" if params["DRS_CALIB_DB"].endswith(os.path.sep) else os.path.sep
+        shapel_mask = unique_cdb_files.str.contains("shapel_orderps")
+        shapel_files = unique_cdb_files[shapel_mask]
+        shapel_paths = params["DRS_DATA_REDUC"] + sep + "*" + sep + shapel_files
+        shapel_paths = shapel_paths.apply(glob.glob).str[0]
+        unique_cdb_files_fullpath = params["DRS_CALIB_DB"] + sep + unique_cdb_files
+        unique_cdb_files_fullpath[shapel_mask] = shapel_paths
+        # TODO: Use instrument-independent name for current file
         mjds = unique_cdb_files_fullpath.apply(get_hkey, args=("MJDMID",))
         mjds.index = unique_cdb_files
         mjd_df = cdb_df.replace(mjds.to_dict())
+        # mjd_df = mjd_df.replace(to_replace="None", value=np.nan)
+        nan_mask = ~mjd_df.applymap(lambda x: isinstance(x, (float, int, complex)))
+        mjd_df[nan_mask] = np.nan
+        mjd_df.apply()
 
         cdb_mjd_df = pd.concat(
             [cdb_df, mjd_df], axis=1, keys=["CALIB_FILE", "DELTA_MJD"]
         ).swaplevel(0, 1, 1)
 
         cdb_mjd_df.index = pd.MultiIndex.from_frame(
-            index_df.reset_index()[["NIGHTNAME", "FILENAME"]]
+            index_df.reset_index()[["OBS_DIR", "FILENAME"]]
         )
 
-        mjd_ind_files = index_df.FULLPATH.apply(get_hkey, args=("MJDMID",))
+        mjd_ind_files = index_df["KW_MID_OBS_TIME"]
+        # NOTE: using numpy because pandas multi-index operation did not work well
         cdb_mjd_df.loc[:, (slice(None), "DELTA_MJD")] = (
             cdb_mjd_df.loc[:, (slice(None), "DELTA_MJD")].values
             - mjd_ind_files.values[:, None]
-        )  # using numpy because pandas multi-index operation did not work well
+        )
 
         if cache_path is not None:
             cdb_mjd_df.to_csv(cache_path)
@@ -260,8 +263,10 @@ def get_unique_vals(df, keepna=False):
     for col in df.columns:
         colvals = df[col]
         if not keepna:
-            colmask = ~colvals.isnull() | (colvals == "None")
-            colvals = colvals[colmask]
+            colmask = (
+                colvals.isnull() | (colvals == "None") | colvals.str.startswith("No ")
+            )
+            colvals = colvals[~colmask]
         un_vals = pd.unique(colvals)
         vals_list.append(un_vals)
     series = pd.Series(np.concatenate(vals_list))
@@ -298,9 +303,10 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
 
 
 def load_log_df(
-    output_parent: str,
-    log_fname: str = "log.fits",
-    return_missing: bool = False,
+    # TODO: Remove
+    # output_parent: str,
+    # log_fname: str = "log.fits",
+    # return_missing: bool = False,
 ) -> DataFrame:
     """
     Load all log.fits files in single dataframe
@@ -314,31 +320,35 @@ def load_log_df(
     :return: Dataframe of log files
     :rtype: DataFrame
     """
-    # FUTURE: In 0.7, this will change to loading a DB
-    # ???: Keep info of output_parent in df ?
+    # TODO: Remove this when 0.7 works
+    # allpaths = [
+    #     os.path.join(output_parent, d, log_fname)
+    #     for d in os.listdir(output_parent)
+    # ]
+    # log_df = load_fits_df(allpaths)
 
-    allpaths = [
-        os.path.join(output_parent, d, log_fname)
-        for d in os.listdir(output_parent)
-    ]
-    log_df = load_fits_df(allpaths)
+    log_df = load_db_entries("LOG")
 
-    # Use DIRECTORY as index and keep only relevant entries
-    # whith self.recipe or extract recipes called
-    log_df = log_df.set_index(["DIRECTORY"])
+    # TODO: Use constant for this and remove hardoced references everywhere
+    log_df = log_df.set_index(["OBS_DIR"])
 
-    if return_missing:
-        # Dirs without log files
-        missing_logs = [p for p in allpaths if not os.path.isfile(p)]
-        return log_df, missing_logs
-    else:
-        return log_df
+    # TODO: Remove or reimplement with 0.7 if still relevant
+    # (currently unused, was kept to make backward compat with very first test version)
+    # if return_missing:
+    #     # Dirs without log files
+    #     missing_logs = [p for p in allpaths if not os.path.isfile(p)]
+    #     return log_df, missing_logs
+    # else:
+    #     return log_df
+
+    return log_df
 
 
 def load_index_df(
-    output_parent: str,
-    index_fname: str = "index.fits",
-    return_missing: bool = False,
+    # TODO: Remove
+    # output_parent: str,
+    # index_fname: str = "index.fits",
+    # return_missing: bool = False,
 ) -> DataFrame:
     """
     Load all index.fits files in a single dataframe
@@ -352,32 +362,41 @@ def load_index_df(
     :return: Dataframe of index files
     :rtype: DataFrame
     """
-    # FUTURE: In 0.7, this will change to loading a DB
 
-    # ???: Keep info of output_parent in df ?
-    # Get all index.fits in a dataframe
-    allpaths = [
-        os.path.join(output_parent, d, index_fname)
-        for d in os.listdir(output_parent)
-    ]
-    ind_df = load_fits_df(allpaths)
+    # TODO: Remove after 0.7 done
+    # # ???: Keep info of output_parent in df ?
+    # # Get all index.fits in a dataframe
+    # allpaths = [
+    #     os.path.join(output_parent, d, index_fname)
+    #     for d in os.listdir(output_parent)
+    # ]
+    # ind_df = load_fits_df(allpaths)
+
+    ind_df = load_db_entries("INDEX")
 
     # Add full paths to dataframe
-    parent_path = os.path.dirname(os.path.dirname(allpaths[0]))
-    sep = os.path.sep
-    ind_df["FULLPATH"] = (
-        parent_path + sep + ind_df.NIGHTNAME + sep + ind_df.FILENAME
-    )
+    # TODO: Remove after 0.7 done
+    # TODO: Don't hardcode FULLPATH/ABSPATH, define as constant
+    # parent_path = os.path.dirname(os.path.dirname(allpaths[0]))
+    # sep = os.path.sep
+    # ind_df["FULLPATH"] = (
+    #     parent_path + sep + ind_df.NIGHTNAME + sep + ind_df.FILENAME
+    # )
 
-    # Use NIGHTNAME as index
-    ind_df = ind_df.set_index(["NIGHTNAME"])
+    # Use OBS_DIR as index
+    # TODO: Don't hardcode NIGHTNAME define as constant
+    ind_df = ind_df.set_index(["OBS_DIR"])
 
-    if return_missing:
-        # Dirs without index.fits
-        missing_inds = [p for p in allpaths if not os.path.isfile(p)]
-        return ind_df, missing_inds
-    else:
-        return ind_df
+    # TODO: Remove or reimplement with 0.7 if still relevant
+    # (currently unused, was kept to make backward compat with very first test version)
+    # if return_missing:
+    #     # Dirs without index.fits
+    #     missing_inds = [p for p in allpaths if not os.path.isfile(p)]
+    #     return ind_df, missing_inds
+    # else:
+    #     return ind_df
+
+    return ind_df
 
 
 def get_names_no_index(params: ParamDict) -> List[str]:
@@ -390,20 +409,27 @@ def get_names_no_index(params: ParamDict) -> List[str]:
     :rtype: List[str]
     """
 
-    # Get paths that contain filenames we want to exclude
-    calib_reset_path = param_functions.get_relative_folder(
-        params["DRS_PACKAGE"], params["DRS_RESET_CALIBDB_PATH"]
-    )
-    tellu_reset_path = param_functions.get_relative_folder(
-        params["DRS_PACKAGE"], params["DRS_RESET_TELLUDB_PATH"]
-    )
-    runs_reset_path = param_functions.get_relative_folder(
-        params["DRS_PACKAGE"], params["DRS_RESET_RUN_PATH"]
-    )
+    # # TODO: Remove for 0.7
+    # # Get paths that contain filenames we want to exclude
+    # calib_reset_path = drs_misc.get_relative_folder(
+    #     params["DRS_PACKAGE"], params["DRS_RESET_CALIBDB_PATH"]
+    # )
+    # tellu_reset_path = drs_misc.get_relative_folder(
+    #     params["DRS_PACKAGE"], params["DRS_RESET_TELLUDB_PATH"]
+    # )
+    # runs_reset_path = drs_misc.get_relative_folder(
+    #     params["DRS_PACKAGE"], params["DRS_RESET_RUN_PATH"]
+    # )
+
+    assets_path = params["DRS_DATA_ASSETS"]
+    calib_reset_path = os.path.join(assets_path, params["DRS_RESET_CALIBDB_PATH"])
+    tellu_reset_path = os.path.join(assets_path, params["DRS_RESET_TELLUDB_PATH"])
+    runs_reset_path = os.path.join(assets_path, params["DRS_RESET_RUN_PATH"])
 
     # We know that log and index are also not data
     # NOTE: index/log will be in db in 0.7+
-    exclude_list = ["index.fits", "log.fits"]
+    # exclude_list = ["index.fits", "log.fits"]
+    exclude_list = []
     exclude_list.extend(os.listdir(calib_reset_path))
     exclude_list.extend(os.listdir(tellu_reset_path))
     exclude_list.extend(os.listdir(runs_reset_path))
@@ -468,6 +494,8 @@ def missing_index_headers(
     :rtype: Tuple[DataFrame, Series]
     """
 
+    # TODO: Have an option to completely ignore files that are not in the index database in other tests
+
     # TODO: Better naming/ID method s.t. repeated runs update OK
     if cache_dir is not None:
         p = Path(cache_dir)
@@ -482,15 +510,11 @@ def missing_index_headers(
     # If not output files are given, we load them from disk,
     # using apero to discard some filenames
     params = constants.load(instrument)
-    exclude_fname = get_names_no_index(
-        params
-    )  # Exclude log.fits and stuff like that
+    exclude_fname = get_names_no_index(params)  # Exclude log.fits and stuff like that
 
     if output_files is None:
-        parent_dir = get_nth_parent(ind_df.FULLPATH.iloc[0], order=2)
-        output_files = get_output_files(
-            parent_dir, exclude_fname=exclude_fname
-        )
+        parent_dir = get_nth_parent(ind_df.ABSPATH.iloc[0], order=2)
+        output_files = get_output_files(parent_dir, exclude_fname=exclude_fname)
     else:
         exclude_mask = output_files.apply(os.path.basename).isin(exclude_fname)
         output_files = output_files[~exclude_mask]
@@ -513,9 +537,7 @@ def missing_index_headers(
         and not force
     ):
         missing_ind_df_cache = pd.read_csv(cache_path, index_col=0)
-        not_found_series_cache = pd.read_csv(
-            cache_not_found, index_col=0, squeeze=True
-        )
+        not_found_series_cache = pd.read_csv(cache_not_found, index_col=0, squeeze=True)
     else:
         missing_ind_df_cache = None
 
@@ -526,7 +548,7 @@ def missing_index_headers(
 
         # If no missing files
         if len(out_not_in_index) == 0:
-            return out_not_in_index, pd.Series([])
+            return out_not_in_index, pd.Series([], dtype=object)
 
         # We treat missing files on a per-basename basis
         out_basename = out_not_in_index.apply(os.path.basename)
@@ -549,9 +571,7 @@ def missing_index_headers(
         # Of the expected original dates, get the ones we can find
         og_ends = og_dates + os.path.sep + unique_base
         not_in_index_ends = (
-            out_not_in_index.str.split(os.path.sep)
-            .str[-2:]
-            .str.join(os.path.sep)
+            out_not_in_index.str.split(os.path.sep).str[-2:].str.join(os.path.sep)
         )
         found_mask = og_ends.isin(not_in_index_ends)
         prefix_path = get_nth_parent(unique_full.iloc[0], order=2)
@@ -563,13 +583,19 @@ def missing_index_headers(
         headers_ext1 = og_found[ext1_mask].apply(fits.getheader, ext=1)
         headers[ext1_mask] = headers_ext1
 
-        # Get header keys corresponding to index columns
-        pconstant = constants.pload(instrument)
-        index_cols = pconstant.OUTPUT_FILE_HEADER_KEYS()
-        keys = [params[col][0] for col in index_cols]
-
         # Get df in index format (tolist expands header values automatically)
         missing_headers_df = DataFrame(headers.tolist())
+
+        # Get header keys corresponding to index columns
+        pconstant = constants.pload(instrument)
+        index_cols = pconstant.INDEX_HEADER_COLS().names
+        keys = [params[col][0] for col in index_cols]
+
+        # Some keys might be missing because they are dropped for combined files
+        keys_not_in_head = [k for k in keys if k not in missing_headers_df.columns]
+        missing_headers_df[keys_not_in_head] = None
+
+        # Rename columns
         if len(missing_headers_df) > 0:
             missing_ind_df = DataFrame(
                 missing_headers_df[keys].values, columns=index_cols
@@ -579,17 +605,51 @@ def missing_index_headers(
 
         # Add fields that are not in the headers
         missing_ind_df["FILENAME"] = og_found.apply(os.path.basename)
-        missing_ind_df["NIGHTNAME"] = og_found.apply(os.path.dirname).apply(
+        missing_ind_df["OBS_DIR"] = og_found.apply(os.path.dirname).apply(
             os.path.basename
         )
-        missing_ind_df["LAST_MODIFIED"] = og_found.apply(
-            os.path.getmtime
-        ).astype(
+        missing_ind_df["LAST_MODIFIED"] = og_found.apply(os.path.getmtime).astype(
             str
         )  # APERO stores these times as string, so we convert them here
-        missing_ind_df["FULLPATH"] = og_found
+        missing_ind_df["ABSPATH"] = og_found
+        # We are already treating index per block_kind, so just use the first one
+        block_kind = ind_df["BLOCK_KIND"].iloc[0]
+        missing_ind_df["BLOCK_KIND"] = block_kind
 
-        missing_ind_df = missing_ind_df.set_index(["NIGHTNAME"])
+        # TODO: Run fix_headers on each header (will need a recipe for this)
+        # TODO: Load object databaase
+        # TODO: Get a recipe
+        # drs_file.fix_header(params, recipe, header=header, check_aliases=True, objdbm=objdbm)
+        if block_kind == "raw":
+            missing_ind_df["RECIPE"] = "Unknown"
+            missing_ind_df["RUNSTRING"] = None
+            missing_ind_df["INFILES"] = None
+            missing_ind_df["USED"] = 1
+            missing_ind_df["RAWFIX"] = 1
+            missing_ind_df["UHASH"] = None
+        else:
+            try:
+                # TODO: Get header keys from this dict as well
+                # TODO: Make this loop files around
+                tbl = Table.read(ind_df.iloc[34].ABSPATH, hdu=("PARAM_TABLE", 1))
+                kdict = dict(zip(tbl["NAME"], tbl["VALUE"]))
+                missing_ind_df["BLOCK_KIND"] = kdict["rlog.BLOCK_KIND"]
+                missing_ind_df["RECIPE"] = kdict["rlog.RECIPE"]
+                missing_ind_df["RUNSTRING"] = kdict["rlog.RUNSTRING"]
+                # Could get from rlog.ARGS and rlog.KWARGS but not worth if not used
+                missing_ind_df["INFILES"] = None
+                missing_ind_df["USED"] = int(kdict["rlog.USED"])
+                missing_ind_df["RAWFIX"] = 1
+                missing_ind_df["UHASH"] = None
+            except KeyError:
+                missing_ind_df["RECIPE"] = "Unknown"
+                missing_ind_df["RUNSTRING"] = None
+                missing_ind_df["INFILES"] = None
+                missing_ind_df["USED"] = 1
+                missing_ind_df["RAWFIX"] = 1
+                missing_ind_df["UHASH"] = None
+
+        missing_ind_df = missing_ind_df.set_index(["OBS_DIR"])
         missing_ind_df = missing_ind_df[ind_df.columns]
 
         if cache_path is not None:

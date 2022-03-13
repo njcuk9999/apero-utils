@@ -118,7 +118,7 @@ class CountLogTest(SubTest):
                             RUNSTRING, defaults to "--master"
         :type master_flag: str, optional
         :param group_kwds: Columns used to group the log DF before counting.
-                           The default ["RECIPE", "SUBLEVEL", "LEVEL_CRIT"]
+                           The default ["RECIPE", "SUBLEVEL", "LEVELCRIT"]
                            is used when set to None.
         :type group_kwds: Optional[Sequence[str]], optional
         """
@@ -131,17 +131,17 @@ class CountLogTest(SubTest):
         if group_kwds is not None:
             self.group_kwds = group_kwds
         else:
-            self.group_kwds = ["RECIPE", "SUBLEVEL", "LEVEL_CRIT"]
+            self.group_kwds = ["RECIPE", "SUBLEVEL", "LEVELCRIT"]
 
     def run(self):
 
         master_mask = self.log_df.RUNSTRING.str.contains(self.master_flag)
         master_df = self.log_df[master_mask]
-        master_count = master_df.groupby(self.group_kwds).count().KIND
-        tot_count = self.log_df.groupby(self.group_kwds).count().KIND
+        master_count = master_df.groupby(self.group_kwds).count().RECIPE_KIND
+        tot_count = self.log_df.groupby(self.group_kwds).count().RECIPE_KIND
         log_count = tot_count.sub(master_count, fill_value=0).astype(int)
 
-        dup_subset = ["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT", "PID"]
+        dup_subset = ["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVELCRIT", "PID"]
         ulog_df = self.log_df.drop_duplicates(subset=dup_subset).copy()
 
         if ulog_df.equals(self.log_df):
@@ -311,7 +311,7 @@ class CountOutTest(SubTest):
         :param unique: Return unique count if true, defaults to False
         :type unique: bool, optional
         :param group_kwds: Keys used to group the index before counting,
-                           The default ["KW_OUTPUT", "KW_FIBER"]
+                           The default ["KW_OUTPUT", "KW_FIBER"], unless KW_FIBER is all NA
                            is used if None.
         :type group_kwds: Optional[Sequence[str]], optional
         """
@@ -335,7 +335,9 @@ class CountOutTest(SubTest):
             # ???: Should we use drs params to get keys here or is literal ok?
             # NOTE: We could remove KW_DPRTYPE in future if not needed
             # self.group_kwds = ["KW_OUTPUT", "KW_DPRTYPE", "KW_FIBER"]
-            self.group_kwds = ["KW_OUTPUT", "KW_FIBER"]
+            self.group_kwds = ["KW_OUTPUT"]
+            if not self.ind_df["KW_FIBER"].isna().all():
+                self.group_kwds.append("KW_FIBER")
 
     def run(self):
         if not self.ind_df.empty:
@@ -374,7 +376,7 @@ class CountQCTest(SubTest):
 
     def run(self):
 
-        log_qc_failed = self.log_df[~self.log_df.PASSED_ALL_QC]
+        log_qc_failed = self.log_df[~self.log_df.PASSED_ALL_QC.astype(bool)]
         self.result = len(log_qc_failed)
 
         odometer_flag = "ODOMETER" in log_qc_failed.columns
@@ -384,7 +386,7 @@ class CountQCTest(SubTest):
             self
             log_reset = log_qc_failed.reset_index()
             data_dict_check_qc = {
-                "Night": log_reset.DIRECTORY.values,
+                "Night": log_reset.OBS_DIR.values,
                 "Odometer": log_qc_failed.ODOMETER.values,
                 "QC_STRING": log_qc_failed.QC_STRING.values,
             }
@@ -399,7 +401,7 @@ class CountQCTest(SubTest):
             self.comments = "One or more recipe have failed QC."
             log_reset = log_qc_failed.reset_index()
             data_dict_check_qc = {
-                "Night": log_reset.DIRECTORY.values,
+                "Night": log_reset.OBS_DIR.values,
                 "QC_STRING": log_qc_failed.QC_STRING.values,
             }
             self.details = inspect_table(
@@ -471,6 +473,9 @@ class PlotQCTest(SubTest):
         else:
             data_dict_qc_plot = {"Night": qc_values.index.tolist()}
             for key, series in qc_values.iteritems():
+                # HACK: Just making the code run, probably a a bad result and need to fix underlying cause in tests setup
+                if key is None:
+                    key = "None"
                 data_dict_qc_plot[key] = series.tolist()
 
         self.result = "See the Details column"
@@ -499,7 +504,7 @@ class CountEndedTest(SubTest):
 
     def run(self):
 
-        log_ended_false = self.log_df[~self.log_df.ENDED]
+        log_ended_false = self.log_df[~self.log_df.ENDED.astype(bool)]
         self.result = len(log_ended_false)
 
         if self.result > 0:
@@ -507,7 +512,7 @@ class CountEndedTest(SubTest):
             self
             log_reset = log_ended_false.reset_index()
             data_dict_check_ended = {
-                "Night": log_reset.DIRECTORY.values,
+                "Night": log_reset.OBS_DIR.values,
                 "ERRORS": log_ended_false.ERRORS.values,
                 "LOGFILE": log_ended_false.LOGFILE.values,
             }
@@ -637,7 +642,7 @@ class CheckCalibEntriesFiles(SubTest):
 
     def run(self):
 
-        in_dir_mask = self.calib_df.filename.isin(self.calib_list)
+        in_dir_mask = self.calib_df.FILENAME.isin(self.calib_list)
 
         self.result = np.all(in_dir_mask)
 
@@ -673,21 +678,21 @@ class CountCalibEntries(SubTest):
         super().__init__(description="# of entries in calib DB")
 
         self.calib_df = calib_df
-        self.calib_keys = calib_keys
+        self.calib_keys = list(set(calib_keys))
         self.ismaster = master
 
     def run(self):
         zero_count = pd.Series(0, index=self.calib_keys)
 
         if not self.calib_df.empty:
-            calib_count = self.calib_df.groupby("key").size()
+            calib_count = self.calib_df.groupby("KEYNAME").size()
             if not self.ismaster:
-                master_mask = self.calib_df["master"].astype(bool)
+                master_mask = self.calib_df["SUPERCAL"].astype(bool)
                 if master_mask.sum() == 0:
                     master_calib_count = zero_count.copy()
                 else:
                     master_calib_df = self.calib_df[master_mask]
-                    master_calib_count = master_calib_df.groupby("key").size()
+                    master_calib_count = master_calib_df.groupby("KEYNAME").size()
                     msg = "Additional entries with master == 1"
                     self.comments = f"{msg}: {master_calib_count}"
 
@@ -727,7 +732,7 @@ class CheckUsedCalibs(SubTest):
         )
 
         # Drop calib files not relevant to sci file under test with dropna
-        mask = ~used_calib_df.isna().all(axis=0).any(level=0)
+        mask = ~used_calib_df.isna().all(axis=0).groupby(level=0).any()
         self.used_calib_df = used_calib_df[mask.index[mask]]
         self.calib_df = calib_df
         self.test_html_path = test_html_path
@@ -736,16 +741,16 @@ class CheckUsedCalibs(SubTest):
     def run(self):
 
         if len(self.used_calib_df.columns) > 0:
-            calib_with_fname = self.calib_df.set_index("filename")
+            calib_with_fname = self.calib_df.set_index("FILENAME")
             fdf = self.used_calib_df.xs(
                 "CALIB_FILE", axis=1, level=1
             ).reset_index(drop=True)
 
             stacked_fdf = fdf.stack().reset_index(0, drop=True)
-            ind_for_db = stacked_fdf[stacked_fdf.isin(self.calib_df.filename)]
+            ind_for_db = stacked_fdf[stacked_fdf.isin(self.calib_df.FILENAME)]
             calib_ind_used = calib_with_fname.loc[ind_for_db]
             drop_map = (
-                calib_ind_used.master.astype(int).groupby("filename").all()
+                calib_ind_used.SUPERCAL.astype(int).groupby("FILENAME").all()
             )
             drop_mask = fdf.replace(drop_map)
             drop_mask_all = drop_mask.all()
@@ -774,11 +779,11 @@ class CheckUsedCalibs(SubTest):
 
         inspect_df = self.used_calib_df[bool_mask]
 
-        nights = inspect_df.index.get_level_values("NIGHTNAME")
+        nights = inspect_df.index.get_level_values("OBS_DIR")
         if "other" in nights:
             nother = nights.value_counts()["other"]
             inspect_df = inspect_df.drop("other")
-            self.comments = f"Dropped {nother} rows with NIGHTNAME = other."
+            self.comments = f"Dropped {nother} rows with OBS_DIR = other."
 
         self.details = delta_mjd_plot(
             self.test_html_path,
@@ -803,7 +808,7 @@ class CountTelluEntries(SubTest):
 
     def run(self):
         if not self.tellu_df.empty:
-            tellu_count = self.tellu_df.groupby("key").size()
+            tellu_count = self.tellu_df.groupby("KEYNAME").size()
 
         else:
             self.result = 0

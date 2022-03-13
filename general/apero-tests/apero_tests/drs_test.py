@@ -136,17 +136,17 @@ class DrsTest:
             self.name = f"Test for recipe {self.recipe_name}"
 
             # General params
-            self.params = self.recipe.drs_params
+            # TODO: Confirm this attribute with Neil
+            self.params = self.recipe.params
             self.pconst = constants.pload(self.instrument)
             self.ismaster = self.recipe.master
 
             # Path to input and output directories
             self.dirpaths = self.get_dir_path()
-            self.input_path = self.dirpaths[self.recipe.inputdir]
-            self.output_path = self.dirpaths[self.recipe.outputdir]
-            self.calibdb_path = os.path.join(
-                self.params["DRS_CALIB_DB"], self.params["CALIB_DB_NAME"]
-            )
+            # TODO: Confirm these attribute with Neil
+            self.input_path = self.dirpaths[self.recipe.in_block_str]
+            self.output_path = self.dirpaths[self.recipe.out_block_str]
+            self.calibdb_path = self.params["DRS_CALIB_DB"]
 
             # Path to HTML report
             self.html_path = Path(
@@ -173,7 +173,7 @@ class DrsTest:
             # (see test_definitions)
             self.log_df = self.load_log_df(all_log_df=all_log_df)
             self.ulog_df = self.log_df.drop_duplicates(
-                subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT", "PID"]
+                subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVELCRIT", "PID"]
             ).copy()
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
             self.model_ind_df = self.generate_model_index()
@@ -415,13 +415,11 @@ class DrsTest:
 
         # NOTE: Copy is used here so that future assignemnt never affect
         #       original (suppressing SettingWithCopyWarning)
+        # TODO: Check if need to use fiber as well when comparing with calibdb_keys
+        # TODO: Make sure works with or without fibers
         calib_df = all_calib_df[
-            all_calib_df["key"].isin(self.calibdb_keys)
+            all_calib_df["KEYNAME"].isin(self.calibdb_keys)
         ].copy()
-
-        # ???: Maybe this won't be required with pandas >= 1.0 and
-        # convert_dtypes (see utils function)
-        calib_df["master"] = calib_df["master"].astype(int)
 
         return calib_df
 
@@ -448,7 +446,11 @@ class DrsTest:
             warnings.warn(msg, RuntimeWarning)
             return None
 
-        tellu_df = all_tellu_df[all_tellu_df["key"].isin(self.telludb_keys)]
+        # TODO: Check if need to use fiber as well when comparing with calibdb_keys
+        # TODO: Make sure works with or without fibers
+        # if len(self.telludb_keys) > 0:
+        #     __import__('ipdb').set_trace()
+        tellu_df = all_tellu_df[all_tellu_df["KEYNAME"].isin(self.telludb_keys)]
 
         return tellu_df
 
@@ -487,7 +489,7 @@ class DrsTest:
         # We keep only calib files whose index is in the APERO index dataframe
         if len(self.ind_df) > 0:
             ind_night_file = self.ind_df.reset_index()[
-                ["NIGHTNAME", "FILENAME"]
+                ["OBS_DIR", "FILENAME"]
             ]
             keep_ind = pd.MultiIndex.from_frame(ind_night_file)
             cdb_used_df = all_cdb_used_df.loc[keep_ind]
@@ -576,7 +578,7 @@ class DrsTest:
         log_df.RUNSTRING = log_df.RUNSTRING.apply(skip_clean_arguments)
         log_df = log_df[
             ~log_df.duplicated(
-                subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVEL_CRIT"]
+                subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVELCRIT"]
             )
         ]
 
@@ -647,14 +649,14 @@ class DrsTest:
             else:
                 other_files = []
 
-            if "fiber" in log_row["LEVEL_CRIT"]:
+            if log_row["LEVELCRIT"] is not None and "fiber" in log_row["LEVELCRIT"]:
                 # Get fiber from level_crit to avoid repeating entries if
                 # recipe has more than one fiber in output files but this log
                 # entry only generates one fiber
                 # NOTE: Fiber must be a list of lists
                 # (list of fibers for each output type)
                 fibers = [
-                    [log_row["LEVEL_CRIT"].split("fiber")[-1].split("=")[1]]
+                    [log_row["LEVELCRIT"].split("fiber")[-1].split("=")[1]]
                 ] * len(recipe_dict["out_files"])
             else:
                 # If no fiber from level crit, use values given by recipe
@@ -722,6 +724,7 @@ class DrsTest:
         """
         subtest_list = []
 
+        # __import__('ipdb').set_trace()
         # Count all raw files
         if self.pp_flag:
             subtest_list.append(st.CountRawTest(self.input_path))
@@ -799,7 +802,8 @@ class DrsTest:
             )
 
         # telluDB output count
-        subtest_list.append(st.CountTelluEntries(self.tellu_df))
+        # TODO: Uncomment when tellu df filtering is fixed
+        # subtest_list.append(st.CountTelluEntries(self.tellu_df))
 
         self.subtest_list = subtest_list
 
