@@ -142,6 +142,9 @@ class DrsTest:
             self.params = self.recipe.params
             self.pconst = constants.pload(self.instrument)
             self.ismaster = self.recipe.master
+            # HACK: Should use DRS to define that. Remove when fixed in apero-drs
+            if "wave_master" in self.recipe_name:
+                self.ismaster = True
 
             # Path to input and output directories
             self.dirpaths = self.get_dir_path()
