@@ -608,6 +608,9 @@ class DrsTest:
             flags.encode(row["FLAGNUM"])
             log_df.iloc[i, log_df.columns.isin(flag_names)] = [flags[k] if k in flags else None for k in flag_names]
 
+        if "QUICKLOOK" in log_df.columns:
+            log_df = log_df[~log_df["QUICKLOOK"]]
+
         # Get all recipes in the log
         recipes = list(log_df.RECIPE.unique())
         log_recipe_dict = dict()
