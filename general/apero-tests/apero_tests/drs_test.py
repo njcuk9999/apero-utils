@@ -679,7 +679,7 @@ class DrsTest:
                 # NOTE: Fiber must be a list of lists
                 # (list of fibers for each output type)
                 fibers = [
-                    [log_row["LEVELCRIT"].split("fiber")[-1].split("=")[1]]
+                    [log_row["LEVELCRIT"].split("fiber")[-1].split("=")[1].strip()]
                 ] * len(recipe_dict["out_files"])
             else:
                 # If no fiber from level crit, use values given by recipe
