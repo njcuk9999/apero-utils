@@ -594,6 +594,7 @@ class DrsTest:
 
         # Drop runs with "--master" because they re-generate the same files
         # NOTE: Might be different in 0.7
+        # TODO: Use apero function to remove unwanted arguments regardless of if recipe is master
         master_mask = log_df.RUNSTRING.str.contains("--master")
         log_df = log_df[~master_mask] if not self.ismaster else log_df
         log_df = log_df.copy()
