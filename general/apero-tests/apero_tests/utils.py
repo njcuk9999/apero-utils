@@ -214,7 +214,8 @@ def get_cdb_df(
         # mjd_df = mjd_df.replace(to_replace="None", value=np.nan)
         nan_mask = ~mjd_df.applymap(lambda x: isinstance(x, (float, int, complex)))
         mjd_df[nan_mask] = np.nan
-        mjd_df.apply()
+        # TODO: Not sure why this was here
+        # mjd_df.apply()
 
         cdb_mjd_df = pd.concat(
             [cdb_df, mjd_df], axis=1, keys=["CALIB_FILE", "DELTA_MJD"]
