@@ -720,6 +720,12 @@ class DrsTest:
                 if kw_output in other_files:
                     continue
 
+                # HACK: Ideally this would not rely on EXT_ prefix to skip ext files I think
+                if self.ismaster and not ofile.outclass.master and not ofile.name.startswith("EXT_"):
+                    if "wave_master" not in self.recipe_name:
+                        print(f"UNEXPECTED file {ofile} for recipe {self.recipe_name}")
+                    continue
+
                 dprtype = _get_dprtype(ofile)
                 # HACK: Will have a better way to do this in 0.7 (talk to Neil)
                 if dprtype is not None and log_row.ARGS.endswith("]"):
