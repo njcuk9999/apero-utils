@@ -9,11 +9,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
+import numpy as np
 import pandas as pd
 from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
 from apero.core.core.drs_file import DrsFitsFile
 from apero.core.utils.drs_recipe import DrsRecipe
+from apero.core.core.drs_base_classes import BinaryDict
 from apero.core.instruments.spirou.recipe_definitions import recipes
 from apero.tools.module.processing.drs_processing import skip_clean_arguments
 from jinja2 import Environment, FileSystemLoader, select_autoescape
@@ -592,6 +594,16 @@ class DrsTest:
         master_mask = log_df.RUNSTRING.str.contains("--master")
         log_df = log_df[~master_mask] if not self.ismaster else log_df
         log_df = log_df.copy()
+
+        # Add binary flags from recipe
+        # This ensures that all keys are used.
+        flag_names = list(np.unique(log_df["FLAGSTR"].str.split("|").values.tolist()))
+        log_df[flag_names] = None  # None by default in case some are undefined for some rows
+        for i, (_, row) in enumerate(log_df.iterrows()):
+            flags = BinaryDict()
+            flags.add_keys(*row["FLAGSTR"].split("|"))
+            flags.encode(row["FLAGNUM"])
+            log_df.iloc[i, log_df.columns.isin(flag_names)] = [flags[k] if k in flags else None for k in flag_names]
 
         # Get all recipes in the log
         recipes = list(log_df.RECIPE.unique())
