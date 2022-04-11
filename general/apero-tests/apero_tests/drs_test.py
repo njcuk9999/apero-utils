@@ -551,8 +551,15 @@ class DrsTest:
         fiber_series = fiber_series.where(
             fiber_series.isin([f"_{fib}" for fib in all_fibers]), ""
         )
-        out_fiber_series = self.ind_df.KW_OUTPUT + fiber_series
+        # out_fiber_series = self.ind_df.KW_OUTPUT + fiber_series
+        out_fiber_series = self.ind_df.KW_OUTPUT.copy()
 
+        # TODO: Check the two columns instead of merging here
+        # TODO: out_fiber_series has LOC_ORDERP_AB and out_to_calib maps from LOC_ORDERP only
+        # because now the key is is a separate column
+        # - First, just don't use fibers and see if counts match
+        # - We used fibers before, so should we do the extra work to add them back ?
+        # - Actually fibers are needed to make count right (could have twice as much for example)
         out_to_calib = {
             (
                 v + f"_{k.split('_')[-1]}"
