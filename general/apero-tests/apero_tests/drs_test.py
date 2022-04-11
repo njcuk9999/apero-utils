@@ -448,8 +448,6 @@ class DrsTest:
 
         # TODO: Check if need to use fiber as well when comparing with calibdb_keys
         # TODO: Make sure works with or without fibers
-        # if len(self.telludb_keys) > 0:
-        #     __import__('ipdb').set_trace()
         tellu_df = all_tellu_df[all_tellu_df["KEYNAME"].isin(self.telludb_keys)]
 
         return tellu_df
@@ -731,7 +729,6 @@ class DrsTest:
         """
         subtest_list = []
 
-        # __import__('ipdb').set_trace()
         # Count all raw files
         if self.pp_flag:
             subtest_list.append(st.CountRawTest(self.input_path))
