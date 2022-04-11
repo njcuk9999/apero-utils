@@ -685,7 +685,9 @@ class CountCalibEntries(SubTest):
         zero_count = pd.Series(0, index=self.calib_keys)
 
         if not self.calib_df.empty:
-            calib_count = self.calib_df.groupby("KEYNAME").size()
+            # TODO: Check with Neil that OK to use nunique here
+            # calib_count = self.calib_df.groupby("KEYNAME").size()
+            calib_count = self.calib_df.groupby("KEYNAME").nunique().FILENAME
             if not self.ismaster:
                 master_mask = self.calib_df["SUPERCAL"].astype(bool)
                 if master_mask.sum() == 0:
