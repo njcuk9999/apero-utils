@@ -689,7 +689,7 @@ class DrsTest:
             for j, ofile in enumerate(recipe_dict["out_files"]):
 
                 # We exclude DEBUG from input
-                if ofile.name.startswith("DEBUG"):
+                if ofile.outclass.debug:
                     continue
 
                 # Handle fiber list being None
