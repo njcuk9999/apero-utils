@@ -693,7 +693,13 @@ class DrsTest:
                     continue
 
                 # Handle fiber list being None
-                fiber_list = fibers[j] or ["--"]
+                if "SCIFIBER" in log_df.columns:
+                    if log_row["SCIFIBER"]:
+                        fiber_list = ["AB"]
+                    else:
+                        fiber_list = ["C"]
+                else:
+                    fiber_list = fibers[j] or ["--"]
 
                 # Set KW_OUTPUT
                 kw_output = (
