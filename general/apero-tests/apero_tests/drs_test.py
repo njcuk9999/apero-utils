@@ -181,6 +181,9 @@ class DrsTest:
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
             self.model_ind_df = self.generate_model_index()
 
+            if "leak" in self.name:
+                __import__("ipdb").set_trace()
+
             # Add QC informatio to index (useful for calibdb comparisons)
             pid_qc_mapping = self.log_df.groupby("PID").PASSED_ALL_QC.all()
             qc_mask = pid_qc_mapping.loc[self.ind_df.KW_PID]
