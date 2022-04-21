@@ -601,16 +601,25 @@ class DrsTest:
 
         # Add binary flags from recipe
         # This ensures that all keys are used.
-        flag_names = list(np.unique(log_df["FLAGSTR"].str.split("|").values.tolist()))
-        log_df[flag_names] = None  # None by default in case some are undefined for some rows
+        # NOTE: The default value None won't work for boolean masks
+        # but default value depends on what we check. So need to set these before
+        # perform action (see quicklook block for example)
+        # TODO: Set default values automatically, in DRS or in a separate default dict ?
+        flag_names = list(log_df["FLAGSTR"].str.split("|").explode().unique())
+        log_df[
+            flag_names
+        ] = None  # None by default in case some are undefined for some rows
         for i, (_, row) in enumerate(log_df.iterrows()):
             flags = BinaryDict()
             flags.add_keys(*row["FLAGSTR"].split("|"))
             flags.encode(row["FLAGNUM"])
-            log_df.iloc[i, log_df.columns.isin(flag_names)] = [flags[k] if k in flags else None for k in flag_names]
+            log_df.iloc[i, log_df.columns.isin(flag_names)] = [
+                flags[k] if k in flags else None for k in flag_names
+            ]
 
         if "QUICKLOOK" in log_df.columns:
-            log_df = log_df[~log_df["QUICKLOOK"]]
+            # Don't drop files without quicklook flag (set to false for later in loop)
+            log_df["QUICKLOOK"] = log_df["QUICKLOOK"].fillna(False)
 
         # Get all recipes in the log
         recipes = list(log_df.RECIPE.unique())
@@ -718,6 +727,20 @@ class DrsTest:
                 # For e.g., an extract row will always have other_files = []
                 # (see def above)
                 if kw_output in other_files:
+                    continue
+
+                # HACK: Ideally this would not rely on QL_ prefix to skip ext files I think
+                if (
+                    "QUICKLOOK" in log_row.keys()
+                    and not log_row["QUICKLOOK"]
+                    and kw_output.startswith("QL_")
+                ):
+                    continue
+                elif (
+                    "QUICKLOOK" in log_row.keys()
+                    and log_row["QUICKLOOK"]
+                    and not kw_output.startswith("QL_")
+                ):
                     continue
 
                 # HACK: Ideally this would not rely on EXT_ prefix to skip ext files I think
