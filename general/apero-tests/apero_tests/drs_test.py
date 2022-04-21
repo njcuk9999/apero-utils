@@ -9,20 +9,18 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Union
 
-import numpy as np
+import apero_tests.subtest as st
+import apero_tests.utils as ut
 import pandas as pd
 from apero.core import constants
 from apero.core.core.drs_argument import DrsArgument
-from apero.core.core.drs_file import DrsFitsFile
-from apero.core.utils.drs_recipe import DrsRecipe
 from apero.core.core.drs_base_classes import BinaryDict
+from apero.core.core.drs_file import DrsFitsFile
 from apero.core.instruments.spirou.recipe_definitions import recipes
+from apero.core.utils.drs_recipe import DrsRecipe
 from apero.tools.module.processing.drs_processing import skip_clean_arguments
 from jinja2 import Environment, FileSystemLoader, select_autoescape
 from pandas import DataFrame
-
-import apero_tests.subtest as st
-import apero_tests.utils as ut
 
 PARENTDIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
 TEMPLATEDIR = os.path.join(PARENTDIR, "templates")
@@ -453,7 +451,9 @@ class DrsTest:
 
         # TODO: Check if need to use fiber as well when comparing with calibdb_keys
         # TODO: Make sure works with or without fibers
-        tellu_df = all_tellu_df[all_tellu_df["KEYNAME"].isin(self.telludb_keys)]
+        tellu_df = all_tellu_df[
+            all_tellu_df["KEYNAME"].isin(self.telludb_keys)
+        ]
 
         return tellu_df
 
@@ -491,9 +491,7 @@ class DrsTest:
 
         # We keep only calib files whose index is in the APERO index dataframe
         if len(self.ind_df) > 0:
-            ind_night_file = self.ind_df.reset_index()[
-                ["OBS_DIR", "FILENAME"]
-            ]
+            ind_night_file = self.ind_df.reset_index()[["OBS_DIR", "FILENAME"]]
             keep_ind = pd.MultiIndex.from_frame(ind_night_file)
             cdb_used_df = all_cdb_used_df.loc[keep_ind]
         else:
@@ -682,14 +680,22 @@ class DrsTest:
             else:
                 other_files = []
 
-            if log_row["LEVELCRIT"] is not None and "fiber" in log_row["LEVELCRIT"]:
+            if (
+                log_row["LEVELCRIT"] is not None
+                and "fiber" in log_row["LEVELCRIT"]
+            ):
                 # Get fiber from level_crit to avoid repeating entries if
                 # recipe has more than one fiber in output files but this log
                 # entry only generates one fiber
                 # NOTE: Fiber must be a list of lists
                 # (list of fibers for each output type)
                 fibers = [
-                    [log_row["LEVELCRIT"].split("fiber")[-1].split("=")[1].strip()]
+                    [
+                        log_row["LEVELCRIT"]
+                        .split("fiber")[-1]
+                        .split("=")[1]
+                        .strip()
+                    ]
                 ] * len(recipe_dict["out_files"])
             else:
                 # If no fiber from level crit, use values given by recipe
@@ -744,9 +750,15 @@ class DrsTest:
                     continue
 
                 # HACK: Ideally this would not rely on EXT_ prefix to skip ext files I think
-                if self.ismaster and not ofile.outclass.master and not ofile.name.startswith("EXT_"):
+                if (
+                    self.ismaster
+                    and not ofile.outclass.master
+                    and not ofile.name.startswith("EXT_")
+                ):
                     if "wave_master" not in self.recipe_name:
-                        print(f"UNEXPECTED file {ofile} for recipe {self.recipe_name}")
+                        print(
+                            f"UNEXPECTED file {ofile} for recipe {self.recipe_name}"
+                        )
                     continue
 
                 dprtype = _get_dprtype(ofile)

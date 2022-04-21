@@ -133,7 +133,9 @@ def load_fits_df(pathlist: List[str]) -> DataFrame:
     return df
 
 
-def make_full_index(real_index: DataFrame, missing_index: DataFrame) -> DataFrame:
+def make_full_index(
+    real_index: DataFrame, missing_index: DataFrame
+) -> DataFrame:
 
     real_index = real_index.copy()
     missing_index = missing_index.copy()
@@ -175,7 +177,9 @@ def get_cdb_df(
     # TODO: Smarter mechanism for cached file. Currently on reading if exist or
     # generating whole thing otherwise
     if cache_path is not None and os.path.isfile(cache_path) and not overwrite:
-        cdb_mjd_df_cache = pd.read_csv(cache_path, index_col=[0, 1], header=[0, 1])
+        cdb_mjd_df_cache = pd.read_csv(
+            cache_path, index_col=[0, 1], header=[0, 1]
+        )
     else:
         cdb_mjd_df_cache = None
 
@@ -192,7 +196,9 @@ def get_cdb_df(
         headers_df = pd.DataFrame(headers.tolist())
 
         # We only want the CDB* keys. Other useful keys are already in index
-        keys = [params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")]
+        keys = [
+            params[kw][0] for kw in list(params) if kw.startswith("KW_CDB")
+        ]
 
         # Only apply if CDB* keys are in the headers
         if all([item in headers_df.columns for item in keys]):
@@ -200,19 +206,27 @@ def get_cdb_df(
         else:
             return index_df
         unique_cdb_files = get_unique_vals(cdb_df)
-        sep = "" if params["DRS_CALIB_DB"].endswith(os.path.sep) else os.path.sep
+        sep = (
+            "" if params["DRS_CALIB_DB"].endswith(os.path.sep) else os.path.sep
+        )
         shapel_mask = unique_cdb_files.str.contains("shapel_orderps")
         shapel_files = unique_cdb_files[shapel_mask]
-        shapel_paths = params["DRS_DATA_REDUC"] + sep + "*" + sep + shapel_files
+        shapel_paths = (
+            params["DRS_DATA_REDUC"] + sep + "*" + sep + shapel_files
+        )
         shapel_paths = shapel_paths.apply(glob.glob).str[0]
-        unique_cdb_files_fullpath = params["DRS_CALIB_DB"] + sep + unique_cdb_files
+        unique_cdb_files_fullpath = (
+            params["DRS_CALIB_DB"] + sep + unique_cdb_files
+        )
         unique_cdb_files_fullpath[shapel_mask] = shapel_paths
         # TODO: Use instrument-independent name for current file
         mjds = unique_cdb_files_fullpath.apply(get_hkey, args=("MJDMID",))
         mjds.index = unique_cdb_files
         mjd_df = cdb_df.replace(mjds.to_dict())
         # mjd_df = mjd_df.replace(to_replace="None", value=np.nan)
-        nan_mask = ~mjd_df.applymap(lambda x: isinstance(x, (float, int, complex)))
+        nan_mask = ~mjd_df.applymap(
+            lambda x: isinstance(x, (float, int, complex))
+        )
         mjd_df[nan_mask] = np.nan
         # TODO: Not sure why this was here
         # mjd_df.apply()
@@ -265,7 +279,9 @@ def get_unique_vals(df, keepna=False):
         colvals = df[col]
         if not keepna:
             colmask = (
-                colvals.isnull() | (colvals == "None") | colvals.str.startswith("No ")
+                colvals.isnull()
+                | (colvals == "None")
+                | colvals.str.startswith("No ")
             )
             colvals = colvals[~colmask]
         un_vals = pd.unique(colvals)
@@ -423,8 +439,12 @@ def get_names_no_index(params: ParamDict) -> List[str]:
     # )
 
     assets_path = params["DRS_DATA_ASSETS"]
-    calib_reset_path = os.path.join(assets_path, params["DRS_RESET_CALIBDB_PATH"])
-    tellu_reset_path = os.path.join(assets_path, params["DRS_RESET_TELLUDB_PATH"])
+    calib_reset_path = os.path.join(
+        assets_path, params["DRS_RESET_CALIBDB_PATH"]
+    )
+    tellu_reset_path = os.path.join(
+        assets_path, params["DRS_RESET_TELLUDB_PATH"]
+    )
     runs_reset_path = os.path.join(assets_path, params["DRS_RESET_RUN_PATH"])
 
     # We know that log and index are also not data
@@ -511,11 +531,15 @@ def missing_index_headers(
     # If not output files are given, we load them from disk,
     # using apero to discard some filenames
     params = constants.load(instrument)
-    exclude_fname = get_names_no_index(params)  # Exclude log.fits and stuff like that
+    exclude_fname = get_names_no_index(
+        params
+    )  # Exclude log.fits and stuff like that
 
     if output_files is None:
         parent_dir = get_nth_parent(ind_df.ABSPATH.iloc[0], order=2)
-        output_files = get_output_files(parent_dir, exclude_fname=exclude_fname)
+        output_files = get_output_files(
+            parent_dir, exclude_fname=exclude_fname
+        )
     else:
         exclude_mask = output_files.apply(os.path.basename).isin(exclude_fname)
         output_files = output_files[~exclude_mask]
@@ -538,7 +562,9 @@ def missing_index_headers(
         and not force
     ):
         missing_ind_df_cache = pd.read_csv(cache_path, index_col=0)
-        not_found_series_cache = pd.read_csv(cache_not_found, index_col=0, squeeze=True)
+        not_found_series_cache = pd.read_csv(
+            cache_not_found, index_col=0, squeeze=True
+        )
     else:
         missing_ind_df_cache = None
 
@@ -572,7 +598,9 @@ def missing_index_headers(
         # Of the expected original dates, get the ones we can find
         og_ends = og_dates + os.path.sep + unique_base
         not_in_index_ends = (
-            out_not_in_index.str.split(os.path.sep).str[-2:].str.join(os.path.sep)
+            out_not_in_index.str.split(os.path.sep)
+            .str[-2:]
+            .str.join(os.path.sep)
         )
         found_mask = og_ends.isin(not_in_index_ends)
         prefix_path = get_nth_parent(unique_full.iloc[0], order=2)
@@ -593,7 +621,9 @@ def missing_index_headers(
         keys = [params[col][0] for col in index_cols]
 
         # Some keys might be missing because they are dropped for combined files
-        keys_not_in_head = [k for k in keys if k not in missing_headers_df.columns]
+        keys_not_in_head = [
+            k for k in keys if k not in missing_headers_df.columns
+        ]
         missing_headers_df[keys_not_in_head] = None
 
         # Rename columns
@@ -609,7 +639,9 @@ def missing_index_headers(
         missing_ind_df["OBS_DIR"] = og_found.apply(os.path.dirname).apply(
             os.path.basename
         )
-        missing_ind_df["LAST_MODIFIED"] = og_found.apply(os.path.getmtime).astype(
+        missing_ind_df["LAST_MODIFIED"] = og_found.apply(
+            os.path.getmtime
+        ).astype(
             str
         )  # APERO stores these times as string, so we convert them here
         missing_ind_df["ABSPATH"] = og_found
@@ -632,7 +664,9 @@ def missing_index_headers(
             try:
                 # TODO: Get header keys from this dict as well
                 # TODO: Make this loop files around
-                tbl = Table.read(ind_df.iloc[34].ABSPATH, hdu=("PARAM_TABLE", 1))
+                tbl = Table.read(
+                    ind_df.iloc[34].ABSPATH, hdu=("PARAM_TABLE", 1)
+                )
                 kdict = dict(zip(tbl["NAME"], tbl["VALUE"]))
                 missing_ind_df["BLOCK_KIND"] = kdict["rlog.BLOCK_KIND"]
                 missing_ind_df["RECIPE"] = kdict["rlog.RECIPE"]

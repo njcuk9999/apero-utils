@@ -7,8 +7,15 @@ import pandas as pd
 from bokeh.io.output import output_file
 from bokeh.io.saving import save
 from bokeh.layouts import layout
-from bokeh.models import (Button, ColumnDataSource, CustomJS, DataTable,
-                          HoverTool, LinearAxis, TableColumn)
+from bokeh.models import (
+    Button,
+    ColumnDataSource,
+    CustomJS,
+    DataTable,
+    HoverTool,
+    LinearAxis,
+    TableColumn,
+)
 from bokeh.models.widgets import Div, Select
 from bokeh.plotting import figure
 

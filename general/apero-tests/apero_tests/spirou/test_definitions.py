@@ -104,12 +104,10 @@ full_not_found = pd.concat([pp_not_found, red_not_found])
 # Get calib DB files used for files in index, and time difference
 # TODO: Check if still bottleneck and see if can bypass
 interm1 = time.time()
-print("Starting timed step...")
 red_cdb_used_df = ut.get_cdb_df(
     red_index, params, cache_dir=CACHEDIR
 )  # CDB keys and time difference with output files
 interm2 = time.time()
-print("Timed step done in ", interm2-interm1)
 # =============================================================================
 # Define tests
 # =============================================================================
@@ -403,6 +401,3 @@ cal_ccf = DrsTest(
 tests.append(cal_ccf)
 
 end = time.time()
-
-print("Time it took to finish creating tests:", end-start)
-print("Time it took to run timed step:", interm2-interm1)

@@ -694,7 +694,9 @@ class CountCalibEntries(SubTest):
                     master_calib_count = zero_count.copy()
                 else:
                     master_calib_df = self.calib_df[master_mask]
-                    master_calib_count = master_calib_df.groupby("KEYNAME").size()
+                    master_calib_count = master_calib_df.groupby(
+                        "KEYNAME"
+                    ).size()
                     msg = "Additional entries with master == 1"
                     self.comments = f"{msg}: {master_calib_count}"
 
