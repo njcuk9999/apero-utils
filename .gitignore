@@ -131,3 +131,4 @@ dmypy.json
 # Other
 .sync/
 .idea/
+auth.y*ml
