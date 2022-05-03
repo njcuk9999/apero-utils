@@ -2,3 +2,6 @@ astroquery
 keyring
 lxml
 requests
+astropy
+requests
+pyvo
