@@ -319,6 +319,21 @@ def global_index_check(full_index: DataFrame, full_log: DataFrame):
     return full_index[~index_problem_mask], full_index[index_problem_mask]
 
 
+def safe_concat(df_list: List[DataFrame]):
+    """
+    Concatenate with pandas, but skipping empty elements
+
+    :param df_list: List of dataframes
+    :type df_list: List[DataFrame]
+    """
+    df_list_no_empty = [df for df in df_list if not df.empty]
+
+    if len(df_list_no_empty) == 0:
+        return pd.DataFrame([])
+
+    return pd.concat(df_list_no_empty)
+
+
 def load_log_df(
     # TODO: Remove
     # output_parent: str,

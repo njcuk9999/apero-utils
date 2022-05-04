@@ -97,9 +97,9 @@ red_index, red_index_no_pid = ut.global_index_check(red_full_index, red_log)
 debug_mask = red_index.FILENAME.str.startswith("DEBUG")
 red_index = red_index[~debug_mask]  # DEBUGs are not used in tests
 
-full_index_no_pid = pd.concat([pp_index_no_pid, red_index_no_pid])
-full_missing_index = pd.concat([pp_missing_index, red_missing_index])
-full_not_found = pd.concat([pp_not_found, red_not_found])
+full_index_no_pid = ut.safe_concat([pp_index_no_pid, red_index_no_pid])
+full_missing_index = ut.safe_concat([pp_missing_index, red_missing_index])
+full_not_found = ut.safe_concat([pp_not_found, red_not_found])
 
 # Get calib DB files used for files in index, and time difference
 # TODO: Check if still bottleneck and see if can bypass
