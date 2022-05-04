@@ -12,7 +12,7 @@ with open(AUTH_FILE, 'r') as authfile:
 user = auth_info["user"]
 password = auth_info["password"]
 password = auth_info["password"]
-path_to_files = "./"
+path_to_files = "nirps-astroquery"
 
 eso = Eso()
 eso.login(user, password)  # Ici il faut entrer le login / pass pour l’archive
@@ -28,5 +28,6 @@ table = eso.query_main(
 )  # Cette ligne fait une query sur l’archive pour lister ce qui existe
 eso.retrieve_data(
     table["Dataset ID"],
+    destination=path_to_files,
     unzip=False,
 )  # Cette ligne lance le download et stocke les fichiers dans le répertoire mentionné plus haut.
