@@ -407,7 +407,7 @@ class DrsTest:
         """
 
         if not force and self.calib_df is not None:
-            return self.ind_df
+            return self.calib_df
 
         if all_calib_df is None:
             all_calib_df = ut.load_db_entries("CALIB")
