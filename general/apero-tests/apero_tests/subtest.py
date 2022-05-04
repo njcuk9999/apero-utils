@@ -104,6 +104,7 @@ class CountLogTest(SubTest):
         log_df: DataFrame,
         test_html_path: str,
         master_flag: str = "--master",
+        master: bool = False,
         group_kwds: Optional[Sequence[str]] = None,
     ):
         """
@@ -127,6 +128,7 @@ class CountLogTest(SubTest):
 
         self.log_df = log_df
         self.master_flag = master_flag
+        self.ismaster = master
         self.test_html_path = test_html_path
         if group_kwds is not None:
             self.group_kwds = group_kwds
@@ -139,7 +141,11 @@ class CountLogTest(SubTest):
         master_df = self.log_df[master_mask]
         master_count = master_df.groupby(self.group_kwds).count().RECIPE_KIND
         tot_count = self.log_df.groupby(self.group_kwds).count().RECIPE_KIND
-        log_count = tot_count.sub(master_count, fill_value=0).astype(int)
+        if self.ismaster:
+            log_count = tot_count.copy()
+        else:
+            log_count = tot_count.sub(master_count, fill_value=0).astype(int)
+
 
         dup_subset = ["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVELCRIT", "PID"]
         ulog_df = self.log_df.drop_duplicates(subset=dup_subset).copy()

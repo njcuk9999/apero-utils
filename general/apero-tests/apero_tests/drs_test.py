@@ -803,7 +803,7 @@ class DrsTest:
             subtest_list.append(st.CountRawTest(self.input_path))
 
         # Count log entries
-        subtest_list.append(st.CountLogTest(self.log_df, self.html_path))
+        subtest_list.append(st.CountLogTest(self.log_df, self.html_path, master=self.ismaster))
 
         # Count all outputs
         subtest_list.append(
