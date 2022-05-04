@@ -136,7 +136,7 @@ class CheckMissingAdded(SubTest):
                 data_dict,
                 title="Files that were on disk and not in index (added to index df)",
             )
-            self.color = "Yello"
+            self.color = "Yellow"
         else:
             self.color = "Lime"
 
