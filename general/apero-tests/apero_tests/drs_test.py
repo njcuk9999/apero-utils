@@ -179,10 +179,8 @@ class DrsTest:
                 subset=["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVELCRIT", "PID"]
             ).copy()
             self.ind_df = self.load_ind_df(all_ind_df=all_index_df)
-            self.model_ind_df = self.generate_model_index()
 
-            if "leak" in self.name:
-                __import__("ipdb").set_trace()
+            self.model_ind_df = self.generate_model_index()
 
             # Add QC informatio to index (useful for calibdb comparisons)
             pid_qc_mapping = self.log_df.groupby("PID").PASSED_ALL_QC.all()
@@ -661,6 +659,26 @@ class DrsTest:
             else:
                 return None
 
+        # Most recipes have multiple levels that correspond to a specific loop
+        # LEAKM has two loops in the same levels, and we care only about fiber for the
+        # leakm files
+        if "leak_master" in self.recipe_name:
+            dflist = []
+            for _, pdf in log_df.groupby(["PID", "LEVEL"], sort=False):
+                first_crit = pdf["LEVELCRIT"].str.split("=").str[0]
+                # Want same number of each
+                if first_crit.nunique() == 1:
+                    dflist.append(pdf)
+                else:
+                    # NOTE: Alternative way to get last loop in level, kept in case we need
+                    # it in the future
+                    # used_crit = pdf.groupby(first_crit)["SUBLEVEL"].min().idxmax()
+                    used_crit = "fiber"
+
+                    dflist.append(pdf[first_crit == used_crit])
+
+            log_df = pd.concat(dflist)
+
         rows = []
         row_inds = []
         for i, (log_night, log_row) in enumerate(log_df.iterrows()):
@@ -669,6 +687,7 @@ class DrsTest:
 
             # For recipe under test, will need to check calls to other recipes
             # NOTE: Important assumption that not 2 or more chained calls
+            # NOTE: Shoud we use RECIPE_KIND here?
             # The assumption should be OK (for now) according to Neil
             if log_row.RECIPE == self.recipe_name:
                 other_dict = {
