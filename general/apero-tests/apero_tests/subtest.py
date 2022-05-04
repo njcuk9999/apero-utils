@@ -146,7 +146,6 @@ class CountLogTest(SubTest):
         else:
             log_count = tot_count.sub(master_count, fill_value=0).astype(int)
 
-
         dup_subset = ["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVELCRIT", "PID"]
         ulog_df = self.log_df.drop_duplicates(subset=dup_subset).copy()
 
