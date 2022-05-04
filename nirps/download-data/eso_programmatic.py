@@ -102,10 +102,9 @@ def downloadURL(file_url, dirname=".", filename=None, session=None):
     :rtype: Tuple[int, str]
     """
 
-    if dirname is not None:
-        if not os.access(dirname, os.W_OK):
-            print("ERROR: Provided directory (%s) is not writable" % (dirname))
-            sys.exit(1)
+    dirname = dirname or "."
+    if not os.access(dirname, os.W_OK):
+        raise PermissionError(f"Directory {dirname} is not writable")
 
     if session is not None:
         response = session.get(file_url, stream=True)
@@ -113,23 +112,11 @@ def downloadURL(file_url, dirname=".", filename=None, session=None):
         # no session -> no authentication
         response = requests.get(file_url, stream=True)
 
-    # If not provided, define the filename from the response header
-    if filename is None:
-        contentdisposition = response.headers.get("Content-Disposition")
-        if contentdisposition is not None:
-            value, params = cgi.parse_header(contentdisposition)
-            filename = params["filename"]
-
-        # if the response header does not provide a name, derive a name from the URL
-        if filename is None:
-            # last chance: get anything after the last '/'
-            filename = file_url[file_url.rindex("/") + 1 :]
+    filename = filename or get_default_filename(file_url, response=response)
+    filename = filename.replace(":", "_")
 
     # define the file path where the file is going to be stored
-    if dirname is None:
-        filepath = filename
-    else:
-        filepath = os.path.join(dirname, filename)
+    filepath = os.path.join(dirname, filename)
 
     if response.status_code == 200:
         with open(filepath, "wb") as f:
@@ -137,6 +124,26 @@ def downloadURL(file_url, dirname=".", filename=None, session=None):
                 f.write(chunk)
 
     return (response.status_code, filepath)
+
+
+def get_default_filename(file_url, response=None):
+    # If not provided, define the filename from the response header
+    if response is not None:
+        # Content disposstion gives attachment; filename={filename} so can extract
+        contentdisposition = response.headers.get("Content-Disposition")
+        if contentdisposition is not None:
+            try:
+                value, params = cgi.parse_header(contentdisposition)
+                filename = params["filename"]
+            except KeyError:
+                pass
+
+    # if the response header does not provide a name, derive a name from the URL
+    if filename is None:
+        # last chance: get anything after the last '/'
+        filename = file_url.rsplit("/", maxsplit=1)[-1]
+
+    return filename
 
 
 # Let's define some methods to nicely print reference files information from the calselector service:
