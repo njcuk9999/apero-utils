@@ -150,6 +150,9 @@ class DrsTest:
             self.input_path = self.dirpaths[self.recipe.in_block_str]
             self.output_path = self.dirpaths[self.recipe.out_block_str]
             self.calibdb_path = self.params["DRS_CALIB_DB"]
+            self.calibdb_seed_path = os.path.join(
+                self.params["DRS_DATA_ASSETS"], "databases", "reset.calib.csv"
+            )
 
             # Path to HTML report
             self.html_path = Path(
@@ -424,6 +427,10 @@ class DrsTest:
         calib_df = all_calib_df[
             all_calib_df["KEYNAME"].isin(self.calibdb_keys)
         ].copy()
+
+        # Don't keep seed values
+        calib_seed = pd.read_csv(self.calibdb_seed_path, skipinitialspace=True)
+        calib_df = calib_df[~calib_df.UHASH.isin(calib_seed.UHASH)]
 
         return calib_df
 
