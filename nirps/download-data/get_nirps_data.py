@@ -24,7 +24,7 @@ with open(AUTH_FILE, "r") as authfile:
     auth_info = yaml.safe_load(authfile)
 
 # %%
-token = esop.getToken(auth_info["user"], auth_info["password"])
+token = esop.get_token(auth_info["user"], auth_info["password"])
 
 session = esop.createSession(token)
 
