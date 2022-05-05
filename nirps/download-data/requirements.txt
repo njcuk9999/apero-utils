@@ -5,3 +5,4 @@ requests
 astropy
 requests
 pyvo
+tqdm
