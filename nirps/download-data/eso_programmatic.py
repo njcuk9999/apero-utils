@@ -20,7 +20,6 @@ import cgi
 import json
 import os
 import re
-import sys
 
 import requests
 
@@ -62,7 +61,7 @@ def getToken(username, password):
         token = token_response["id_token"] + "=="
     except NameError as e:
         print(e)
-    except:
+    except Exception:
         print(
             "*** AUTHENTICATION ERROR: Invalid credentials provided for username %s"
             % (username)
@@ -84,7 +83,6 @@ def createSession(token=None):
     return session
 
 
-# Returns: http status, filepath on disk (if successul)
 def downloadURL(file_url, dirname=".", filename=None, session=None):
     """
     Method to download a file, either anonymously (no session or session not "tokenized"),
