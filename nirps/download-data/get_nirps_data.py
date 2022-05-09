@@ -30,6 +30,7 @@ def get_nirps_data(
     unzip: bool = True,
     start: Optional[str] = None,
     test_run: bool = False,
+    per_night: bool = True,
     overwrite: bool = False,
     continue_tmp: bool = False,
     cache_tmp: bool = False,
@@ -82,7 +83,6 @@ def get_nirps_data(
     if not os.path.isdir(tmp_dir):
         os.makedirs(tmp_dir)
 
-    # TODO: Tweak nights for UTC time
     files_tbl["local_night"] = eut.get_night_from_date(files_tbl["date_obs"])
 
     downloaded_files = dict()
@@ -91,7 +91,10 @@ def get_nirps_data(
         id_for_path = re.sub("\\.|\\:", "_", row["dp_id"])
         local_path = os.path.join(tmp_dir, id_for_path + ".fits.Z")
         if destination is not None:
-            dest_dir = os.path.join(destination, row["local_night"])
+            if per_night:
+                dest_dir = os.path.join(destination, row["local_night"])
+            else:
+                dest_dir = destination
             final_destination = os.path.join(dest_dir, id_for_path + ".fits")
             if not unzip:
                 final_destination = final_destination + ".Z"
@@ -160,6 +163,7 @@ if __name__ == "__main__":
         tmp_dir = config_info["raw_tmp"]
         destination = config_info["raw_dir"]
         calib_mode = "raw2raw"
+        per_night = True
         unzip = True
 
     if args.category == "reads":
@@ -167,6 +171,7 @@ if __name__ == "__main__":
         tmp_dir = config_info["reads_tmp"]
         destination = config_info["reads_dir"]
         calib_mode = None
+        per_night = False
         unzip = False
 
     nirps_files = get_nirps_data(
@@ -176,6 +181,7 @@ if __name__ == "__main__":
         calib_mode=calib_mode,
         tmp_dir=tmp_dir,
         destination=destination,
+        per_night=per_night,
         test_run=args.test_run,
         cache_tmp=True,
         continue_tmp=True,
