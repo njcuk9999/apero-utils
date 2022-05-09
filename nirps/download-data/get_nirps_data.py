@@ -1,134 +1,176 @@
-# %%
-import eso_programmatic as esop
-import pyvo as vo
-import tqdm
+import argparse
+import os
+import re
+from typing import Optional
+
+import eso_utils as eut
 import yaml
+from astropy.table import unique, vstack
 
 # Constants
-ESO_TAP_OBS = "http://archive.eso.org/tap_obs"
-TOKEN_AUTHENTICATION_URL = "https://www.eso.org/sso/oidc/token"
-AUTH_FILE = "auth.yaml"
-RAMPS_DIR = "test-harps"
-# RAMPS_DIR = "test-nirps"
-READS_DIR = "test-reads"
-# TODO: Should this be both raw2raw and raw2master ?
-CALIB_TYPE = "raw2raw"
-INSTRUMENT = "NIRPS"  # Instrument to get data from
-DATESTR = "2022"  # Get data after that date (inclusively)
+# RAMPS_DIR = "raw-ramps"
+# TMP_DIR = "raw-dump"
+# READS_DIR = "test-reads"
+# CALIB_TYPE = "raw2raw"
+# INSTRUMENT = "NIRPS"  # Instrument to get data from
+# DATESTR = "2022"  # Get data after that date (inclusively)
 # less HARPS data and more varied files. Use for testing
 # INSTRUMENT = "HARPS"  # Instrument to get data from
 # DATESTR = "2021"  # Get data after that date (inclusively)
 
-# %%
-with open(AUTH_FILE, "r") as authfile:
-    auth_info = yaml.safe_load(authfile)
 
-# %%
-token = esop.get_token(auth_info["user"], auth_info["password"])
+def get_nirps_data(
+    program_id,
+    instrument: str = "NIRPS",
+    data_category: str = "ramps",
+    calib_mode: Optional[str] = None,
+    tmp_dir: str = "tmp",
+    auth_file: str = "auth.yaml",
+    destination: Optional[str] = None,
+    unzip: bool = True,
+    start: Optional[str] = None,
+    test_run: bool = False,
+    overwrite: bool = False,
+    continue_tmp: bool = False,
+    cache_tmp: bool = False,
+):
 
-session = esop.createSession(token)
+    session = eut.EsoSession(auth_file)
 
-tap = vo.dal.TAPService(ESO_TAP_OBS, session=session)
+    if data_category == "ramps":
+        dp_cat = "~TECHNICAL"
+    elif data_category == "reads":
+        dp_cat = "TECHNICAL"
+    else:
+        raise ValueError("Unknown data category.")
 
-
-# %%
-list_tables_query = """SELECT table_name, description
-FROM TAP_SCHEMA.tables
-ORDER BY table_name"""
-
-raw_cols_query = """SELECT column_name, datatype, arraysize, xtype, unit, ucd, description
-FROM TAP_SCHEMA.columns
-WHERE table_name='dbo.raw'
-"""
-
-red_cols_query = """SELECT column_name, datatype, arraysize, xtype, unit, ucd, description
-FROM TAP_SCHEMA.columns
-WHERE table_name='ivoa.ObsCore'
-"""
-
-# TODO: Choose columns
-raw_query = f"""SELECT * FROM dbo.raw
-WHERE prog_id='{auth_info['program_id']}'
-AND date_obs > '{DATESTR}'
-AND instrument='{INSTRUMENT}'"""
-
-# TODO: Choose columns
-red_query = f"""SELECT * FROM ivoa.ObsCore
-WHERE proposal_id='{auth_info['program_id']}'
-AND obs_release_date > '{DATESTR}'
-AND instrument_name='{INSTRUMENT}'"""
-
-# TODO: Implement async query option
-files_tbl = tap.search(query=raw_query).to_table()
-
-# TODO: Download raw files
-# TODO: Handle ramp and reads separately
-reads_mask = files_tbl["dp_cat"] == "TECHNICAL"
-reads_tbl = files_tbl[reads_mask]
-ramps_tbl = files_tbl[~reads_mask]
-
-# %%
-# TODO: Handle dir creation
-# TODO: Confirm file names
-# TODO: Move raw files (sci and calibs) to nightly directories
-# TODO: Resolve duplicates
-# TODO: Should this loop be only on science files, or CALIB as well?
-# NOTE: (Bold in eso calselector ref linked below) Under certain circumstances, including a mixture of science and non-science (e.g. acquisition images) files in the same request results in CalSelector behaving erratically. Users are strongly encouraged to include only science files in their query (see below for the details on how to proceed) and let CalSelector associate the other relevant files.
-# WARN: Remove next line after debug
-ramps_tbl = ramps_tbl[:3]
-for ramp in tqdm.tqdm(ramps_tbl):
-    access_url = ramp["access_url"]
-    status, filename = esop.downloadURL(access_url, session=session, dirname=RAMPS_DIR)
-
-# %%
-# TODO: Do we need to store file assoications somewhere (for APERO, for e.g.)
-# TODO: Do we care about complete/certified file and cascade info?
-# TODO: Do we want this loop or should all calib files be found with the "main" loop above
-# For example, do we overwrite a file if was certified and now is? Do we wait for it to be?
-# Do we just flag if downloaded and still not certified, etc.
-# Ref: http://archive.eso.org/cms/application_support/calselectorInfo.html
-for ramp in ramps_tbl:
-
-    datalink_url = ramp["datalink_url"]
-    datalink = vo.dal.adhoc.DatalinkResults.from_result_url(datalink_url, session=session)
-
-    esop.printTableTransposedByTheRecord(datalink.to_table())
-
-    semantics = f"http://archive.eso.org/rdf/datalink/eso#calSelector_{CALIB_TYPE}"
-
-    calib_list_url = next(datalink.bysemantics(semantics)).access_url
-
-    # The calselector URL points to a list of files. Get that list of files
-    # Ref: http://archive.eso.org/programmatic/rdf/datalink/eso/
-    associated_calib_files = vo.dal.adhoc.DatalinkResults.from_result_url(
-        calib_list_url, session=session
+    files_tbl = eut.get_eso_tbl(
+        program_id=program_id,
+        instrument=instrument,
+        start=start,
+        dp_cat=dp_cat,
+        session=session,
+        sun=False,
     )
 
-    # TODO: Do we do this or we also want sibling_raw?
-    # create and use a mask to get only the #calibration entries,
-    # given that other entries, like #this or ...#sibiling_raw, could be present:
-    calibrator_mask = associated_calib_files['semantics'] == '#calibration'
-    calib_urls = associated_calib_files.to_table()[calibrator_mask]['access_url', 'eso_category']
+    if calib_mode is not None:
 
-    esop.printTableTransposedByTheRecord(associated_calib_files.to_table())
+        if calib_mode not in ["raw2raw", "raw2master"]:
+            raise ValueError("calib_mode must be raw2raw or raw2master")
 
-    # TODO: Display warnings here using caslector info output
-    for url, _category in calib_urls:
-        status, filename = esop.downloadURL(url, session=session, dirname=RAMPS_DIR)
+        # NOTE: This often crashes, probably because many IDs in one query.
+        # TODO: Would be good to have an alternative that is not iteration w/ 2 requests
+        try:
+            calibs_tbl = eut.get_calib_table(files_tbl, calib_mode, session=session)
+        except ValueError:
+            print("Calib table query failed... Trying a second time")
 
-# %%
-# TODO: Do these have associated calibs?
-# WARN: Remove next line after debug
-reads_tbl = reads_tbl[:2]
-for read in reads_tbl:
-    access_url = read["access_url"]
-    status, filename = esop.downloadURL(access_url, session=session, dirname=READS_DIR)
+            try:
+                calibs_tbl = eut.get_calib_table(files_tbl, calib_mode, session=session)
+            except ValueError:
+                print("Calib table query failed twice. Trying the iterative way.")
 
-# %%
-# TODO: Download associated calibs
-# TODO: Which type of calibs?
+                # This fallback function gets calibs one-by-one.
+                # It is slow because there are 2 HTTP requests per file
+                calibs_tbl = eut.get_calibs_iter(files_tbl, calib_mode, session=session)
 
-# TODO: Handle uncompressing files... Probably best to download in one place, uncompress, and then dispatch? Or uncompress at download time and move the file then
+        calibs_tbl = eut.get_calibs_iter(files_tbl, calib_mode, session=session)
 
-# TODO: Download reduced data
-# TODO: Which types of calib? How do we handle last modified date vs original date (re-reductions, etc.)
+        if len(calibs_tbl) > 0:
+            files_tbl = unique(
+                vstack([files_tbl, calibs_tbl]), keys=["access_url", "dp_id", "dp_cat"]
+            )
+
+    if not os.path.isdir(tmp_dir):
+        os.makedirs(tmp_dir)
+
+    # TODO: Tweak nights for UTC time
+    files_tbl["local_night"] = eut.get_night_from_date(files_tbl["date_obs"])
+
+    downloaded_files = dict()
+    for row in files_tbl:
+        access_url = row["access_url"]
+        id_for_path = re.sub("\\.|\\:", "_", row["dp_id"])
+        local_path = os.path.join(tmp_dir, id_for_path + ".fits.Z")
+        if destination is not None:
+            dest_dir = os.path.join(destination, row["local_night"])
+            final_destination = os.path.join(dest_dir, id_for_path + ".fits")
+            if not unzip:
+                final_destination = final_destination + ".Z"
+
+        if (
+            destination is None
+            or (destination is not None and not os.path.isfile(final_destination))
+            or overwrite
+        ):
+            if destination is not None:
+                downloaded_files[local_path] = final_destination
+            if not test_run:
+                eut.download_file(
+                    access_url,
+                    local_path,
+                    session=session,
+                    continuation=continue_tmp,
+                    cache=cache_tmp,
+                )
+            else:
+                if destination is not None:
+                    print(local_path, "->", final_destination)
+                else:
+                    print(local_path)
+        elif destination is not None:
+            print(
+                f"File {final_destination} exists and overwrite=False. Skipping download."
+            )
+
+    if not test_run and destination is not None:
+        eut.dispatch_files(downloaded_files, unzip=unzip)
+
+    return files_tbl
+
+
+if __name__ == "__main__":
+    config_file = "config.yaml"
+    with open(config_file, "r") as authfile:
+        config_info = yaml.safe_load(authfile)
+
+    parser = argparse.ArgumentParser(description="Get NIRPS data from ESO Archive.")
+    parser.add_argument(
+        "category",
+        type=str,
+        help="Type of data to download",
+        choices=["ramps", "reads"],
+    )
+    parser.add_argument(
+        "--test",
+        dest="test_run",
+        action="store_true",
+        help="Do not download data on disk, just get file info.",
+    )
+    args = parser.parse_args()
+
+    if args.category == "ramps":
+        data_category = "ramps"
+        tmp_dir = config_info["raw_tmp"]
+        destination = config_info["raw_dir"]
+        calib_mode = "raw2raw"
+
+    if args.category == "reads":
+        data_category = "reads"
+        tmp_dir = config_info["reads_tmp"]
+        destination = config_info["reads_dir"]
+        calib_mode = None
+
+    nirps_files = get_nirps_data(
+        config_info["program_id"],
+        instrument="NIRPS",
+        data_category=data_category,
+        calib_mode=calib_mode,
+        tmp_dir=tmp_dir,
+        destination=destination,
+        test_run=args.test_run,
+        cache_tmp=True,
+        continue_tmp=True,
+        overwrite=False,
+        unzip=True,
+    )

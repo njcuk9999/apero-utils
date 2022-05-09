@@ -1,0 +1,7 @@
+program_id: myprogram
+
+raw_tmp: /path/to/raw-tmp
+raw_dir: /path/to/raw-data
+
+reads_tmp: /path/to/reads-tmp
+reads_dir: /path/to/reads-data
