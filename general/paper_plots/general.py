@@ -55,9 +55,10 @@ BANDS = dict()
 # BANDS['J'] = [1080.647, 1406.797]           # 2MASS J
 # BANDS['H'] = [1478.738, 1823.102]           # 2MSSS H
 # BANDS['K'] = [1954.369, 2344.240]           # 2MASS Ks
-BANDS['J'] = [11481.78/10, 13494.41/10]     # MKO
-BANDS['H'] = [14509.80/10, 18091.05/10]     # MKO
-BANDS['K'] = [19859.30/10, 24015.14/10]     # MKO
+BANDS['$Y$'] = [9386.00/10, 11134.00/10]
+BANDS['$J$'] = [11535.86/10, 13544.22/10]     # MKO
+BANDS['$H$'] = [14628.97/10, 18085.44/10]     # MKO
+BANDS['$K_{s}$'] = [19577.92/10, 23431.05/10]     # MKO
 
 
 
@@ -89,6 +90,8 @@ def plot_size_grid(params):
                              '{0}_pp_e2dsff_AB.fits'.format(hashcode))
     s1d_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
                             '{0}_pp_s1d_v_AB.fits'.format(hashcode))
+    ts1d_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            '{0}_pp_s1d_w_tcorr_AB.fits'.format(hashcode))
     # get
     print('Loading raw image')
     raw_image = fits.getdata(raw_file)
@@ -99,7 +102,8 @@ def plot_size_grid(params):
     e2ds_hdr = fits.getheader(e2ds_file)
     print('Loading S1D table')
     s1d_table = Table.read(s1d_file)
-
+    print('Loading tcorr S1D table')
+    ts1d_table = Table.read(ts1d_file)
     print('Getting wave sol')
     wavemap = fits2wave(e2ds_image, e2ds_hdr)
 
@@ -114,7 +118,7 @@ def plot_size_grid(params):
     image3 = drs_image.resize(params, image2, **sargs)
 
     print('Plotting size_grid plot')
-    fig = plt.figure(figsize=(12, 12))
+    fig = plt.figure(figsize=(12, 14))
     size = (5, 4)
     frame1 = plt.subplot2grid(size, (0, 0), colspan=2, rowspan=2)
     frame2 = plt.subplot2grid(size, (0, 2), colspan=2, rowspan=2)
@@ -178,6 +182,8 @@ def plot_size_grid(params):
     # plot spectrum
     frame4.plot(s1d_table['wavelength'], s1d_table['flux'], lw=0.5,
                 color='k', zorder=5)
+    frame4.plot(ts1d_table['wavelength'], ts1d_table['flux'], lw=0.5,
+                color='r', zorder=10)
     # plot bands
     for bandname in BANDS:
         # get band name
@@ -190,13 +196,12 @@ def plot_size_grid(params):
         txt.set_path_effects([PathEffects.withStroke(linewidth=1,
                                                      foreground='k')])
     # plot cosmetics
-    frame4.tick_params(axis="x", direction="in", pad=-15)
     frame4.axes.yaxis.set_ticks([])
-    frame4.set(ylim=[-0.2*maxflux, 1.05*maxflux], xlabel='Wavelength [nm]')
+    frame4.set(xlim=[950, 2500], ylim=[0, 1.05*maxflux], xlabel='Wavelength [nm]')
     frame4.set_yticklabels([])
     # -------------------------------------------------------------------------
     plt.subplots_adjust(wspace=0.05, hspace=0.05,
-                        left=0.01, right=0.99, top=0.975, bottom=0.025)
+                        left=0.01, right=0.99, top=0.975, bottom=0.05)
     # save file
     outfile = os.path.join(PLOT_PATH, 'size_grid.pdf')
     print('Saving to file: ' + outfile)
