@@ -140,6 +140,13 @@ if __name__ == "__main__":
         choices=["ramps", "reads"],
     )
     parser.add_argument(
+        "-s",
+        "--start",
+        type=str,
+        help="Start date",
+        default="2022-05-05",
+    )
+    parser.add_argument(
         "--test",
         dest="test_run",
         action="store_true",
@@ -182,6 +189,7 @@ if __name__ == "__main__":
         tmp_dir=tmp_dir,
         destination=destination,
         per_night=per_night,
+        start=args.start,
         test_run=args.test_run,
         cache_tmp=True,
         continue_tmp=True,
