@@ -74,8 +74,6 @@ def get_nirps_data(
                 # It is slow because there are 2 HTTP requests per file
                 calibs_tbl = eut.get_calibs_iter(files_tbl, calib_mode, session=session)
 
-        calibs_tbl = eut.get_calibs_iter(files_tbl, calib_mode, session=session)
-
         if len(calibs_tbl) > 0:
             files_tbl = unique(
                 vstack([files_tbl, calibs_tbl]), keys=["access_url", "dp_id", "dp_cat"]
