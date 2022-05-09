@@ -160,12 +160,14 @@ if __name__ == "__main__":
         tmp_dir = config_info["raw_tmp"]
         destination = config_info["raw_dir"]
         calib_mode = "raw2raw"
+        unzip = True
 
     if args.category == "reads":
         data_category = "reads"
         tmp_dir = config_info["reads_tmp"]
         destination = config_info["reads_dir"]
         calib_mode = None
+        unzip = False
 
     nirps_files = get_nirps_data(
         config_info["program_id"],
@@ -178,5 +180,5 @@ if __name__ == "__main__":
         cache_tmp=True,
         continue_tmp=True,
         overwrite=False,
-        unzip=True,
+        unzip=unzip,
     )
