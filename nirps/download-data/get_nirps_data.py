@@ -140,6 +140,15 @@ if __name__ == "__main__":
         choices=["ramps", "reads"],
     )
     parser.add_argument(
+        "-m",
+        "--calib-mode",
+        dest="mode",
+        type=str,
+        default=None,
+        help="Calibration mode from ESO",
+        choices=["raw2raw", "raw2master", "None"]
+    )
+    parser.add_argument(
         "-s",
         "--start",
         type=str,
@@ -169,7 +178,12 @@ if __name__ == "__main__":
         data_category = "ramps"
         tmp_dir = config_info["raw_tmp"]
         destination = config_info["raw_dir"]
-        calib_mode = "raw2raw"
+        if args.mode is None:
+            calib_mode = "raw2raw"
+        elif args.mode == "None":
+            calib_mode = None
+        else:
+            calib_mode = args.mode
         per_night = True
         unzip = True
 
@@ -177,7 +191,12 @@ if __name__ == "__main__":
         data_category = "reads"
         tmp_dir = config_info["reads_tmp"]
         destination = config_info["reads_dir"]
-        calib_mode = None
+        if args.mode is None:
+            calib_mode = None
+        elif args.mode == "None":
+            calib_mode = None
+        else:
+            calib_mode = args.mode
         per_night = False
         unzip = False
 
