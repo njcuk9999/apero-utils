@@ -10,11 +10,14 @@ Created on 2021-08-01
 import matplotlib
 matplotlib.use('Qt5Agg')
 from astropy.io import fits
+from astropy.table import Table
 from astropy.visualization import imshow_norm, ZScaleInterval, LinearStretch
 import glob
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+from matplotlib.patches import Polygon
+import matplotlib.patheffects as PathEffects
 import numpy as np
 import os
 from scipy.signal import convolve2d
@@ -46,14 +49,28 @@ ObjectDatabase = drs_database.ObjectDatabase
 NIGHT = '2020-08-31'
 # define where we want to save plots
 PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
+# define Y, J, H, K
+BANDS = dict()
+# BANDS['Y'] = [944.126, 1108.771]            # UKIRT Y
+# BANDS['J'] = [1080.647, 1406.797]           # 2MASS J
+# BANDS['H'] = [1478.738, 1823.102]           # 2MSSS H
+# BANDS['K'] = [1954.369, 2344.240]           # 2MASS Ks
+BANDS['J'] = [11481.78/10, 13494.41/10]     # MKO
+BANDS['H'] = [14509.80/10, 18091.05/10]     # MKO
+BANDS['K'] = [19859.30/10, 24015.14/10]     # MKO
+
+
+
 # define plots and append those we want
 PLOTS = []
-# PLOTS.append('SIZE_GRID')
+PLOTS.append('SIZE_GRID')
 # PLOTS.append('RAW_FEATURES')
+# PLOTS.append('PP_FEATURES')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
-PLOTS.append('FLATBLAZE')
-PLOTS.append('E2DS')
+# PLOTS.append('FLATBLAZE')
+# PLOTS.append('E2DS')
+
 
 # =============================================================================
 # PLOT functions
@@ -61,15 +78,17 @@ PLOTS.append('E2DS')
 # SIZE_GRID
 def plot_size_grid(params):
 
-    odocode = '2510288a'
-    hashcode = '3444961B5D'
+    odocode = '2510376o'
+    hashcode = '2510376o'
     # get file paths
     raw_file = os.path.join(params['DRS_DATA_RAW'], NIGHT,
                             '{0}.fits'.format(odocode))
-    pp_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+    pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
                            '{0}_pp.fits'.format(hashcode))
     e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
                              '{0}_pp_e2dsff_AB.fits'.format(hashcode))
+    s1d_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                            '{0}_pp_s1d_v_AB.fits'.format(hashcode))
     # get
     print('Loading raw image')
     raw_image = fits.getdata(raw_file)
@@ -77,6 +96,12 @@ def plot_size_grid(params):
     pp_image = fits.getdata(pp_file)
     print('Loading E2DS image')
     e2ds_image = fits.getdata(e2ds_file)
+    e2ds_hdr = fits.getheader(e2ds_file)
+    print('Loading S1D table')
+    s1d_table = Table.read(s1d_file)
+
+    print('Getting wave sol')
+    wavemap = fits2wave(e2ds_image, e2ds_hdr)
 
     # rotation to match HARPS orientation (expected by DRS)
     # image1 = drs_image.rotate_image(raw_image, params['RAW_TO_PP_ROTATION'])
@@ -90,10 +115,11 @@ def plot_size_grid(params):
 
     print('Plotting size_grid plot')
     fig = plt.figure(figsize=(12, 12))
-    size = (2, 2)
-    frame1 = plt.subplot2grid(size, (0, 0))
-    frame2 = plt.subplot2grid(size, (0, 1))
-    frame3 = plt.subplot2grid(size, (1, 0), colspan=2)
+    size = (5, 4)
+    frame1 = plt.subplot2grid(size, (0, 0), colspan=2, rowspan=2)
+    frame2 = plt.subplot2grid(size, (0, 2), colspan=2, rowspan=2)
+    frame3 = plt.subplot2grid(size, (2, 0), colspan=4, rowspan=2)
+    frame4 = plt.subplot2grid(size, (4, 0), colspan=4, rowspan=1)
 
     cmap = matplotlib.cm.get_cmap('inferno').copy()
     cmap.set_bad(color='green')
@@ -131,12 +157,50 @@ def plot_size_grid(params):
                      x=0.025, y=0.95, pad=-14,
                      color='black', backgroundcolor='white')
 
+    # add band regions
+    for bandname in BANDS:
+        # get band name
+        band = BANDS[bandname]
+        # wave mask
+        wavemask = (wavemap > band[0]) & (wavemap < band[1])
+        bandpatch, midpoint = poly_region(wavemask)
+        frame3.add_patch(bandpatch)
+        # plot text
+        txt = frame3.text(midpoint[0], midpoint[1], bandname,
+                          color='w', zorder=10, fontsize=16, ha='center')
+
+        txt.set_path_effects([PathEffects.withStroke(linewidth=1,
+                                                     foreground='k')])
+
+    # -------------------------------------------------------------------------
+    # get max flux
+    maxflux = np.nanmax(s1d_table['flux'])
+    # plot spectrum
+    frame4.plot(s1d_table['wavelength'], s1d_table['flux'], lw=0.5,
+                color='k', zorder=5)
+    # plot bands
+    for bandname in BANDS:
+        # get band name
+        band = BANDS[bandname]
+        # plot band
+        frame4.fill_betweenx([-0.2*maxflux, 1.05*maxflux], band[0], band[1],
+                             color='0.5', alpha=0.5, zorder=0)
+        txt = frame4.text(np.mean(band), 0.75*maxflux, bandname,
+                          color='w', zorder=10, fontsize=16, ha='center')
+        txt.set_path_effects([PathEffects.withStroke(linewidth=1,
+                                                     foreground='k')])
+    # plot cosmetics
+    frame4.tick_params(axis="x", direction="in", pad=-15)
+    frame4.axes.yaxis.set_ticks([])
+    frame4.set(ylim=[-0.2*maxflux, 1.05*maxflux], xlabel='Wavelength [nm]')
+    frame4.set_yticklabels([])
+    # -------------------------------------------------------------------------
     plt.subplots_adjust(wspace=0.05, hspace=0.05,
                         left=0.01, right=0.99, top=0.975, bottom=0.025)
-    # -------------------------------------------------------------------------
+    # save file
     outfile = os.path.join(PLOT_PATH, 'size_grid.pdf')
     print('Saving to file: ' + outfile)
-    plt.savefig(outfile, dpi=500)
+    plt.savefig(outfile, dpi=300)
     print('Showing graph')
     plt.show()
     plt.close()
@@ -145,7 +209,7 @@ def plot_size_grid(params):
 # RAW_FEATURES
 def plot_raw_features(params):
     # set file to use
-    odocode = '2510288a'
+    odocode = '2510301o'
     # get file paths
     raw_file = os.path.join(params['DRS_DATA_RAW'], NIGHT,
                             '{0}.fits'.format(odocode))
@@ -160,7 +224,7 @@ def plot_pp_features(params):
     # get pseudo constants
     pconst = constants.pload()
     # set file to use
-    odocode = '2510288a'
+    odocode = '2510301o'
     # get file paths
     raw_file = os.path.join(params['DRS_DATA_RAW'], NIGHT,
                             '{0}.fits'.format(odocode))
@@ -745,6 +809,77 @@ def _add_colorbar(fig, im, frame, side='bottom'):
     cbar.ax.tick_params(labelsize=8)
 
 
+def poly_region(mask: np.ndarray):
+    poly = []
+
+    # get x limits
+    xmin, xmax = -0.5, mask.shape[1]
+
+    flatindex = np.where(mask)
+    index = np.indices(mask.shape)
+
+    # find the first row
+    y_first = flatindex[0].ravel()[0] - 0.5
+    # find the first col on the first row
+    x_first = flatindex[1].ravel()[0] - 0.5
+    # find the last row
+    y_last = flatindex[0].ravel()[-1] + 0.5
+    # find the low col on the last row
+    x_last = flatindex[1].ravel()[-1] + 0.5
+
+    # define shape of poly
+    poly.append([x_first, y_first])
+
+    poly.append([xmax, y_first])
+
+    poly.append([xmax, y_last - 1])
+
+    poly.append([x_last, y_last - 1])
+
+    poly.append([x_last, y_last])
+
+    poly.append([xmin, y_last])
+
+    poly.append([xmin, y_first + 1])
+
+    poly.append([x_first, y_first + 1])
+
+    poly.append([x_first, y_first])
+
+
+    # work out the mixpoint (in y)
+    midpoint = []
+    # add x (just middle)
+    midpoint.append(np.mean([xmax, xmin]))
+    midpoint.append(np.mean([y_first, y_last]))
+
+    return Polygon(poly, facecolor='None', edgecolor='w'), midpoint
+
+
+def fits2wave(image, header):
+    """
+    Get the wave solution from the header using a filename
+    """
+    # size of the image
+    nbypix, nbxpix = image.shape
+    # get the keys with the wavelength polynomials
+    wave_hdr = header['WAVE0*']
+    # concatenate into a numpy array
+    wave_poly = np.array([wave_hdr[i] for i in range(len(wave_hdr))])
+    # get the number of orders
+    nord = header['WAVEORDN']
+    # get the per-order wavelength solution
+    wave_poly = wave_poly.reshape(nord, len(wave_poly) // nord)
+    # project polynomial coefficiels
+    wavesol = np.zeros_like(image)
+    # loop around orders
+    for order_num in range(nord):
+        ordwave = np.polyval(wave_poly[order_num][::-1],np.arange(nbxpix))
+        wavesol[order_num] = ordwave
+    # return wave grid
+    return wavesol
+
+
 # =============================================================================
 # backmap functions
 # =============================================================================
@@ -867,6 +1002,8 @@ if __name__ == '__main__':
         plot_size_grid(params)
     if 'RAW_FEATURES' in PLOTS:
         plot_raw_features(params)
+    if 'PP_FEATURES' in PLOTS:
+        plot_pp_features(params)
     if 'BADMAP' in PLOTS:
         plot_badpix_plot(params)
     if 'BACKMAP' in PLOTS:
