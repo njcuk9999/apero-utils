@@ -130,9 +130,6 @@ def get_nirps_data(
 
 
 if __name__ == "__main__":
-    config_file = "config.yaml"
-    with open(config_file, "r") as authfile:
-        config_info = yaml.safe_load(authfile)
 
     parser = argparse.ArgumentParser(description="Get NIRPS data from ESO Archive.")
     parser.add_argument(
@@ -147,7 +144,18 @@ if __name__ == "__main__":
         action="store_true",
         help="Do not download data on disk, just get file info.",
     )
+    parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
+        default="config.yaml",
+        help="Confgi file with info about dir structure and obs program.",
+    )
     args = parser.parse_args()
+
+    config_file = args.config
+    with open(config_file, "r") as authfile:
+        config_info = yaml.safe_load(authfile)
 
     if args.category == "ramps":
         data_category = "ramps"

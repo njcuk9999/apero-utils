@@ -1,4 +1,4 @@
 auth.y*ml
 spirou-example/
 test-*/
-config.y*ml
+config*.y*ml
