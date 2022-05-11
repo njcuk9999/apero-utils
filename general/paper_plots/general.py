@@ -64,14 +64,14 @@ BANDS['$K_{s}$'] = [19577.92/10, 23431.05/10]     # MKO
 
 # define plots and append those we want
 PLOTS = []
-PLOTS.append('SIZE_GRID')
+# PLOTS.append('SIZE_GRID')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
-
+PLOTS.append('TCORR')
 
 # =============================================================================
 # PLOT functions
@@ -791,6 +791,100 @@ def plot_e2ds_plot(params):
 
 
 
+# TCORR
+def plot_tcorr_plot(params):
+    odocode = '2510303'
+
+    orders = [20, 31]
+
+    limits = [[1310, 1320], [1600, 1610]]
+    # -------------------------------------------------------------------------
+    # get filename
+    e2dsfile = os.path.join(params['DRS_DATA_OUT'], NIGHT, '{0}e.fits'.format(odocode))
+    tcorrfile = os.path.join(params['DRS_DATA_OUT'], NIGHT, '{0}t.fits'.format(odocode))
+
+    # -------------------------------------------------------------------------
+    wave = fits.getdata(e2dsfile, extname='WaveAB')
+    blaze = fits.getdata(e2dsfile, extname='BlazeAB')
+    e2dsffab = fits.getdata(e2dsfile, extname='FluxAB')
+    tcorrab = fits.getdata(tcorrfile, extname='FluxAB')
+    recon = fits.getdata(tcorrfile, extname='Recon')
+    skymodel = fits.getdata(tcorrfile, extname='OHLine')
+
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    fig, frames = plt.subplots(ncols=1, nrows=len(orders), figsize=(12, 12))
+
+    # loop around orders
+    for it, order_num in enumerate(orders):
+        # get this iterations frame
+        frame = frames[it]
+        # get order values
+        ordwave = wave[order_num]
+        orde2ds = (e2dsffab/blaze)[order_num]
+        ordtcorr = (tcorrab/blaze)[order_num]
+        ordrecon = recon[order_num]
+        ordskymodel = skymodel[order_num]
+
+        # get first and last point on e2ds
+        imask = np.where(np.isfinite(orde2ds))
+
+        # get wave limits for first and last poitns of e2ds
+        if limits[it] is None:
+            wavemin = ordwave[int(np.min(imask))]
+            wavemax = ordwave[int(np.max(imask))]
+        else:
+            wavemin = limits[it][0]
+            wavemax = limits[it][1]
+
+
+        # plot e2dsff
+        frame.plot(ordwave, orde2ds/np.nanmedian(orde2ds), color='k', lw=0.5,
+                   label='Extracted', zorder=2)
+        # plot telluric
+        frame.plot(ordwave, ordtcorr/np.nanmedian(ordtcorr), color='r', lw=0.5,
+                   label='Telluric corrected', zorder=3)
+        # plot recon
+        frame.plot(ordwave, ordrecon/np.nanmedian(ordrecon), color='b', lw=0.5,
+                   label='Reconstructed absorption', zorder=4, alpha=0.75)
+
+        frame.plot([0, 0], [1000, 2000],
+                   color='orange', lw=0.5, label='Sky model (OH lines)',
+                   zorder=1)
+
+        ins = frame.inset_axes([0, 1, 1, 0.1])
+        # plot sky
+        ins.plot(ordwave, ordskymodel/np.nanmedian(orde2ds),
+                 color='orange', lw=0.5, label='Sky model (OH lines)',
+                 zorder=1)
+        ins.set(xlim=[wavemin, wavemax])
+        ins.set_xticklabels([])
+        ins.set_yticklabels([])
+
+        # set labels
+        frame.set(ylim=[0.4, 1.15], ylabel='Normalized flux',
+                  xlim=[wavemin, wavemax])
+
+        frame.set(xlabel='Wavelength [nm]')
+
+        # frame.set_title('Order {0}'.format(order_num), y=1.0, pad=-15)
+
+        if it == 0:
+            frame.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=5)
+
+    plt.subplots_adjust(left=0.075, right=0.98, bottom=0.0725, top=0.9,
+                        hspace=0.2)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'tcorr.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show(block=True)
+    plt.close()
+
+
 # =============================================================================
 # worker functions (private)
 # =============================================================================
@@ -1017,6 +1111,8 @@ if __name__ == '__main__':
         plot_flatblaze_plot(params)
     if 'E2DS' in PLOTS:
         plot_e2ds_plot(params)
+    if 'TCORR' in PLOTS:
+        plot_tcorr_plot(params)
 
 # =============================================================================
 # End of code
