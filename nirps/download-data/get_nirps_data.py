@@ -166,7 +166,7 @@ if __name__ == "__main__":
         "--config",
         type=str,
         default="config.yaml",
-        help="Confgi file with info about dir structure and obs program.",
+        help="Config file with info about dir structure and obs program.",
     )
     args = parser.parse_args()
 
