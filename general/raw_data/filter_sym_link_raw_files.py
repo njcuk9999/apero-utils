@@ -29,7 +29,7 @@ if INSTRUMENT == 'NIRPS_HA':
 else:
     INDIR = '/nirps_raw/nirps/raw-data/2022*'
     OUTDIR = '/nirps_raw/nirps/raw-data/nirps_he/'
-    MODE = 'HA'
+    MODE = 'HE'
 
 DEBUG = False
 
