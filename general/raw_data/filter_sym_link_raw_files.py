@@ -18,16 +18,26 @@ import shutil
 # =============================================================================
 # Define variables
 # =============================================================================
-INDIR = '/nirps_raw/nirps/raw-data/2022*'
-# outdir = '/nirps_raw/nirps/apero-data/common/rawsym202205-HA/2022-05-18'
-OUTDIR = '/nirps_raw/nirps/raw-data/nirps_he/'
+INSTRUMENT = 'NIRPS_HA'
+# INSTRUMENT = 'NIRPS_HE'
+
+
+if INSTRUMENT == 'NIRPS_HA':
+    INDIR = '/nirps_raw/nirps/raw-data/2022*'
+    OUTDIR = '/nirps_raw/nirps/raw-data/nirps_ha/'
+    MODE = 'HA'
+else:
+    INDIR = '/nirps_raw/nirps/raw-data/2022*'
+    OUTDIR = '/nirps_raw/nirps/raw-data/nirps_he/'
+    MODE = 'HA'
 
 DEBUG = False
 
 SYMLINK = False
 
 FILTER = dict()
-FILTER['HIERARCH ESO INS MODE'] = 'HE'
+FILTER['HIERARCH ESO INS MODE'] = MODE
+
 
 # =============================================================================
 # Define functions
@@ -41,6 +51,7 @@ def filter_files(hdr):
             if hdr[key] != FILTER[key]:
                 return False
     return True
+
 
 # =============================================================================
 # Start of code
