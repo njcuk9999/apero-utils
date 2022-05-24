@@ -67,7 +67,7 @@ PLOTS = []
 # PLOTS.append('SIZE_GRID')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
-# PLOTS.append('BADMAP')
+PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
@@ -530,6 +530,20 @@ def plot_badpix_plot(params):
     frame1.tick_params(axis='both', which='both', bottom=False, top=False,
                       left=False, right=False, labelleft=False,
                       labelbottom=False)
+
+    title1 = ('Original shape: ({0}x{1})  {2:,d} total pixels'
+              '\nResized shape: ({3}x{4})  {5:,d} total pixels')
+    title2 = ('Number of bad pixels (in resized region): = {0:,d}'
+              '\nFraction of bad pixels (in resized region): = {1:.2f} %')
+
+    farg1 = list(dark_image.shape) + [np.product(dark_image.shape)]
+    farg1 += list(bad_image.shape) + [np.product(bad_image.shape)]
+    frame0.set_title(title1.format(*farg1), y=1.0, pad=-100,
+                     backgroundcolor='white', fontsize=16)
+    farg2 = [int(np.sum(bad_image_full)),
+             100 * np.sum(bad_image_full)/np.product(bad_image.shape)]
+    frame1.set_title(title2.format(*farg2), y=1.0, pad=-100,
+                     backgroundcolor='silver', fontsize=16)
 
     frame0.hlines(y=ylow, xmin=xlow, xmax=xhigh, color='r', lw=2)
     frame0.hlines(y=yhigh, xmin=xlow, xmax=xhigh, color='r', lw=2)
