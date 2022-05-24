@@ -18,18 +18,20 @@ import shutil
 # =============================================================================
 # Define variables
 # =============================================================================
-INSTRUMENT = 'NIRPS_HA'
-# INSTRUMENT = 'NIRPS_HE'
+# INSTRUMENT = 'NIRPS_HA'
+INSTRUMENT = 'NIRPS_HE'
 
 
 if INSTRUMENT == 'NIRPS_HA':
     INDIR = '/nirps_raw/nirps/raw-data/nirps_ha/'
     OUTDIR = '/nirps_raw/nirps/apero-data/common/rawsym202205-HA/'
-    NIGHTS = ['2022-05-17', '2022-05-18']
+    NIGHTS = ['2022-05-17', '2022-05-18', '2022-05-19', '2022-05-20',
+              '2022-05-21', '2022-05-22', '2022-05-23']
 else:
     INDIR = '/nirps_raw/nirps/raw-data/nirps_he/'
     OUTDIR = '/nirps_raw/nirps/apero-data/common/rawsym202205-HE/'
-    NIGHTS = ['2022-05-17', '2022-05-18']
+    NIGHTS = ['2022-05-17', '2022-05-18', '2022-05-20',
+              '2022-05-21', '2022-05-22', '2022-05-23']
 
 DEBUG = False
 SYMLINK = True
@@ -41,7 +43,6 @@ SYMLINK = True
 if __name__ == "__main__":
 
     # get directories
-
     for night in NIGHTS:
         # construct indir
         indir = os.path.join(INDIR, night)
