@@ -18,18 +18,30 @@ import shutil
 # =============================================================================
 # Define variables
 # =============================================================================
-INSTRUMENT = 'NIRPS_HA'
+# INSTRUMENT = 'NIRPS_HA'
 # INSTRUMENT = 'NIRPS_HE'
-
+INSTRUMENT = 'HELIOS'
 
 if INSTRUMENT == 'NIRPS_HA':
     INDIR = '/nirps_raw/nirps/raw-data/nirps_ha/'
     OUTDIR = '/nirps_raw/nirps/apero-data/common/rawsym202205-HA/'
-    NIGHTS = ['2022-05-17', '2022-05-18']
-else:
+    NIGHTS = ['2022-05-17', '2022-05-18', '2022-05-19', '2022-05-20',
+              '2022-05-21',  '2022-05-22', '2022-05-23', '2022-05-24',
+              '2022-05-25', '2022-05-26']
+elif INSTRUMENT == 'NIRPS_HE':
     INDIR = '/nirps_raw/nirps/raw-data/nirps_he/'
     OUTDIR = '/nirps_raw/nirps/apero-data/common/rawsym202205-HE/'
-    NIGHTS = ['2022-05-17', '2022-05-18']
+    NIGHTS = ['2022-05-17', '2022-05-18', '2022-05-19', '2022-05-20',
+              '2022-05-21',  '2022-05-22', '2022-05-23', '2022-05-24',
+              '2022-05-25', '2022-05-26']
+elif INSTRUMENT == 'HELIOS':
+    INDIR = '/nirps_raw/nirps/raw-data/helios_ha/'
+    OUTDIR = '/nirps_raw/nirps/apero-data/common/rawsym202205-HA/'
+    NIGHTS = ['2022-05-17', '2022-05-18', '2022-05-19', '2022-05-20',
+              '2022-05-21', '2022-05-22', '2022-05-23', '2022-05-24',
+              '2022-05-25', '2022-05-26']
+else:
+    raise ValueError('INSTRUMENT Invalid')
 
 DEBUG = False
 SYMLINK = True
@@ -47,6 +59,9 @@ if __name__ == "__main__":
         indir = os.path.join(INDIR, night)
         # construct outdir
         outdir = os.path.join(OUTDIR, night)
+        # skip dirs that don't exist
+        if not os.path.exists(indir):
+            continue
         # make output dir
         if not os.path.exists(outdir):
             os.makedirs(outdir)
