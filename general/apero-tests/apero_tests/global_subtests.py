@@ -2,7 +2,7 @@ import warnings
 
 import pandas as pd
 
-from apero_tests.display import inspect_table
+from apero_tests.display import inspect_table, inspect_hkey_plot
 from apero_tests.drs_test import DrsTest
 from apero_tests.subtest import SubTest
 
@@ -175,3 +175,79 @@ class CheckNotFound(SubTest):
             )
         else:
             self.color = "Lime"
+
+
+class CustomWaveTest(SubTest):
+    def __init__(
+        self, hkey_df: pd.DataFrame, parent_test: DrsTest):
+        """
+        Plot the FP cavity properties as a function of time
+
+        :param hkey_df: Log dataframe
+        :type hkey_df: DataFrame
+        :param parent_test: Parent test calling the subtest. Needed for HTML
+                            report path, not using path directly in case it has
+                            not been generated when creating the subtest.
+        :type parent_test: DrsTest
+        """
+        super().__init__(
+            description=(
+                "Plot the FP cavity properties as a function of time"
+            )
+        )
+
+        self.hkey_df = hkey_df
+        self.parent_test = parent_test
+
+    def run(self):
+        
+        # We only want the WCAV* keys.
+        keys = [kw for kw in self.hkey_df.columns if kw.startswith("WCAV")]
+
+        self.result = "See the Details column"
+        self.details = inspect_hkey_plot(
+            self.parent_test.html_path,
+            self.id,
+            self.hkey_df[keys].drop('other'),
+            f"{self.parent_test.recipe_name}.py Quality Control",
+        )
+
+
+class CustomFluxTest(SubTest):
+    def __init__(
+        self, hkey_df: pd.DataFrame, parent_test: DrsTest):
+        """
+        Test that the flux in AB is roughly equal to flux in A + B
+
+        :param hkey_df: Log dataframe
+        :type hkey_df: DataFrame
+        :param parent_test: Parent test calling the subtest. Needed for HTML
+                            report path, not using path directly in case it has
+                            not been generated when creating the subtest.
+        :type parent_test: DrsTest
+        """
+        super().__init__(description="Check that Flux AB = Flux A + Flux B")
+
+        self.hkey_df = hkey_df
+        self.parent_test = parent_test
+
+    def run(self):
+
+        # We only want the EXTSN* keys.
+        keys = [kw for kw in self.hkey_df.columns if kw.startswith("EXTSN")]
+        self.hkey_df = self.hkey_df[keys].drop('other')
+
+        # Find 'good' file type (objects, e2ds, e2dsff, tcorr)
+        file_list = self.hkey_df.index.get_level_values(1).tolist()
+        good = [n for n, x in enumerate(file_list) if ('o_pp' in x) and 
+            ('AB.fits' in x or 'A.fits' in x or 'B.fits' in x) and 
+            ('e2ds' in x or 'tcorr' in x)]
+        self.hkey_df = self.hkey_df.iloc[good]
+
+        self.result = "See the Details column"
+        self.details = inspect_hkey_plot(
+            self.parent_test.html_path,
+            self.id,
+            self.hkey_df,
+            f"{self.parent_test.recipe_name}.py Quality Control",
+        )

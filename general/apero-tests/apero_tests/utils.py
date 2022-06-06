@@ -254,6 +254,58 @@ def get_cdb_df(
     return cdb_mjd_df
 
 
+def get_hkey_df(
+    index_df: DataFrame,
+    params: ParamDict,
+    overwrite: bool = False,
+    cache_dir: str = None,
+) -> DataFrame:
+    """
+    Get dataframe with all the header keys for each file in index. Index is file name
+    """
+    if cache_dir is not None:
+        p = Path(cache_dir)
+        p.mkdir(parents=True, exist_ok=True)
+        cache_name = f"hkey_df_{params['INSTRUMENT']}.csv"
+        cache_path = os.path.join(cache_dir, cache_name)
+    else:
+        cache_path = None
+
+    index_df = index_df.copy()
+
+    # TODO: Smarter mechanism for cached file. Currently on reading if exist or
+    # generating whole thing otherwise
+    if cache_path is not None and os.path.isfile(cache_path) and not overwrite:
+        hkey_df_cache = pd.read_csv(
+            cache_path, index_col=[0, 1], header=[0], low_memory=False
+        )
+    else:
+        hkey_df_cache = None
+
+    if hkey_df_cache is None:
+        # We load the headers from two possible extensions
+        # FUTURE: Might not be necessary in 0.7
+        # TODO: Ask Neil if can add KW_CDB stuff to ind db to avoid read files
+        headers = index_df.ABSPATH.apply(fits.getheader, ext=0)
+        ext1_mask = headers.str.len() == 4
+        headers_ext1 = index_df.ABSPATH[ext1_mask].apply(fits.getheader, ext=1)
+        headers[ext1_mask] = headers_ext1
+        # TODO: This is very long. Is there a way to optimize it ???
+        # TODO: Main bottleneck is here. Should also save this maybe (for debug)
+        hkey_df = pd.DataFrame(headers.tolist())
+
+        hkey_df.index = pd.MultiIndex.from_frame(
+            index_df.reset_index()[["OBS_DIR", "FILENAME"]]
+        )
+
+        if cache_path is not None:
+            hkey_df.to_csv(cache_path)
+    else:
+        hkey_df = hkey_df_cache.copy()
+
+    return hkey_df 
+
+
 def get_hkey(fname, hkey):
     if not isinstance(fname, str) or not fname.endswith(".fits"):
         return np.nan

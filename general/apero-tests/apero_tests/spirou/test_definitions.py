@@ -108,6 +108,12 @@ red_cdb_used_df = ut.get_cdb_df(
     red_index, params, cache_dir=CACHEDIR
 )  # CDB keys and time difference with output files
 interm2 = time.time()
+
+# Write a cache .csv with all the headers (we may have to use in the future)
+red_hkey_df = ut.get_hkey_df(
+    red_index, params, cache_dir=CACHEDIR
+)  # CDB keys and time difference with output files
+
 # =============================================================================
 # Define tests
 # =============================================================================
@@ -289,6 +295,8 @@ cal_wave_night = DrsTest(
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
+# Custom Extra test 
+cal_wave_night.subtest_list.append(gt.CustomWaveTest(red_hkey_df, cal_wave_night))
 
 tests.append(cal_wave_night)
 
@@ -304,6 +312,8 @@ cal_extract = DrsTest(
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
+# Custom Extra test 
+cal_extract.subtest_list.append(gt.CustomFluxTest(red_hkey_df, cal_extract))
 
 tests.append(cal_extract)
 

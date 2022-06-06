@@ -424,3 +424,102 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
     html_path = "/".join(save_path.parts[-2:])
 
     return html_path
+
+
+def inspect_hkey_plot(test_html_path, subtest, hkey_df, title):
+    """
+    Write an html interactive plot that show the variation of headey key values.
+
+    hkey_df: Pandas MultiIndex DataFrame
+    """
+
+    test_dir = test_html_path.parent
+    test_file = test_html_path.name
+    save_path = Path(test_dir, subtest, subtest + ".html")
+    save_dir = save_path.parent
+
+    save_dir.mkdir(exist_ok=True)
+
+    # list unique column names
+    col_names = np.unique(hkey_df.columns.get_level_values(0))[::-1]
+    # data dict to bokeh
+    source = ColumnDataSource(hkey_df.reset_index(level="FILENAME"))
+    # night to datetime
+    source.data["PLOTDATE"] = pd.to_datetime(source.data["OBS_DIR"])
+
+    htool = HoverTool(
+        tooltips=[
+            ("OBS_DIR", "@OBS_DIR"),
+            ("FILENAME", "@FILENAME")
+        ]
+    )
+
+    # bokeh tools
+    TOOLS = [
+        "crosshair",
+        htool,
+        "pan",
+        "box_zoom",
+        "undo",
+        "redo",
+        "reset",
+        "save",
+    ]
+
+    # create widget
+    y_axis_widget = Select(
+        title="Keyword", options=list(col_names), value=col_names[0], width=260
+    )
+
+    # data set (x and y variables)
+    source.data["x"] = source.data["PLOTDATE"]
+    source.data["y"] = source.data[col_names[0]]
+
+    # plot
+    p = figure(
+        plot_width=1200,
+        plot_height=700,
+        tools=TOOLS,
+        toolbar_location="right",
+        x_axis_label="OBS_DIR",
+        x_axis_type="datetime",
+        title=title,
+    )
+    p.title.text_font_size = "12pt"
+    p.xaxis.axis_label_text_font_size = "12pt"
+    p.yaxis.visible = False
+
+    p.circle("x", "y", source=source, line_width=2)
+
+    y_axis = LinearAxis(
+        axis_label="Value", axis_label_text_font_size="12pt"
+    )
+    p.add_layout(y_axis, "left")
+
+    # javascript callback
+    js_code = """
+        var selected_y_axis = cb_obj.value
+        var data_visible = source.data
+        data_visible.y = data_visible[selected_y_axis]
+        source.change.emit()
+        p.reset.emit()
+        """
+
+    callback_y_axis = CustomJS(args=dict(source=source, p=p), code=js_code)
+
+    y_axis_widget.js_on_change("value", callback_y_axis)
+
+    # html doc
+    parent_link = Div(
+        text=f'<a href="../{test_file}">Go back</a>',
+        height=25,
+    )
+    grid_layout = layout([[parent_link], [p, y_axis_widget]])
+
+    output_file(save_path, title=subtest)
+    save(grid_layout)
+
+    # keep only subtest dir and file to put in parent html
+    html_path = "/".join(save_path.parts[-2:])
+
+    return html_path
