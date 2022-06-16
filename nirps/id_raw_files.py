@@ -23,8 +23,13 @@ from tqdm import tqdm
 INSTRUMENT = 'NIRPS'
 # set the instrument mode (None if no mode)
 MODE = 'HA'
-
+# whether to add additional printout
 DEBUG = False
+# whether to update raw files when mistake was found
+UPDATE = True
+# extra debug not to save file (as test)
+TEST = True
+# define for use in if statements below
 SKIP_KEYS = dict()
 
 if INSTRUMENT == 'NIRPS' and MODE == 'HA':
@@ -43,10 +48,14 @@ if INSTRUMENT == 'NIRPS' and MODE == 'HA':
     TRANSLATE['DARK_FP'] =  {'HIERARCH ESO DPR TYPE': ['CONTAM,DARK,FP']}
     TRANSLATE['FLAT_DARK'] =  {'HIERARCH ESO DPR TYPE': ['ORDERDEF,LAMP,DARK', 'FLAT,LAMP,DARK']}
     TRANSLATE['FLAT_FLAT'] =  {'HIERARCH ESO DPR TYPE': ['FLAT,LAMP,LAMP']}
+    TRANSLATE['FP_DARK'] = {'HIERARCH ESO DPR TYPE': ['CONTAM,FP,DARK']}
     TRANSLATE['FP_FP'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,FP,FP']}
     TRANSLATE['FP_HC'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,FP,UN1']}
     TRANSLATE['HC_FP'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,UN1,FP']}
     TRANSLATE['HC_HC'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,UN1,UN1']}
+
+    FORCE_KEYS = {'HIERARCH ESO DPR CATG': 'TEST',
+                  'MTLUPDATE': 'True'}
 
 
 elif INSTRUMENT == 'NIRPS' and MODE == 'HE':
@@ -65,10 +74,14 @@ elif INSTRUMENT == 'NIRPS' and MODE == 'HE':
     TRANSLATE['DARK_FP'] =  {'HIERARCH ESO DPR TYPE': ['CONTAM,DARK,FP']}
     TRANSLATE['FLAT_DARK'] =  {'HIERARCH ESO DPR TYPE': ['ORDERDEF,LAMP,DARK', 'FLAT,LAMP,DARK']}
     TRANSLATE['FLAT_FLAT'] =  {'HIERARCH ESO DPR TYPE': ['FLAT,LAMP,LAMP']}
+    TRANSLATE['FP_DARK'] = {'HIERARCH ESO DPR TYPE': ['CONTAM,FP,DARK']}
     TRANSLATE['FP_FP'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,FP,FP']}
     TRANSLATE['FP_HC'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,FP,UN1']}
     TRANSLATE['HC_FP'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,UN1,FP']}
     TRANSLATE['HC_HC'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,UN1,UN1']}
+
+    FORCE_KEYS = {'HIERARCH ESO DPR CATG': 'TEST',
+                  'MTL_EDIT': 'True'}
 
 else:
     raise ValueError(f'Unsupported instrument={INSTRUMENT} mode={MODE}')
@@ -87,18 +100,34 @@ class FileMatch:
         self.header_keys = dict()
         self.match_keys = dict()
         self.match_num = -1
+        self.full_path = ''
+        self.fraction = np.nan
         self.correct = False
 
     def __str__(self) -> str:
+        """
+
+        :return:
+        """
         string = ''
         for key in self.keys:
-            string += 'HDR[{0}]={1} '.format(key, self.header_keys[key])
+            string += f'HDR[{key}]={self.header_keys[key]} '
         for key in self.keys:
-            string += 'MATCH[{0}]={1} '.format(key, self.match_keys[key])
+            string += f'MATCH[{key}]={self.match_keys[key]} '
+        string += f'FRAC={100 * self.fraction:.2f}%'
         return string
 
     def __repr__(self) -> str:
         return self.__str__()
+
+    def info(self):
+        string = ''
+        for key in self.keys:
+            string += f'\n\tHDR[{key}]={self.header_keys[key]} '
+        for key in self.keys:
+            string += f'\n\tMATCH[{key}]={self.match_keys[key]} '
+        string += f'\n\tFRAC={100 * self.fraction:.2f}%'
+        return string
 
     def populate(self, hdr):
 
@@ -166,8 +195,8 @@ if __name__ == "__main__":
 
 
     print(f'Analysing files for dir: {test_dir}')
-    for filename in files:
-
+    for filename in tqdm(files):
+        # get basename (for dict key)
         basename = os.path.basename(filename)
         # get image and header
         image = fits.getdata(filename)
@@ -193,10 +222,11 @@ if __name__ == "__main__":
         # skip file
         if no_check:
             continue
-        # print file
-        print('\tFile: {0}'.format(filename))
+
         # print header type
         if DEBUG:
+            # print file
+            print('\tFile: {0}'.format(filename))
             for key in HEADER_KEYS:
                 print(f'\t\tHeader {key}: {hdr[key]}')
         # ---------------------------------------------------------------------
@@ -235,32 +265,71 @@ if __name__ == "__main__":
             file_match1.populate(hdr)
             # test match 1
             file_match1.is_correct()
+            file_match1.full_path = filename
+            file_match1.match_num = 1
+            file_match1.fraction = frac_similar[matches[0]]
 
             if file_match1.correct:
-                file_match1.match_num = 1
-
                 good_files[basename] = file_match1
-                continue
-        # ---------------------------------------------------------------------
-        # if we have got to here file is bad
-        # ---------------------------------------------------------------------
-        # we use match 1 for bad file
-        if match1 in TRANSLATE:
-            # set up file/hdr match 1
-            file_match1 = FileMatch(TRANSLATE[match1])
-            file_match1.populate(hdr)
-            file_match1.match_num = 1
-            bad_files[basename] = file_match1
+            else:
+                bad_files[basename] = file_match1
             continue
+        # ---------------------------------------------------------------------
+        # if we have got to here file is bad and no match
+        # ---------------------------------------------------------------------
         # else we have no match
         else:
             no_match = FileMatch(keys=HEADER_KEYS, no_match=True)
             no_match.populate(hdr)
-
+            no_match.full_path = filename
             bad_files[basename] = no_match
 
+    # -------------------------------------------------------------------------
+    # Update raw files
+    # -------------------------------------------------------------------------
+    if UPDATE:
 
+        for bad_file in bad_files:
+            # get file instance
+            file_match = bad_files[bad_file]
+            # Get absolute filepath
+            abs_path = os.path.join(test_dir, bad_file)
+            # ask user to verify
+            msg = f'\n\nFile: {file_match.full_path}'
+            msg += file_match.info()
+            msg += '\n\n\tAccept match? [Y]es or [N]o:\t'
 
+            userinput = input(msg)
+
+            if 'Y' in userinput.upper():
+
+                # open fits file
+                with fits.open(abs_path) as hdulist:
+                    # loop around match keys
+                    for key in file_match.match_keys:
+                        # get match key list
+                        match_keys = file_match.match_keys[key]
+
+                        # if we have more than one entry we must choose
+                        if len(match_keys) > 1:
+                            msg = '\n\tChoose key:'
+                            for m_it in range(len(match_keys)):
+                                msg += f'\n\t\t{m_it + 1}.{match_keys[m_it]}'
+
+                            match_key = match_keys[m_it - 1]
+                        # else we know the match key
+                        else:
+                            match_key = match_keys[0]
+
+                        hdulist[0].header[key] = match_key
+
+                    # deal with force keys
+                    for fkey in FORCE_KEYS:
+                        hdulist[0].header[fkey] = FORCE_KEYS[fkey]
+
+                    print('\n\t Overwriting file')
+                    if not TEST:
+                        hdulist.writeto(file_match.full_path, overwrite=True)
 
 
 
