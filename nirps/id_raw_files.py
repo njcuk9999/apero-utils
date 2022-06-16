@@ -81,17 +81,34 @@ OBS_DIR = '2022-06-11'
 # Define functions
 # =============================================================================
 class FileMatch:
-    def __init__(self, keys):
+    def __init__(self, keys, no_match=False):
         self.keys = keys
+        self.no_match = no_match
         self.header_keys = dict()
         self.match_keys = dict()
         self.match_num = -1
         self.correct = False
 
+    def __str__(self) -> str:
+        string = ''
+        for key in self.keys:
+            string += 'HDR[{0}]={1} '.format(key, self.header_keys[key])
+        for key in self.keys:
+            string += 'MATCH[{0}]={1} '.format(key, self.match_keys[key])
+        return string
+
+    def __repr__(self) -> str:
+        return self.__str__()
+
     def populate(self, hdr):
+
         for key in self.keys:
             self.header_keys[key] = hdr[key]
-            self.match_keys[key] = self.keys[key]
+
+            if self.no_match:
+                self.match_keys[key] = None
+            else:
+                self.match_keys[key] = self.keys[key]
 
     def is_correct(self):
         for key in self.keys:
@@ -151,7 +168,7 @@ if __name__ == "__main__":
     print(f'Analysing files for dir: {test_dir}')
     for filename in files:
 
-
+        basename = os.path.basename(filename)
         # get image and header
         image = fits.getdata(filename)
         hdr = fits.getheader(filename)
@@ -179,8 +196,9 @@ if __name__ == "__main__":
         # print file
         print('\tFile: {0}'.format(filename))
         # print header type
-        for key in HEADER_KEYS:
-            print(f'\t\tHeader {key}: {hdr[key]}')
+        if DEBUG:
+            for key in HEADER_KEYS:
+                print(f'\t\tHeader {key}: {hdr[key]}')
         # ---------------------------------------------------------------------
         # get brightest pixels from file of interest
         mask_from_file = im2mask(image)
@@ -207,26 +225,39 @@ if __name__ == "__main__":
             print(pmsg.format(*pargs))
 
         # ---------------------------------------------------------------------
-        # compare to header
-        best_match = types[matches[0]]
+        # compare best match to header
+        # ---------------------------------------------------------------------
+        match1 = types[matches[0]]
 
-        if best_match in TRANSLATE:
-            # set up file/hdr match
-            file_match1 = FileMatch(best_match[0])
+        if match1 in TRANSLATE:
+            # set up file/hdr match 1
+            file_match1 = FileMatch(TRANSLATE[match1])
+            file_match1.populate(hdr)
             # test match 1
             file_match1.is_correct()
 
             if file_match1.correct:
-                file_match1 = 1
+                file_match1.match_num = 1
 
-                good_files[filename] = file_match1
+                good_files[basename] = file_match1
+                continue
+        # ---------------------------------------------------------------------
+        # if we have got to here file is bad
+        # ---------------------------------------------------------------------
+        # we use match 1 for bad file
+        if match1 in TRANSLATE:
+            # set up file/hdr match 1
+            file_match1 = FileMatch(TRANSLATE[match1])
+            file_match1.populate(hdr)
+            file_match1.match_num = 1
+            bad_files[basename] = file_match1
+            continue
+        # else we have no match
+        else:
+            no_match = FileMatch(keys=HEADER_KEYS, no_match=True)
+            no_match.populate(hdr)
 
-            else:
-                # set up file/hdr match
-                file_match2 = FileMatch(best_match[1])
-                # test match 2
-                file_match2.is_correct()
-
+            bad_files[basename] = no_match
 
 
 
