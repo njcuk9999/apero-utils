@@ -35,11 +35,13 @@ REJECT_LIST = 'reject_list.txt'
 CHANGE_LIST = 'change_list.txt'
 # threshold for reject files outright
 FRAC_THRES = 0.95
+# set obs_dir
+OBS_DIR = None
 
 
 if INSTRUMENT == 'NIRPS' and MODE == 'HA':
     REF_DIR = '/nirps_raw/nirps/apero-data/drs-misc/ref_files/NIRPS_HA'
-    TEST_DIR = '/nirps_raw/nirps/raw-data/nirps_ha/'
+    TEST_DIR = '/nirps_raw/nirps/apero-data/common/rawsym202205-HA/'
     HEADER_KEYS = ['HIERARCH ESO DPR TYPE', 'HIERARCH ESO DPR CATG']
     MODE_HDR_KEY = 'HIERARCH ESO INS MODE'
     SKIP_KEYS['HIERARCH ESO DPR TYPE'] = ['DARK', 'OBJECT,SKY', 'OBJECT,FP',
@@ -66,12 +68,12 @@ if INSTRUMENT == 'NIRPS' and MODE == 'HA':
 
 elif INSTRUMENT == 'NIRPS' and MODE == 'HE':
     REF_DIR = '/nirps_raw/nirps/apero-data/drs-misc/ref_files/NIRPS_HE'
-    TEST_DIR = '/nirps_raw/nirps/raw-data/nirps_he/'
+    TEST_DIR = '/nirps_raw/nirps/apero-data/common/rawsym202205-HE/'
     HEADER_KEYS = ['HIERARCH ESO DPR TYPE', 'HIERARCH ESO DPR CATG']
     MODE_HDR_KEY = 'HIERARCH ESO INS MODE'
     SKIP_KEYS['HIERARCH ESO DPR TYPE'] = ['DARK', 'OBJECT,SKY', 'OBJECT,FP',
                                           'OBJECT,DARK', 'FLUX,STD,SKY',
-                                          'EFF,SKY,SKY']
+                                          'EFF,SKY,SKY', 'LED,LAMP']
     SKIP_KEYS['HIERARCH ESO DPR CATG'] = ['TEST', 'SCIENCE']
     REMOVE_SUFFIX = '_HE'
     # translate between dprtype and header
@@ -195,10 +197,16 @@ if __name__ == "__main__":
     # storage of bad files
     bad_files = dict()
 
+    if OBS_DIR is None:
+        test_dir = TEST_DIR
+    else:
+        test_dir = os.path.join(TEST_DIR, OBS_DIR)
+
+
     # get all fits files
     print('Finding all fits files')
     fits_files = []
-    for root, dirs, files in os.walk(TEST_DIR):
+    for root, dirs, files in os.walk(test_dir):
         for filename in files:
             if filename.endswith('.fits'):
                 fits_files.append(os.path.join(root, filename))
@@ -206,7 +214,7 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # main code - id bad files
     # -------------------------------------------------------------------------
-    print(f'Analysing {len(fits_files)} files for dir: {TEST_DIR}')
+    print(f'Analysing {len(fits_files)} files for dir: {test_dir}')
     # loop around all fits files
     for filename in tqdm(fits_files):
         # get basename (for dict key)
@@ -304,7 +312,7 @@ if __name__ == "__main__":
 
     print(f'Sorting {len(bad_files)} bad files')
 
-    for bad_file in bad_files:
+    for bad_file in tqdm(bad_files):
         # get file instance
         file_match = bad_files[bad_file]
 
@@ -320,7 +328,7 @@ if __name__ == "__main__":
             reject_dict['REASON'].append(reason)
             continue
 
-
+        reject = False
         # open fits file
         with fits.open(file_match.full_path) as hdulist:
             # loop around match keys
@@ -330,7 +338,9 @@ if __name__ == "__main__":
 
                 # if we have more than one entry we must choose
                 if len(match_keys) > 1:
-                    qmsg = '\n\tMultiple possible matches\nChoose key:'
+                    qmsg = f'\n\nFile: {file_match.full_path}'
+                    qmsg += file_match.info()
+                    qmsg += '\n\tMultiple possible matches\nChoose key:'
                     for m_it in range(len(match_keys)):
                         qmsg += f'\n\t\t{m_it + 1}.{match_keys[m_it]}'
                     qmsg += f'\n\t\t[X] to reject: \t'
@@ -339,7 +349,7 @@ if __name__ == "__main__":
                         try:
                             uinput = input(qmsg)
                             # deal with rejection
-                            if uinput.upper == 'X':
+                            if uinput.upper() == 'X':
                                 match_key = None
                                 reject = True
                                 break
@@ -368,7 +378,8 @@ if __name__ == "__main__":
                 change_dict['NAME'].append(bad_file)
                 change_dict['REASON'].append(file_match.info(sep=''))
                 # file has been changed
-                print('\n\t Overwriting file')
+                if DEBUG:
+                    print('\n\t Overwriting file')
                 if not TEST:
                     hdulist.writeto(file_match.full_path, overwrite=True)
 
@@ -381,8 +392,8 @@ if __name__ == "__main__":
     print(f'Rejected {rlen} files, changed {clen} files')
 
     # get path
-    reject_file = os.path.join(TEST_DIR, REJECT_LIST)
-    change_file = os.path.join(TEST_DIR, CHANGE_LIST)
+    reject_file = os.path.join(test_dir, REJECT_LIST)
+    change_file = os.path.join(test_dir, CHANGE_LIST)
 
     # convert to table
     reject_table = Table()
