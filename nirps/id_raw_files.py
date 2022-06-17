@@ -10,6 +10,7 @@ Created on 2022-06-16
 @author: cook
 """
 from astropy.io import fits
+from astropy.table import Table
 import glob
 import numpy as np
 import os
@@ -22,15 +23,19 @@ from tqdm import tqdm
 # set the instrument name
 INSTRUMENT = 'NIRPS'
 # set the instrument mode (None if no mode)
-MODE = 'HA'
+MODE = 'HE'
 # whether to add additional printout
 DEBUG = False
-# whether to update raw files when mistake was found
-UPDATE = True
 # extra debug not to save file (as test)
-TEST = True
+TEST = False
 # define for use in if statements below
 SKIP_KEYS = dict()
+# REJECT_LIST
+REJECT_LIST = 'reject_list.txt'
+CHANGE_LIST = 'change_list.txt'
+# threshold for reject files outright
+FRAC_THRES = 0.95
+
 
 if INSTRUMENT == 'NIRPS' and MODE == 'HA':
     REF_DIR = '/nirps_raw/nirps/apero-data/drs-misc/ref_files/NIRPS_HA'
@@ -44,9 +49,11 @@ if INSTRUMENT == 'NIRPS' and MODE == 'HA':
     REMOVE_SUFFIX = '_HA'
     # translate between dprtype and header
     TRANSLATE = dict()
-    TRANSLATE['DARK_FLAT'] = {'HIERARCH ESO DPR TYPE': ['ORDERDEF,DARK,LAMP', 'FLAT,DARK,LAMP']}
+    TRANSLATE['DARK_FLAT'] = {'HIERARCH ESO DPR TYPE': ['ORDERDEF,DARK,LAMP',
+                                                        'FLAT,DARK,LAMP']}
     TRANSLATE['DARK_FP'] =  {'HIERARCH ESO DPR TYPE': ['CONTAM,DARK,FP']}
-    TRANSLATE['FLAT_DARK'] =  {'HIERARCH ESO DPR TYPE': ['ORDERDEF,LAMP,DARK', 'FLAT,LAMP,DARK']}
+    TRANSLATE['FLAT_DARK'] =  {'HIERARCH ESO DPR TYPE': ['ORDERDEF,LAMP,DARK',
+                                                         'FLAT,LAMP,DARK']}
     TRANSLATE['FLAT_FLAT'] =  {'HIERARCH ESO DPR TYPE': ['FLAT,LAMP,LAMP']}
     TRANSLATE['FP_DARK'] = {'HIERARCH ESO DPR TYPE': ['CONTAM,FP,DARK']}
     TRANSLATE['FP_FP'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,FP,FP']}
@@ -54,8 +61,7 @@ if INSTRUMENT == 'NIRPS' and MODE == 'HA':
     TRANSLATE['HC_FP'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,UN1,FP']}
     TRANSLATE['HC_HC'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,UN1,UN1']}
 
-    FORCE_KEYS = {'HIERARCH ESO DPR CATG': 'TEST',
-                  'MTLUPDATE': 'True'}
+    FORCE_KEYS = {'HIERARCH ESO DPR CATG': 'TEST'}
 
 
 elif INSTRUMENT == 'NIRPS' and MODE == 'HE':
@@ -70,9 +76,11 @@ elif INSTRUMENT == 'NIRPS' and MODE == 'HE':
     REMOVE_SUFFIX = '_HE'
     # translate between dprtype and header
     TRANSLATE = dict()
-    TRANSLATE['DARK_FLAT'] = {'HIERARCH ESO DPR TYPE': ['ORDERDEF,DARK,LAMP', 'FLAT,DARK,LAMP']}
+    TRANSLATE['DARK_FLAT'] = {'HIERARCH ESO DPR TYPE': ['ORDERDEF,DARK,LAMP',
+                                                        'FLAT,DARK,LAMP']}
     TRANSLATE['DARK_FP'] =  {'HIERARCH ESO DPR TYPE': ['CONTAM,DARK,FP']}
-    TRANSLATE['FLAT_DARK'] =  {'HIERARCH ESO DPR TYPE': ['ORDERDEF,LAMP,DARK', 'FLAT,LAMP,DARK']}
+    TRANSLATE['FLAT_DARK'] =  {'HIERARCH ESO DPR TYPE': ['ORDERDEF,LAMP,DARK',
+                                                         'FLAT,LAMP,DARK']}
     TRANSLATE['FLAT_FLAT'] =  {'HIERARCH ESO DPR TYPE': ['FLAT,LAMP,LAMP']}
     TRANSLATE['FP_DARK'] = {'HIERARCH ESO DPR TYPE': ['CONTAM,FP,DARK']}
     TRANSLATE['FP_FP'] =  {'HIERARCH ESO DPR TYPE': ['WAVE,FP,FP']}
@@ -85,9 +93,6 @@ elif INSTRUMENT == 'NIRPS' and MODE == 'HE':
 
 else:
     raise ValueError(f'Unsupported instrument={INSTRUMENT} mode={MODE}')
-
-# set the sub-directory to test
-OBS_DIR = '2022-06-11'
 
 
 # =============================================================================
@@ -120,13 +125,13 @@ class FileMatch:
     def __repr__(self) -> str:
         return self.__str__()
 
-    def info(self):
+    def info(self, sep='\n\t'):
         string = ''
         for key in self.keys:
-            string += f'\n\tHDR[{key}]={self.header_keys[key]} '
+            string += sep + f'HDR[{key}]={self.header_keys[key]} '
         for key in self.keys:
-            string += f'\n\tMATCH[{key}]={self.match_keys[key]} '
-        string += f'\n\tFRAC={100 * self.fraction:.2f}%'
+            string += sep + f'MATCH[{key}]={self.match_keys[key]} '
+        string += sep + f'FRAC={100 * self.fraction:.2f}%'
         return string
 
     def populate(self, hdr):
@@ -182,9 +187,6 @@ def make_ref_cude():
 # =============================================================================
 if __name__ == "__main__":
 
-    test_dir = os.path.join(TEST_DIR, OBS_DIR)
-    files = glob.glob(test_dir + '/*.fits')
-
     print('Making reference cube from reference files')
     types, ref_cube = make_ref_cude()
 
@@ -193,13 +195,23 @@ if __name__ == "__main__":
     # storage of bad files
     bad_files = dict()
 
+    # get all fits files
+    print('Finding all fits files')
+    fits_files = []
+    for root, dirs, files in os.walk(TEST_DIR):
+        for filename in files:
+            if filename.endswith('.fits'):
+                fits_files.append(os.path.join(root, filename))
 
-    print(f'Analysing files for dir: {test_dir}')
-    for filename in tqdm(files):
+    # -------------------------------------------------------------------------
+    # main code - id bad files
+    # -------------------------------------------------------------------------
+    print(f'Analysing {len(fits_files)} files for dir: {TEST_DIR}')
+    # loop around all fits files
+    for filename in tqdm(fits_files):
         # get basename (for dict key)
         basename = os.path.basename(filename)
-        # get image and header
-        image = fits.getdata(filename)
+        # get the header
         hdr = fits.getheader(filename)
         # ---------------------------------------------------------------------
         # deal with wrong mode
@@ -230,10 +242,11 @@ if __name__ == "__main__":
             for key in HEADER_KEYS:
                 print(f'\t\tHeader {key}: {hdr[key]}')
         # ---------------------------------------------------------------------
+        # get image and header
+        image = fits.getdata(filename)
         # get brightest pixels from file of interest
         mask_from_file = im2mask(image)
         norm = np.nansum(mask_from_file)
-
         # set up the fraction
         frac_similar = np.zeros(len(types), dtype=float)
 
@@ -245,7 +258,6 @@ if __name__ == "__main__":
         # sort matches by highest similarity
         matches = np.argsort(-frac_similar)
         # ---------------------------------------------------------------------
-
         # print match
         if DEBUG:
             pargs = [types[matches[0]], 100 * frac_similar[matches[0]],
@@ -253,7 +265,6 @@ if __name__ == "__main__":
             pmsg = ('\t\t 1st match = {0} [{1:.2f}%]'
                     '\n\t\t 2nd match = {2}, [{3:.2f}%]')
             print(pmsg.format(*pargs))
-
         # ---------------------------------------------------------------------
         # compare best match to header
         # ---------------------------------------------------------------------
@@ -287,50 +298,108 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # Update raw files
     # -------------------------------------------------------------------------
-    if UPDATE:
+    keep_list = list(good_files.keys())
+    reject_dict = dict(NAME=[], REASON=[])
+    change_dict = dict(NAME=[], REASON=[])
 
-        for bad_file in bad_files:
-            # get file instance
-            file_match = bad_files[bad_file]
-            # Get absolute filepath
-            abs_path = os.path.join(test_dir, bad_file)
-            # ask user to verify
-            msg = f'\n\nFile: {file_match.full_path}'
-            msg += file_match.info()
-            msg += '\n\n\tAccept match? [Y]es or [N]o:\t'
+    print(f'Sorting {len(bad_files)} bad files')
 
-            userinput = input(msg)
+    for bad_file in bad_files:
+        # get file instance
+        file_match = bad_files[bad_file]
 
-            if 'Y' in userinput.upper():
+        # auto reject no match
+        if np.isnan(file_match.fraction):
+            reject_dict['NAME'].append(bad_file)
+            reject_dict['REASON'].append('No match')
 
-                # open fits file
-                with fits.open(abs_path) as hdulist:
-                    # loop around match keys
-                    for key in file_match.match_keys:
-                        # get match key list
-                        match_keys = file_match.match_keys[key]
+        # auto reject files with the best match less than frac_thres
+        if file_match.fraction < FRAC_THRES:
+            reject_dict['NAME'].append(bad_file)
+            reason = file_match.info(sep='') + f' Match < {FRAC_THRES}'
+            reject_dict['REASON'].append(reason)
+            continue
 
-                        # if we have more than one entry we must choose
-                        if len(match_keys) > 1:
-                            msg = '\n\tChoose key:'
-                            for m_it in range(len(match_keys)):
-                                msg += f'\n\t\t{m_it + 1}.{match_keys[m_it]}'
 
-                            match_key = match_keys[m_it - 1]
-                        # else we know the match key
-                        else:
-                            match_key = match_keys[0]
+        # open fits file
+        with fits.open(file_match.full_path) as hdulist:
+            # loop around match keys
+            for key in file_match.match_keys:
+                # get match key list
+                match_keys = file_match.match_keys[key]
 
-                        hdulist[0].header[key] = match_key
+                # if we have more than one entry we must choose
+                if len(match_keys) > 1:
+                    qmsg = '\n\tMultiple possible matches\nChoose key:'
+                    for m_it in range(len(match_keys)):
+                        qmsg += f'\n\t\t{m_it + 1}.{match_keys[m_it]}'
+                    qmsg += f'\n\t\t[X] to reject: \t'
+                    # loop until user chooses a valid one
+                    while 1:
+                        try:
+                            uinput = input(qmsg)
+                            # deal with rejection
+                            if uinput.upper == 'X':
+                                match_key = None
+                                reject = True
+                                break
 
-                    # deal with force keys
-                    for fkey in FORCE_KEYS:
-                        hdulist[0].header[fkey] = FORCE_KEYS[fkey]
+                            match_key = match_keys[int(uinput) - 1]
+                            break
+                        except Exception as _:
+                            pass
+                # else we know the match key
+                else:
+                    match_key = match_keys[0]
+                # deal with a rejection
+                if reject:
+                    reject_dict['NAME'].append(bad_file)
+                    reason = file_match.info(sep='') + f' USER REJECT'
+                    reject_dict['REASON'].append(reason)
+                    continue
+                # add match key
+                hdulist[0].header[key] = match_key
+                # deal with force keys
+                for fkey in FORCE_KEYS:
+                    hdulist[0].header[fkey] = FORCE_KEYS[fkey]
+                # add key to show we've changed file
+                hdulist[0].header['MTL_MOD'] = 'ID_RAW_FILE'
 
-                    print('\n\t Overwriting file')
-                    if not TEST:
-                        hdulist.writeto(file_match.full_path, overwrite=True)
+                change_dict['NAME'].append(bad_file)
+                change_dict['REASON'].append(file_match.info(sep=''))
+                # file has been changed
+                print('\n\t Overwriting file')
+                if not TEST:
+                    hdulist.writeto(file_match.full_path, overwrite=True)
 
+    # -------------------------------------------------------------------------
+    # Create reject and change list
+    # -------------------------------------------------------------------------
+    # get and display the numbers of rejected and changed files
+    rlen = len(reject_dict["NAME"])
+    clen = len(change_dict["NAME"])
+    print(f'Rejected {rlen} files, changed {clen} files')
+
+    # get path
+    reject_file = os.path.join(TEST_DIR, REJECT_LIST)
+    change_file = os.path.join(TEST_DIR, CHANGE_LIST)
+
+    # convert to table
+    reject_table = Table()
+    reject_table['IDENTIFIER'] = reject_dict['NAME']
+    reject_table['PP'] = np.ones(rlen, dtype=int)
+    reject_table['TEL'] = np.ones(rlen, dtype=int)
+    reject_table['RV'] = np.ones(rlen, dtype=int)
+    reject_table['USED'] = np.ones(rlen, dtype=int)
+    reject_table['COMMENT'] = reject_dict['REASON']
+
+    change_table = Table(change_dict)
+
+    # save to disk
+    print(f'Writing reject table: {reject_file}')
+    reject_table.write(reject_file, overwrite=True, format='csv')
+    print(f'Writing change table: {change_file}')
+    change_table.write(change_file, overwrite=True, format='csv')
 
 
 # =============================================================================
