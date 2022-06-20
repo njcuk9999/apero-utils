@@ -23,7 +23,7 @@ from tqdm import tqdm
 # set the instrument name
 INSTRUMENT = 'NIRPS'
 # set the instrument mode (None if no mode)
-MODE = 'HE'
+MODE = 'HA'
 # whether to add additional printout
 DEBUG = False
 # extra debug not to save file (as test)
@@ -31,8 +31,8 @@ TEST = False
 # define for use in if statements below
 SKIP_KEYS = dict()
 # REJECT_LIST
-REJECT_LIST = 'reject_list.txt'
-CHANGE_LIST = 'change_list.txt'
+REJECT_LIST = 'reject_list.csv'
+CHANGE_LIST = 'change_list.csv'
 # threshold for reject files outright
 FRAC_THRES = 0.95
 # set obs_dir
