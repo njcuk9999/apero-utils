@@ -11,6 +11,7 @@ import matplotlib
 matplotlib.use('Qt5Agg')
 from astropy.io import fits
 from astropy.table import Table
+from astropy import constants as cc
 from astropy.visualization import imshow_norm, ZScaleInterval, LinearStretch
 import glob
 import matplotlib.pyplot as plt
@@ -20,6 +21,7 @@ from matplotlib.patches import Polygon
 import matplotlib.patheffects as PathEffects
 import numpy as np
 import os
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from scipy.signal import convolve2d
 import warnings
 
@@ -67,11 +69,12 @@ PLOTS = []
 # PLOTS.append('SIZE_GRID')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
-PLOTS.append('BADMAP')
+# PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
-PLOTS.append('TCORR')
+PLOTS.append('S1D')
+# PLOTS.append('TCORR')
 
 # =============================================================================
 # PLOT functions
@@ -804,6 +807,111 @@ def plot_e2ds_plot(params):
     plt.close()
 
 
+# S1D
+def plot_s1d_plot(params):
+
+    odocode = '2510303o'
+    first_order = 34
+    last_order = 36
+    # -------------------------------------------------------------------------
+    # get filenames
+    e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
+                             '{0}_pp_e2ds_AB.fits'.format(odocode))
+    # -------------------------------------------------------------------------
+    # get images
+    sp1 = fits.getdata(e2ds_file)
+    hdr = fits.getheader(e2ds_file)
+    # -------------------------------------------------------------------------
+    # get blaze file (using header)
+    blaze_file = os.path.join(params['DRS_CALIB_DB'], hdr['CDBBLAZE'])
+    blaze = fits.getdata(blaze_file)
+    # normalize blaze
+    blaze = blaze / np.nanmedian(blaze)
+    # -------------------------------------------------------------------------
+    # get wave solution (using header)
+    wave = fits2wave(sp1, hdr)
+    # -------------------------------------------------------------------------
+    # calculate magic grid for spectrum
+    wmin = np.median(wave[first_order])
+    wmax = np.median(wave[last_order])
+
+    magic = get_magic_grid(wmin, wmax, dv_grid=1000)
+
+    w = np.zeros_like(magic)
+    sp = np.zeros_like(magic)
+
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    fig, frames = plt.subplots(nrows=3, ncols=1, sharex='all',
+                               figsize=[8, 8])
+    # -------------------------------------------------------------------------
+    # loop around orders in range
+    colors = ['blue', 'red', 'cyan']
+
+    min_order = np.zeros(wave.shape[0])
+    max_order = np.zeros(wave.shape[0])
+
+    for it, order_num in enumerate(range(first_order, last_order + 1)):
+        color = colors[it]
+        valid = np.isfinite(sp1[order_num] * blaze[order_num])
+        spl1 = ius(wave[order_num][valid], sp1[order_num][valid], k=1, ext=3)
+        spl2 = ius(wave[order_num][valid], blaze[order_num][valid], k=1, ext=3)
+        mask = ius(wave[order_num], valid, k=1, ext=3)
+
+        sp += spl1(magic) * mask(magic)
+        w += spl2(magic) * mask(magic)
+
+        frames[0].plot(wave[order_num], sp1[order_num], color=color,
+                       label=f'Order {order_num}')
+        frames[1].plot(wave[order_num], blaze[order_num], color=color,
+                       label=f'Order {order_num}')
+
+        min_order[order_num] = np.min(wave[order_num])
+        max_order[order_num] = np.max(wave[order_num])
+
+
+    # work out where there is overlap
+    omask = np.zeros_like(magic, dtype=bool)
+    for order_num in range(wave.shape[0] - 1):
+        if min_order[order_num + 1] == 0 or max_order[order_num] == 0:
+            continue
+        omask |= ((magic < max_order[order_num]) & (magic > min_order[order_num + 1]))
+
+    sp_overlap = sp / w
+    sp_no_overlap = sp / w
+
+    sp_overlap[~omask] = np.nan
+    sp_no_overlap[omask] = np.nan
+
+    # plot
+    frames[0].plot(magic, sp, color='grey', alpha=0.5, label='Weight')
+    frames[1].plot(magic, w, color='grey', alpha=0.5, label='Weight')
+    frames[2].plot(magic, sp_no_overlap, color='purple', label='no overlap')
+    frames[2].plot(magic, sp_overlap, color='orange', label='overlap')
+    frames[1].set(xlim=[wmin, wmax])
+
+    # -------------------------------------------------------------------------
+    # plot labels
+    frames[0].set(ylabel='flux')
+    frames[1].set(ylabel='Normalized blaze')
+    frames[2].set(ylabel='ratio = spectrum / weight', xlabel='Wavelength [nm]')
+
+    frames[0].legend(loc=0)
+    frames[1].legend(loc=0)
+    frames[2].legend(loc=0)
+
+    plt.subplots_adjust(hspace=0, wspace=0, left=0.075, right=0.98, top=0.95,
+                        bottom=0.075)
+    plt.suptitle(hdr['OBJECT'])
+
+    outfile = os.path.join(PLOT_PATH, 's1d.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show(block=True)
+    plt.close()
+
 
 # TCORR
 def plot_tcorr_plot(params):
@@ -993,6 +1101,18 @@ def fits2wave(image, header):
     return wavesol
 
 
+def get_magic_grid(wave0=1500,wave1=1800,dv_grid=0.5):
+    # default for the function is 500 m/s
+    # the arithmetic is a but confusing here, you first find how many
+    # elements you have on your grid, then pass it to an exponential
+    # the first element is exactely wave0, the last element is NOT
+    # exactly wave1, but is very close and is set to get your exact
+    # step in velocity
+    len_magic = int(np.ceil(np.log(wave1/wave0)*np.array(cc.c.value)/dv_grid))
+    magic_grid =  np.exp(np.arange(len_magic)/len_magic*np.log(wave1/wave0))*wave0
+    return magic_grid
+
+
 # =============================================================================
 # backmap functions
 # =============================================================================
@@ -1125,6 +1245,8 @@ if __name__ == '__main__':
         plot_flatblaze_plot(params)
     if 'E2DS' in PLOTS:
         plot_e2ds_plot(params)
+    if 'S1D' in PLOTS:
+        plot_s1d_plot(params)
     if 'TCORR' in PLOTS:
         plot_tcorr_plot(params)
 
