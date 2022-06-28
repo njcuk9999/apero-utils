@@ -13,6 +13,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy import constants as cc
 from astropy.visualization import imshow_norm, ZScaleInterval, LinearStretch
+import itertools
 import glob
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
@@ -67,14 +68,16 @@ BANDS['$K_{s}$'] = [19577.92/10, 23431.05/10]     # MKO
 # define plots and append those we want
 PLOTS = []
 # PLOTS.append('SIZE_GRID')
+# PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
-PLOTS.append('S1D')
+# PLOTS.append('S1D')
 # PLOTS.append('TCORR')
+PLOTS.append('TELLU_COV')
 
 # =============================================================================
 # PLOT functions
@@ -212,6 +215,128 @@ def plot_size_grid(params):
     print('Showing graph')
     plt.show()
     plt.close()
+
+
+# FIBER LAYOUT SCHEMATIC
+def plot_fiber_layout(params):
+
+    odocode = '2510301o'
+    hashcode = '2510301o'
+
+    zoom0area = [1400, 1700, 1100, 1400]
+    zoom1area = [1100, 1400, 1400, 1700]
+
+    # get file paths
+    raw_file = os.path.join(params['DRS_DATA_RAW'], NIGHT,
+                            '{0}.fits'.format(odocode))
+    pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
+                           '{0}_pp.fits'.format(hashcode))
+
+    # get
+    print('Loading raw image')
+    raw_image = fits.getdata(raw_file)
+    print('Loading pp image')
+    pp_image = fits.getdata(pp_file)
+    # rotation to match HARPS orientation (expected by DRS)
+    # image1 = drs_image.rotate_image(raw_image, params['RAW_TO_PP_ROTATION'])
+    # flip image
+    image2 = drs_image.flip_image(params, pp_image)
+    # get resize size
+    sargs = dict(xlow=params['IMAGE_X_LOW'], xhigh=params['IMAGE_X_HIGH'],
+                 ylow=params['IMAGE_Y_LOW'], yhigh=params['IMAGE_Y_HIGH'])
+    # resize flat
+    image3 = drs_image.resize(params, image2, **sargs)
+
+    print('Plotting size_grid plot')
+    plt.close()
+
+    fig, frames = plt.subplots(ncols=2, nrows=1, figsize=(12, 6))
+    frame1 = frames[0]
+    frame2 = frames[1]
+
+    cmap = matplotlib.cm.get_cmap('inferno').copy()
+    cmap.set_bad(color='green')
+
+    # -------------------------------------------------------------------------
+    # zoom raw
+    zraw_image = raw_image[zoom0area[2]:zoom0area[3], zoom0area[0]:zoom0area[1]]
+    # left raw image
+    im, norm = _norm_image(zraw_image, frame1, cmap)
+    # add labels
+    frame1.tick_params(axis='both', which='both', bottom=False, top=False,
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
+
+    frame1.set_title('raw', loc='left',
+                       x=0.05, y=0.95, pad=-14,
+                       color='black', backgroundcolor='white')
+
+    frame1.text(77, 140, 'A', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame1.text(94, 115, 'B', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame1.text(111, 90, 'C', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+
+    frame1.text(77+64, 140, 'A', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame1.text(94+64, 115, 'B', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame1.text(111+64, 90, 'C', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+
+    frame1.text(77+126, 140, 'A', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame1.text(94+126, 115, 'B', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame1.text(111+126, 90, 'C', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    # -------------------------------------------------------------------------
+    # zoom pp
+    zimage3 = image3[zoom1area[2]:zoom1area[3], zoom1area[0]:zoom1area[1]]
+    # middle: pp
+    im, norm = _norm_image(zimage3, frame2, cmap)
+    # add labels
+    frame2.tick_params(axis='both', which='both', bottom=False, top=False,
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
+
+    frame2.set_title('pre-processed', loc='left',
+                       x=0.05, y=0.95, pad=-14,
+                       color='black', backgroundcolor='white')
+
+    frame2.text(100, 234, 'A', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame2.text(128, 218, 'B', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame2.text(156, 204, 'C', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+
+    frame2.text(100, 234-53, 'A', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame2.text(128, 218-53, 'B', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame2.text(156, 204-53, 'C', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+
+    frame2.text(100, 234-105, 'A', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame2.text(128, 218-105, 'B', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+    frame2.text(156, 204-105, 'C', color='black', ha='center', va='center',
+                backgroundcolor='white', rotation=7)
+
+    # -------------------------------------------------------------------------
+    plt.subplots_adjust(wspace=0.05, hspace=0.05,
+                        left=0.01, right=0.99, top=0.975, bottom=0.05)
+    # save file
+    outfile = os.path.join(PLOT_PATH, 'fiber_layout.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile, dpi=300)
+    print('Showing graph')
+    plt.show()
+    plt.close()
+
 
 
 # RAW_FEATURES
@@ -839,7 +964,7 @@ def plot_s1d_plot(params):
 
     w = np.zeros_like(magic)
     sp = np.zeros_like(magic)
-
+    middle_nans = np.zeros_like(magic).astype(bool)
     # -------------------------------------------------------------------------
     # plot setup
     plt.close()
@@ -855,20 +980,35 @@ def plot_s1d_plot(params):
     for it, order_num in enumerate(range(first_order, last_order + 1)):
         color = colors[it]
         valid = np.isfinite(sp1[order_num] * blaze[order_num])
+
+
+
         spl1 = ius(wave[order_num][valid], sp1[order_num][valid], k=1, ext=3)
         spl2 = ius(wave[order_num][valid], blaze[order_num][valid], k=1, ext=3)
         mask = ius(wave[order_num], valid, k=1, ext=3)
 
+        # get nans not on the edge
+        wstart = np.min(wave[order_num][valid])
+        wend = np.max(wave[order_num][valid])
+
+        wmask = (wave[order_num] > wstart) & (wave[order_num] < wend)
+
+        middlenan = np.isnan(sp1[order_num] * blaze[order_num]) & wmask
+
+        is_middle_nan = ius(wave[order_num], middlenan, k=1, ext=3)
+
         sp += spl1(magic) * mask(magic)
         w += spl2(magic) * mask(magic)
 
-        frames[0].plot(wave[order_num], sp1[order_num], color=color,
-                       label=f'Order {order_num}')
-        frames[1].plot(wave[order_num], blaze[order_num], color=color,
-                       label=f'Order {order_num}')
+        middle_nans |= np.array(is_middle_nan(magic)).astype(bool)
 
-        min_order[order_num] = np.min(wave[order_num])
-        max_order[order_num] = np.max(wave[order_num])
+        frames[0].plot(wave[order_num], sp1[order_num], color=color,
+                       label=f'Order {order_num}', alpha=0.5)
+        frames[1].plot(wave[order_num], blaze[order_num], color=color,
+                       label=f'Order {order_num}', alpha=0.5)
+
+        min_order[order_num] = wstart
+        max_order[order_num] = wend
 
 
     # work out where there is overlap
@@ -884,9 +1024,13 @@ def plot_s1d_plot(params):
     sp_overlap[~omask] = np.nan
     sp_no_overlap[omask] = np.nan
 
+    # apply all valid criteria
+    sp[middle_nans] = np.nan
+    w[middle_nans] = np.nan
+
     # plot
-    frames[0].plot(magic, sp, color='grey', alpha=0.5, label='Weight')
-    frames[1].plot(magic, w, color='grey', alpha=0.5, label='Weight')
+    frames[0].plot(magic, sp, color='grey', alpha=0.5, label='Combined flux')
+    frames[1].plot(magic, w, color='grey', alpha=0.5, label='Combined flux')
     frames[2].plot(magic, sp_no_overlap, color='purple', label='no overlap')
     frames[2].plot(magic, sp_overlap, color='orange', label='overlap')
     frames[1].set(xlim=[wmin, wmax])
@@ -1005,6 +1149,64 @@ def plot_tcorr_plot(params):
     print('Showing graph')
     plt.show(block=True)
     plt.close()
+
+
+
+
+
+# TELLU_COV
+def plot_tcorr_plot(params):
+    # get telluric database
+    telludbm = drs_database.TelluricDatabase(params)
+    telludbm.load_db()
+
+    tellu_table = telludbm.get_tellu_entry('*', key='TELLU_TRANS')
+
+    # group by object name
+    uobjnames = np.unique(tellu_table['OBJECT'])
+    tau_water = tellu_table['TAU_WATER']
+    tau_others = tellu_table['TAU_OTHERS']
+
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    fig, frame = plt.subplots(ncols=1, nrows=1, figsize=(12, 12))
+
+    colors = ['red', 'orange', 'green', 'blue', 'purple', 'black']
+    markers = ['o', '+', 's', 'd', '^', 'v']
+
+    fmt = list(itertools.product(markers, colors))
+
+    for it, uobjname in enumerate(uobjnames):
+
+        marker, color = fmt[it]
+
+        if marker in ['+']:
+            facecolor = color
+            edgecolor = None
+        else:
+            facecolor = 'None'
+            edgecolor = color
+
+        objmask = tellu_table['OBJECT'] == uobjname
+
+        frame.scatter(tau_water[objmask], tau_others[objmask], alpha=0.5,
+                      label=uobjname, marker=marker, edgecolor=edgecolor,
+                      facecolor=facecolor)
+
+    frame.set(xlabel=r'$\tau$ water', ylabel=r'$\tau$ other')
+    frame.legend(loc=6, bbox_to_anchor=(1.05, 0.5))
+    plt.subplots_adjust(left=0.075, right=0.8, bottom=0.0725, top=0.9,
+                        hspace=0.2)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'tcorr.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show(block=True)
+    plt.close()
+
 
 
 # =============================================================================
@@ -1233,6 +1435,8 @@ if __name__ == '__main__':
 
     if 'SIZE_GRID' in PLOTS:
         plot_size_grid(params)
+    if 'FIBER_LAYOUT' in PLOTS:
+        plot_fiber_layout(params)
     if 'RAW_FEATURES' in PLOTS:
         plot_raw_features(params)
     if 'PP_FEATURES' in PLOTS:
@@ -1249,6 +1453,8 @@ if __name__ == '__main__':
         plot_s1d_plot(params)
     if 'TCORR' in PLOTS:
         plot_tcorr_plot(params)
+    if 'TELLU_COV' in PLOTS:
+        plot_tellu_cov_plot(params)
 
 # =============================================================================
 # End of code
