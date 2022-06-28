@@ -63,7 +63,7 @@ GRID_PMDE = np.linspace(-6000, 6000, 6)
 GRID_PLX = 10**(np.linspace(0, 3, 6))
 
 # select mode (simple or grid)
-MODE = 'simple'
+MODE = 'grid'
 
 # ----------------------------------------------------------------------------
 # where things are saved

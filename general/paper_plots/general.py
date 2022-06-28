@@ -8,7 +8,10 @@ Created on 2021-08-01
 @author: cook
 """
 import matplotlib
-matplotlib.use('Qt5Agg')
+try:
+    matplotlib.use('Qt5Agg')
+except:
+    matplotlib.use('TkAgg')
 from astropy.io import fits
 from astropy.table import Table
 from astropy import constants as cc
@@ -52,6 +55,7 @@ ObjectDatabase = drs_database.ObjectDatabase
 NIGHT = '2020-08-31'
 # define where we want to save plots
 PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
+PLOT_PATH = '/spirou/cook/paper_plots'
 # define Y, J, H, K
 BANDS = dict()
 # BANDS['Y'] = [944.126, 1108.771]            # UKIRT Y
@@ -1151,11 +1155,8 @@ def plot_tcorr_plot(params):
     plt.close()
 
 
-
-
-
 # TELLU_COV
-def plot_tcorr_plot(params):
+def plot_tellu_cov_plot(params):
     # get telluric database
     telludbm = drs_database.TelluricDatabase(params)
     telludbm.load_db()
@@ -1170,7 +1171,7 @@ def plot_tcorr_plot(params):
     # -------------------------------------------------------------------------
     # plot setup
     plt.close()
-    fig, frame = plt.subplots(ncols=1, nrows=1, figsize=(12, 12))
+    fig, frame = plt.subplots(ncols=1, nrows=1, figsize=(12, 8))
 
     colors = ['red', 'orange', 'green', 'blue', 'purple', 'black']
     markers = ['o', '+', 's', 'd', '^', 'v']
@@ -1194,13 +1195,14 @@ def plot_tcorr_plot(params):
                       label=uobjname, marker=marker, edgecolor=edgecolor,
                       facecolor=facecolor)
 
-    frame.set(xlabel=r'$\tau$ water', ylabel=r'$\tau$ other')
-    frame.legend(loc=6, bbox_to_anchor=(1.05, 0.5))
+    frame.set(xlabel=r'$\tau$[water]$\propto$water absorption',
+              ylabel=r'$ \tau$[other]$\propto$dry absorption (airmass)')
+    frame.legend(title='Hot stars', loc=6, bbox_to_anchor=(1.05, 0.5))
     plt.subplots_adjust(left=0.075, right=0.8, bottom=0.0725, top=0.9,
                         hspace=0.2)
     # -------------------------------------------------------------------------
     # save plot
-    outfile = os.path.join(PLOT_PATH, 'tcorr.pdf')
+    outfile = os.path.join(PLOT_PATH, 'tellu_cov.pdf')
     print('Saving to file: ' + outfile)
     plt.savefig(outfile)
     print('Showing graph')
