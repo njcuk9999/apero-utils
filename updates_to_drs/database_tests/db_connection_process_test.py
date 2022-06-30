@@ -19,7 +19,7 @@ import time
 # Define variables
 # =============================================================================
 # define workspace
-WORKSPACE = '/spirou/cook/db_test'
+WORKSPACE = '/spirou/cook/db_test/2022-06-30'
 # file for processes
 PROCESS_FILE = os.path.join(WORKSPACE, 'process.txt')
 # file for connections
