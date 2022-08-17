@@ -55,7 +55,8 @@ ObjectDatabase = drs_database.ObjectDatabase
 NIGHT = '2020-08-31'
 # define where we want to save plots
 PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
-PLOT_PATH = '/spirou/cook/paper_plots'
+# PLOT_PATH = '/spirou/cook/paper_plots'
+# PLOT_PATH = '/data/spirou/drs-data/misc/paper_plots'
 # define Y, J, H, K
 BANDS = dict()
 # BANDS['Y'] = [944.126, 1108.771]            # UKIRT Y
@@ -71,7 +72,7 @@ BANDS['$K_{s}$'] = [19577.92/10, 23431.05/10]     # MKO
 
 # define plots and append those we want
 PLOTS = []
-# PLOTS.append('SIZE_GRID')
+PLOTS.append('SIZE_GRID')
 # PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
@@ -81,7 +82,7 @@ PLOTS = []
 # PLOTS.append('E2DS')
 # PLOTS.append('S1D')
 # PLOTS.append('TCORR')
-PLOTS.append('TELLU_COV')
+# PLOTS.append('TELLU_COV')
 
 # =============================================================================
 # PLOT functions
@@ -201,13 +202,18 @@ def plot_size_grid(params):
         # plot band
         frame4.fill_betweenx([-0.2*maxflux, 1.05*maxflux], band[0], band[1],
                              color='0.5', alpha=0.5, zorder=0)
-        txt = frame4.text(np.mean(band), 0.75*maxflux, bandname,
+        txt = frame4.text(np.mean(band), 0.9*maxflux, bandname,
                           color='w', zorder=10, fontsize=16, ha='center')
         txt.set_path_effects([PathEffects.withStroke(linewidth=1,
                                                      foreground='k')])
+
+    frame4.set_title('Extracted 1D (S1D) 1x285377',
+                     loc='left', x=0.5, y=0.95, pad=-14,
+                     color='black', backgroundcolor='white')
     # plot cosmetics
     frame4.axes.yaxis.set_ticks([])
-    frame4.set(xlim=[950, 2500], ylim=[0, 1.05*maxflux], xlabel='Wavelength [nm]')
+    frame4.set(xlim=[950, 2500], ylim=[0, 1.05*maxflux],
+               xlabel='Wavelength [nm]')
     frame4.set_yticklabels([])
     # -------------------------------------------------------------------------
     plt.subplots_adjust(wspace=0.05, hspace=0.05,
@@ -803,7 +809,7 @@ def plot_flatblaze_plot(params):
     # -------------------------------------------------------------------------
     # plot setup
     plt.close()
-    fig = plt.figure(figsize=(12, 8))
+    fig = plt.figure(figsize=(14, 8))
 
 
     frame0 = plt.subplot2grid((3, 1), (0, 0), rowspan=2, colspan=1)
@@ -822,7 +828,7 @@ def plot_flatblaze_plot(params):
         frame1.plot(flat_image[order_num],color=colors[it], alpha=0.75)
 
     frame0.legend(loc=0)
-    frame0.set(xlabel='Pixel number', ylabel='E2DS Flux',
+    frame0.set(xlabel='Pixel number', ylabel='E2DS Flux [e-]',
                xlim=[0, 4088])
     frame1.set(xlabel='Pixel number', ylabel='Residual E2DS-Blaze Flux',
                xlim=[0, 4088])
@@ -973,7 +979,7 @@ def plot_s1d_plot(params):
     # plot setup
     plt.close()
     fig, frames = plt.subplots(nrows=3, ncols=1, sharex='all',
-                               figsize=[8, 8])
+                               figsize=[12, 8])
     # -------------------------------------------------------------------------
     # loop around orders in range
     colors = ['blue', 'red', 'cyan']
@@ -985,7 +991,7 @@ def plot_s1d_plot(params):
         color = colors[it]
         valid = np.isfinite(sp1[order_num] * blaze[order_num])
 
-
+        order_name = 79 - order_num
 
         spl1 = ius(wave[order_num][valid], sp1[order_num][valid], k=1, ext=3)
         spl2 = ius(wave[order_num][valid], blaze[order_num][valid], k=1, ext=3)
@@ -1007,9 +1013,9 @@ def plot_s1d_plot(params):
         middle_nans |= np.array(is_middle_nan(magic)).astype(bool)
 
         frames[0].plot(wave[order_num], sp1[order_num], color=color,
-                       label=f'Order {order_num}', alpha=0.5)
+                       label=f'Order #{order_name}', alpha=0.5)
         frames[1].plot(wave[order_num], blaze[order_num], color=color,
-                       label=f'Order {order_num}', alpha=0.5)
+                       label=f'Order #{order_name}', alpha=0.5)
 
         min_order[order_num] = wstart
         max_order[order_num] = wend
@@ -1041,7 +1047,7 @@ def plot_s1d_plot(params):
 
     # -------------------------------------------------------------------------
     # plot labels
-    frames[0].set(ylabel='flux')
+    frames[0].set(ylabel='flux [e-]')
     frames[1].set(ylabel='Normalized blaze')
     frames[2].set(ylabel='ratio = spectrum / weight', xlabel='Wavelength [nm]')
 
