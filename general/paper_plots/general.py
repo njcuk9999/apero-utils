@@ -72,13 +72,13 @@ BANDS['$K_{s}$'] = [19577.92/10, 23431.05/10]     # MKO
 
 # define plots and append those we want
 PLOTS = []
-PLOTS.append('SIZE_GRID')
+# PLOTS.append('SIZE_GRID')
 # PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
-# PLOTS.append('FLATBLAZE')
+PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
 # PLOTS.append('S1D')
 # PLOTS.append('TCORR')
@@ -730,11 +730,16 @@ def plot_backmap_plot(params):
     # run the bad pixel code relevant for the plot
     WLOG(params, 'info', 'Running badpix code required for plot')
     flat_image1, backmask, backest = _do_bad_pix(params, flat_image, dark_image)
+
+    # set 0.0 back to NaN for graph
+    flat_image1[flat_image1 == 0.0] = np.nan
     # -------------------------------------------------------------------------
     # get colour maps
     cmap1 = matplotlib.cm.get_cmap('inferno').copy()
     cmap2 = matplotlib.cm.get_cmap('Greys_r').copy()
     cmap3 = matplotlib.cm.get_cmap('Greys').copy()
+    # set NaNs to green
+    cmap2.set_bad(color='green')
     # -------------------------------------------------------------------------
     # plot setup
     plt.close()
@@ -830,7 +835,7 @@ def plot_flatblaze_plot(params):
     frame0.legend(loc=0)
     frame0.set(xlabel='Pixel number', ylabel='E2DS Flux [e-]',
                xlim=[0, 4088])
-    frame1.set(xlabel='Pixel number', ylabel='Residual E2DS-Blaze Flux',
+    frame1.set(xlabel='Pixel number', ylabel='Flat = E2DS/Blaze',
                xlim=[0, 4088])
     # adjust edges of figure
     plt.subplots_adjust(wspace=0, hspace=0.225, left=0.075, right=0.99,
