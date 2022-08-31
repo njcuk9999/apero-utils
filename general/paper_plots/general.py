@@ -8,10 +8,7 @@ Created on 2021-08-01
 @author: cook
 """
 import matplotlib
-try:
-    matplotlib.use('Qt5Agg')
-except:
-    matplotlib.use('TkAgg')
+matplotlib.use('TkAgg')
 from astropy.io import fits
 from astropy.table import Table
 from astropy import constants as cc
@@ -38,11 +35,12 @@ from apero.io import drs_image
 from apero.core.instruments.spirou import file_definitions
 from apero.science.calib import badpix
 from apero.core import math as mp
-from apero.recipes.spirou import apero_extract_spirou
+
 
 # =============================================================================
 # Define variables
 # =============================================================================
+__NAME__ = 'paper_plots.general.py'
 # Get Logging function
 WLOG = drs_log.wlog
 # Get the text types
@@ -50,13 +48,20 @@ textentry = lang.textentry
 # Raw prefix
 RAW_PREFIX = file_definitions.raw_prefix
 # get the object database
-ObjectDatabase = drs_database.ObjectDatabase
+# TODO: remove once on v0.7.243+
+if hasattr(drs_database, 'AstrometricDatabase'):
+    AstrometricDatabase = drs_database.AstrometricDatabase
+else:
+    AstrometricDatabase = drs_database.ObjectDatabase
 # define the night of data we want to use
 NIGHT = '2020-08-31'
 # define where we want to save plots
-PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
-# PLOT_PATH = '/spirou/cook/paper_plots'
-# PLOT_PATH = '/data/spirou/drs-data/misc/paper_plots'
+if os.environ.get("USERNAME") == 'cook':
+    PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
+elif os.environ.get("USERNAME") == 'spirou':
+    PLOT_PATH = '/spirou/cook/paper_plots'
+else:
+    PLOT_PATH = '/data/spirou/drs-data/misc/paper_plots'
 # define Y, J, H, K
 BANDS = dict()
 # BANDS['Y'] = [944.126, 1108.771]            # UKIRT Y
@@ -78,11 +83,12 @@ PLOTS = []
 # PLOTS.append('PP_FEATURES')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
-PLOTS.append('FLATBLAZE')
+# PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
 # PLOTS.append('S1D')
 # PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
+PLOTS.append('THERM')
 
 # =============================================================================
 # PLOT functions
@@ -346,7 +352,6 @@ def plot_fiber_layout(params):
     print('Showing graph')
     plt.show()
     plt.close()
-
 
 
 # RAW_FEATURES
@@ -1201,14 +1206,17 @@ def plot_tellu_cov_plot(params):
             edgecolor = color
 
         objmask = tellu_table['OBJECT'] == uobjname
+        length = np.sum(objmask)
 
-        frame.scatter(tau_water[objmask], tau_others[objmask], alpha=0.5,
-                      label=uobjname, marker=marker, edgecolor=edgecolor,
+        label = f'{uobjname} N={length}'
+
+        frame.scatter(tau_water[objmask], tau_others[objmask], alpha=0.75,
+                      label=label, marker=marker, edgecolor=edgecolor,
                       facecolor=facecolor)
 
-    frame.set(xlabel=r'$\tau$[water]$\propto$water absorption',
-              ylabel=r'$ \tau$[other]$\propto$dry absorption (airmass)')
-    frame.legend(title='Hot stars', loc=6, bbox_to_anchor=(1.05, 0.5))
+    frame.set(xlabel=r'$\tau$[water]$\approx$water absorption',
+              ylabel=r'$ \tau$[dry]$\approx$dry absorption (airmass)')
+    frame.legend(title='Hot stars', loc=6, bbox_to_anchor=(1.025, 0.5))
     plt.subplots_adjust(left=0.075, right=0.8, bottom=0.0725, top=0.9,
                         hspace=0.2)
     # -------------------------------------------------------------------------
@@ -1220,6 +1228,328 @@ def plot_tellu_cov_plot(params):
     plt.show(block=True)
     plt.close()
 
+
+
+# THERM
+def plot_therm_plot(params):
+    # file to get
+    hashcode = '2510376o'
+    # science fibers to correction
+    fibers = ['AB']
+    # -------------------------------------------------------------------------
+    # custom imports only for therm plot
+    #   change manually for different instrument
+    from apero.base import base
+    from apero.core.instruments.spirou import recipe_definitions
+    from apero.core.instruments.spirou import file_definitions
+    from apero.science.calib import gen_calib, shape, wave, localisation
+    from apero.science.calib import flat_blaze, leak, thermal
+    from apero.science import extract
+    from apero.core.constants import ParamDict
+    from apero.core.utils import drs_data
+    from apero.core.utils import drs_recipe
+    # -------------------------------------------------------------------------
+    # set the func name
+    mainname = __NAME__ + '.plot_therm_plot()'
+    # alias pcheck
+    pcheck = constants.PCheck(wlog=WLOG)
+    # must set a pid (locking required)
+    params['PID'] = 'UNKNOWN-PID'
+    # must set date now
+    params['DATE_NOW'] = base.__now__.fits
+    # force no save of products
+    if 'INPUTS' not in params:
+        params['INPUTS'] = ParamDict()
+    params['INPUTS']['NOSAVE'] = True
+    # make sure we have a LEAKCORR parameter
+    params['INPUTS']['LEAKCORR'] = True
+    # set outpath
+    params['OUTPATH'] = PLOT_PATH
+    params['OBS_DIR'] = NIGHT
+    # load pseudo constants
+    pconst = constants.pload()
+    # get the fiber types needed
+    sci_fibers, ref_fiber = pconst.FIBER_KINDS()
+    # must process reference fiber first then required fibers
+    fibertypes = [ref_fiber] + fibers
+    # -------------------------------------------------------------------------
+    # get file paths
+    pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
+                           '{0}_pp.fits'.format(hashcode))
+    # -------------------------------------------------------------------------
+    # get recipe
+    recipe = recipe_definitions.apero_extract
+    recipe.plot = drs_recipe.lambda_plot
+    # -------------------------------------------------------------------------
+    # load file
+    print('Loading pp image')
+    pp_image = fits.getdata(pp_file)
+    pp_header = fits.getheader(pp_file)
+    # -------------------------------------------------------------------------
+    # create infile
+    infile = file_definitions.pp_file.newcopy(filename=pp_file, params=params,
+                                              data=pp_image, header=pp_header)
+    # =========================================================================
+    # All this comes from apero_extract_spirou.py
+    #    May need updating so check apero_extract_spirou.py
+    # =========================================================================
+    # START OF apero_extract_spirou.py
+    # =========================================================================
+    # load the calibration database
+    calibdbm = drs_database.CalibrationDatabase(params)
+    calibdbm.load_db()
+    # -------------------------------------------------------------------------
+    # Load shape components
+    sprops = shape.get_shape_calibs(params, pp_header, database=calibdbm)
+    # -------------------------------------------------------------------------
+    # Correction of file
+    props, image = gen_calib.calibrate_ppfile(params, recipe, infile,
+                                              database=calibdbm)
+    # -------------------------------------------------------------------------
+    # Load and straighten order profiles
+    sargs = [infile, fibertypes, sprops]
+    oout = extract.order_profiles(params, recipe, *sargs, database=calibdbm)
+    orderps, orderpfiles, orderptimes = oout
+    # -------------------------------------------------------------------------
+    # Apply shape transformations
+    # log progress (straightening orderp)
+    WLOG(params, 'info', textentry('40-016-00004'))
+    # straighten image
+    image2 = shape.ea_transform(params, image, sprops['SHAPEL'],
+                                dxmap=sprops['SHAPEX'], dymap=sprops['SHAPEY'])
+    # -------------------------------------------------------------------------
+    # Calculate Barycentric correction
+    bprops = extract.get_berv(params, infile, pp_header)
+    # -------------------------------------------------------------------------
+    # Fiber loop
+    # -------------------------------------------------------------------------
+    # storage for return / reference fiber usage
+    e2dsoutputs = dict()
+    eprops_all = dict()
+    waves_all = dict()
+    # loop around fiber types
+    for fiber in fibertypes:
+        # log process: processing fiber
+        wargs = [fiber, ', '.join(fibertypes)]
+        WLOG(params, 'info', textentry('40-016-00014', args=wargs))
+        # ------------------------------------------------------------------
+        # get reference fiber data
+        ref_key = 'E2DS_{0}'.format(ref_fiber)
+        # if we have reference data populate ref_e2ds
+        if ref_key in e2dsoutputs:
+            ref_e2ds = e2dsoutputs[ref_key].data
+        # otherwise this is set to None - and we cannot use it
+        else:
+            ref_e2ds = None
+        # ------------------------------------------------------------------
+        # check forcing reference wave solution
+        mwave = False
+        if 'FORCE_REF_WAVE' in params['INPUTS']:
+            mwave = params['INPUTS']['FORCE_REF_WAVE']
+        # get the wave solution
+        wprops = wave.get_wavesolution(params, recipe, pp_header,
+                                       fiber=fiber, ref=mwave,
+                                       database=calibdbm,
+                                       nbpix=image.shape[1])
+        # --------------------------------------------------------------
+        # load the localisation properties for this fiber
+        lprops = localisation.get_coefficients(params, pp_header, fiber=fiber,
+                                               merge=True,
+                                               database=calibdbm)
+        # get the localisation center coefficients for this fiber
+        lcoeffs = lprops['CENT_COEFFS']
+        # shift the coefficients
+        lcoeffs2 = shape.ea_transform_coeff(image2, lcoeffs,
+                                            sprops['SHAPEL'])
+        # --------------------------------------------------------------
+        # load the flat file for this fiber
+        fout = flat_blaze.get_flat(params, pp_header, fiber, database=calibdbm)
+        # --------------------------------------------------------------
+        # load the blaze file for this fiber
+        bout = flat_blaze.get_blaze(params, pp_header, fiber,
+                                    database=calibdbm)
+        # add blaze and flat to parameter dictionary
+        fbprops = ParamDict()
+        fbprops['FLAT'] = fout[2]
+        fbprops['FLATFILE'] = fout[0]
+        fbprops['FLATTIME'] = fout[1]
+        fbprops['BLAZE'] = bout[2]
+        fbprops['BLAZEFILE'] = bout[0]
+        fbprops['BLAZETIME'] = bout[1]
+        # add keys
+        keys = ['FLAT', 'FLATFILE', 'FLATTIME', 'BLAZE', 'BLAZEFILE',
+                'BLAZETIME']
+        fbprops.set_sources(keys, mainname)
+        # get the number of frames used
+        nframes = 1
+        # --------------------------------------------------------------
+        # get the order profile for this fiber
+        lprops['ORDERP'] = orderps[fiber]
+        lprops['ORDERPFILE'] = orderpfiles[fiber]
+        lprops['ORDERPTIME'] = orderptimes[fiber]
+        lprops.set_sources(['ORDERP', 'ORDERPFILE', 'ORDERPTIME'], mainname)
+        # --------------------------------------------------------------
+        # log progress: extracting image
+        WLOG(params, 'info', textentry('40-016-00011'))
+        # extract spectrum
+        eprops = extract.extract2d(params, image2, lprops['ORDERP'],
+                                   lcoeffs2, nframes, props, fiber=fiber)
+        # leak correction
+        eprops = leak.manage_leak_correction(params, recipe, eprops,
+                                             infile, fiber, ref_e2ds)
+        # flat correction for e2dsff
+        eprops = extract.flat_blaze_correction(eprops, fbprops['FLAT'],
+                                               fbprops['BLAZE'])
+        # do not do thermal correction here other than for reference fiber
+        #    (we will do it afterwards)
+        if fiber == ref_fiber:
+            eprops = thermal.thermal_correction(params, recipe, pp_header,
+                                                props, eprops, fiber=fiber,
+                                                database=calibdbm)
+        # --------------------------------------------------------------
+        s1dextfile = params['EXT_S1D_INTYPE']
+        # create 1d spectra (s1d) of the e2ds file
+        sargs = [wprops['WAVEMAP'], eprops[s1dextfile], eprops['BLAZE']]
+        swprops = extract.e2ds_to_s1d(params, recipe, *sargs,
+                                      wgrid='wave', fiber=fiber,
+                                      s1dkind=s1dextfile)
+        svprops = extract.e2ds_to_s1d(params, recipe, *sargs,
+                                      wgrid='velocity', fiber=fiber,
+                                      s1dkind=s1dextfile)
+
+        # --------------------------------------------------------------
+        # Quality control
+        qc_params, passed = extract.qc_extraction(params, eprops)
+        # --------------------------------------------------------------
+        # add files to outputs
+        # --------------------------------------------------------------
+        fargs = [params, recipe, infile, [pp_file], False, fiber,
+                 props, lprops, wprops, eprops, bprops,
+                 swprops, svprops, sprops, fbprops, qc_params]
+        outfiles = extract.write_extraction_files(*fargs)
+        e2dsfile, e2dsfffile = outfiles
+
+
+        ekeys = ['E2DS', 'E2DSFF']
+        efiles = [e2dsfile, e2dsfffile]
+        # loop around keys to add
+        for key, efile in zip(ekeys, efiles):
+            # construct output key
+            outkey = '{0}_{1}'.format(key, fiber)
+            # copy file to dictionary
+            e2dsoutputs[outkey] = efile.completecopy(efile)
+        # must save eprops
+        eprops_all[fiber] = eprops
+        waves_all[fiber] = wprops
+
+    # =========================================================================
+    # END OF apero_extract_spirou.py
+    # =========================================================================
+
+    # Now we have to manually correct thermal for fibers
+    for fiber in fibers:
+        # set up
+        kwargs, func_name = dict(), mainname
+        # get eprops for this fiber
+        eprops = eprops_all[fiber]
+        blaze = eprops['BLAZE']
+        # get the wavemap
+        wavemap = waves_all[fiber]['WAVEMAP']
+        # get properties from parameter dictionaries / kwargs
+        dprtype = pcheck(params, 'DPRTYPE', 'dprtype', kwargs, func_name,
+                         paramdict=props)
+        tapas_thres = pcheck(params, 'THERMAL_THRES_TAPAS', 'tapas_thres', kwargs,
+                             func_name)
+        envelope = pcheck(params, 'THERMAL_ENVELOPE_PERCENTILE', 'envelope',
+                          kwargs, func_name)
+        filter_wid = pcheck(params, 'THERMAL_FILTER_WID', 'filter_wid', kwargs,
+                            func_name)
+        torder = pcheck(params, 'THERMAL_ORDER', 'torder', kwargs, func_name)
+        red_limit = pcheck(params, 'THERMAL_RED_LIMIT', 'red_limit', kwargs,
+                          func_name)
+        blue_limit = pcheck(params, 'THERMAL_BLUE_LIMIT', 'blue_limit', kwargs,
+                            func_name)
+        e2ds = pcheck(params, 'E2DS', 'e2ds', kwargs, func_name,
+                      paramdict=eprops)
+        e2dsff = pcheck(params, 'E2DSFF', 'e2dsff', kwargs, func_name,
+                        paramdict=eprops)
+        flat = pcheck(params, 'FLAT', paramdict=eprops)
+
+        corrtype1 = pcheck(params, 'THERMAL_CORRETION_TYPE1', 'corrtype1', kwargs,
+                           func_name, mapf='list', dtype=str)
+        corrtype2 = pcheck(params, 'THERMAL_CORRETION_TYPE2', 'corrtype2', kwargs,
+                           func_name, mapf='list', dtype=str)
+
+        thermal_file = kwargs.get('thermal_file', None)
+        thermal_correct = pcheck(params, 'THERMAL_CORRECT', 'thermal_correct',
+                                 kwargs, func_name)
+        # get the thermal correction file
+        tout = thermal.get_thermal(params, pp_header, fiber=fiber,
+                                   filename=thermal_file,
+                                   kind='THERMALT_E2DS', database=calibdbm,
+                                   required=True)
+        thermalfile, thermaltime, thermal = tout
+        # ----------------------------------------------------------------------
+        # load tapas
+        tapas, _ = drs_data.load_tapas(params)
+        wtapas, ttapas = tapas['wavelength'], tapas['trans_combined']
+        # --------------------------------------------------------------------------
+        # Method 1: Use tapas (for use with bright targets)
+        # --------------------------------------------------------------------------
+        # binary mask to be saved; this corresponds to the domain for which
+        #    transmission is basically zero and we can safely use the domain
+        #    to scale the thermal background. We only do this for wavelength smaller
+        #    than "THERMAL_TAPAS_RED_LIMIT" nm as this is the red end of the
+        #    TAPAS domain
+        # --------------------------------------------------------------------------
+        # splining tapas onto the order 49 wavelength grid
+        sptapas = mp.iuv_spline(wtapas, ttapas, ext=3, k=1)
+        # set torder mask all to False initially
+        torder_mask = np.zeros_like(wavemap[torder, :], dtype=bool)
+        # get the wave mask
+        wavemask = wavemap[torder] < red_limit
+        # get the tapas data for these wavelengths
+        torder_tapas = sptapas(wavemap[torder, wavemask])
+        # find those pixels lower than threshold in tapas
+        torder_mask[wavemask] = torder_tapas < tapas_thres
+        # we find the median scale between the observation and the thermal
+        #    background in domains where there is no transmission
+        thermal_torder = thermal[torder, torder_mask]
+        image_torder = e2ds[torder, torder_mask]
+        ratio = mp.nanmedian(thermal_torder / image_torder)
+        # -------------------------------------------------------------------------
+        # scale thermal by ratio
+        thermal = thermal / ratio
+        # get properties from params
+        startorder = params['THERMAL_PLOT_START_ORDER']
+        # correct data for graph
+        rblaze = np.ravel(blaze[startorder:])
+        rwave = np.ravel(wavemap[startorder:])
+        rimage = np.ravel(e2ds[startorder:])
+        rthermal = np.ravel(thermal[startorder:])
+        swave = wavemap[torder, torder_mask]
+        sthermal = thermal[torder][torder_mask]
+        # -------------------------------------------------------------------------
+        # plot setup
+        plt.close()
+        fig, frame = plt.subplots(ncols=1, nrows=1, figsize=(12, 8))
+        # -------------------------------------------------------------------------
+        # plot data
+        frame.plot(rwave, rimage, color='k', label='input spectrum')
+        frame.plot(rwave, rthermal, color='r', label='scaled thermal')
+        frame.plot(swave, sthermal, color='b', marker='o', ls='None',
+                   label='background sample region')
+        # set graph properties
+        frame.legend(loc=0)
+        frame.set(xlabel='Wavelength [nm]', ylabel='Flux')
+        # -------------------------------------------------------------------------
+        # save plot
+        outfile = os.path.join(PLOT_PATH, f'therm_plot_{fiber}.pdf')
+        print('Saving to file: ' + outfile)
+        plt.savefig(outfile)
+        print('Showing graph')
+        plt.show(block=True)
+        plt.close()
 
 
 # =============================================================================
@@ -1468,6 +1798,8 @@ if __name__ == '__main__':
         plot_tcorr_plot(params)
     if 'TELLU_COV' in PLOTS:
         plot_tellu_cov_plot(params)
+    if 'THERM' in PLOTS:
+        plot_therm_plot(params)
 
 # =============================================================================
 # End of code
