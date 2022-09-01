@@ -7,24 +7,27 @@ Created on 2021-08-01
 
 @author: cook
 """
-import matplotlib
-matplotlib.use('TkAgg')
 from astropy.io import fits
 from astropy.table import Table
 from astropy import constants as cc
-from astropy.visualization import imshow_norm, ZScaleInterval, LinearStretch
-import itertools
+from astropy.visualization import imshow_norm, ZScaleInterval
+from astropy.visualization import LinearStretch, PowerStretch, LogStretch
 import glob
+import itertools
+import numpy as np
+import os
+# noinspection PyPep8Naming
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
+from scipy.signal import convolve2d
+from typing import Union
+import warnings
+
+import matplotlib; matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Polygon
-import matplotlib.patheffects as PathEffects
-import numpy as np
-import os
-from scipy.interpolate import InterpolatedUnivariateSpline as ius
-from scipy.signal import convolve2d
-import warnings
+import matplotlib.patheffects as path_effects
 
 from apero import lang
 from apero.core import constants
@@ -35,7 +38,6 @@ from apero.io import drs_image
 from apero.core.instruments.spirou import file_definitions
 from apero.science.calib import badpix
 from apero.core import math as mp
-
 
 # =============================================================================
 # Define variables
@@ -52,13 +54,19 @@ RAW_PREFIX = file_definitions.raw_prefix
 if hasattr(drs_database, 'AstrometricDatabase'):
     AstrometricDatabase = drs_database.AstrometricDatabase
 else:
+    # noinspection PyUnresolvedReferences
     AstrometricDatabase = drs_database.ObjectDatabase
 # define the night of data we want to use
 NIGHT = '2020-08-31'
+
+uname = os.environ.get('USERNAME', None)
+if uname is None:
+    uname = os.environ.get('LOGNAME')
+
 # define where we want to save plots
-if os.environ.get("USERNAME") == 'cook':
+if uname == 'spirou':
     PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
-elif os.environ.get("USERNAME") == 'spirou':
+elif uname == 'cook':
     PLOT_PATH = '/spirou/cook/paper_plots'
 else:
     PLOT_PATH = '/data/spirou/drs-data/misc/paper_plots'
@@ -68,14 +76,13 @@ BANDS = dict()
 # BANDS['J'] = [1080.647, 1406.797]           # 2MASS J
 # BANDS['H'] = [1478.738, 1823.102]           # 2MSSS H
 # BANDS['K'] = [1954.369, 2344.240]           # 2MASS Ks
-BANDS['$Y$'] = [9386.00/10, 11134.00/10]
-BANDS['$J$'] = [11535.86/10, 13544.22/10]     # MKO
-BANDS['$H$'] = [14628.97/10, 18085.44/10]     # MKO
-BANDS['$K_{s}$'] = [19577.92/10, 23431.05/10]     # MKO
-
-
+BANDS['$Y$'] = [9386.00 / 10, 11134.00 / 10]
+BANDS['$J$'] = [11535.86 / 10, 13544.22 / 10]  # MKO
+BANDS['$H$'] = [14628.97 / 10, 18085.44 / 10]  # MKO
+BANDS['$K_{s}$'] = [19577.92 / 10, 23431.05 / 10]  # MKO
 
 # define plots and append those we want
+# noinspection PyListCreation
 PLOTS = []
 # PLOTS.append('SIZE_GRID')
 # PLOTS.append('FIBER_LAYOUT')
@@ -88,14 +95,14 @@ PLOTS = []
 # PLOTS.append('S1D')
 # PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
-PLOTS.append('THERM')
+# PLOTS.append('THERM')
+PLOTS.append('LEAK')
 
 # =============================================================================
 # PLOT functions
 # =============================================================================
 # SIZE_GRID
 def plot_size_grid(params):
-
     odocode = '2510376o'
     hashcode = '2510376o'
     # get file paths
@@ -108,7 +115,7 @@ def plot_size_grid(params):
     s1d_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
                             '{0}_pp_s1d_v_AB.fits'.format(hashcode))
     ts1d_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            '{0}_pp_s1d_w_tcorr_AB.fits'.format(hashcode))
+                             '{0}_pp_s1d_w_tcorr_AB.fits'.format(hashcode))
     # get
     print('Loading raw image')
     raw_image = fits.getdata(raw_file)
@@ -135,7 +142,7 @@ def plot_size_grid(params):
     image3 = drs_image.resize(params, image2, **sargs)
 
     print('Plotting size_grid plot')
-    fig = plt.figure(figsize=(12, 14))
+    _ = plt.figure(figsize=(12, 14))
     size = (5, 4)
     frame1 = plt.subplot2grid(size, (0, 0), colspan=2, rowspan=2)
     frame2 = plt.subplot2grid(size, (0, 2), colspan=2, rowspan=2)
@@ -146,7 +153,7 @@ def plot_size_grid(params):
     cmap.set_bad(color='green')
     # -------------------------------------------------------------------------
     # top left raw image
-    im, norm = _norm_image(raw_image, frame1, cmap)
+    _ = _norm_image(raw_image, frame1, cmap)
     # add labels
     frame1.set(xlim=(0, 4096), ylim=(0, 4096))
     frame1.tick_params(axis='both', which='both', bottom=False, top=False,
@@ -157,9 +164,9 @@ def plot_size_grid(params):
                      color='black', backgroundcolor='white')
     # -------------------------------------------------------------------------
     # middle right: flipped + resized image
-    im, norm = _norm_image(image3, frame2, cmap)
+    _ = _norm_image(image3, frame2, cmap)
     # add labels
-    frame2.set(xlim=(-4, 4092), ylim=(0-250, 4096-250))
+    frame2.set(xlim=(-4, 4092), ylim=(0 - 250, 4096 - 250))
     frame2.tick_params(axis='both', which='both', bottom=False, top=False,
                        left=False, right=False, labelleft=False,
                        labelbottom=False)
@@ -168,7 +175,7 @@ def plot_size_grid(params):
                      color='black', backgroundcolor='white')
     # -------------------------------------------------------------------------
     # bottom: e2ds
-    im, norm = _norm_image(e2ds_image, frame3, cmap)
+    _ = _norm_image(e2ds_image, frame3, cmap)
     # add labels
     frame3.set(xlim=(0, 4088), ylim=(0, 49))
     frame3.tick_params(axis='both', which='both', bottom=False, top=False,
@@ -190,8 +197,8 @@ def plot_size_grid(params):
         txt = frame3.text(midpoint[0], midpoint[1], bandname,
                           color='w', zorder=10, fontsize=16, ha='center')
 
-        txt.set_path_effects([PathEffects.withStroke(linewidth=1,
-                                                     foreground='k')])
+        txt.set_path_effects([path_effects.withStroke(linewidth=1,
+                                                      foreground='k')])
 
     # -------------------------------------------------------------------------
     # get max flux
@@ -206,19 +213,19 @@ def plot_size_grid(params):
         # get band name
         band = BANDS[bandname]
         # plot band
-        frame4.fill_betweenx([-0.2*maxflux, 1.05*maxflux], band[0], band[1],
+        frame4.fill_betweenx([-0.2 * maxflux, 1.05 * maxflux], band[0], band[1],
                              color='0.5', alpha=0.5, zorder=0)
-        txt = frame4.text(np.mean(band), 0.9*maxflux, bandname,
+        txt = frame4.text(np.mean(band), 0.9 * maxflux, bandname,
                           color='w', zorder=10, fontsize=16, ha='center')
-        txt.set_path_effects([PathEffects.withStroke(linewidth=1,
-                                                     foreground='k')])
+        txt.set_path_effects([path_effects.withStroke(linewidth=1,
+                                                      foreground='k')])
 
     frame4.set_title('Extracted 1D (S1D) 1x285377',
                      loc='left', x=0.5, y=0.95, pad=-14,
                      color='black', backgroundcolor='white')
     # plot cosmetics
     frame4.axes.yaxis.set_ticks([])
-    frame4.set(xlim=[950, 2500], ylim=[0, 1.05*maxflux],
+    frame4.set(xlim=[950, 2500], ylim=[0, 1.05 * maxflux],
                xlabel='Wavelength [nm]')
     frame4.set_yticklabels([])
     # -------------------------------------------------------------------------
@@ -235,7 +242,6 @@ def plot_size_grid(params):
 
 # FIBER LAYOUT SCHEMATIC
 def plot_fiber_layout(params):
-
     odocode = '2510301o'
     hashcode = '2510301o'
 
@@ -277,15 +283,15 @@ def plot_fiber_layout(params):
     # zoom raw
     zraw_image = raw_image[zoom0area[2]:zoom0area[3], zoom0area[0]:zoom0area[1]]
     # left raw image
-    im, norm = _norm_image(zraw_image, frame1, cmap)
+    _, _ = _norm_image(zraw_image, frame1, cmap)
     # add labels
     frame1.tick_params(axis='both', which='both', bottom=False, top=False,
                        left=False, right=False, labelleft=False,
                        labelbottom=False)
 
     frame1.set_title('raw', loc='left',
-                       x=0.05, y=0.95, pad=-14,
-                       color='black', backgroundcolor='white')
+                     x=0.05, y=0.95, pad=-14,
+                     color='black', backgroundcolor='white')
 
     frame1.text(77, 140, 'A', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
@@ -294,32 +300,32 @@ def plot_fiber_layout(params):
     frame1.text(111, 90, 'C', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
 
-    frame1.text(77+64, 140, 'A', color='black', ha='center', va='center',
+    frame1.text(77 + 64, 140, 'A', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame1.text(94+64, 115, 'B', color='black', ha='center', va='center',
+    frame1.text(94 + 64, 115, 'B', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame1.text(111+64, 90, 'C', color='black', ha='center', va='center',
+    frame1.text(111 + 64, 90, 'C', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
 
-    frame1.text(77+126, 140, 'A', color='black', ha='center', va='center',
+    frame1.text(77 + 126, 140, 'A', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame1.text(94+126, 115, 'B', color='black', ha='center', va='center',
+    frame1.text(94 + 126, 115, 'B', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame1.text(111+126, 90, 'C', color='black', ha='center', va='center',
+    frame1.text(111 + 126, 90, 'C', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
     # -------------------------------------------------------------------------
     # zoom pp
     zimage3 = image3[zoom1area[2]:zoom1area[3], zoom1area[0]:zoom1area[1]]
     # middle: pp
-    im, norm = _norm_image(zimage3, frame2, cmap)
+    _, _ = _norm_image(zimage3, frame2, cmap)
     # add labels
     frame2.tick_params(axis='both', which='both', bottom=False, top=False,
                        left=False, right=False, labelleft=False,
                        labelbottom=False)
 
     frame2.set_title('pre-processed', loc='left',
-                       x=0.05, y=0.95, pad=-14,
-                       color='black', backgroundcolor='white')
+                     x=0.05, y=0.95, pad=-14,
+                     color='black', backgroundcolor='white')
 
     frame2.text(100, 234, 'A', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
@@ -328,18 +334,18 @@ def plot_fiber_layout(params):
     frame2.text(156, 204, 'C', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
 
-    frame2.text(100, 234-53, 'A', color='black', ha='center', va='center',
+    frame2.text(100, 234 - 53, 'A', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame2.text(128, 218-53, 'B', color='black', ha='center', va='center',
+    frame2.text(128, 218 - 53, 'B', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame2.text(156, 204-53, 'C', color='black', ha='center', va='center',
+    frame2.text(156, 204 - 53, 'C', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
 
-    frame2.text(100, 234-105, 'A', color='black', ha='center', va='center',
+    frame2.text(100, 234 - 105, 'A', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame2.text(128, 218-105, 'B', color='black', ha='center', va='center',
+    frame2.text(128, 218 - 105, 'B', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
-    frame2.text(156, 204-105, 'C', color='black', ha='center', va='center',
+    frame2.text(156, 204 - 105, 'C', color='black', ha='center', va='center',
                 backgroundcolor='white', rotation=7)
 
     # -------------------------------------------------------------------------
@@ -398,14 +404,10 @@ def plot_pp_features(params):
     # ----------------------------------------------------------------------
     # Check for pixel shift and/or corrupted files
     # ----------------------------------------------------------------------
-    # storage
-    snr_hotpix, rms_list = [], []
-    shiftdx, shiftdy = 0, 0
     # do this iteratively as if there is a shift need to re-workout QC
     for iteration in range(2):
         # get pass condition
         cout = prep.test_for_corrupt_files(params, image, hotpixels)
-        snr_hotpix, rms_list = cout[0], cout[1]
         shiftdx, shiftdy = int(cout[2]), int(cout[3])
         # use dx/dy to shift the image back to where the engineering flat
         #    is located
@@ -554,11 +556,11 @@ def plot_feature_grid(image, outname='raw_features.pdf'):
     z2im, norm = _norm_image(zoom2, topleft, cmap)
     _add_colorbar(fig, z2im, topleft, side='bottom')
     topleft.set_title('C. Zoom on slices', loc='left',
-                       x=0.05, y=0.95, pad=-14,
-                       color='black', backgroundcolor='white')
+                      x=0.05, y=0.95, pad=-14,
+                      color='black', backgroundcolor='white')
     topleft.tick_params(axis='both', which='both', bottom=False, top=False,
-                         left=False, right=False, labelleft=False,
-                         labelbottom=False)
+                        left=False, right=False, labelleft=False,
+                        labelbottom=False)
     # -------------------------------------------------------------------------
     # panel
     pim, norm = _norm_image(image, panel, cmap0)
@@ -577,7 +579,7 @@ def plot_feature_grid(image, outname='raw_features.pdf'):
                               linewidth=1, edgecolor=rcolor, facecolor='none')
     panel.add_patch(rcut1)
     # add text
-    panel.text(0.5*(cut1area[1] + cut1area[0]), cut1area[3] + textheight,
+    panel.text(0.5 * (cut1area[1] + cut1area[0]), cut1area[3] + textheight,
                'D', color=rcolor, backgroundcolor='white')
     # -------------------------------------------------------------------------
     # add rectangle holes
@@ -587,7 +589,7 @@ def plot_feature_grid(image, outname='raw_features.pdf'):
                               linewidth=1, edgecolor=rcolor, facecolor='none')
     panel.add_patch(rcut2)
     # add text
-    panel.text(0.5*(cut2area[1] + cut2area[0]), cut2area[3] + textheight,
+    panel.text(0.5 * (cut2area[1] + cut2area[0]), cut2area[3] + textheight,
                'E', color=rcolor, backgroundcolor='white')
     # -------------------------------------------------------------------------
     # add rectangle zoom 1
@@ -597,7 +599,7 @@ def plot_feature_grid(image, outname='raw_features.pdf'):
                                linewidth=1, edgecolor=rcolor, facecolor='none')
     panel.add_patch(rzoom0)
     # add text
-    panel.text(0.5*(zoom0area[1] + zoom0area[0]), zoom0area[3] + textheight,
+    panel.text(0.5 * (zoom0area[1] + zoom0area[0]), zoom0area[3] + textheight,
                'A', color=rcolor, backgroundcolor='white')
     # -------------------------------------------------------------------------
     # add rectangle zoom 1
@@ -607,7 +609,7 @@ def plot_feature_grid(image, outname='raw_features.pdf'):
                                linewidth=1, edgecolor=rcolor, facecolor='none')
     panel.add_patch(rzoom1)
     # add text
-    panel.text(0.5*(zoom1area[1] + zoom1area[0]), zoom1area[3] + textheight,
+    panel.text(0.5 * (zoom1area[1] + zoom1area[0]), zoom1area[3] + textheight,
                'B', color=rcolor, backgroundcolor='white')
     # -------------------------------------------------------------------------
     # add rectangle zoom 2
@@ -617,7 +619,7 @@ def plot_feature_grid(image, outname='raw_features.pdf'):
                                linewidth=1, edgecolor=rcolor, facecolor='none')
     panel.add_patch(rzoom2)
     # add text
-    panel.text(0.5*(zoom2area[1] + zoom2area[0]), zoom2area[3] + textheight,
+    panel.text(0.5 * (zoom2area[1] + zoom2area[0]), zoom2area[3] + textheight,
                'C', color=rcolor, backgroundcolor='white')
     # -------------------------------------------------------------------------
     plt.subplots_adjust(wspace=0.05, hspace=0.075,
@@ -633,7 +635,6 @@ def plot_feature_grid(image, outname='raw_features.pdf'):
 
 # BADMAP
 def plot_badpix_plot(params):
-
     hashcode = 'DB67D5C4F5'
     xlow = params['IMAGE_X_LOW']
     xhigh = params['IMAGE_X_HIGH']
@@ -661,18 +662,18 @@ def plot_badpix_plot(params):
     frame0 = frames[0]
     frame1 = frames[1]
 
-    im, norm = imshow_norm(dark_image, frame0, origin='lower', aspect='auto',
-                           interval=ZScaleInterval(), stretch=LinearStretch(),
-                           cmap=cmap1, interpolation='None', rasterized=True)
-    im, norm = imshow_norm(bad_image_full, frame1, origin='lower', aspect='auto',
-                           cmap=cmap2, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(dark_image, frame0, origin='lower', aspect='auto',
+                       interval=ZScaleInterval(), stretch=LinearStretch(),
+                       cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(bad_image_full, frame1, origin='lower', aspect='auto',
+                       cmap=cmap2, interpolation='None', rasterized=True)
 
     frame0.tick_params(axis='both', which='both', bottom=False, top=False,
-                      left=False, right=False, labelleft=False,
-                      labelbottom=False)
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
     frame1.tick_params(axis='both', which='both', bottom=False, top=False,
-                      left=False, right=False, labelleft=False,
-                      labelbottom=False)
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
 
     title1 = ('Original shape: ({0}x{1})  {2:,d} total pixels'
               '\nResized shape: ({3}x{4})  {5:,d} total pixels')
@@ -684,7 +685,7 @@ def plot_badpix_plot(params):
     frame0.set_title(title1.format(*farg1), y=1.0, pad=-100,
                      backgroundcolor='white', fontsize=16)
     farg2 = [int(np.sum(bad_image_full)),
-             100 * np.sum(bad_image_full)/np.product(bad_image.shape)]
+             100 * np.sum(bad_image_full) / np.product(bad_image.shape)]
     frame1.set_title(title2.format(*farg2), y=1.0, pad=-100,
                      backgroundcolor='silver', fontsize=16)
 
@@ -723,9 +724,9 @@ def plot_backmap_plot(params):
     # -------------------------------------------------------------------------
     # get filenames
     flat_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            '{0}_pp.fits'.format(flathash))
+                             '{0}_pp.fits'.format(flathash))
     dark_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            '{0}_pp.fits'.format(darkhash))
+                             '{0}_pp.fits'.format(darkhash))
     # get images
     flat_image = fits.getdata(flat_file)
     dark_image = fits.getdata(dark_file)
@@ -754,13 +755,13 @@ def plot_backmap_plot(params):
     frame2 = frames[2]
     # -------------------------------------------------------------------------
     # three imshow norm plots
-    im, norm = imshow_norm(flat_image1, frame0, origin='lower', aspect='auto',
-                           interval=ZScaleInterval(), stretch=LinearStretch(),
-                           cmap=cmap2, interpolation='None', rasterized=True)
-    im, norm = imshow_norm(backest, frame1, origin='lower', aspect='auto',
-                           cmap=cmap1, interpolation='None', rasterized=True)
-    im, norm = imshow_norm(backmask, frame2, origin='lower', aspect='auto',
-                           cmap=cmap3, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(flat_image1, frame0, origin='lower', aspect='auto',
+                       interval=ZScaleInterval(), stretch=LinearStretch(),
+                       cmap=cmap2, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(backest, frame1, origin='lower', aspect='auto',
+                       cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(backmask, frame2, origin='lower', aspect='auto',
+                       cmap=cmap3, interpolation='None', rasterized=True)
     # -------------------------------------------------------------------------
     # plot vertical lines on frame0
     lines = np.arange(0, nshape[0] + width, width) - 4
@@ -771,14 +772,14 @@ def plot_backmap_plot(params):
     # -------------------------------------------------------------------------
     # remove ticks
     frame0.tick_params(axis='both', which='both', bottom=False, top=False,
-                      left=False, right=False, labelleft=False,
-                      labelbottom=False)
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
     frame1.tick_params(axis='both', which='both', bottom=False, top=False,
-                      left=False, right=False, labelleft=False,
-                      labelbottom=False)
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
     frame2.tick_params(axis='both', which='both', bottom=False, top=False,
-                      left=False, right=False, labelleft=False,
-                      labelbottom=False)
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
 
     frame2.set(xlim=[0, 512], ylim=[512, 1024])
 
@@ -809,9 +810,9 @@ def plot_flatblaze_plot(params):
     # -------------------------------------------------------------------------
     # get filenames
     flat_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            '{0}_pp_flat_AB.fits'.format(flathash))
+                             '{0}_pp_flat_AB.fits'.format(flathash))
     blaze_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            '{0}_pp_blaze_AB.fits'.format(flathash))
+                              '{0}_pp_blaze_AB.fits'.format(flathash))
     # get images
     flat_image = fits.getdata(flat_file)
     blaze_image = fits.getdata(blaze_file)
@@ -819,15 +820,12 @@ def plot_flatblaze_plot(params):
     # -------------------------------------------------------------------------
     # plot setup
     plt.close()
-    fig = plt.figure(figsize=(14, 8))
-
+    _ = plt.figure(figsize=(14, 8))
 
     frame0 = plt.subplot2grid((3, 1), (0, 0), rowspan=2, colspan=1)
     frame1 = plt.subplot2grid((3, 1), (2, 0), rowspan=1, colspan=1)
 
-
     for it, order_num in enumerate(orders):
-
         order_name = 79 - order_num
 
         # norm = np.nanmedian(e2ds_image[order_num])
@@ -835,7 +833,7 @@ def plot_flatblaze_plot(params):
         frame0.plot(e2ds_image[order_num], label=f'Order #{order_name}',
                     color=colors[it], alpha=0.5)
         frame0.plot(blaze_image[order_num], color=colors[it], linestyle='--')
-        frame1.plot(flat_image[order_num],color=colors[it], alpha=0.75)
+        frame1.plot(flat_image[order_num], color=colors[it], alpha=0.75)
 
     frame0.legend(loc=0)
     frame0.set(xlabel='Pixel number', ylabel='E2DS Flux [e-]',
@@ -857,17 +855,15 @@ def plot_flatblaze_plot(params):
 
 # E2DS
 def plot_e2ds_plot(params):
-
-
     odocode = '2510303o'
     # -------------------------------------------------------------------------
     # get filenames
     pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
-                            '{0}_pp.fits'.format(odocode))
+                           '{0}_pp.fits'.format(odocode))
     e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            '{0}_pp_e2ds_AB.fits'.format(odocode))
+                             '{0}_pp_e2ds_AB.fits'.format(odocode))
     e2dsll_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            'DEBUG_{0}_pp_e2dsll_AB.fits'.format(odocode))
+                               'DEBUG_{0}_pp_e2dsll_AB.fits'.format(odocode))
     # -------------------------------------------------------------------------
     # get images
     pp_image = fits.getdata(pp_file)
@@ -880,8 +876,6 @@ def plot_e2ds_plot(params):
     pp_image = drs_image.flip_image(params, pp_image)
     # resize pp image
     pp_image = drs_image.resize(params, pp_image, **sargs)
-
-
 
     e2dsll_image = fits.getdata(e2dsll_file)
     e2ds_image = fits.getdata(e2ds_file)
@@ -901,7 +895,6 @@ def plot_e2ds_plot(params):
 
     e2ds_image1 = e2ds_image[ylow1b:yhigh1b, xlow0:xhigh0]
 
-
     # -------------------------------------------------------------------------
     # get colour maps
     cmap1 = matplotlib.cm.get_cmap('inferno').copy()
@@ -918,27 +911,27 @@ def plot_e2ds_plot(params):
     frame5 = frames[1][2]
     # -------------------------------------------------------------------------
     # three imshow norm plots
-    im, norm = imshow_norm(pp_image, frame0, origin='lower', aspect='auto',
-                           interval=ZScaleInterval(), stretch=LinearStretch(),
-                           cmap=cmap1, interpolation='None', rasterized=True)
-    im, norm = imshow_norm(e2dsll_image, frame1, origin='lower', aspect='auto',
-                           cmap=cmap1, interpolation='None', rasterized=True)
-    im, norm = imshow_norm(e2ds_image, frame2, origin='lower', aspect='auto',
-                           cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(pp_image, frame0, origin='lower', aspect='auto',
+                       interval=ZScaleInterval(), stretch=LinearStretch(),
+                       cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(e2dsll_image, frame1, origin='lower', aspect='auto',
+                       cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(e2ds_image, frame2, origin='lower', aspect='auto',
+                       cmap=cmap1, interpolation='None', rasterized=True)
 
-    im, norm = imshow_norm(pp_image1, frame3, origin='lower', aspect='auto',
-                           interval=ZScaleInterval(), stretch=LinearStretch(),
-                           cmap=cmap1, interpolation='None', rasterized=True)
-    im, norm = imshow_norm(e2dsll_image1, frame4, origin='lower', aspect='auto',
-                           cmap=cmap1, interpolation='None', rasterized=True)
-    im, norm = imshow_norm(e2ds_image1, frame5, origin='lower', aspect='auto',
-                           cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(pp_image1, frame3, origin='lower', aspect='auto',
+                       interval=ZScaleInterval(), stretch=LinearStretch(),
+                       cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(e2dsll_image1, frame4, origin='lower', aspect='auto',
+                       cmap=cmap1, interpolation='None', rasterized=True)
+    _, _ = imshow_norm(e2ds_image1, frame5, origin='lower', aspect='auto',
+                       cmap=cmap1, interpolation='None', rasterized=True)
     # -------------------------------------------------------------------------
     # remove ticks
     for frame in frames.ravel():
         frame.tick_params(axis='both', which='both', bottom=False, top=False,
-                         left=False, right=False, labelleft=False,
-                         labelbottom=False)
+                          left=False, right=False, labelleft=False,
+                          labelbottom=False)
     # adjust edges of figure
     plt.subplots_adjust(wspace=0, hspace=0, left=0.01, right=0.99,
                         bottom=0.01, top=0.99)
@@ -954,7 +947,6 @@ def plot_e2ds_plot(params):
 
 # S1D
 def plot_s1d_plot(params):
-
     odocode = '2510303o'
     first_order = 34
     last_order = 36
@@ -1023,13 +1015,12 @@ def plot_s1d_plot(params):
         middle_nans |= np.array(is_middle_nan(magic)).astype(bool)
 
         frames[0].plot(wave[order_num], sp1[order_num], color=color,
-                       label=f'Order #{order_name}', alpha=0.5)
+                       label=f'Order #{order_name}', alpha=0.5, lw=0.5)
         frames[1].plot(wave[order_num], blaze[order_num], color=color,
-                       label=f'Order #{order_name}', alpha=0.5)
+                       label=f'Order #{order_name}', alpha=0.5, lw=0.5)
 
         min_order[order_num] = wstart
         max_order[order_num] = wend
-
 
     # work out where there is overlap
     omask = np.zeros_like(magic, dtype=bool)
@@ -1049,10 +1040,13 @@ def plot_s1d_plot(params):
     w[middle_nans] = np.nan
 
     # plot
-    frames[0].plot(magic, sp, color='grey', alpha=0.5, label='Combined flux')
-    frames[1].plot(magic, w, color='grey', alpha=0.5, label='Combined flux')
-    frames[2].plot(magic, sp_no_overlap, color='purple', label='no overlap')
-    frames[2].plot(magic, sp_overlap, color='orange', label='overlap')
+    frames[0].plot(magic, sp, color='grey', alpha=0.5, label='Combined flux',
+                   lw=0.5)
+    frames[1].plot(magic, w, color='grey', alpha=0.5, label='Combined flux',
+                   lw=0.5)
+    frames[2].plot(magic, sp_no_overlap, color='purple', label='no overlap',
+                   lw=0.5)
+    frames[2].plot(magic, sp_overlap, color='orange', label='overlap', lw=0.5)
     frames[1].set(xlim=[wmin, wmax])
 
     # -------------------------------------------------------------------------
@@ -1108,8 +1102,8 @@ def plot_tcorr_plot(params):
         frame = frames[it]
         # get order values
         ordwave = wave[order_num]
-        orde2ds = (e2dsffab/blaze)[order_num]
-        ordtcorr = (tcorrab/blaze)[order_num]
+        orde2ds = (e2dsffab / blaze)[order_num]
+        ordtcorr = (tcorrab / blaze)[order_num]
         ordrecon = recon[order_num]
         ordskymodel = skymodel[order_num]
 
@@ -1124,15 +1118,14 @@ def plot_tcorr_plot(params):
             wavemin = limits[it][0]
             wavemax = limits[it][1]
 
-
         # plot e2dsff
-        frame.plot(ordwave, orde2ds/np.nanmedian(orde2ds), color='k', lw=0.5,
+        frame.plot(ordwave, orde2ds / np.nanmedian(orde2ds), color='k', lw=0.5,
                    label='Extracted', zorder=2)
         # plot telluric
-        frame.plot(ordwave, ordtcorr/np.nanmedian(ordtcorr), color='r', lw=0.5,
+        frame.plot(ordwave, ordtcorr / np.nanmedian(ordtcorr), color='r', lw=0.5,
                    label='Telluric corrected', zorder=3)
         # plot recon
-        frame.plot(ordwave, ordrecon/np.nanmedian(ordrecon), color='b', lw=0.5,
+        frame.plot(ordwave, ordrecon / np.nanmedian(ordrecon), color='b', lw=0.5,
                    label='Reconstructed absorption', zorder=4, alpha=0.75)
 
         frame.plot([0, 0], [1000, 2000],
@@ -1141,7 +1134,7 @@ def plot_tcorr_plot(params):
 
         ins = frame.inset_axes([0, 1, 1, 0.1])
         # plot sky
-        ins.plot(ordwave, ordskymodel/np.nanmedian(orde2ds),
+        ins.plot(ordwave, ordskymodel / np.nanmedian(orde2ds),
                  color='orange', lw=0.5, label='Sky model (OH lines)',
                  zorder=1)
         ins.set(xlim=[wavemin, wavemax])
@@ -1229,7 +1222,6 @@ def plot_tellu_cov_plot(params):
     plt.close()
 
 
-
 # THERM
 def plot_therm_plot(params):
     # file to get
@@ -1242,9 +1234,7 @@ def plot_therm_plot(params):
     from apero.base import base
     from apero.core.instruments.spirou import recipe_definitions
     from apero.core.instruments.spirou import file_definitions
-    from apero.science.calib import gen_calib, shape, wave, localisation
-    from apero.science.calib import flat_blaze, leak, thermal
-    from apero.science import extract
+    from apero.science.calib import thermal
     from apero.core.constants import ParamDict
     from apero.core.utils import drs_data
     from apero.core.utils import drs_recipe
@@ -1272,172 +1262,48 @@ def plot_therm_plot(params):
     sci_fibers, ref_fiber = pconst.FIBER_KINDS()
     # must process reference fiber first then required fibers
     fibertypes = [ref_fiber] + fibers
-    # -------------------------------------------------------------------------
+    # load the calibration database
+    calibdbm = drs_database.CalibrationDatabase(params)
+    calibdbm.load_db()
     # get file paths
     pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
                            '{0}_pp.fits'.format(hashcode))
-    # -------------------------------------------------------------------------
     # get recipe
     recipe = recipe_definitions.apero_extract
     recipe.plot = drs_recipe.lambda_plot
-    # -------------------------------------------------------------------------
     # load file
     print('Loading pp image')
     pp_image = fits.getdata(pp_file)
     pp_header = fits.getheader(pp_file)
-    # -------------------------------------------------------------------------
     # create infile
     infile = file_definitions.pp_file.newcopy(filename=pp_file, params=params,
                                               data=pp_image, header=pp_header)
     # =========================================================================
     # All this comes from apero_extract_spirou.py
-    #    May need updating so check apero_extract_spirou.py
     # =========================================================================
-    # START OF apero_extract_spirou.py
-    # =========================================================================
-    # load the calibration database
-    calibdbm = drs_database.CalibrationDatabase(params)
-    calibdbm.load_db()
-    # -------------------------------------------------------------------------
-    # Load shape components
-    sprops = shape.get_shape_calibs(params, pp_header, database=calibdbm)
-    # -------------------------------------------------------------------------
-    # Correction of file
-    props, image = gen_calib.calibrate_ppfile(params, recipe, infile,
-                                              database=calibdbm)
-    # -------------------------------------------------------------------------
-    # Load and straighten order profiles
-    sargs = [infile, fibertypes, sprops]
-    oout = extract.order_profiles(params, recipe, *sargs, database=calibdbm)
-    orderps, orderpfiles, orderptimes = oout
-    # -------------------------------------------------------------------------
-    # Apply shape transformations
-    # log progress (straightening orderp)
-    WLOG(params, 'info', textentry('40-016-00004'))
-    # straighten image
-    image2 = shape.ea_transform(params, image, sprops['SHAPEL'],
-                                dxmap=sprops['SHAPEX'], dymap=sprops['SHAPEY'])
-    # -------------------------------------------------------------------------
-    # Calculate Barycentric correction
-    bprops = extract.get_berv(params, infile, pp_header)
-    # -------------------------------------------------------------------------
-    # Fiber loop
-    # -------------------------------------------------------------------------
+    mout1 = mock_extract_part1(params, recipe, infile, fibertypes, calibdbm)
+    # get products of mock extract part1
+    image, image2, orderps, orderpfiles = mout1[:4]
+    orderptimes, props, sprops, bprops = mout1[4:]
     # storage for return / reference fiber usage
     e2dsoutputs = dict()
     eprops_all = dict()
     waves_all = dict()
     # loop around fiber types
     for fiber in fibertypes:
-        # log process: processing fiber
-        wargs = [fiber, ', '.join(fibertypes)]
-        WLOG(params, 'info', textentry('40-016-00014', args=wargs))
-        # ------------------------------------------------------------------
-        # get reference fiber data
-        ref_key = 'E2DS_{0}'.format(ref_fiber)
-        # if we have reference data populate ref_e2ds
-        if ref_key in e2dsoutputs:
-            ref_e2ds = e2dsoutputs[ref_key].data
-        # otherwise this is set to None - and we cannot use it
-        else:
-            ref_e2ds = None
-        # ------------------------------------------------------------------
-        # check forcing reference wave solution
-        mwave = False
-        if 'FORCE_REF_WAVE' in params['INPUTS']:
-            mwave = params['INPUTS']['FORCE_REF_WAVE']
-        # get the wave solution
-        wprops = wave.get_wavesolution(params, recipe, pp_header,
-                                       fiber=fiber, ref=mwave,
-                                       database=calibdbm,
-                                       nbpix=image.shape[1])
-        # --------------------------------------------------------------
-        # load the localisation properties for this fiber
-        lprops = localisation.get_coefficients(params, pp_header, fiber=fiber,
-                                               merge=True,
-                                               database=calibdbm)
-        # get the localisation center coefficients for this fiber
-        lcoeffs = lprops['CENT_COEFFS']
-        # shift the coefficients
-        lcoeffs2 = shape.ea_transform_coeff(image2, lcoeffs,
-                                            sprops['SHAPEL'])
-        # --------------------------------------------------------------
-        # load the flat file for this fiber
-        fout = flat_blaze.get_flat(params, pp_header, fiber, database=calibdbm)
-        # --------------------------------------------------------------
-        # load the blaze file for this fiber
-        bout = flat_blaze.get_blaze(params, pp_header, fiber,
-                                    database=calibdbm)
-        # add blaze and flat to parameter dictionary
-        fbprops = ParamDict()
-        fbprops['FLAT'] = fout[2]
-        fbprops['FLATFILE'] = fout[0]
-        fbprops['FLATTIME'] = fout[1]
-        fbprops['BLAZE'] = bout[2]
-        fbprops['BLAZEFILE'] = bout[0]
-        fbprops['BLAZETIME'] = bout[1]
-        # add keys
-        keys = ['FLAT', 'FLATFILE', 'FLATTIME', 'BLAZE', 'BLAZEFILE',
-                'BLAZETIME']
-        fbprops.set_sources(keys, mainname)
-        # get the number of frames used
-        nframes = 1
-        # --------------------------------------------------------------
-        # get the order profile for this fiber
-        lprops['ORDERP'] = orderps[fiber]
-        lprops['ORDERPFILE'] = orderpfiles[fiber]
-        lprops['ORDERPTIME'] = orderptimes[fiber]
-        lprops.set_sources(['ORDERP', 'ORDERPFILE', 'ORDERPTIME'], mainname)
-        # --------------------------------------------------------------
-        # log progress: extracting image
-        WLOG(params, 'info', textentry('40-016-00011'))
-        # extract spectrum
-        eprops = extract.extract2d(params, image2, lprops['ORDERP'],
-                                   lcoeffs2, nframes, props, fiber=fiber)
-        # leak correction
-        eprops = leak.manage_leak_correction(params, recipe, eprops,
-                                             infile, fiber, ref_e2ds)
-        # flat correction for e2dsff
-        eprops = extract.flat_blaze_correction(eprops, fbprops['FLAT'],
-                                               fbprops['BLAZE'])
-        # do not do thermal correction here other than for reference fiber
-        #    (we will do it afterwards)
+
         if fiber == ref_fiber:
-            eprops = thermal.thermal_correction(params, recipe, pp_header,
-                                                props, eprops, fiber=fiber,
-                                                database=calibdbm)
-        # --------------------------------------------------------------
-        s1dextfile = params['EXT_S1D_INTYPE']
-        # create 1d spectra (s1d) of the e2ds file
-        sargs = [wprops['WAVEMAP'], eprops[s1dextfile], eprops['BLAZE']]
-        swprops = extract.e2ds_to_s1d(params, recipe, *sargs,
-                                      wgrid='wave', fiber=fiber,
-                                      s1dkind=s1dextfile)
-        svprops = extract.e2ds_to_s1d(params, recipe, *sargs,
-                                      wgrid='velocity', fiber=fiber,
-                                      s1dkind=s1dextfile)
+            do_thermal = True
+        else:
+            do_thermal = False
 
-        # --------------------------------------------------------------
-        # Quality control
-        qc_params, passed = extract.qc_extraction(params, eprops)
-        # --------------------------------------------------------------
-        # add files to outputs
-        # --------------------------------------------------------------
-        fargs = [params, recipe, infile, [pp_file], False, fiber,
-                 props, lprops, wprops, eprops, bprops,
-                 swprops, svprops, sprops, fbprops, qc_params]
-        outfiles = extract.write_extraction_files(*fargs)
-        e2dsfile, e2dsfffile = outfiles
-
-
-        ekeys = ['E2DS', 'E2DSFF']
-        efiles = [e2dsfile, e2dsfffile]
-        # loop around keys to add
-        for key, efile in zip(ekeys, efiles):
-            # construct output key
-            outkey = '{0}_{1}'.format(key, fiber)
-            # copy file to dictionary
-            e2dsoutputs[outkey] = efile.completecopy(efile)
+        mout2 = mock_extract_part2(params, recipe, infile, fibertypes,
+                                   ref_fiber, fiber, e2dsoutputs, image, image2,
+                                   orderps, orderpfiles, orderptimes, props,
+                                   sprops, bprops, calibdbm,
+                                   do_thermal=do_thermal)
+        # get products of mock extract part 2
+        eprops, wprops, e2dsoutputs = mout2
         # must save eprops
         eprops_all[fiber] = eprops
         waves_all[fiber] = wprops
@@ -1456,33 +1322,14 @@ def plot_therm_plot(params):
         # get the wavemap
         wavemap = waves_all[fiber]['WAVEMAP']
         # get properties from parameter dictionaries / kwargs
-        dprtype = pcheck(params, 'DPRTYPE', 'dprtype', kwargs, func_name,
-                         paramdict=props)
         tapas_thres = pcheck(params, 'THERMAL_THRES_TAPAS', 'tapas_thres', kwargs,
                              func_name)
-        envelope = pcheck(params, 'THERMAL_ENVELOPE_PERCENTILE', 'envelope',
-                          kwargs, func_name)
-        filter_wid = pcheck(params, 'THERMAL_FILTER_WID', 'filter_wid', kwargs,
-                            func_name)
         torder = pcheck(params, 'THERMAL_ORDER', 'torder', kwargs, func_name)
         red_limit = pcheck(params, 'THERMAL_RED_LIMIT', 'red_limit', kwargs,
-                          func_name)
-        blue_limit = pcheck(params, 'THERMAL_BLUE_LIMIT', 'blue_limit', kwargs,
-                            func_name)
+                           func_name)
         e2ds = pcheck(params, 'E2DS', 'e2ds', kwargs, func_name,
                       paramdict=eprops)
-        e2dsff = pcheck(params, 'E2DSFF', 'e2dsff', kwargs, func_name,
-                        paramdict=eprops)
-        flat = pcheck(params, 'FLAT', paramdict=eprops)
-
-        corrtype1 = pcheck(params, 'THERMAL_CORRETION_TYPE1', 'corrtype1', kwargs,
-                           func_name, mapf='list', dtype=str)
-        corrtype2 = pcheck(params, 'THERMAL_CORRETION_TYPE2', 'corrtype2', kwargs,
-                           func_name, mapf='list', dtype=str)
-
         thermal_file = kwargs.get('thermal_file', None)
-        thermal_correct = pcheck(params, 'THERMAL_CORRECT', 'thermal_correct',
-                                 kwargs, func_name)
         # get the thermal correction file
         tout = thermal.get_thermal(params, pp_header, fiber=fiber,
                                    filename=thermal_file,
@@ -1529,22 +1376,196 @@ def plot_therm_plot(params):
         rthermal = np.ravel(thermal[startorder:])
         swave = wavemap[torder, torder_mask]
         sthermal = thermal[torder][torder_mask]
+        sblaze = blaze[torder][torder_mask]
         # -------------------------------------------------------------------------
         # plot setup
         plt.close()
-        fig, frame = plt.subplots(ncols=1, nrows=1, figsize=(12, 8))
+        fig, frame = plt.subplots(ncols=1, nrows=1, figsize=(10, 4))
         # -------------------------------------------------------------------------
         # plot data
-        frame.plot(rwave, rimage, color='k', label='input spectrum')
-        frame.plot(rwave, rthermal, color='r', label='scaled thermal')
-        frame.plot(swave, sthermal, color='b', marker='o', ls='None',
-                   label='background sample region')
+        frame.plot(rwave, rimage / rblaze, color='k', label='input spectrum',
+                   lw=0.25)
+        frame.plot(rwave, rthermal / rblaze, color='r', label='scaled thermal',
+                   lw=0.5)
+        frame.plot(swave, sthermal / sblaze, markeredgecolor='b',
+                   markerfacecolor='None', marker='o', ls='None',
+                   label='background sample region', ms=2, markeredgewidth=0.25)
+
         # set graph properties
         frame.legend(loc=0)
-        frame.set(xlabel='Wavelength [nm]', ylabel='Flux')
+        frame.set(xlabel='Wavelength [nm]', ylabel='Flux/Blaze',
+                  xlim=[2300, 2500], ylim=[-2e-5, 0.0016])
+        plt.subplots_adjust(left=0.1, right=0.975, bottom=0.15, top=0.95,
+                            hspace=0.2)
         # -------------------------------------------------------------------------
         # save plot
         outfile = os.path.join(PLOT_PATH, f'therm_plot_{fiber}.pdf')
+        print('Saving to file: ' + outfile)
+        plt.savefig(outfile)
+        print('Showing graph')
+        plt.show(block=True)
+        plt.close()
+
+
+# LEAK
+def plot_leak_plot(params):
+    # file to get
+    hashcode = '2510286a'
+    # science fibers to correction
+    fibers = ['AB']
+    # -------------------------------------------------------------------------
+    # custom imports only for therm plot
+    #   change manually for different instrument
+    from apero.base import base
+    from apero.core.instruments.spirou import recipe_definitions
+    from apero.core.instruments.spirou import file_definitions
+    from apero.core.constants import ParamDict
+    from apero.core.utils import drs_recipe
+    # -------------------------------------------------------------------------
+    # must set a pid (locking required)
+    params['PID'] = 'UNKNOWN-PID'
+    # must set date now
+    params['DATE_NOW'] = base.__now__.fits
+    # force no save of products
+    if 'INPUTS' not in params:
+        params['INPUTS'] = ParamDict()
+    params['INPUTS']['NOSAVE'] = True
+    # make sure we have a LEAKCORR parameter
+    params['INPUTS']['LEAKCORR'] = True
+    # set outpath
+    params['OUTPATH'] = PLOT_PATH
+    params['OBS_DIR'] = NIGHT
+    # load pseudo constants
+    pconst = constants.pload()
+    # get the fiber types needed
+    sci_fibers, ref_fiber = pconst.FIBER_KINDS()
+    # must process reference fiber first then required fibers
+    fibertypes = [ref_fiber] + fibers
+    # load the calibration database
+    calibdbm = drs_database.CalibrationDatabase(params)
+    calibdbm.load_db()
+    # get file paths
+    pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
+                           '{0}_pp.fits'.format(hashcode))
+    # get recipe
+    recipe = recipe_definitions.apero_extract
+    recipe.plot = drs_recipe.lambda_plot
+    # load file
+    print('Loading pp image')
+    pp_image = fits.getdata(pp_file)
+    pp_header = fits.getheader(pp_file)
+    # create infile
+    infile = file_definitions.pp_file.newcopy(filename=pp_file, params=params,
+                                              data=pp_image, header=pp_header)
+    # get colour maps
+    cmap1 = matplotlib.cm.get_cmap('inferno').copy()
+    cmap1.set_bad(color='green')
+    # =========================================================================
+    # All this comes from apero_extract_spirou.py
+    # =========================================================================
+    mout1 = mock_extract_part1(params, recipe, infile, fibertypes, calibdbm)
+    # get products of mock extract part1
+    image, image2, orderps, orderpfiles = mout1[:4]
+    orderptimes, props, sprops, bprops = mout1[4:]
+    # storage for return / reference fiber usage
+    e2dsoutputs = dict()
+    eprops_all = dict()
+    waves_all = dict()
+    # loop around fiber types
+    for fiber in fibertypes:
+
+        if fiber == ref_fiber:
+            do_thermal = True
+        else:
+            do_thermal = False
+
+        mout2 = mock_extract_part2(params, recipe, infile, fibertypes,
+                                   ref_fiber, fiber, e2dsoutputs, image, image2,
+                                   orderps, orderpfiles, orderptimes, props,
+                                   sprops, bprops, calibdbm,
+                                   do_thermal=do_thermal)
+        # get products of mock extract part 2
+        eprops, wprops, e2dsoutputs = mout2
+        # must save eprops
+        eprops_all[fiber] = eprops
+        waves_all[fiber] = wprops
+
+    # =========================================================================
+    # END OF apero_extract_spirou.py
+    # =========================================================================
+
+    for fiber in fibers:
+
+        # get eprops for this fiber
+        eprops = eprops_all[fiber]
+        uncorr_e2ds = eprops['UNCORR_E2DS']
+        e2ds = eprops['E2DS']
+        wavemap = waves_all[fiber]['WAVEMAP']
+
+        # ---------------------------------------------------------------------
+        # plot setup
+        plt.close()
+        fig = plt.figure(figsize=(12, 6))
+        size = (2, 2)
+        frame1 = plt.subplot2grid(size, (0, 0), colspan=1, rowspan=2)
+        frame2 = plt.subplot2grid(size, (0, 1), colspan=1, rowspan=1)
+        frame3 = plt.subplot2grid(size, (1, 1), colspan=1, rowspan=1)
+        # ---------------------------------------------------------------------
+
+        pp_image_zoom = pp_image[1325:1525, 540:620]
+
+        limit1 = [1720, 1770]
+        limit2 = [1729, 1732]
+
+        mask1 = (wavemap[order_num] > limit1[0])
+        mask1 &= (wavemap[order_num] < limit1[1])
+        mask2 = (wavemap[order_num] > limit2[0])
+        mask2 &= (wavemap[order_num] < limit2[1])
+
+
+        order_num = 35
+        # plot pp_image contaminated
+        im, _ = imshow_norm(pp_image_zoom, frame1, origin='lower', aspect='auto',
+                           interval=ZScaleInterval(), stretch=LogStretch(100),
+                           cmap=cmap1, interpolation='None', rasterized=True)
+
+        cbar = _add_colorbar(fig, im, frame1, side='bottom', pad=0.1)
+        cbar.set_ticks([0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4.0, 8.0])
+
+        # plot e2ds order 35 contaminated
+        frame2.plot(wavemap[order_num][mask1], uncorr_e2ds[order_num][mask1],
+                    color='k', label='input spectrum', lw=0.25)
+        # plot e2ds order 35 decontamined
+        frame2.plot(wavemap[order_num][mask1], e2ds[order_num][mask1],
+                    color='r', label='corrected spectrum', lw=0.25)
+
+        # plot e2ds order 35 contaminated
+        frame3.plot(wavemap[order_num][mask2], uncorr_e2ds[order_num][mask2],
+                    color='k', label='input spectrum', lw=0.25)
+        # plot e2ds order 35 decontamined
+        frame3.plot(wavemap[order_num][mask2], e2ds[order_num][mask2],
+                    color='r', label='corrected spectrum', lw=0.25)
+
+        # set graph properties
+        frame1.set_xticklabels([])
+        frame1.set_yticklabels([])
+        frame2.legend(loc=0)
+        frame2.set(xlabel='Wavelength [nm]', ylabel='Flux', xlim=limit1)
+
+        frame2.xaxis.set_label_position('top')
+        frame2.xaxis.tick_top()
+        frame2.yaxis.set_label_position('right')
+        frame2.yaxis.tick_right()
+        frame3.legend(loc=0)
+        frame3.set(xlabel='Wavelength [nm]', ylabel='Flux', xlim=limit2)
+        frame3.yaxis.set_label_position('right')
+        frame3.yaxis.tick_right()
+
+        plt.subplots_adjust(left=0.025, right=0.9, bottom=0.1, top=0.9,
+                            hspace=0.025, wspace=0.05)
+        # ---------------------------------------------------------------------
+        # save plot
+        outfile = os.path.join(PLOT_PATH, f'leak_plot_{fiber}.pdf')
         print('Saving to file: ' + outfile)
         plt.savefig(outfile)
         print('Showing graph')
@@ -1562,17 +1583,18 @@ def _norm_image(image, frame, cmap):
     return im, norm
 
 
-def _add_colorbar(fig, im, frame, side='bottom'):
-
+def _add_colorbar(fig, im, frame, side='bottom', pad=0.0):
     if side in ['right', 'left']:
         orientation = 'vertical'
     else:
         orientation = 'horizontal'
 
     divider = make_axes_locatable(frame)
-    cax = divider.append_axes(side, '5%', pad=0)
+    cax = divider.append_axes(side, '5%', pad=pad)
     cbar = fig.colorbar(im, cax=cax, orientation=orientation)
     cbar.ax.tick_params(labelsize=8)
+
+    return cbar
 
 
 def poly_region(mask: np.ndarray):
@@ -1582,7 +1604,6 @@ def poly_region(mask: np.ndarray):
     xmin, xmax = -0.5, mask.shape[1]
 
     flatindex = np.where(mask)
-    index = np.indices(mask.shape)
 
     # find the first row
     y_first = flatindex[0].ravel()[0] - 0.5
@@ -1612,12 +1633,9 @@ def poly_region(mask: np.ndarray):
 
     poly.append([x_first, y_first])
 
-
     # work out the mixpoint (in y)
-    midpoint = []
+    midpoint = [np.mean([xmax, xmin]), np.mean([y_first, y_last])]
     # add x (just middle)
-    midpoint.append(np.mean([xmax, xmin]))
-    midpoint.append(np.mean([y_first, y_last]))
 
     return Polygon(poly, facecolor='None', edgecolor='w'), midpoint
 
@@ -1640,22 +1658,198 @@ def fits2wave(image, header):
     wavesol = np.zeros_like(image)
     # loop around orders
     for order_num in range(nord):
-        ordwave = np.polyval(wave_poly[order_num][::-1],np.arange(nbxpix))
+        ordwave = np.polyval(wave_poly[order_num][::-1], np.arange(nbxpix))
         wavesol[order_num] = ordwave
     # return wave grid
     return wavesol
 
 
-def get_magic_grid(wave0=1500,wave1=1800,dv_grid=0.5):
+def get_magic_grid(wave0: Union[np.ndarray, int] = 1500,
+                   wave1: Union[np.ndarray, int] = 1800,
+                   dv_grid=0.5):
     # default for the function is 500 m/s
     # the arithmetic is a but confusing here, you first find how many
     # elements you have on your grid, then pass it to an exponential
     # the first element is exactely wave0, the last element is NOT
     # exactly wave1, but is very close and is set to get your exact
     # step in velocity
-    len_magic = int(np.ceil(np.log(wave1/wave0)*np.array(cc.c.value)/dv_grid))
-    magic_grid =  np.exp(np.arange(len_magic)/len_magic*np.log(wave1/wave0))*wave0
+    len_magic = int(np.ceil(np.log(wave1 / wave0) * np.array(cc.c.value) / dv_grid))
+    magic_grid = np.exp(np.arange(len_magic) / len_magic * np.log(wave1 / wave0)) * wave0
     return magic_grid
+
+
+# =============================================================================
+# extraction functions
+# =============================================================================
+def mock_extract_part1(params, recipe, infile, fibertypes, calibdbm):
+    # -------------------------------------------------------------------------
+    # custom imports only for therm plot
+    #   change manually for different instrument
+    from apero.science.calib import gen_calib, shape
+    from apero.science import extract
+    # get header from infile
+    header = infile.header
+    # =========================================================================
+    # START OF apero_extract_spirou.py
+    # =========================================================================
+    # -------------------------------------------------------------------------
+    # Load shape components
+    sprops = shape.get_shape_calibs(params, header, database=calibdbm)
+    # -------------------------------------------------------------------------
+    # Correction of file
+    props, image = gen_calib.calibrate_ppfile(params, recipe, infile,
+                                              database=calibdbm)
+    # -------------------------------------------------------------------------
+    # Load and straighten order profiles
+    sargs = [infile, fibertypes, sprops]
+    oout = extract.order_profiles(params, recipe, *sargs, database=calibdbm)
+    orderps, orderpfiles, orderptimes = oout
+    # -------------------------------------------------------------------------
+    # Apply shape transformations
+    # log progress (straightening orderp)
+    WLOG(params, 'info', textentry('40-016-00004'))
+    # straighten image
+    image2 = shape.ea_transform(params, image, sprops['SHAPEL'],
+                                dxmap=sprops['SHAPEX'], dymap=sprops['SHAPEY'])
+    # -------------------------------------------------------------------------
+    # Calculate Barycentric correction
+    bprops = extract.get_berv(params, infile, header)
+
+    # return everything needed for mock_extract_part2 (inside fiber loop)
+    return [image, image2, orderps, orderpfiles, orderptimes, props, sprops,
+            bprops]
+
+
+def mock_extract_part2(params, recipe, infile, fibertypes, ref_fiber,
+                       fiber, e2dsoutputs, image, image2, orderps, orderpfiles,
+                       orderptimes, props, sprops, bprops, calibdbm,
+                       do_thermal=True, do_leak=True):
+    # -------------------------------------------------------------------------
+    # custom imports only for therm plot
+    #   change manually for different instrument
+    from apero.science.calib import shape, wave, localisation
+    from apero.science.calib import flat_blaze, leak, thermal
+    from apero.science import extract
+    from apero.core.constants import ParamDict
+    # get header from infile
+    header = infile.header
+    # set function name
+    mainname = 'mock_extract_part2'
+    # =========================================================================
+    # FROM apero_extract_spirou.py
+    # =========================================================================
+    # log process: processing fiber
+    wargs = [fiber, ', '.join(fibertypes)]
+    WLOG(params, 'info', textentry('40-016-00014', args=wargs))
+    # ------------------------------------------------------------------
+    # get reference fiber data
+    ref_key = 'E2DS_{0}'.format(ref_fiber)
+    # if we have reference data populate ref_e2ds
+    if ref_key in e2dsoutputs:
+        ref_e2ds = e2dsoutputs[ref_key].data
+    # otherwise this is set to None - and we cannot use it
+    else:
+        ref_e2ds = None
+    # ------------------------------------------------------------------
+    # check forcing reference wave solution
+    mwave = False
+    if 'FORCE_REF_WAVE' in params['INPUTS']:
+        mwave = params['INPUTS']['FORCE_REF_WAVE']
+    # get the wave solution
+    wprops = wave.get_wavesolution(params, recipe, header,
+                                   fiber=fiber, ref=mwave,
+                                   database=calibdbm,
+                                   nbpix=image.shape[1])
+    # --------------------------------------------------------------
+    # load the localisation properties for this fiber
+    lprops = localisation.get_coefficients(params, header, fiber=fiber,
+                                           merge=True,
+                                           database=calibdbm)
+    # get the localisation center coefficients for this fiber
+    lcoeffs = lprops['CENT_COEFFS']
+    # shift the coefficients
+    lcoeffs2 = shape.ea_transform_coeff(image2, lcoeffs,
+                                        sprops['SHAPEL'])
+    # --------------------------------------------------------------
+    # load the flat file for this fiber
+    fout = flat_blaze.get_flat(params, header, fiber, database=calibdbm)
+    # --------------------------------------------------------------
+    # load the blaze file for this fiber
+    bout = flat_blaze.get_blaze(params, header, fiber,
+                                database=calibdbm)
+    # add blaze and flat to parameter dictionary
+    fbprops = ParamDict()
+    fbprops['FLAT'] = fout[2]
+    fbprops['FLATFILE'] = fout[0]
+    fbprops['FLATTIME'] = fout[1]
+    fbprops['BLAZE'] = bout[2]
+    fbprops['BLAZEFILE'] = bout[0]
+    fbprops['BLAZETIME'] = bout[1]
+    # add keys
+    keys = ['FLAT', 'FLATFILE', 'FLATTIME', 'BLAZE', 'BLAZEFILE',
+            'BLAZETIME']
+    fbprops.set_sources(keys, mainname)
+    # get the number of frames used
+    nframes = 1
+    # --------------------------------------------------------------
+    # get the order profile for this fiber
+    lprops['ORDERP'] = orderps[fiber]
+    lprops['ORDERPFILE'] = orderpfiles[fiber]
+    lprops['ORDERPTIME'] = orderptimes[fiber]
+    lprops.set_sources(['ORDERP', 'ORDERPFILE', 'ORDERPTIME'], mainname)
+    # --------------------------------------------------------------
+    # log progress: extracting image
+    WLOG(params, 'info', textentry('40-016-00011'))
+    # extract spectrum
+    eprops = extract.extract2d(params, image2, lprops['ORDERP'],
+                               lcoeffs2, nframes, props, fiber=fiber)
+    # leak correction
+    if do_leak:
+        eprops = leak.manage_leak_correction(params, recipe, eprops,
+                                             infile, fiber, ref_e2ds)
+    # flat correction for e2dsff
+    eprops = extract.flat_blaze_correction(eprops, fbprops['FLAT'],
+                                           fbprops['BLAZE'])
+    # do not do thermal correction here other than for reference fiber
+    #    (we will do it afterwards)
+    if do_thermal:
+        eprops = thermal.thermal_correction(params, recipe, header,
+                                            props, eprops, fiber=fiber,
+                                            database=calibdbm)
+    # --------------------------------------------------------------
+    s1dextfile = params['EXT_S1D_INTYPE']
+    # create 1d spectra (s1d) of the e2ds file
+    sargs = [wprops['WAVEMAP'], eprops[s1dextfile], eprops['BLAZE']]
+    swprops = extract.e2ds_to_s1d(params, recipe, *sargs,
+                                  wgrid='wave', fiber=fiber,
+                                  s1dkind=s1dextfile)
+    svprops = extract.e2ds_to_s1d(params, recipe, *sargs,
+                                  wgrid='velocity', fiber=fiber,
+                                  s1dkind=s1dextfile)
+
+    # --------------------------------------------------------------
+    # Quality control
+    qc_params, passed = extract.qc_extraction(params, eprops)
+    # --------------------------------------------------------------
+    # add files to outputs
+    # --------------------------------------------------------------
+    fargs = [params, recipe, infile, [infile.basename], False, fiber,
+             props, lprops, wprops, eprops, bprops,
+             swprops, svprops, sprops, fbprops, qc_params]
+    outfiles = extract.write_extraction_files(*fargs)
+    e2dsfile, e2dsfffile = outfiles
+
+    ekeys = ['E2DS', 'E2DSFF']
+    efiles = [e2dsfile, e2dsfffile]
+    # loop around keys to add
+    for key, efile in zip(ekeys, efiles):
+        # construct output key
+        outkey = '{0}_{1}'.format(key, fiber)
+        # copy file to dictionary
+        e2dsoutputs[outkey] = efile.completecopy(efile)
+
+    # return product for use afterwards
+    return eprops, wprops, e2dsoutputs
 
 
 # =============================================================================
@@ -1774,32 +1968,34 @@ def _create_background_map(params, image, badpixmask):
 # =============================================================================
 if __name__ == '__main__':
 
-    params = constants.load()
+    _params = constants.load()
 
     if 'SIZE_GRID' in PLOTS:
-        plot_size_grid(params)
+        plot_size_grid(_params)
     if 'FIBER_LAYOUT' in PLOTS:
-        plot_fiber_layout(params)
+        plot_fiber_layout(_params)
     if 'RAW_FEATURES' in PLOTS:
-        plot_raw_features(params)
+        plot_raw_features(_params)
     if 'PP_FEATURES' in PLOTS:
-        plot_pp_features(params)
+        plot_pp_features(_params)
     if 'BADMAP' in PLOTS:
-        plot_badpix_plot(params)
+        plot_badpix_plot(_params)
     if 'BACKMAP' in PLOTS:
-        plot_backmap_plot(params)
+        plot_backmap_plot(_params)
     if 'FLATBLAZE' in PLOTS:
-        plot_flatblaze_plot(params)
+        plot_flatblaze_plot(_params)
     if 'E2DS' in PLOTS:
-        plot_e2ds_plot(params)
+        plot_e2ds_plot(_params)
     if 'S1D' in PLOTS:
-        plot_s1d_plot(params)
+        plot_s1d_plot(_params)
     if 'TCORR' in PLOTS:
-        plot_tcorr_plot(params)
+        plot_tcorr_plot(_params)
     if 'TELLU_COV' in PLOTS:
-        plot_tellu_cov_plot(params)
+        plot_tellu_cov_plot(_params)
     if 'THERM' in PLOTS:
-        plot_therm_plot(params)
+        plot_therm_plot(_params)
+    if 'LEAK' in PLOTS:
+        plot_leak_plot(_params)
 
 # =============================================================================
 # End of code
