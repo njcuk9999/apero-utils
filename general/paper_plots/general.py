@@ -67,7 +67,7 @@ if uname is None:
 if uname == 'spirou':
     PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
 elif uname == 'cook':
-    PLOT_PATH = '/spirou/cook/paper_plots'
+    PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
 else:
     PLOT_PATH = '/data/spirou/drs-data/misc/paper_plots'
 # define Y, J, H, K
@@ -93,10 +93,10 @@ PLOTS = []
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
 # PLOTS.append('S1D')
-# PLOTS.append('TCORR')
+PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
 # PLOTS.append('THERM')
-PLOTS.append('LEAK')
+# PLOTS.append('LEAK')
 
 # =============================================================================
 # PLOT functions
@@ -1077,11 +1077,14 @@ def plot_tcorr_plot(params):
 
     orders = [20, 31]
 
-    limits = [[1310, 1320], [1600, 1610]]
+    limits_a = [[1310, 1320], [1600, 1610]]
+    limits_b = [[1314.5, 1315.5], [1607, 1608]]
     # -------------------------------------------------------------------------
     # get filename
-    e2dsfile = os.path.join(params['DRS_DATA_OUT'], NIGHT, '{0}e.fits'.format(odocode))
-    tcorrfile = os.path.join(params['DRS_DATA_OUT'], NIGHT, '{0}t.fits'.format(odocode))
+    e2dsfile = os.path.join(params['DRS_DATA_OUT'], NIGHT,
+                            '{0}e.fits'.format(odocode))
+    tcorrfile = os.path.join(params['DRS_DATA_OUT'], NIGHT,
+                             '{0}t.fits'.format(odocode))
 
     # -------------------------------------------------------------------------
     wave = fits.getdata(e2dsfile, extname='WaveAB')
@@ -1094,12 +1097,24 @@ def plot_tcorr_plot(params):
     # -------------------------------------------------------------------------
     # plot setup
     plt.close()
-    fig, frames = plt.subplots(ncols=1, nrows=len(orders), figsize=(12, 12))
+    plt.figure(figsize=(10, 10))
+    shape = (2, 5)
+    frame1 = plt.subplot2grid(shape, (0, 0), colspan=3)
+    frame2 = plt.subplot2grid(shape, (1, 0), colspan=3)
+    frame3 = plt.subplot2grid(shape, (0, 3), colspan=2)
+    frame4 = plt.subplot2grid(shape, (1, 3), colspan=2)
+
+    frames_right = [frame1, frame2]
+    frames_left = [frame3, frame4]
 
     # loop around orders
     for it, order_num in enumerate(orders):
         # get this iterations frame
-        frame = frames[it]
+        frame_a = frames_right[it]
+        frame_b = frames_left[it]
+
+        frame_part = [frame_a, frame_b]
+        limits_part = [limits_a, limits_b]
         # get order values
         ordwave = wave[order_num]
         orde2ds = (e2dsffab / blaze)[order_num]
@@ -1110,50 +1125,67 @@ def plot_tcorr_plot(params):
         # get first and last point on e2ds
         imask = np.where(np.isfinite(orde2ds))
 
-        # get wave limits for first and last poitns of e2ds
-        if limits[it] is None:
-            wavemin = ordwave[int(np.min(imask))]
-            wavemax = ordwave[int(np.max(imask))]
-        else:
-            wavemin = limits[it][0]
-            wavemax = limits[it][1]
+        # loop around zoom ins
+        for part in [0, 1]:
 
-        # plot e2dsff
-        frame.plot(ordwave, orde2ds / np.nanmedian(orde2ds), color='k', lw=0.5,
-                   label='Extracted', zorder=2)
-        # plot telluric
-        frame.plot(ordwave, ordtcorr / np.nanmedian(ordtcorr), color='r', lw=0.5,
-                   label='Telluric corrected', zorder=3)
-        # plot recon
-        frame.plot(ordwave, ordrecon / np.nanmedian(ordrecon), color='b', lw=0.5,
-                   label='Reconstructed absorption', zorder=4, alpha=0.75)
+            frame = frame_part[part]
+            limits = limits_part[part]
 
-        frame.plot([0, 0], [1000, 2000],
-                   color='orange', lw=0.5, label='Sky model (OH lines)',
-                   zorder=1)
+            # get wave limits for first and last poitns of e2ds
+            if limits[it] is None:
+                wavemin = ordwave[int(np.min(imask))]
+                wavemax = ordwave[int(np.max(imask))]
+            else:
+                wavemin = limits[it][0]
+                wavemax = limits[it][1]
 
-        ins = frame.inset_axes([0, 1, 1, 0.1])
-        # plot sky
-        ins.plot(ordwave, ordskymodel / np.nanmedian(orde2ds),
-                 color='orange', lw=0.5, label='Sky model (OH lines)',
-                 zorder=1)
-        ins.set(xlim=[wavemin, wavemax])
-        ins.set_xticklabels([])
-        ins.set_yticklabels([])
+            # plot e2dsff
+            frame.plot(ordwave, orde2ds / np.nanmedian(orde2ds), color='k',
+                       lw=0.5, label='Extracted', zorder=2)
+            # plot telluric
+            frame.plot(ordwave, ordtcorr / np.nanmedian(ordtcorr), color='r',
+                       lw=0.5, label='Telluric corrected', zorder=3)
+            # plot recon
+            frame.plot(ordwave, ordrecon / np.nanmedian(ordrecon), color='b',
+                       lw=0.5, label='Reconstructed absorption', zorder=4,
+                       alpha=0.75)
 
-        # set labels
-        frame.set(ylim=[0.4, 1.15], ylabel='Normalized flux',
-                  xlim=[wavemin, wavemax])
+            frame.plot([0, 0], [1000, 2000],
+                       color='orange', lw=0.5, label='Sky model (OH lines)',
+                       zorder=1)
 
-        frame.set(xlabel='Wavelength [nm]')
+            ins = frame.inset_axes([0, 1, 1, 0.1])
+            # plot sky
+            ins.plot(ordwave, ordskymodel / np.nanmedian(orde2ds),
+                     color='orange', lw=0.5, label='Sky model (OH lines)',
+                     zorder=1)
+            ins.set(xlim=[wavemin, wavemax])
+            ins.set_xticklabels([])
+            ins.set_yticklabels([])
 
-        # frame.set_title('Order {0}'.format(order_num), y=1.0, pad=-15)
+            # set labels
+            if part == 0:
+                frame.set(xlabel='Normalized flux')
+            frame.set(ylim=[0.4, 1.15], xlim=[wavemin, wavemax])
+            frame.set(xlabel='Wavelength [nm]')
 
-        if it == 0:
-            frame.legend(loc='upper center', bbox_to_anchor=(0.5, 1.2), ncol=5)
+            # frame.set_title('Order {0}'.format(order_num), y=1.0, pad=-15)
+
+            if it == 0 and part == 0:
+                frame.legend(loc='upper center', bbox_to_anchor=(0.85, 1.2),
+                               ncol=5)
+
+            # turn off stuff for zoom
+            if part == 1:
+                waverange = wavemax - wavemin
+                point1 = wavemin + 0.25 * waverange
+                point2 = wavemax - 0.25 * waverange
+                frame.set_xticks([point1, point2])
+                frame.set_xticklabels([str(point1), str(point2)])
+                frame.set_yticklabels([])
 
     plt.subplots_adjust(left=0.075, right=0.98, bottom=0.0725, top=0.9,
-                        hspace=0.2)
+                        hspace=0.25, wspace=0.1)
     # -------------------------------------------------------------------------
     # save plot
     outfile = os.path.join(PLOT_PATH, 'tcorr.pdf')
