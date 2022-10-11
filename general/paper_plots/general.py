@@ -88,12 +88,13 @@ PLOTS = []
 # PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
+# PLOTS.append('PP_CARTON')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
-# PLOTS.append('S1D')
-PLOTS.append('TCORR')
+PLOTS.append('S1D')
+# PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
 # PLOTS.append('THERM')
 # PLOTS.append('LEAK')
@@ -474,6 +475,144 @@ def plot_pp_features(params):
         # ---------------------------------------------------------------------
         # plot feature grid
         plot_feature_grid(image, 'pp_features.pdf')
+
+
+def plot_pp_cartoon():
+    from scipy.interpolate import InterpolatedUnivariateSpline as ius
+
+    # size of the image (x and y)
+    w = 48
+
+    # get the indices for the image
+    y, x = np.indices([w, w])
+    # set the reference pixels
+    refpix = np.zeros([w, w], dtype=bool)
+    refpix[0:4] = True
+    refpix[:, 0:4] = True
+    refpix[-4:] = True
+    refpix[:, -4:] = True
+    # add some random noise to the image
+    image0 = np.random.normal(0, 1, [w, w])
+    # make the random noise lower in the reference pixels
+    image0[refpix] -= 3
+
+    # add a fake order to the image
+    fit = np.polyfit([0, w / 2.0, w], [3 * w / 4, w / 4, 3 * w / 4], 2)
+    expo = 10
+    banana1 = np.exp(-0.5 * (x - np.polyval(fit, y)) ** expo / 2 ** expo)
+    # add a second order to the image
+    bananas = banana1 + np.roll(banana1, 10, axis=1)
+    bananas += np.roll(banana1, 20, axis=1)
+    # add the orders to the image
+    image0[~refpix] += bananas[~refpix] * 5
+    # add one over f noise
+    npix = 10
+    nxpixels = np.arange(npix)
+    fspline = ius(nxpixels, np.random.normal(0, 5, [npix]))
+    onef = fspline((npix - 2) * np.arange(w) / w + 1) / 2
+    # add a second one over f noise signal
+    npix = 20
+    nxpixels = np.arange(npix)
+    fspline = ius(nxpixels, np.random.normal(0, 5, [npix]))
+    onef = onef + fspline((npix - 2) * np.arange(w) / w + 1) / 2
+
+    # apply noise to each row of pixels
+    for i in range(w):
+        image0[:, i] += onef
+
+    # apply amplifier noise to column sections of the detector
+    for iamp in range(4):
+        start = iamp * (w // 4)
+        end = (iamp + 1) * (w // 4)
+        image0[:, start:end] += np.random.normal() * 5
+
+    # correct the image for amplifier signal
+    per_amp_dc = np.zeros(w * 100)
+    image1 = np.array(image0)
+    for iamp in range(4):
+        start = iamp * (w // 4)
+        end = (iamp + 1) * (w // 4)
+        med_per_amp = np.nanmedian(image0[0:4, start:end])
+        image1[:, start:end] -= med_per_amp
+        per_amp_dc[start * 100:end * 100] = med_per_amp
+
+    # correct 1/f
+    index = [0, 1, 2, 3, w - 4, w - 3, w - 2, w - 1]
+    med = np.nanmedian(image1[:, index], axis=1)
+    image2 = np.array(image1)
+    for i in range(w):
+        image2[:, i] -= med
+
+    # -------------------------------------------------------------------------
+    # start plot
+    # -------------------------------------------------------------------------
+    plt.close()
+    fig, frames = plt.subplots(ncols=3, nrows=1, figsize=(18, 6))
+    # -------------------------------------------------------------------------
+    # frame 1
+    # -------------------------------------------------------------------------
+    frame1 = frames[0]
+    # add uncorrected image
+    frame1.imshow(image0, origin='lower', aspect='auto')
+    # plot dotted line for reference pixels
+    frame1.plot(np.array([4, w - 4, w - 4, 4, 4]) - .5,
+                np.array([4, 4, w - 4, w - 4, 4]) - .5,
+                color='white',
+                linestyle='--', alpha=0.6)
+    frame1.set_xticklabels([])
+    frame1.set_yticklabels([])
+
+    divider1 = make_axes_locatable(frame1)
+    frame1x = divider1.append_axes('bottom', size='10%', pad=0.01)
+    frame1y = divider1.append_axes('right', size='10%', pad=0.01)
+
+    frame1x.plot(np.arange(len(per_amp_dc)) / 100, per_amp_dc)
+    frame1x.set_yticklabels([])
+
+    frame1y.plot(med, np.arange(len(med)), label='measured')
+    frame1y.plot(onef, np.arange(len(med)), label='injected')
+    frame1y.set_xticklabels([])
+    frame1y.yaxis.tick_right()
+    frame1y.yaxis.set_label_position("right")
+    # frame1y.legend()
+    # -------------------------------------------------------------------------
+    # frame 2
+    # -------------------------------------------------------------------------
+    frame2 = frames[1]
+
+    divider2= make_axes_locatable(frame2)
+    frame2x = divider1.append_axes('bottom', size='10%', pad=0.01)
+    frame2y = divider1.append_axes('right', size='10%', pad=0.01)
+    frame2x.axis('off')
+    frame2y.axis('off')
+
+    # plot image corrected for amplifiers
+    frame2.imshow(image1, origin='lower', aspect='auto')
+    # plot dotted line for reference pixels
+    frame2.plot(np.array([4, w - 4, w - 4, 4, 4]) - .5,
+                np.array([4, 4, w - 4, w - 4, 4]) - .5,
+                color='white',
+                linestyle='--', alpha=0.6)
+    # -------------------------------------------------------------------------
+    # frame 2
+    # -------------------------------------------------------------------------
+    frame3 = frames[2]
+
+    divider3= make_axes_locatable(frame3)
+    frame3x = divider1.append_axes('bottom', size='10%', pad=0.01)
+    frame3y = divider1.append_axes('right', size='10%', pad=0.01)
+    frame3x.axis('off')
+    frame3y.axis('off')
+
+    frame3.imshow(image2, origin='lower', aspect='auto')
+    # plot dotted line for reference pixels
+    frame3.plot(np.array([4, w - 4, w - 4, 4, 4]) - .5,
+                np.array([4, 4, w - 4, w - 4, 4]) - .5,
+                color='white',
+                linestyle='--', alpha=0.6)
+    # -------------------------------------------------------------------------
+    plt.subplots_adjust(left=0.01, right=0.99, bottom=0.05, top=0.975)
+    plt.show()
 
 
 # plot for raw features and pp features
@@ -953,7 +1092,7 @@ def plot_s1d_plot(params):
     # -------------------------------------------------------------------------
     # get filenames
     e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                             '{0}_pp_e2ds_AB.fits'.format(odocode))
+                             '{0}_pp_e2dsff_AB.fits'.format(odocode))
     # -------------------------------------------------------------------------
     # get images
     sp1 = fits.getdata(e2ds_file)
@@ -963,7 +1102,8 @@ def plot_s1d_plot(params):
     blaze_file = os.path.join(params['DRS_CALIB_DB'], hdr['CDBBLAZE'])
     blaze = fits.getdata(blaze_file)
     # normalize blaze
-    blaze = blaze / np.nanmedian(blaze)
+    for order_num in range(blaze.shape[0]):
+        blaze[order_num] = blaze[order_num] / np.nanpercentile(blaze[order_num], 95)
     # -------------------------------------------------------------------------
     # get wave solution (using header)
     wave = fits2wave(sp1, hdr)
@@ -2010,6 +2150,8 @@ if __name__ == '__main__':
         plot_raw_features(_params)
     if 'PP_FEATURES' in PLOTS:
         plot_pp_features(_params)
+    if 'PP_CARTOON' in PLOTS:
+        plot_pp_cartoon()
     if 'BADMAP' in PLOTS:
         plot_badpix_plot(_params)
     if 'BACKMAP' in PLOTS:
