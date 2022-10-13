@@ -16,11 +16,11 @@ import os
 # Define variables
 # =============================================================================
 # path to original
-PATH1 = '/scratch2/spirou/drs-data/misc/APERO_paper_review/original'
+PATH1 = '/scratch2/spirou/misc/APERO_paper_review/original'
 # path to update
-PATH2 = '/scratch2/spirou/drs-data/misc/APERO_paper_review/update'
+PATH2 = '/scratch2/spirou/misc/APERO_paper_review/update'
 # path to diff
-PATH3 = '/scratch2/spirou/drs-data/misc/APERO_paper_review/diff'
+PATH3 = '/scratch2/spirou/misc/APERO_paper_review/diff'
 # name of main tex file
 MAIN_TEX_FILE = 'main.tex'
 # name of expanded tex file (created here)
@@ -32,11 +32,12 @@ LATEX_EXPAND = '/scratch/bin/latex_home/latexpand/latexpand'
 # path to latex diff
 LATEX_DIFF = '/scratch/bin/latex_home/latexdiff/latexdiff'
 
-
+#==============================================================================
+# Start of code
 # =============================================================================
-# Define functions
-# =============================================================================
-def function1():
+# Main code here
+if __name__ == "__main__":
+    # ----------------------------------------------------------------------
     # get path to expanded file
     all_path_1 = os.path.join(PATH1, ALL_TEX_FILE)
     all_path_2 = os.path.join(PATH2, ALL_TEX_FILE)
@@ -70,16 +71,6 @@ def function1():
 
     # change back to cwd
     os.chdir(current_dir)
-
-
-# =============================================================================
-# Start of code
-# =============================================================================
-# Main code here
-if __name__ == "__main__":
-    # ----------------------------------------------------------------------
-    # print 'Hello World!'
-    print("Hello World!")
 
 # =============================================================================
 # End of code

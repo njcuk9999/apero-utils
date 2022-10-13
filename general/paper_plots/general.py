@@ -88,12 +88,12 @@ PLOTS = []
 # PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
-# PLOTS.append('PP_CARTON')
+PLOTS.append('PP_CARTOON')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
-PLOTS.append('S1D')
+# PLOTS.append('S1D')
 # PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
 # PLOTS.append('THERM')
@@ -478,8 +478,6 @@ def plot_pp_features(params):
 
 
 def plot_pp_cartoon():
-    from scipy.interpolate import InterpolatedUnivariateSpline as ius
-
     # size of the image (x and y)
     w = 48
 
@@ -547,7 +545,9 @@ def plot_pp_cartoon():
     # start plot
     # -------------------------------------------------------------------------
     plt.close()
-    fig, frames = plt.subplots(ncols=3, nrows=1, figsize=(18, 6))
+    fig, frames = plt.subplots(ncols=3, nrows=1, figsize=(12, 4))
+
+    dkwargs = dict(size='15%', pad=0.05)
     # -------------------------------------------------------------------------
     # frame 1
     # -------------------------------------------------------------------------
@@ -559,19 +559,34 @@ def plot_pp_cartoon():
                 np.array([4, 4, w - 4, w - 4, 4]) - .5,
                 color='white',
                 linestyle='--', alpha=0.6)
+    frame1.set_xticks([])
+    frame1.set_yticks([])
     frame1.set_xticklabels([])
     frame1.set_yticklabels([])
 
     divider1 = make_axes_locatable(frame1)
-    frame1x = divider1.append_axes('bottom', size='10%', pad=0.01)
-    frame1y = divider1.append_axes('right', size='10%', pad=0.01)
+    frame1x = divider1.append_axes('bottom', **dkwargs)
+    frame1y = divider1.append_axes('right', **dkwargs)
 
-    frame1x.plot(np.arange(len(per_amp_dc)) / 100, per_amp_dc)
+    frame1x.plot(np.arange(len(per_amp_dc)) / 100, per_amp_dc, color='g',
+                 label='Amplifier signal')
+    frame1x.set_xticks([])
+    frame1x.set_xticklabels([])
+    frame1x.set_yticks([])
     frame1x.set_yticklabels([])
+    frame1x.set(xlim=[0, len(per_amp_dc) /100],
+                ylim=[1.5*np.nanmin(per_amp_dc), 1.5*np.nanmax(per_amp_dc)])
 
-    frame1y.plot(med, np.arange(len(med)), label='measured')
-    frame1y.plot(onef, np.arange(len(med)), label='injected')
+    frame1y.plot(med, np.arange(len(med)), label='Measured 1/f',
+                 color='b')
+    frame1y.plot(onef, np.arange(len(med)), label='Injected 1/f',
+                 color='orange')
+    frame1y.set_xticks([])
     frame1y.set_xticklabels([])
+    frame1y.set_yticks([])
+    frame1y.set_yticklabels([])
+    frame1y.set(xlim=[1.5*np.nanmin(onef), 1.5*np.nanmax(onef)],
+                ylim=[0, len(med)])
     frame1y.yaxis.tick_right()
     frame1y.yaxis.set_label_position("right")
     # frame1y.legend()
@@ -581,8 +596,8 @@ def plot_pp_cartoon():
     frame2 = frames[1]
 
     divider2= make_axes_locatable(frame2)
-    frame2x = divider1.append_axes('bottom', size='10%', pad=0.01)
-    frame2y = divider1.append_axes('right', size='10%', pad=0.01)
+    frame2x = divider2.append_axes('bottom', **dkwargs)
+    frame2y = divider2.append_axes('right', **dkwargs)
     frame2x.axis('off')
     frame2y.axis('off')
 
@@ -593,14 +608,19 @@ def plot_pp_cartoon():
                 np.array([4, 4, w - 4, w - 4, 4]) - .5,
                 color='white',
                 linestyle='--', alpha=0.6)
+    # turn off labels and ticks
+    frame2.set_xticks([])
+    frame2.set_yticks([])
+    frame2.set_xticklabels([])
+    frame2.set_yticklabels([])
     # -------------------------------------------------------------------------
     # frame 2
     # -------------------------------------------------------------------------
     frame3 = frames[2]
 
     divider3= make_axes_locatable(frame3)
-    frame3x = divider1.append_axes('bottom', size='10%', pad=0.01)
-    frame3y = divider1.append_axes('right', size='10%', pad=0.01)
+    frame3x = divider3.append_axes('bottom', **dkwargs)
+    frame3y = divider3.append_axes('right', **dkwargs)
     frame3x.axis('off')
     frame3y.axis('off')
 
@@ -610,9 +630,27 @@ def plot_pp_cartoon():
                 np.array([4, 4, w - 4, w - 4, 4]) - .5,
                 color='white',
                 linestyle='--', alpha=0.6)
+    # turn off labels and ticks
+    frame3.set_xticks([])
+    frame3.set_yticks([])
+    frame3.set_xticklabels([])
+    frame3.set_yticklabels([])
     # -------------------------------------------------------------------------
-    plt.subplots_adjust(left=0.01, right=0.99, bottom=0.05, top=0.975)
+    plt.subplots_adjust(left=0.01, right=0.99, bottom=0.05, top=0.975,
+                        hspace=0.05, wspace=0.05)
+
+    # add legend
+    lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
+    lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
+    fig.legend(lines, labels, loc=(0.35, 0.05), ncol=3)
+
+    # save file
+    outfile = os.path.join(PLOT_PATH, 'pp_cartoon.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile, dpi=300)
+    print('Showing graph')
     plt.show()
+    plt.close()
 
 
 # plot for raw features and pp features
