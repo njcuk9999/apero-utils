@@ -65,9 +65,9 @@ if uname is None:
 
 # define where we want to save plots
 if uname == 'spirou':
-    PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
+    PLOT_PATH = '/spirou/cook/paper_plots'
 elif uname == 'cook':
-    PLOT_PATH = '/scratch2/spirou/drs-data/misc/paper_plots'
+    PLOT_PATH = '/scratch2/spirou/misc/paper_plots'
 else:
     PLOT_PATH = '/data/spirou/drs-data/misc/paper_plots'
 # define Y, J, H, K
@@ -84,11 +84,13 @@ BANDS['$K_{s}$'] = [19577.92 / 10, 23431.05 / 10]  # MKO
 # define plots and append those we want
 # noinspection PyListCreation
 PLOTS = []
+
+# Apero paper
 # PLOTS.append('SIZE_GRID')
 # PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
-PLOTS.append('PP_CARTOON')
+# PLOTS.append('PP_CARTOON')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
@@ -98,6 +100,9 @@ PLOTS.append('PP_CARTOON')
 # PLOTS.append('TELLU_COV')
 # PLOTS.append('THERM')
 # PLOTS.append('LEAK')
+
+# Telluric paper
+PLOTS.append('AIRMASS')
 
 # =============================================================================
 # PLOT functions
@@ -1256,7 +1261,7 @@ def plot_tcorr_plot(params):
     orders = [20, 31]
 
     limits_a = [[1310, 1320], [1600, 1610]]
-    limits_b = [[1314.5, 1315.5], [1607, 1608]]
+    limits_b = [[1314.5, 1315.5], [1600, 1601]]
     # -------------------------------------------------------------------------
     # get filename
     e2dsfile = os.path.join(params['DRS_DATA_OUT'], NIGHT,
@@ -1425,6 +1430,79 @@ def plot_tellu_cov_plot(params):
     # -------------------------------------------------------------------------
     # save plot
     outfile = os.path.join(PLOT_PATH, 'tellu_cov.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show(block=True)
+    plt.close()
+
+
+def plot_tellu_airmass_plot(params):
+    # get telluric database
+    telludbm = drs_database.TelluricDatabase(params)
+    telludbm.load_db()
+
+    tellu_table = telludbm.get_tellu_entry('*', key='TELLU_TRANS')
+
+    # group by object name
+    uobjnames = np.unique(tellu_table['OBJECT'])
+    airmass = tellu_table['AIRMASS']
+    tau_others = tellu_table['TAU_OTHERS']
+
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    fig = plt.figure(figsize=(10, 8))
+    frame1 = plt.subplot2grid((6, 6), (0, 0), rowspan=5, colspan=6)
+    frame2 = plt.subplot2grid((6, 6), (5, 0), rowspan=1, colspan=6)
+
+    colors = ['red', 'orange', 'green', 'blue', 'purple', 'black']
+    markers = ['o', '+', 's', 'd', '^', 'v']
+
+    fmt = list(itertools.product(markers, colors))
+
+    for it, uobjname in enumerate(uobjnames):
+
+        marker, color = fmt[it]
+
+        if marker in ['+']:
+            facecolor = color
+            edgecolor = None
+        else:
+            facecolor = 'None'
+            edgecolor = color
+
+        objmask = tellu_table['OBJECT'] == uobjname
+        length = np.sum(objmask)
+
+        label = f'{uobjname} N={length}'
+
+        frame1.scatter(airmass[objmask], tau_others[objmask], alpha=0.75,
+                      label=label, marker=marker, edgecolor=edgecolor,
+                      facecolor=facecolor)
+
+        frame2.scatter(airmass[objmask], tau_others[objmask] - airmass[objmask],
+                       ls='None', marker=marker, edgecolor=edgecolor,
+                       facecolor=facecolor)
+
+    limits = [0.9, 2.5]
+
+    frame1.plot(limits, limits, color='k', alpha=0.25)
+
+    frame1.set(xlabel=r'Airmass',
+              ylabel=r'$ \tau$[dry]$\approx$dry absorption',
+               xlim=limits, ylim=limits)
+    frame1.xaxis.tick_top()
+    frame1.legend(title='Hot stars', loc=6, bbox_to_anchor=(1.025, 0.4))
+
+    frame2.set(xlabel=r'Airmass', ylabel=r'Difference',
+               xlim=limits)
+
+    plt.subplots_adjust(left=0.075, right=0.8, bottom=0.0725, top=0.95,
+                        hspace=0.0, wspace=0.0)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'tellu_airmass.pdf')
     print('Saving to file: ' + outfile)
     plt.savefig(outfile)
     print('Showing graph')
@@ -2204,6 +2282,8 @@ if __name__ == '__main__':
         plot_tcorr_plot(_params)
     if 'TELLU_COV' in PLOTS:
         plot_tellu_cov_plot(_params)
+    if 'AIRMASS' in PLOTS:
+        plot_tellu_airmass_plot(_params)
     if 'THERM' in PLOTS:
         plot_therm_plot(_params)
     if 'LEAK' in PLOTS:
