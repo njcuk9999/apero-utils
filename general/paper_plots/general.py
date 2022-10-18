@@ -90,7 +90,7 @@ PLOTS = []
 # PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
-# PLOTS.append('PP_CARTOON')
+PLOTS.append('PP_CARTOON')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
@@ -102,12 +102,15 @@ PLOTS = []
 # PLOTS.append('LEAK')
 
 # Telluric paper
-PLOTS.append('AIRMASS')
+# PLOTS.append('AIRMASS')
 
+# =============================================================================
 # =============================================================================
 # PLOT functions
 # =============================================================================
+# =============================================================================
 # SIZE_GRID
+# =============================================================================
 def plot_size_grid(params):
     odocode = '2510376o'
     hashcode = '2510376o'
@@ -246,7 +249,9 @@ def plot_size_grid(params):
     plt.close()
 
 
+# =============================================================================
 # FIBER LAYOUT SCHEMATIC
+# =============================================================================
 def plot_fiber_layout(params):
     odocode = '2510301o'
     hashcode = '2510301o'
@@ -366,7 +371,9 @@ def plot_fiber_layout(params):
     plt.close()
 
 
+# =============================================================================
 # RAW_FEATURES
+# =============================================================================
 def plot_raw_features(params):
     # set file to use
     odocode = '2510301o'
@@ -380,6 +387,9 @@ def plot_raw_features(params):
     plot_feature_grid(raw_image)
 
 
+# =============================================================================
+# PP FEATURES
+# =============================================================================
 def plot_pp_features(params):
     # get pseudo constants
     pconst = constants.pload()
@@ -482,9 +492,15 @@ def plot_pp_features(params):
         plot_feature_grid(image, 'pp_features.pdf')
 
 
+# =============================================================================
+# PP_CARTOON
+# =============================================================================
 def plot_pp_cartoon():
     # size of the image (x and y)
     w = 48
+
+    amplimits = dict(xlim=[0.0, w], ylim=[-10.0, 10.0])
+    flimits = dict(xlim=[-15.0, 15.0], ylim=[0.0, w])
 
     # get the indices for the image
     y, x = np.indices([w, w])
@@ -539,6 +555,14 @@ def plot_pp_cartoon():
         image1[:, start:end] -= med_per_amp
         per_amp_dc[start * 100:end * 100] = med_per_amp
 
+    # measure amp after
+    per_amp_dc_after = np.zeros(w * 100)
+    for iamp in range(4):
+        start = iamp * (w // 4)
+        end = (iamp + 1) * (w // 4)
+        med_per_amp_after = np.nanmedian(image1[0:4, start:end])
+        per_amp_dc_after[start * 100:end * 100] = med_per_amp_after
+
     # correct 1/f
     index = [0, 1, 2, 3, w - 4, w - 3, w - 2, w - 1]
     med = np.nanmedian(image1[:, index], axis=1)
@@ -546,11 +570,18 @@ def plot_pp_cartoon():
     for i in range(w):
         image2[:, i] -= med
 
+    # scale 1/f 1d plot
+    fmin = np.min([np.min(med), np.min(onef)])
+    fmax = np.max([np.max(med), np.max(onef)])
+    flimits['xlim'] = scalelimits(fmin, fmax, 0.2)
+    # scale amp 1d plot
+    amplimits['ylim'] = scalelimits(np.min(per_amp_dc), np.max(per_amp_dc), 0.2)
+
     # -------------------------------------------------------------------------
     # start plot
     # -------------------------------------------------------------------------
     plt.close()
-    fig, frames = plt.subplots(ncols=3, nrows=1, figsize=(12, 4))
+    fig, frames = plt.subplots(ncols=3, nrows=1, figsize=(12, 5))
 
     dkwargs = dict(size='15%', pad=0.05)
     # -------------------------------------------------------------------------
@@ -568,19 +599,20 @@ def plot_pp_cartoon():
     frame1.set_yticks([])
     frame1.set_xticklabels([])
     frame1.set_yticklabels([])
+    frame1.set(title='No correction')
 
     divider1 = make_axes_locatable(frame1)
     frame1x = divider1.append_axes('bottom', **dkwargs)
     frame1y = divider1.append_axes('right', **dkwargs)
-
+    # -------------------------------------------------------------------------
+    # add 1d plots
     frame1x.plot(np.arange(len(per_amp_dc)) / 100, per_amp_dc, color='g',
                  label='Amplifier signal')
     frame1x.set_xticks([])
     frame1x.set_xticklabels([])
     frame1x.set_yticks([])
     frame1x.set_yticklabels([])
-    frame1x.set(xlim=[0, len(per_amp_dc) /100],
-                ylim=[1.5*np.nanmin(per_amp_dc), 1.5*np.nanmax(per_amp_dc)])
+    frame1x.set(**amplimits)
 
     frame1y.plot(med, np.arange(len(med)), label='Measured 1/f',
                  color='b')
@@ -590,8 +622,7 @@ def plot_pp_cartoon():
     frame1y.set_xticklabels([])
     frame1y.set_yticks([])
     frame1y.set_yticklabels([])
-    frame1y.set(xlim=[1.5*np.nanmin(onef), 1.5*np.nanmax(onef)],
-                ylim=[0, len(med)])
+    frame1y.set(**flimits)
     frame1y.yaxis.tick_right()
     frame1y.yaxis.set_label_position("right")
     # frame1y.legend()
@@ -603,8 +634,6 @@ def plot_pp_cartoon():
     divider2= make_axes_locatable(frame2)
     frame2x = divider2.append_axes('bottom', **dkwargs)
     frame2y = divider2.append_axes('right', **dkwargs)
-    frame2x.axis('off')
-    frame2y.axis('off')
 
     # plot image corrected for amplifiers
     frame2.imshow(image1, origin='lower', aspect='auto')
@@ -618,16 +647,36 @@ def plot_pp_cartoon():
     frame2.set_yticks([])
     frame2.set_xticklabels([])
     frame2.set_yticklabels([])
+    frame2.set(title='Amplifier correction')
     # -------------------------------------------------------------------------
-    # frame 2
+    # add 1d plots
+    frame2x.plot(np.arange(len(per_amp_dc_after)) / 100, per_amp_dc_after,
+                 color='g',
+                 label='Amplifier signal')
+    frame2x.set_xticks([])
+    frame2x.set_xticklabels([])
+    frame2x.set_yticks([])
+    frame2x.set_yticklabels([])
+    frame2x.set(**amplimits)
+    frame2y.plot(med, np.arange(len(med)), label='Measured 1/f',
+                 color='b')
+    frame2y.plot(onef, np.arange(len(med)), label='Injected 1/f',
+                 color='orange')
+    frame2y.set_xticks([])
+    frame2y.set_xticklabels([])
+    frame2y.set_yticks([])
+    frame2y.set_yticklabels([])
+    frame2y.set(**flimits)
+    frame2y.yaxis.tick_right()
+    frame2y.yaxis.set_label_position("right")
+    # -------------------------------------------------------------------------
+    # frame 3
     # -------------------------------------------------------------------------
     frame3 = frames[2]
 
     divider3= make_axes_locatable(frame3)
     frame3x = divider3.append_axes('bottom', **dkwargs)
     frame3y = divider3.append_axes('right', **dkwargs)
-    frame3x.axis('off')
-    frame3y.axis('off')
 
     frame3.imshow(image2, origin='lower', aspect='auto')
     # plot dotted line for reference pixels
@@ -640,14 +689,42 @@ def plot_pp_cartoon():
     frame3.set_yticks([])
     frame3.set_xticklabels([])
     frame3.set_yticklabels([])
+    frame3.set(title='Amplifier and 1/f correction')
     # -------------------------------------------------------------------------
-    plt.subplots_adjust(left=0.01, right=0.99, bottom=0.05, top=0.975,
+    # add 1d plots
+    frame3x.plot(np.arange(len(per_amp_dc_after)) / 100, per_amp_dc_after,
+                 color='g', label='Amplifier signal')
+    frame3x.set_xticks([])
+    frame3x.set_xticklabels([])
+    frame3x.set_yticks([])
+    frame3x.set_yticklabels([])
+    frame3x.set(**amplimits)
+    frame3y.plot(med-onef, np.arange(len(med)), label='Measured 1/f',
+                 color='b')
+    frame3y.plot(onef, np.arange(len(med)), label='Injected 1/f',
+                 color='orange')
+    frame3y.set_xticks([])
+    frame3y.set_xticklabels([])
+    frame3y.set_yticks([])
+    frame3y.set_yticklabels([])
+    frame3y.set(**flimits)
+    frame3y.yaxis.tick_right()
+    frame3y.yaxis.set_label_position("right")
+    # -------------------------------------------------------------------------
+    plt.subplots_adjust(left=0.01, right=0.99, bottom=0.15, top=0.95,
                         hspace=0.05, wspace=0.05)
 
     # add legend
     lines_labels = [ax.get_legend_handles_labels() for ax in fig.axes]
+    # flatten lines and labels
     lines, labels = [sum(lol, []) for lol in zip(*lines_labels)]
-    fig.legend(lines, labels, loc=(0.35, 0.05), ncol=3)
+    # only keep uniuq names
+    hh, ll = [], []
+    for it in range(len(labels)):
+        if labels[it] not in ll:
+            hh.append(lines[it]), ll.append(labels[it])
+    # plot legend
+    fig.legend(hh, ll, loc=(0.3, 0.03), ncol=3)
 
     # save file
     outfile = os.path.join(PLOT_PATH, 'pp_cartoon.pdf')
@@ -658,164 +735,16 @@ def plot_pp_cartoon():
     plt.close()
 
 
-# plot for raw features and pp features
-def plot_feature_grid(image, outname='raw_features.pdf'):
-    # define cuts / zooms
-    cut1area = [100, 700, 1200, 1800]
-    cut2area = [2375, 2575, 525, 725]
-    zoom0area = [800, 1200, 3396, 3796]
-    zoom1area = [3596, 3996, 800, 1200]
-    zoom2area = [1240, 1290, 1590, 1640]
-    # text height above image [in raw image pixel units]
-    textheight = 100
-    rcolor = 'r'
-    # -------------------------------------------------------------------------
-    print('Plotting raw_features plot')
-    # set up grid
-    plt.close()
-    fig = plt.figure(figsize=(12, 14))
-    size = (3, 3)
-    topright = plt.subplot2grid(size, (0, 0))
-    topmid = plt.subplot2grid(size, (0, 1))
-    topleft = plt.subplot2grid(size, (0, 2))
-    rightmid = plt.subplot2grid(size, (1, 0))
-    rightbot = plt.subplot2grid(size, (2, 0))
-    panel = plt.subplot2grid(size, (1, 1), colspan=2, rowspan=2)
-
-    # get colour map
-    cmap = matplotlib.cm.get_cmap('inferno').copy()
-    cmap.set_bad(color='green')
-
-    cmap0 = matplotlib.cm.get_cmap('Greys_r').copy()
-    cmap0.set_bad(color='green')
-    # -------------------------------------------------------------------------
-    # dark region
-    cut1 = image[cut1area[2]:cut1area[3], cut1area[0]:cut1area[1]]
-    c1im, _ = _norm_image(cut1, rightmid, cmap)
-    _add_colorbar(fig, c1im, rightmid, side='bottom')
-    rightmid.set_title('D. dark region', loc='left',
-                       x=0.05, y=0.95, pad=-14,
-                       color='black', backgroundcolor='white')
-    rightmid.tick_params(axis='both', which='both', bottom=False, top=False,
-                         left=False, right=False, labelleft=False,
-                         labelbottom=False)
-    # -------------------------------------------------------------------------
-    # holes
-    cut2 = image[cut2area[2]:cut2area[3], cut2area[0]:cut2area[1]]
-    c2im, _ = _norm_image(cut2, rightbot, cmap)
-    _add_colorbar(fig, c2im, rightbot, side='bottom')
-    rightbot.set_title('E. detector holes', loc='left',
-                       x=0.05, y=0.95, pad=-14,
-                       color='black', backgroundcolor='white')
-    rightbot.tick_params(axis='both', which='both', bottom=False, top=False,
-                         left=False, right=False, labelleft=False,
-                         labelbottom=False)
-    # -------------------------------------------------------------------------
-    # zoom 0
-    zoom0 = image[zoom0area[2]:zoom0area[3], zoom0area[0]:zoom0area[1]]
-    z0im, _ = _norm_image(zoom0, topright, cmap)
-    _add_colorbar(fig, z0im, topright, side='bottom')
-    topright.set_title('A. Zoom reddest orders', loc='left',
-                       x=0.05, y=0.95, pad=-14,
-                       color='black', backgroundcolor='white')
-    topright.tick_params(axis='both', which='both', bottom=False, top=False,
-                         left=False, right=False, labelleft=False,
-                         labelbottom=False)
-    # -------------------------------------------------------------------------
-    # zoom 1
-    zoom1 = image[zoom1area[2]:zoom1area[3], zoom1area[0]:zoom1area[1]]
-    z1im, norm = _norm_image(zoom1, topmid, cmap)
-    _add_colorbar(fig, z1im, topmid, side='bottom')
-    topmid.set_title('B. Zoom bluest orders', loc='left',
-                     x=0.05, y=0.95, pad=-14,
-                     color='black', backgroundcolor='white')
-    topmid.tick_params(axis='both', which='both', bottom=False, top=False,
-                       left=False, right=False, labelleft=False,
-                       labelbottom=False)
-    # -------------------------------------------------------------------------
-    # zoom 2
-    zoom2 = image[zoom2area[2]:zoom2area[3], zoom2area[0]:zoom2area[1]]
-    z2im, norm = _norm_image(zoom2, topleft, cmap)
-    _add_colorbar(fig, z2im, topleft, side='bottom')
-    topleft.set_title('C. Zoom on slices', loc='left',
-                      x=0.05, y=0.95, pad=-14,
-                      color='black', backgroundcolor='white')
-    topleft.tick_params(axis='both', which='both', bottom=False, top=False,
-                        left=False, right=False, labelleft=False,
-                        labelbottom=False)
-    # -------------------------------------------------------------------------
-    # panel
-    pim, norm = _norm_image(image, panel, cmap0)
-    _add_colorbar(fig, pim, panel, side='bottom')
-    panel.tick_params(axis='both', which='both', bottom=False, top=False,
-                      left=False, right=False, labelleft=False,
-                      labelbottom=False)
-    panel.set_title('raw (4096x4096)', loc='left',
-                    x=0.5, y=0.95, pad=-14,
-                    color='black', backgroundcolor='white')
-    # -------------------------------------------------------------------------
-    # add rectangle dark cut
-    rcut1 = patches.Rectangle((cut1area[0], cut1area[2]),
-                              cut1area[1] - cut1area[0],
-                              cut1area[3] - cut1area[2],
-                              linewidth=1, edgecolor=rcolor, facecolor='none')
-    panel.add_patch(rcut1)
-    # add text
-    panel.text(0.5 * (cut1area[1] + cut1area[0]), cut1area[3] + textheight,
-               'D', color=rcolor, backgroundcolor='white')
-    # -------------------------------------------------------------------------
-    # add rectangle holes
-    rcut2 = patches.Rectangle((cut2area[0], cut2area[2]),
-                              cut2area[1] - cut2area[0],
-                              cut2area[3] - cut2area[2],
-                              linewidth=1, edgecolor=rcolor, facecolor='none')
-    panel.add_patch(rcut2)
-    # add text
-    panel.text(0.5 * (cut2area[1] + cut2area[0]), cut2area[3] + textheight,
-               'E', color=rcolor, backgroundcolor='white')
-    # -------------------------------------------------------------------------
-    # add rectangle zoom 1
-    rzoom0 = patches.Rectangle((zoom0area[0], zoom0area[2]),
-                               zoom0area[1] - zoom0area[0],
-                               zoom0area[3] - zoom0area[2],
-                               linewidth=1, edgecolor=rcolor, facecolor='none')
-    panel.add_patch(rzoom0)
-    # add text
-    panel.text(0.5 * (zoom0area[1] + zoom0area[0]), zoom0area[3] + textheight,
-               'A', color=rcolor, backgroundcolor='white')
-    # -------------------------------------------------------------------------
-    # add rectangle zoom 1
-    rzoom1 = patches.Rectangle((zoom1area[0], zoom1area[2]),
-                               zoom1area[1] - zoom1area[0],
-                               zoom1area[3] - zoom1area[2],
-                               linewidth=1, edgecolor=rcolor, facecolor='none')
-    panel.add_patch(rzoom1)
-    # add text
-    panel.text(0.5 * (zoom1area[1] + zoom1area[0]), zoom1area[3] + textheight,
-               'B', color=rcolor, backgroundcolor='white')
-    # -------------------------------------------------------------------------
-    # add rectangle zoom 2
-    rzoom2 = patches.Rectangle((zoom2area[0], zoom2area[2]),
-                               zoom2area[1] - zoom2area[0],
-                               zoom2area[3] - zoom2area[2],
-                               linewidth=1, edgecolor=rcolor, facecolor='none')
-    panel.add_patch(rzoom2)
-    # add text
-    panel.text(0.5 * (zoom2area[1] + zoom2area[0]), zoom2area[3] + textheight,
-               'C', color=rcolor, backgroundcolor='white')
-    # -------------------------------------------------------------------------
-    plt.subplots_adjust(wspace=0.05, hspace=0.075,
-                        left=0.01, right=0.99, top=0.975, bottom=0.025)
-    # -------------------------------------------------------------------------
-    outfile = os.path.join(PLOT_PATH, outname)
-    print('Saving to file: ' + outfile)
-    plt.savefig(outfile, dpi=300)
-    print('Showing graph')
-    plt.show()
-    plt.close()
+def scalelimits(xmin: float, xmax: float, scale: float):
+    xrange = xmax - xmin
+    xmin -= scale * xrange
+    xmax += scale * xrange
+    return [xmin, xmax]
 
 
+# =============================================================================
 # BADMAP
+# =============================================================================
 def plot_badpix_plot(params):
     hashcode = 'DB67D5C4F5'
     xlow = params['IMAGE_X_LOW']
@@ -894,7 +823,9 @@ def plot_badpix_plot(params):
     plt.close()
 
 
+# =============================================================================
 # BACKMAP
+# =============================================================================
 def plot_backmap_plot(params):
     # get constants
     width = params['BKGR_BOXSIZE']
@@ -978,7 +909,9 @@ def plot_backmap_plot(params):
     plt.close()
 
 
+# =============================================================================
 # FLAT BLAZE
+# =============================================================================
 def plot_flatblaze_plot(params):
     # set a pid
     params['PID'] = 'TEST'
@@ -1035,7 +968,9 @@ def plot_flatblaze_plot(params):
     plt.close()
 
 
+# =============================================================================
 # E2DS
+# =============================================================================
 def plot_e2ds_plot(params):
     odocode = '2510303o'
     # -------------------------------------------------------------------------
@@ -1127,7 +1062,9 @@ def plot_e2ds_plot(params):
     plt.close()
 
 
+# =============================================================================
 # S1D
+# =============================================================================
 def plot_s1d_plot(params):
     odocode = '2510303o'
     first_order = 34
@@ -1254,7 +1191,9 @@ def plot_s1d_plot(params):
     plt.close()
 
 
+# =============================================================================
 # TCORR
+# =============================================================================
 def plot_tcorr_plot(params):
     odocode = '2510303'
 
@@ -1379,7 +1318,9 @@ def plot_tcorr_plot(params):
     plt.close()
 
 
+# =============================================================================
 # TELLU_COV
+# =============================================================================
 def plot_tellu_cov_plot(params):
     # get telluric database
     telludbm = drs_database.TelluricDatabase(params)
@@ -1437,6 +1378,9 @@ def plot_tellu_cov_plot(params):
     plt.close()
 
 
+# =============================================================================
+# AIRMASS
+# =============================================================================
 def plot_tellu_airmass_plot(params):
     # get telluric database
     telludbm = drs_database.TelluricDatabase(params)
@@ -1510,7 +1454,9 @@ def plot_tellu_airmass_plot(params):
     plt.close()
 
 
+# =============================================================================
 # THERM
+# =============================================================================
 def plot_therm_plot(params):
     # file to get
     hashcode = '2510376o'
@@ -1695,7 +1641,9 @@ def plot_therm_plot(params):
         plt.close()
 
 
+# =============================================================================
 # LEAK
+# =============================================================================
 def plot_leak_plot(params):
     # file to get
     hashcode = '2510286a'
@@ -1864,6 +1812,163 @@ def plot_leak_plot(params):
 # =============================================================================
 # worker functions (private)
 # =============================================================================
+# plot for raw features and pp features
+def plot_feature_grid(image, outname='raw_features.pdf'):
+    # define cuts / zooms
+    cut1area = [100, 700, 1200, 1800]
+    cut2area = [2375, 2575, 525, 725]
+    zoom0area = [800, 1200, 3396, 3796]
+    zoom1area = [3596, 3996, 800, 1200]
+    zoom2area = [1240, 1290, 1590, 1640]
+    # text height above image [in raw image pixel units]
+    textheight = 100
+    rcolor = 'r'
+    # -------------------------------------------------------------------------
+    print('Plotting raw_features plot')
+    # set up grid
+    plt.close()
+    fig = plt.figure(figsize=(12, 14))
+    size = (3, 3)
+    topright = plt.subplot2grid(size, (0, 0))
+    topmid = plt.subplot2grid(size, (0, 1))
+    topleft = plt.subplot2grid(size, (0, 2))
+    rightmid = plt.subplot2grid(size, (1, 0))
+    rightbot = plt.subplot2grid(size, (2, 0))
+    panel = plt.subplot2grid(size, (1, 1), colspan=2, rowspan=2)
+
+    # get colour map
+    cmap = matplotlib.cm.get_cmap('inferno').copy()
+    cmap.set_bad(color='green')
+
+    cmap0 = matplotlib.cm.get_cmap('Greys_r').copy()
+    cmap0.set_bad(color='green')
+    # -------------------------------------------------------------------------
+    # dark region
+    cut1 = image[cut1area[2]:cut1area[3], cut1area[0]:cut1area[1]]
+    c1im, _ = _norm_image(cut1, rightmid, cmap)
+    _add_colorbar(fig, c1im, rightmid, side='bottom')
+    rightmid.set_title('D. dark region', loc='left',
+                       x=0.05, y=0.95, pad=-14,
+                       color='black', backgroundcolor='white')
+    rightmid.tick_params(axis='both', which='both', bottom=False, top=False,
+                         left=False, right=False, labelleft=False,
+                         labelbottom=False)
+    # -------------------------------------------------------------------------
+    # holes
+    cut2 = image[cut2area[2]:cut2area[3], cut2area[0]:cut2area[1]]
+    c2im, _ = _norm_image(cut2, rightbot, cmap)
+    _add_colorbar(fig, c2im, rightbot, side='bottom')
+    rightbot.set_title('E. detector holes', loc='left',
+                       x=0.05, y=0.95, pad=-14,
+                       color='black', backgroundcolor='white')
+    rightbot.tick_params(axis='both', which='both', bottom=False, top=False,
+                         left=False, right=False, labelleft=False,
+                         labelbottom=False)
+    # -------------------------------------------------------------------------
+    # zoom 0
+    zoom0 = image[zoom0area[2]:zoom0area[3], zoom0area[0]:zoom0area[1]]
+    z0im, _ = _norm_image(zoom0, topright, cmap)
+    _add_colorbar(fig, z0im, topright, side='bottom')
+    topright.set_title('A. Zoom reddest orders', loc='left',
+                       x=0.05, y=0.95, pad=-14,
+                       color='black', backgroundcolor='white')
+    topright.tick_params(axis='both', which='both', bottom=False, top=False,
+                         left=False, right=False, labelleft=False,
+                         labelbottom=False)
+    # -------------------------------------------------------------------------
+    # zoom 1
+    zoom1 = image[zoom1area[2]:zoom1area[3], zoom1area[0]:zoom1area[1]]
+    z1im, norm = _norm_image(zoom1, topmid, cmap)
+    _add_colorbar(fig, z1im, topmid, side='bottom')
+    topmid.set_title('B. Zoom bluest orders', loc='left',
+                     x=0.05, y=0.95, pad=-14,
+                     color='black', backgroundcolor='white')
+    topmid.tick_params(axis='both', which='both', bottom=False, top=False,
+                       left=False, right=False, labelleft=False,
+                       labelbottom=False)
+    # -------------------------------------------------------------------------
+    # zoom 2
+    zoom2 = image[zoom2area[2]:zoom2area[3], zoom2area[0]:zoom2area[1]]
+    z2im, norm = _norm_image(zoom2, topleft, cmap)
+    _add_colorbar(fig, z2im, topleft, side='bottom')
+    topleft.set_title('C. Zoom on slices', loc='left',
+                      x=0.05, y=0.95, pad=-14,
+                      color='black', backgroundcolor='white')
+    topleft.tick_params(axis='both', which='both', bottom=False, top=False,
+                        left=False, right=False, labelleft=False,
+                        labelbottom=False)
+    # -------------------------------------------------------------------------
+    # panel
+    pim, norm = _norm_image(image, panel, cmap0)
+    _add_colorbar(fig, pim, panel, side='bottom')
+    panel.tick_params(axis='both', which='both', bottom=False, top=False,
+                      left=False, right=False, labelleft=False,
+                      labelbottom=False)
+    panel.set_title('raw (4096x4096)', loc='left',
+                    x=0.5, y=0.95, pad=-14,
+                    color='black', backgroundcolor='white')
+    # -------------------------------------------------------------------------
+    # add rectangle dark cut
+    rcut1 = patches.Rectangle((cut1area[0], cut1area[2]),
+                              cut1area[1] - cut1area[0],
+                              cut1area[3] - cut1area[2],
+                              linewidth=1, edgecolor=rcolor, facecolor='none')
+    panel.add_patch(rcut1)
+    # add text
+    panel.text(0.5 * (cut1area[1] + cut1area[0]), cut1area[3] + textheight,
+               'D', color=rcolor, backgroundcolor='white')
+    # -------------------------------------------------------------------------
+    # add rectangle holes
+    rcut2 = patches.Rectangle((cut2area[0], cut2area[2]),
+                              cut2area[1] - cut2area[0],
+                              cut2area[3] - cut2area[2],
+                              linewidth=1, edgecolor=rcolor, facecolor='none')
+    panel.add_patch(rcut2)
+    # add text
+    panel.text(0.5 * (cut2area[1] + cut2area[0]), cut2area[3] + textheight,
+               'E', color=rcolor, backgroundcolor='white')
+    # -------------------------------------------------------------------------
+    # add rectangle zoom 1
+    rzoom0 = patches.Rectangle((zoom0area[0], zoom0area[2]),
+                               zoom0area[1] - zoom0area[0],
+                               zoom0area[3] - zoom0area[2],
+                               linewidth=1, edgecolor=rcolor, facecolor='none')
+    panel.add_patch(rzoom0)
+    # add text
+    panel.text(0.5 * (zoom0area[1] + zoom0area[0]), zoom0area[3] + textheight,
+               'A', color=rcolor, backgroundcolor='white')
+    # -------------------------------------------------------------------------
+    # add rectangle zoom 1
+    rzoom1 = patches.Rectangle((zoom1area[0], zoom1area[2]),
+                               zoom1area[1] - zoom1area[0],
+                               zoom1area[3] - zoom1area[2],
+                               linewidth=1, edgecolor=rcolor, facecolor='none')
+    panel.add_patch(rzoom1)
+    # add text
+    panel.text(0.5 * (zoom1area[1] + zoom1area[0]), zoom1area[3] + textheight,
+               'B', color=rcolor, backgroundcolor='white')
+    # -------------------------------------------------------------------------
+    # add rectangle zoom 2
+    rzoom2 = patches.Rectangle((zoom2area[0], zoom2area[2]),
+                               zoom2area[1] - zoom2area[0],
+                               zoom2area[3] - zoom2area[2],
+                               linewidth=1, edgecolor=rcolor, facecolor='none')
+    panel.add_patch(rzoom2)
+    # add text
+    panel.text(0.5 * (zoom2area[1] + zoom2area[0]), zoom2area[3] + textheight,
+               'C', color=rcolor, backgroundcolor='white')
+    # -------------------------------------------------------------------------
+    plt.subplots_adjust(wspace=0.05, hspace=0.075,
+                        left=0.01, right=0.99, top=0.975, bottom=0.025)
+    # -------------------------------------------------------------------------
+    outfile = os.path.join(PLOT_PATH, outname)
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile, dpi=300)
+    print('Showing graph')
+    plt.show()
+    plt.close()
+
+
 def _norm_image(image, frame, cmap):
     im, norm = imshow_norm(image, frame, origin='lower', aspect='auto',
                            interval=ZScaleInterval(), stretch=LinearStretch(),
