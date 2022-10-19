@@ -57,13 +57,18 @@ else:
     # noinspection PyUnresolvedReferences
     AstrometricDatabase = drs_database.ObjectDatabase
 # define the night of data we want to use
-NIGHT = '2020-08-31'
+NIGHT_ALL = dict()
+NIGHT_ALL['SPIROU'] = '2020-08-31'
+NIGHT_ALL['NIRPS_HA'] = '2022-06-17'
+NIGHT_ALL['NIRPS_HE'] = '2022-06-11'
 
 uname = os.environ.get('USERNAME', None)
 if uname is None:
     uname = os.environ.get('LOGNAME')
 
 # define where we want to save plots
+PLOT_PATH_ALL = dict()
+# for rali
 if uname == 'spirou':
     PLOT_PATH = '/spirou/cook/paper_plots'
 elif uname == 'cook':
@@ -81,6 +86,19 @@ BANDS['$J$'] = [11535.86 / 10, 13544.22 / 10]  # MKO
 BANDS['$H$'] = [14628.97 / 10, 18085.44 / 10]  # MKO
 BANDS['$K_{s}$'] = [19577.92 / 10, 23431.05 / 10]  # MKO
 
+
+# INSTRUMENT = 'SPIROU'
+# INSTRUMENT = 'NIRPS_HA'
+INSTRUMENT = 'NIRPS_HE'
+
+
+try:
+    NIGHT = NIGHT_ALL[INSTRUMENT]
+except:
+    emsg = f'NIGHT_ALL does not have {INSTRUMENT} defined [{uname}]'
+    raise ValueError(emsg)
+
+
 # define plots and append those we want
 # noinspection PyListCreation
 PLOTS = []
@@ -90,11 +108,11 @@ PLOTS = []
 # PLOTS.append('FIBER_LAYOUT')
 # PLOTS.append('RAW_FEATURES')
 # PLOTS.append('PP_FEATURES')
-PLOTS.append('PP_CARTOON')
+# PLOTS.append('PP_CARTOON')
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
-# PLOTS.append('E2DS')
+PLOTS.append('E2DS')
 # PLOTS.append('S1D')
 # PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
@@ -112,8 +130,13 @@ PLOTS.append('PP_CARTOON')
 # SIZE_GRID
 # =============================================================================
 def plot_size_grid(params):
-    odocode = '2510376o'
-    hashcode = '2510376o'
+
+    if INSTRUMENT == 'SPIROU':
+        odocode = '2510376o'
+        hashcode = '2510376o'
+        out_file = 'size_grid.pdf'
+    else:
+        return
     # get file paths
     raw_file = os.path.join(params['DRS_DATA_RAW'], NIGHT,
                             '{0}.fits'.format(odocode))
@@ -241,7 +264,7 @@ def plot_size_grid(params):
     plt.subplots_adjust(wspace=0.05, hspace=0.05,
                         left=0.01, right=0.99, top=0.975, bottom=0.05)
     # save file
-    outfile = os.path.join(PLOT_PATH, 'size_grid.pdf')
+    outfile = os.path.join(PLOT_PATH, out_file)
     print('Saving to file: ' + outfile)
     plt.savefig(outfile, dpi=300)
     print('Showing graph')
@@ -972,15 +995,55 @@ def plot_flatblaze_plot(params):
 # E2DS
 # =============================================================================
 def plot_e2ds_plot(params):
-    odocode = '2510303o'
+    if INSTRUMENT == 'SPIROU':
+        odocode = '2510376o'
+        out_file = 'e2ds_grid_spirou.pdf'
+        fiber = 'AB'
+        # get zoom
+        ylow0, yhigh0 = 1450, 1650
+        xlow0, xhigh0 = 700, 850
+        # scale box to e2dsll
+        ylow1a, yhigh1a = 825, 925
+        # scale box to e2dsll
+        ylow1b, yhigh1b = 25, 30
+
+    elif INSTRUMENT == 'NIRPS_HA':
+        odocode = 'NIRPS_2022-06-18T05_26_25_552'
+        out_file = 'e2ds_grid_nirps_ha.pdf'
+        fiber = 'A'
+
+        # get zoom
+        ylow0, yhigh0 = 60, 300
+        xlow0, xhigh0 = 1500, 1800
+        # scale box to e2dsll
+        ylow1a, yhigh1a = 10, 45
+        # scale box to e2dsll
+        ylow1b, yhigh1b = 0, 4
+
+    elif INSTRUMENT == 'NIRPS_HE':
+        odocode = 'NIRPS_2022-06-12T08_32_02_249'
+        out_file = 'e2ds_grid_nirps_he.pdf'
+        fiber = 'A'
+
+        # get zoom
+        ylow0, yhigh0 = 60, 300
+        xlow0, xhigh0 = 1500, 1800
+        # scale box to e2dsll
+        ylow1a, yhigh1a = 18, 77
+        # scale box to e2dsll
+        ylow1b, yhigh1b = 0, 4
+
+    else:
+        raise ValueError(f'Instrument {INSTRUMENT} not supported')
     # -------------------------------------------------------------------------
+    fargs = [odocode, fiber]
     # get filenames
     pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
-                           '{0}_pp.fits'.format(odocode))
+                           '{0}_pp.fits'.format(*fargs))
     e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                             '{0}_pp_e2ds_AB.fits'.format(odocode))
+                             '{0}_pp_e2ds_{1}.fits'.format(*fargs))
     e2dsll_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                               'DEBUG_{0}_pp_e2dsll_AB.fits'.format(odocode))
+                               'DEBUG_{0}_pp_e2dsll_{1}.fits'.format(*fargs))
     # -------------------------------------------------------------------------
     # get images
     pp_image = fits.getdata(pp_file)
@@ -997,18 +1060,14 @@ def plot_e2ds_plot(params):
     e2dsll_image = fits.getdata(e2dsll_file)
     e2ds_image = fits.getdata(e2ds_file)
 
-    # get zoom
-    ylow0, yhigh0 = 1450, 1650
-    xlow0, xhigh0 = 700, 850
+
 
     pp_image1 = pp_image[ylow0:yhigh0, xlow0:xhigh0]
 
-    # scale box to e2dsll
-    ylow1a, yhigh1a = 825, 925
+
     e2dsll_image1 = e2dsll_image[ylow1a:yhigh1a, xlow0:xhigh0]
 
-    # scale box to e2dsll
-    ylow1b, yhigh1b = 25, 30
+
 
     e2ds_image1 = e2ds_image[ylow1b:yhigh1b, xlow0:xhigh0]
 
@@ -1054,7 +1113,7 @@ def plot_e2ds_plot(params):
                         bottom=0.01, top=0.99)
     # -------------------------------------------------------------------------
     # save plot
-    outfile = os.path.join(PLOT_PATH, 'e2ds_grid.pdf')
+    outfile = os.path.join(PLOT_PATH, out_file)
     print('Saving to file: ' + outfile)
     plt.savefig(outfile)
     print('Showing graph')
