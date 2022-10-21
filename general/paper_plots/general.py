@@ -1916,12 +1916,83 @@ def plot_tellu_ccf(params):
     mout1 = mock_tellu_part1(params, recipe, infile)
     # get products of mock tellu part1
     image, header, template, wprops, bprops = mout1
+    # get airmass from header
+    hdr_airmass = infile.get_hkey('KW_AIRMASS', dtype=float)
 
-    mout2 = mock_preclean(params, recipe, infile, wprops, template)
+    # TODO: move to apero static code for tellurics
+    # step_ker_width = 0.25
+    # step_ker_shape = 0.25
+    #
+    # ker_widths = np.arange(4, 6, step_ker_width)
+    # ker_shapes = np.arange(1.5, 3.0, step_ker_shape)
+    #
+    # map_rv_content_others = np.zeros([len(ker_widths),len(ker_shapes)])-np.nan
+    # map_rv_content_water = np.zeros([len(ker_widths),len(ker_shapes)])-np.nan
+    # for iker_width in range(len(ker_widths)):
+    #     for iker_shape in range(len(ker_shapes)):
+    #
+    #         WLOG(params, 'info', f'iker_width={iker_width} iker_shape={iker_shape} total={map_rv_content_water.size}')
+    #     def tmp():
+    #         ker_width = ker_widths[iker_width]
+    #         ker_shape = ker_shapes[iker_shape]
+    #         try:
+    #             mout2 = mock_preclean(params, recipe, infile, wprops, template,
+    #                                   ker_width=ker_width, ker_shape=ker_shape)
+    #             # get products of mock preclean
+    #             dd_arr, ccf_water_arr, ccf_others_arr = mout2
+    #             # number of iterations
+    #             n_iterations = len(dd_arr)
+    #         except:
+    #             return
+    #         map_rv_content_others[iker_width, iker_shape] = np.sum(np.gradient(ccf_water_arr[-1])**2)
+    #         map_rv_content_water[iker_width, iker_shape] = np.sum(np.gradient(ccf_others_arr[-1])**2)
+    #
+    # plt.close()
+    # fig, frames = plt.subplots(ncols=2, nrows=1)
+    #
+    # im1 = frames[0].imshow(map_rv_content_water, aspect='auto', origin='lower',
+    #                        extent=[np.min(ker_shapes)-step_ker_shape/2,
+    #                                np.max(ker_shapes)+step_ker_shape/2,
+    #                                np.min(ker_widths)-step_ker_width/2,
+    #                                np.max(ker_widths)+step_ker_width/2])
+    # divider1 = make_axes_locatable(frames[0])
+    # cax1 = divider1.append_axes('right', size='5%', pad=0.05)
+    # fig.colorbar(im1, cax=cax1, orientation='vertical', label='RV')
+    # frames[0].set(xlabel='ker shape', ylabel='ker width', title='ccf water')
+    # ypos1, xpos1 = np.where(map_rv_content_water == np.min(map_rv_content_water))
+    # frames[0].plot(ker_shapes[xpos1], ker_widths[ypos1], color='w', marker='+',
+    #                ms=10)
+    #
+    # im2 = frames[1].imshow(map_rv_content_others, aspect='auto', origin='lower',
+    #                        extent=[np.min(ker_shapes)-step_ker_shape/2,
+    #                                np.max(ker_shapes)+step_ker_shape/2,
+    #                                np.min(ker_widths)-step_ker_width/2,
+    #                                np.max(ker_widths)+step_ker_width/2])
+    # divider2 = make_axes_locatable(frames[1])
+    # cax2 = divider2.append_axes('right', size='5%', pad=0.05)
+    # fig.colorbar(im2, cax=cax2, orientation='vertical', label='RV')
+    # frames[1].set(xlabel='ker shape', ylabel='ker width', title='ccf others')
+    # ypos2, xpos2 = np.where(map_rv_content_others == np.min(map_rv_content_others))
+    # frames[1].plot(ker_shapes[xpos2], ker_widths[ypos2], color='w', marker='+',
+    #                ms=10)
+
+
+    ker_width = 4.95
+    ker_shape = 2.2
+    mout2 = mock_preclean(params, recipe, infile, wprops, template,
+                          ker_width=ker_width, ker_shape=ker_shape)
     # get products of mock preclean
-    dd_arr, ccf_water_arr, ccf_others_arr = mout2
+    dd_arr, ccf_water_arr, ccf_others_arr, expo_water, expo_others = mout2
     # number of iterations
     n_iterations = len(dd_arr)
+
+
+    rms_water = np.nanstd(ccf_water_arr[-1])
+    rms_others = np.nanstd(ccf_others_arr[-1])
+
+    err_water = abs(expo_water * rms_water / np.nanmin(ccf_water_arr[0]))
+    err_others = abs(expo_others * rms_others / np.nanmin(ccf_others_arr[0]))
+
     # =========================================================================
     # END OF apero_fit_tellu.py
     # =========================================================================
@@ -1933,7 +2004,13 @@ def plot_tellu_ccf(params):
     frame4 = plt.subplot2grid((4, 6), (3, 3), rowspan=1, colspan=3)
 
     # construct the title
-    titlesup = '[Total iterations={0}]'.format(n_iterations)
+    etawater = r'$\eta_{H_2O}$'
+    etadry = r'$\eta_{dry}$'
+
+    titlesup = ('{0} = {1:.3f}$\pm${2:.3f} '
+                '\n{3} = {4:.3f}$\pm${5:.3f}')
+    titlesup = titlesup.format(etawater, expo_water, err_water,
+                               etadry, expo_others, err_others)
     # get the image pixel size
     size = params['IMAGE_PIXEL_SIZE']
     # ------------------------------------------------------------------
@@ -1998,8 +2075,8 @@ def plot_tellu_ccf(params):
     frame2.xaxis.set_label_position('top')
 
     # manipulate limits
-    frame3.set_ylim([-50, 50])
-    frame4.set_ylim([-50, 50])
+    frame3.set_ylim([-100, 100])
+    frame4.set_ylim([-100, 100])
     # -------------------------------------------------------------------------
     # legend
     rawh1, rawl1 = frame1.get_legend_handles_labels()
@@ -2015,8 +2092,8 @@ def plot_tellu_ccf(params):
         if rawl2[it] not in l2:
             h2.append(rawh2[it]), l2.append(rawl2[it])
     # plot legends
-    frame1.legend(h1, l1, title='Water CCF', loc=3)
-    frame2.legend(h2, l2, title='Dry CCF', loc=3)
+    frame1.legend(h1, l1, title=r'CCF$_{H_2O}$', loc=3)
+    frame2.legend(h2, l2, title=r'CCF$_{dry}$', loc=3)
     # -------------------------------------------------------------------------
     # plot super title
     plt.suptitle(titlesup)
@@ -2522,12 +2599,11 @@ def mock_tellu_part1(params, recipe, infile):
     return [image, header, template, wprops, bprops]
 
 
-def mock_preclean(params, recipe, infile, wprops, template):
+def mock_preclean(params, recipe, infile, wprops, template, **kwargs):
     # custom imports
     from apero.science.telluric import gen_tellu
     # mock parameters
     func_name = 'mock_preclean'
-    kwargs = dict()
     pcheck = constants.PCheck(wlog=WLOG)
     # load database
     database = drs_database.TelluricDatabase(params)
@@ -3050,7 +3126,9 @@ def mock_preclean(params, recipe, infile, wprops, template):
 
     # ----------------------------------------------------------------------
     # return stuff for plotting
-    return dd_iterations, ccf_water_iterations, ccf_others_iterations
+    outs = (dd_iterations, ccf_water_iterations, ccf_others_iterations,
+            expo_water, expo_others)
+    return outs
 
 
 
