@@ -11,7 +11,7 @@ from astropy.io import fits
 from astropy.table import Table
 from astropy import constants as cc
 from astropy.visualization import imshow_norm, ZScaleInterval
-from astropy.visualization import LinearStretch, PowerStretch, LogStretch
+from astropy.visualization import LinearStretch, LogStretch
 import glob
 import itertools
 import numpy as np
@@ -22,7 +22,9 @@ from scipy.signal import convolve2d
 from typing import Union
 import warnings
 
-import matplotlib; matplotlib.use('TkAgg')
+import matplotlib
+
+matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -86,18 +88,15 @@ BANDS['$J$'] = [11535.86 / 10, 13544.22 / 10]  # MKO
 BANDS['$H$'] = [14628.97 / 10, 18085.44 / 10]  # MKO
 BANDS['$K_{s}$'] = [19577.92 / 10, 23431.05 / 10]  # MKO
 
-
 # INSTRUMENT = 'SPIROU'
 # INSTRUMENT = 'NIRPS_HA'
 INSTRUMENT = 'NIRPS_HE'
-
 
 try:
     NIGHT = NIGHT_ALL[INSTRUMENT]
 except:
     emsg = f'NIGHT_ALL does not have {INSTRUMENT} defined [{uname}]'
     raise ValueError(emsg)
-
 
 # define plots and append those we want
 # noinspection PyListCreation
@@ -112,7 +111,7 @@ PLOTS = []
 # PLOTS.append('BADMAP')
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
-PLOTS.append('E2DS')
+# PLOTS.append('E2DS')
 # PLOTS.append('S1D')
 # PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
@@ -121,6 +120,8 @@ PLOTS.append('E2DS')
 
 # Telluric paper
 # PLOTS.append('AIRMASS')
+PLOTS.append('TELLU_CCF')
+
 
 # =============================================================================
 # =============================================================================
@@ -130,7 +131,6 @@ PLOTS.append('E2DS')
 # SIZE_GRID
 # =============================================================================
 def plot_size_grid(params):
-
     if INSTRUMENT == 'SPIROU':
         odocode = '2510376o'
         hashcode = '2510376o'
@@ -654,7 +654,7 @@ def plot_pp_cartoon():
     # -------------------------------------------------------------------------
     frame2 = frames[1]
 
-    divider2= make_axes_locatable(frame2)
+    divider2 = make_axes_locatable(frame2)
     frame2x = divider2.append_axes('bottom', **dkwargs)
     frame2y = divider2.append_axes('right', **dkwargs)
 
@@ -697,7 +697,7 @@ def plot_pp_cartoon():
     # -------------------------------------------------------------------------
     frame3 = frames[2]
 
-    divider3= make_axes_locatable(frame3)
+    divider3 = make_axes_locatable(frame3)
     frame3x = divider3.append_axes('bottom', **dkwargs)
     frame3y = divider3.append_axes('right', **dkwargs)
 
@@ -722,7 +722,7 @@ def plot_pp_cartoon():
     frame3x.set_yticks([])
     frame3x.set_yticklabels([])
     frame3x.set(**amplimits)
-    frame3y.plot(med-onef, np.arange(len(med)), label='Measured 1/f',
+    frame3y.plot(med - onef, np.arange(len(med)), label='Measured 1/f',
                  color='b')
     frame3y.plot(onef, np.arange(len(med)), label='Injected 1/f',
                  color='orange')
@@ -1060,14 +1060,9 @@ def plot_e2ds_plot(params):
     e2dsll_image = fits.getdata(e2dsll_file)
     e2ds_image = fits.getdata(e2ds_file)
 
-
-
     pp_image1 = pp_image[ylow0:yhigh0, xlow0:xhigh0]
 
-
     e2dsll_image1 = e2dsll_image[ylow1a:yhigh1a, xlow0:xhigh0]
-
-
 
     e2ds_image1 = e2ds_image[ylow1b:yhigh1b, xlow0:xhigh0]
 
@@ -1354,7 +1349,7 @@ def plot_tcorr_plot(params):
 
             if it == 0 and part == 0:
                 frame.legend(loc='upper center', bbox_to_anchor=(0.85, 1.2),
-                               ncol=5)
+                             ncol=5)
 
             # turn off stuff for zoom
             if part == 1:
@@ -1430,82 +1425,6 @@ def plot_tellu_cov_plot(params):
     # -------------------------------------------------------------------------
     # save plot
     outfile = os.path.join(PLOT_PATH, 'tellu_cov.pdf')
-    print('Saving to file: ' + outfile)
-    plt.savefig(outfile)
-    print('Showing graph')
-    plt.show(block=True)
-    plt.close()
-
-
-# =============================================================================
-# AIRMASS
-# =============================================================================
-def plot_tellu_airmass_plot(params):
-    # get telluric database
-    telludbm = drs_database.TelluricDatabase(params)
-    telludbm.load_db()
-
-    tellu_table = telludbm.get_tellu_entry('*', key='TELLU_TRANS')
-
-    # group by object name
-    uobjnames = np.unique(tellu_table['OBJECT'])
-    airmass = tellu_table['AIRMASS']
-    tau_others = tellu_table['TAU_OTHERS']
-
-    # -------------------------------------------------------------------------
-    # plot setup
-    plt.close()
-    fig = plt.figure(figsize=(10, 8))
-    frame1 = plt.subplot2grid((6, 6), (0, 0), rowspan=5, colspan=6)
-    frame2 = plt.subplot2grid((6, 6), (5, 0), rowspan=1, colspan=6)
-
-    colors = ['red', 'orange', 'green', 'blue', 'purple', 'black']
-    markers = ['o', '+', 's', 'd', '^', 'v']
-
-    fmt = list(itertools.product(markers, colors))
-
-    for it, uobjname in enumerate(uobjnames):
-
-        marker, color = fmt[it]
-
-        if marker in ['+']:
-            facecolor = color
-            edgecolor = None
-        else:
-            facecolor = 'None'
-            edgecolor = color
-
-        objmask = tellu_table['OBJECT'] == uobjname
-        length = np.sum(objmask)
-
-        label = f'{uobjname} N={length}'
-
-        frame1.scatter(airmass[objmask], tau_others[objmask], alpha=0.75,
-                      label=label, marker=marker, edgecolor=edgecolor,
-                      facecolor=facecolor)
-
-        frame2.scatter(airmass[objmask], tau_others[objmask] - airmass[objmask],
-                       ls='None', marker=marker, edgecolor=edgecolor,
-                       facecolor=facecolor)
-
-    limits = [0.9, 2.5]
-
-    frame1.plot(limits, limits, color='k', alpha=0.25)
-
-    frame1.set(xlabel=r'Airmass',
-              ylabel=r'$ \tau$[dry]$\approx$dry absorption',
-               xlim=limits, ylim=limits)
-    frame1.xaxis.tick_top()
-    frame1.legend(title='Hot stars', loc=6, bbox_to_anchor=(1.025, 0.4))
-
-    frame2.set(xlabel=r'Airmass', ylabel=r'Difference',
-               xlim=limits)
-
-    plt.subplots_adjust(left=0.075, right=0.8, bottom=0.0725, top=0.95,
-                        hspace=0.0, wspace=0.0)
-    # -------------------------------------------------------------------------
-    # save plot
-    outfile = os.path.join(PLOT_PATH, 'tellu_airmass.pdf')
     print('Saving to file: ' + outfile)
     plt.savefig(outfile)
     print('Showing graph')
@@ -1790,7 +1709,6 @@ def plot_leak_plot(params):
     # =========================================================================
 
     for fiber in fibers:
-
         # get eprops for this fiber
         eprops = eprops_all[fiber]
         uncorr_e2ds = eprops['UNCORR_E2DS']
@@ -1812,17 +1730,17 @@ def plot_leak_plot(params):
         limit1 = [1720, 1770]
         limit2 = [1729, 1732]
 
+        order_num = 35
+
         mask1 = (wavemap[order_num] > limit1[0])
         mask1 &= (wavemap[order_num] < limit1[1])
         mask2 = (wavemap[order_num] > limit2[0])
         mask2 &= (wavemap[order_num] < limit2[1])
 
-
-        order_num = 35
         # plot pp_image contaminated
         im, _ = imshow_norm(pp_image_zoom, frame1, origin='lower', aspect='auto',
-                           interval=ZScaleInterval(), stretch=LogStretch(100),
-                           cmap=cmap1, interpolation='None', rasterized=True)
+                            interval=ZScaleInterval(), stretch=LogStretch(100),
+                            cmap=cmap1, interpolation='None', rasterized=True)
 
         cbar = _add_colorbar(fig, im, frame1, side='bottom', pad=0.1)
         cbar.set_ticks([0.1, 0.2, 0.4, 0.8, 1.0, 2.0, 4.0, 8.0])
@@ -1866,6 +1784,252 @@ def plot_leak_plot(params):
         print('Showing graph')
         plt.show(block=True)
         plt.close()
+
+
+# =============================================================================
+# AIRMASS
+# =============================================================================
+def plot_tellu_airmass_plot(params):
+    # get telluric database
+    telludbm = drs_database.TelluricDatabase(params)
+    telludbm.load_db()
+
+    tellu_table = telludbm.get_tellu_entry('*', key='TELLU_TRANS')
+
+    # group by object name
+    uobjnames = np.unique(tellu_table['OBJECT'])
+    airmass = tellu_table['AIRMASS']
+    tau_others = tellu_table['TAU_OTHERS']
+
+    # -------------------------------------------------------------------------
+    # plot setup
+    plt.close()
+    _ = plt.figure(figsize=(10, 8))
+    frame1 = plt.subplot2grid((6, 6), (0, 0), rowspan=5, colspan=6)
+    frame2 = plt.subplot2grid((6, 6), (5, 0), rowspan=1, colspan=6)
+
+    colors = ['red', 'orange', 'green', 'blue', 'purple', 'black']
+    markers = ['o', '+', 's', 'd', '^', 'v']
+
+    fmt = list(itertools.product(markers, colors))
+
+    for it, uobjname in enumerate(uobjnames):
+
+        marker, color = fmt[it]
+
+        if marker in ['+']:
+            facecolor = color
+            edgecolor = None
+        else:
+            facecolor = 'None'
+            edgecolor = color
+
+        objmask = tellu_table['OBJECT'] == uobjname
+        length = np.sum(objmask)
+
+        label = f'{uobjname} N={length}'
+
+        frame1.scatter(airmass[objmask], tau_others[objmask], alpha=0.75,
+                       label=label, marker=marker, edgecolor=edgecolor,
+                       facecolor=facecolor)
+
+        frame2.scatter(airmass[objmask], tau_others[objmask] - airmass[objmask],
+                       ls='None', marker=marker, edgecolor=edgecolor,
+                       facecolor=facecolor)
+
+    limits = [0.9, 2.5]
+
+    frame1.plot(limits, limits, color='k', alpha=0.25)
+
+    frame1.set(xlabel=r'Airmass',
+               ylabel=r'$ \tau$[dry]$\approx$dry absorption',
+               xlim=limits, ylim=limits)
+    frame1.xaxis.tick_top()
+    frame1.legend(title='Hot stars', loc=6, bbox_to_anchor=(1.025, 0.4))
+
+    frame2.set(xlabel=r'Airmass', ylabel=r'Difference',
+               xlim=limits)
+
+    plt.subplots_adjust(left=0.075, right=0.8, bottom=0.0725, top=0.95,
+                        hspace=0.0, wspace=0.0)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'tellu_airmass.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show(block=True)
+    plt.close()
+
+
+# =============================================================================
+# TELLU CCF
+# =============================================================================
+def plot_tellu_ccf(params):
+    # file to get
+    odocode = '2539897o'
+    night = '2020-11-01'
+    # -------------------------------------------------------------------------
+    # custom imports only for therm plot
+    #   change manually for different instrument
+    from apero.base import base
+    from apero.core.instruments.spirou import recipe_definitions
+    from apero.core.instruments.spirou import file_definitions
+    from apero.core.constants import ParamDict
+    from apero.core.utils import drs_recipe
+    # -------------------------------------------------------------------------
+    # must set a pid (locking required)
+    params['PID'] = 'UNKNOWN-PID'
+    # must set date now
+    params['DATE_NOW'] = base.__now__.fits
+    # force no save of products
+    if 'INPUTS' not in params:
+        params['INPUTS'] = ParamDict()
+    params['INPUTS']['NOSAVE'] = True
+    # set outpath
+    params['OUTPATH'] = PLOT_PATH
+    params['OBS_DIR'] = NIGHT
+    # load the calibration database
+    calibdbm = drs_database.CalibrationDatabase(params)
+    calibdbm.load_db()
+    # get file paths
+    e2dsff_file = os.path.join(params['DRS_DATA_REDUC'], night,
+                               '{0}_pp_e2dsff_AB.fits'.format(odocode))
+    # get recipe
+    recipe = recipe_definitions.apero_extract
+    recipe.plot = drs_recipe.lambda_plot
+    # load file
+    print('Loading pp image')
+    e2dsff_image = fits.getdata(e2dsff_file)
+    e2dsff_header = fits.getheader(e2dsff_file)
+    # create infile
+    infile = file_definitions.pp_file.newcopy(filename=e2dsff_file,
+                                              params=params,
+                                              data=e2dsff_image,
+                                              header=e2dsff_header)
+    # get colour maps
+    cmap1 = matplotlib.cm.get_cmap('inferno').copy()
+    cmap1.set_bad(color='green')
+    # =========================================================================
+    # All this comes from apero_fit_tellu.py
+    # =========================================================================
+    mout1 = mock_tellu_part1(params, recipe, infile)
+    # get products of mock tellu part1
+    image, header, template, wprops, bprops = mout1
+
+    mout2 = mock_preclean(params, recipe, infile, wprops, template)
+    # get products of mock preclean
+    dd_arr, ccf_water_arr, ccf_others_arr = mout2
+    # number of iterations
+    n_iterations = len(dd_arr)
+    # =========================================================================
+    # END OF apero_fit_tellu.py
+    # =========================================================================
+    plt.close()
+    _ = plt.figure(figsize=(12, 8))
+    frame1 = plt.subplot2grid((4, 6), (0, 0), rowspan=3, colspan=3)
+    frame2 = plt.subplot2grid((4, 6), (0, 3), rowspan=3, colspan=3)
+    frame3 = plt.subplot2grid((4, 6), (3, 0), rowspan=1, colspan=3)
+    frame4 = plt.subplot2grid((4, 6), (3, 3), rowspan=1, colspan=3)
+
+    # construct the title
+    titlesup = '[Total iterations={0}]'.format(n_iterations)
+    # get the image pixel size
+    size = params['IMAGE_PIXEL_SIZE']
+    # ------------------------------------------------------------------
+    # plot ccfs (for each iteration)
+    for n_it in range(n_iterations):
+        # ---------------------------------------------------------------------
+        # set up different plot parameters based on iteration number
+        if n_it == 0:
+            color = 'red'
+            alpha = 1
+            lw = 1.5
+            label = 'First iteration'
+        elif n_it == n_iterations - 1:
+            color = 'green'
+            alpha = 1
+            lw = 1.5
+            label = 'Last iteration'
+        else:
+            color = 'black'
+            alpha = (n_it + 1) / (n_iterations)
+            lw = 0.75
+            label = 'Intermediate iteration'
+        # ---------------------------------------------------------------------
+        # plot water ccf
+        frame1.plot(dd_arr[n_it], ccf_water_arr[n_it], color=color,
+                       alpha=alpha, label=label, lw=lw)
+        frame1.set(xlabel='dv [km/s]', ylabel='CCF power')
+        frame3.plot(dd_arr[n_it], ccf_water_arr[n_it], color=color,
+                       alpha=alpha, label=label, lw=lw)
+        frame3.set(xlabel='dv [km/s]', ylabel='CCF power')
+        # plot other species ccf
+        frame2.plot(dd_arr[n_it], ccf_others_arr[n_it], color=color,
+                       alpha=alpha, label=label, lw=lw)
+        frame2.set(xlabel='dv [km/s]', ylabel='CCF power')
+        frame4.plot(dd_arr[n_it], ccf_others_arr[n_it], color=color,
+                       alpha=alpha, label=label, lw=lw)
+        frame4.set(xlabel='dv [km/s]', ylabel='CCF power')
+    # ------------------------------------------------------------------
+    # plot the control region
+    frame1.axvline(x=size, color='k', linestyle='--')
+    frame1.axvline(x=-size, color='k', linestyle='--', label='control region')
+    frame3.axvline(x=size, color='k', linestyle='--')
+    frame3.axvline(x=-size, color='k', linestyle='--')
+    # plot the horizontal zero line
+    # frames[0].axhline(y=0, color='k', linestyle='--', label='control region')
+    # plot the control region
+    frame2.axvline(x=size, color='k', linestyle='--')
+    frame2.axvline(x=-size, color='k', linestyle='--', label='control region')
+    frame4.axvline(x=size, color='k', linestyle='--')
+    frame4.axvline(x=-size, color='k', linestyle='--')
+    # plot the horizontal zero line
+    # frames[1].axhline(y=0, color='k', linestyle='--', label='control region')
+    # -------------------------------------------------------------------------
+    # manipulate ticks
+    frame2.yaxis.tick_right()
+    frame2.yaxis.set_label_position('right')
+    frame4.yaxis.tick_right()
+    frame4.yaxis.set_label_position('right')
+    frame1.xaxis.tick_top()
+    frame1.xaxis.set_label_position('top')
+    frame2.xaxis.tick_top()
+    frame2.xaxis.set_label_position('top')
+
+    # manipulate limits
+    frame3.set_ylim([-50, 50])
+    frame4.set_ylim([-50, 50])
+    # -------------------------------------------------------------------------
+    # legend
+    rawh1, rawl1 = frame1.get_legend_handles_labels()
+    rawh2, rawl2 = frame2.get_legend_handles_labels()
+    # only keep unique labels - frame 1
+    h1, l1 = [], []
+    for it in range(len(rawl1)):
+        if rawl1[it] not in l1:
+            h1.append(rawh1[it]), l1.append(rawl1[it])
+    # only keep unique labels - frame 1
+    h2, l2 = [], []
+    for it in range(len(rawl2)):
+        if rawl2[it] not in l2:
+            h2.append(rawh2[it]), l2.append(rawl2[it])
+    # plot legends
+    frame1.legend(h1, l1, title='Water CCF', loc=3)
+    frame2.legend(h2, l2, title='Dry CCF', loc=3)
+    # -------------------------------------------------------------------------
+    # plot super title
+    plt.suptitle(titlesup)
+    # adjust grid
+    plt.subplots_adjust(hspace=0.025, left=0.075, right=0.925, bottom=0.075)
+    # -------------------------------------------------------------------------
+    # save plot
+    outfile = os.path.join(PLOT_PATH, 'tellu_ccf.pdf')
+    print('Saving to file: ' + outfile)
+    plt.savefig(outfile)
+    print('Showing graph')
+    plt.show(block=True)
+    plt.close()
 
 
 # =============================================================================
@@ -2305,6 +2469,592 @@ def mock_extract_part2(params, recipe, infile, fibertypes, ref_fiber,
 
 
 # =============================================================================
+# telluric functions
+# =============================================================================
+def mock_tellu_part1(params, recipe, infile):
+    # -------------------------------------------------------------------------
+    # custom imports only for therm plot
+    #   change manually for different instrument
+    from apero.science.calib import wave
+    from apero.science import extract
+    from apero.science import telluric
+    # =========================================================================
+    # START OF apero_fit_tellu_spirou.py
+    # =========================================================================
+    # load the calibration and telluric databases
+    calibdbm = drs_database.CalibrationDatabase(params)
+    calibdbm.load_db()
+    telludbm = drs_database.TelluricDatabase(params)
+    telludbm.load_db()
+
+    # get header from file instance
+    header = infile.get_header()
+    # get image
+    image = infile.get_data(copy=True)
+    # get fiber from infile
+    fiber = infile.get_fiber(header=header)
+    # get the object name
+    objname = infile.get_hkey('KW_OBJNAME', dtype=str)
+    # ------------------------------------------------------------------
+    # load reference wavelength solution
+    refprops = wave.get_wavesolution(params, recipe, ref=True,
+                                     fiber=fiber, infile=infile,
+                                     database=calibdbm)
+    # ------------------------------------------------------------------
+    # load wavelength solution for this fiber
+    wprops = wave.get_wavesolution(params, recipe, fiber=fiber,
+                                   infile=infile, database=calibdbm)
+    # ------------------------------------------------------------------
+    # Get template file (if available)
+    # ------------------------------------------------------------------
+    tout = telluric.load_templates(params, header, objname, fiber,
+                                   database=telludbm)
+    template, template_props = tout
+    # ------------------------------------------------------------------
+    # Get barycentric corrections (BERV)
+    # ------------------------------------------------------------------
+    bprops = extract.get_berv(params, infile)
+    # ------------------------------------------------------------------
+    # Shift the template from reference wave solution --> night wave solution
+    template = telluric.shift_template(params, recipe, image, template,
+                                       refprops, wprops, bprops)
+    # return everything needed
+    return [image, header, template, wprops, bprops]
+
+
+def mock_preclean(params, recipe, infile, wprops, template):
+    # custom imports
+    from apero.science.telluric import gen_tellu
+    # mock parameters
+    func_name = 'mock_preclean'
+    kwargs = dict()
+    pcheck = constants.PCheck(wlog=WLOG)
+    # load database
+    database = drs_database.TelluricDatabase(params)
+    # ----------------------------------------------------------------------
+    # Start of apero.science.telluric.gen_tellu.tellu_preclean
+    # ----------------------------------------------------------------------
+    # get parameters from parameter dictionary
+    default_water_abso = pcheck(params, 'TELLUP_D_WATER_ABSO',
+                                'default_water_abso', kwargs, func_name)
+    ccf_scan_range = pcheck(params, 'TELLUP_CCF_SCAN_RANGE', 'ccf_scan_range',
+                            kwargs, func_name)
+    clean_ohlines = pcheck(params, 'TELLUP_CLEAN_OH_LINES', 'clean_ohlines',
+                           kwargs, func_name)
+    remove_orders = pcheck(params, 'TELLUP_REMOVE_ORDS', 'remove_orders',
+                           kwargs, func_name, mapf='list', dtype=int)
+    snr_min_thres = pcheck(params, 'TELLUP_SNR_MIN_THRES', 'snr_min_thres',
+                           kwargs, func_name)
+    dexpo_thres = pcheck(params, 'TELLUP_DEXPO_CONV_THRES', 'dexpo_thres',
+                         kwargs, func_name)
+    max_iterations = pcheck(params, 'TELLUP_DEXPO_MAX_ITR', 'max_iterations',
+                            kwargs, func_name)
+    ker_width = pcheck(params, 'TELLUP_ABSO_EXPO_KWID', 'ker_width', kwargs,
+                       func_name)
+    ker_shape = pcheck(params, 'TELLUP_ABSO_EXPO_KEXP', 'ker_shape', kwargs,
+                       func_name)
+    trans_thres = pcheck(params, 'TELLUP_TRANS_THRES', 'trans_thres', kwargs,
+                         func_name)
+    trans_siglim = pcheck(params, 'TELLUP_TRANS_SIGLIM', 'trans_siglim', kwargs,
+                          func_name)
+    force_airmass = pcheck(params, 'TELLUP_FORCE_AIRMASS', 'force_airmass',
+                           kwargs, func_name)
+    others_bounds = pcheck(params, 'TELLUP_OTHER_BOUNDS', 'others_bounds',
+                           kwargs, func_name, mapf='list', dtype=float)
+    water_bounds = pcheck(params, 'TELLUP_WATER_BOUNDS', 'water_bounds', kwargs,
+                          func_name, mapf='list', dtype=float)
+    ker_thres = pcheck(params, 'TELLUP_ABSO_EXPO_KTHRES', 'ker_thres', kwargs,
+                       func_name)
+    wavestart = pcheck(params, 'EXT_S1D_WAVESTART', 'wavestart', kwargs,
+                       func_name)
+    waveend = pcheck(params, 'EXT_S1D_WAVEEND', 'waveend', kwargs, func_name)
+    dvgrid = pcheck(params, 'EXT_S1D_BIN_UVELO', 'dvgrid', kwargs, func_name)
+    # ----------------------------------------------------------------------
+    # get image and header from infile
+    header = infile.get_header()
+    # get airmass from header
+    hdr_airmass = infile.get_hkey('KW_AIRMASS', dtype=float)
+    # copy e2ds input image
+    image_e2ds_ini = infile.get_data(copy=True)
+    # get shape of the e2ds
+    nbo, nbpix = image_e2ds_ini.shape
+    # get wave map for the input e2ds
+    wave_e2ds = wprops['WAVEMAP']
+    # ----------------------------------------------------------------------
+    # define storage of quality control
+    qc_values, qc_names, qc_logic, qc_pass = [], [], [], []
+    # need to add dummy values for these qc
+
+    # 1. snr < snr_min_thres (pos = 0)
+    qc_values.append(np.nan)
+    qc_names.append('EXTSNR')
+    qc_logic.append('EXTSNR < {0}'.format(snr_min_thres))
+    qc_pass.append(np.nan)
+    # 2. ccf is NaN (pos = 1)
+    qc_values.append(np.nan)
+    qc_names.append('NUM_NAN_CCF')
+    qc_logic.append('NUM_NAN_CCF > 0')
+    qc_pass.append(np.nan)
+    # 3. exponent for others out of bounds (pos = 2 and 3)
+    qc_values += [np.nan, np.nan]
+    qc_names += ['EXPO_OTHERS L', 'EXPO_OTHERS U']
+    qc_logic += ['EXPO_OTHERS L < {0}'.format(others_bounds[0]),
+                 'EXPO_OTHERS U > {0}'.format(others_bounds[1])]
+    qc_pass += [np.nan, np.nan]
+    # 4. exponent for water  out of bounds (pos 4 and 5)
+    qc_values += [np.nan, np.nan]
+    qc_names += ['EXPO_WATER L', 'EXPO_WATER U']
+    qc_logic += ['EXPO_WATER L < {0}'.format(water_bounds[0]),
+                 'EXPO_WATER U > {0}'.format(water_bounds[1])]
+    qc_pass += [np.nan, np.nan]
+    # 5. max iterations exceeded (pos = 6)
+    qc_values.append(np.nan)
+    qc_names.append('ITERATIONS')
+    qc_logic.append('ITERATIONS = {0}'.format(max_iterations - 1))
+    qc_pass.append(np.nan)
+    # dev note: if adding a new one must add tfailmsgs for all uses in qc
+    #  (mk_tellu and fit_tellu)
+    # ----------------------------------------------------------------------
+    # remove OH lines if required
+    if clean_ohlines:
+        image_e2ds, sky_model = gen_tellu.clean_ohline_pca(params, recipe,
+                                                           image_e2ds_ini,
+                                                           wave_e2ds)
+    # else just copy the image and set the sky model to zeros
+    else:
+        image_e2ds = np.array(image_e2ds_ini)
+        sky_model = np.zeros_like(image_e2ds_ini)
+    # ----------------------------------------------------------------------
+    # we ravel the wavelength grid to make it a 1d array of increasing
+    #     wavelength. We will trim the overlapping domain between orders
+    keep = np.ones_like(wave_e2ds).astype(bool)
+    # keep track of where orders are
+    orders, _ = np.indices(wave_e2ds.shape)
+    # loop around 2nd to last-1 order and compare -1th and +1th order
+    for order_num in range(1, nbo - 1):
+        # get wavelengths not in order beforetellu_preclean
+        before = wave_e2ds[order_num] > wave_e2ds[order_num - 1][::-1]
+        # get wavelengths not in order after
+        after = wave_e2ds[order_num] < wave_e2ds[order_num + 1][::-1]
+        # combine mask
+        keep[order_num] = before & after
+    # set whole first order to zeros (rejected)
+    keep[0] = np.zeros(nbpix).astype(bool)
+    # set whole last order to zeros (rejected)
+    keep[-1] = np.zeros(nbpix).astype(bool)
+    # ----------------------------------------------------------------------
+    # force into 1D and apply keep map
+    flatkeep = keep.ravel()
+    wavemap = wave_e2ds.ravel()[flatkeep]
+    spectrum = image_e2ds.ravel()[flatkeep]
+    spectrum_ini = image_e2ds_ini.ravel()[flatkeep]
+    orders = orders.ravel()[flatkeep]
+    # deal with having a template
+    if template is not None:
+        template1 = np.array(template)
+        template2 = template1.ravel()[flatkeep]
+        # template? measure dv_abso
+        force_dv_abso = False
+    else:
+        # no template? force expo_others to airmass
+        force_airmass = False
+        # no template? force dv_abso to zero
+        force_dv_abso = True
+        # template1 = np.ones_like(wave_e2ds)
+        template2 = np.ones_like(wavemap)
+    # ----------------------------------------------------------------------
+    # load tapas in correct format
+    spl_others, spl_water = gen_tellu.load_tapas_spl(params, recipe, header,
+                                                     database=database)
+    # load the snr from e2ds file
+    snr = infile.get_hkey_1d('KW_EXT_SNR', nbo, dtype=float)
+    # remove infinite / NaN snr
+    snr[~np.isfinite(snr)] = 0.0
+    # remove snr from these orders (due to thermal background)
+    for order_num in remove_orders:
+        snr[order_num] = 0.0
+    # make sure the median snr is above the min snr requirement
+    if mp.nanmedian(snr) < snr_min_thres:
+        # update qc params
+        qc_values[0] = mp.nanmedian(snr)
+        qc_pass[0] = 0
+        qc_params = [qc_names, qc_values, qc_logic, qc_pass]
+        # return qc_exit_tellu_preclean
+        raise ValueError(f'nanmedian({snr}) < {snr_min_thres}')
+    else:
+        qc_values[0] = mp.nanmedian(snr)
+        qc_pass[0] = 1
+    # mask all orders below min snr
+    for order_num in range(nbo):
+        # only mask if snr below threshold
+        if snr[order_num] < snr_min_thres:
+            # find order mask (we only want to remove values in this order
+            order_mask = orders == order_num
+            # apply low snr mask to spectrum
+            spectrum[order_mask] = np.nan
+    # for numerical stabiility, remove NaNs. Setting to zero biases a bit
+    # the CCF, but this should be OK after we converge
+    spectrum[~np.isfinite(spectrum)] = 0.0
+    spectrum[spectrum < 0.0] = 0.0
+    # ----------------------------------------------------------------------
+    # scanning range for the ccf computations
+    dint = params['IMAGE_PIXEL_SIZE'] / 4
+    drange = np.arange(-ccf_scan_range, ccf_scan_range + 1.0, dint)
+    # get species line lists from file
+    mask_others, mask_water = gen_tellu.get_sp_linelists(params)
+    # storage for the ccfs
+    ccf_others = np.zeros_like(drange, dtype=float)
+    ccf_water = np.zeros_like(drange, dtype=float)
+    # start with no correction of abso to get the CCF
+    expo_water = 0.0
+    # we start at zero to get a velocity mesaurement even if we may force
+    #   to the airmass
+    expo_others = 0.0
+    # keep track of consecutive exponents and test convergence
+    expo_water_prev = np.inf
+    expo_others_prev = np.inf
+    dexpo = np.inf
+    # storage for the amplitude from fit
+    amp_water_list = []
+    amp_others_list = []
+    # storage for the exponential from fit
+    expo_water_list = []
+    expo_others_list = []
+    # storage for plotting
+    dd_iterations = []
+    ccf_water_iterations = []
+    ccf_others_iterations = []
+    # ----------------------------------------------------------------------
+    # first guess at the velocity of absoprtion is 0 km/s
+    dv_abso = 0.0
+    # set the iteration number
+    iteration = 0
+    # just so we have outputs
+    dv_water, dv_others = np.nan, np.nan
+    trans = np.ones_like(wavemap)
+    # set up a qc flag
+    flag_qc = False
+    # proxy values
+    slope_water, slope_others = 0, 0
+    valid0 = np.ones_like(spectrum, dtype=bool)
+    # log progress
+    WLOG(params, '', textentry('40-019-00040'))
+    # ----------------------------------------------------------------------
+    # get reference trans
+    trans_others = gen_tellu.get_abso_expo(params, wavemap, hdr_airmass, 0.0,
+                                           spl_others, spl_water, ww=ker_width,
+                                           ex_gau=ker_shape, dv_abso=dv_abso,
+                                           ker_thres=ker_thres,
+                                           wavestart=wavestart,
+                                           waveend=waveend, dvgrid=dvgrid)
+    trans_water = gen_tellu.get_abso_expo(params, wavemap, 0.0, 4.0,
+                                          spl_others, spl_water, ww=ker_width,
+                                          ex_gau=ker_shape, dv_abso=dv_abso,
+                                          ker_thres=ker_thres,
+                                          wavestart=wavestart,
+                                          waveend=waveend, dvgrid=dvgrid)
+    # spline the reference other and water transmission
+    spline_ref_others = mp.iuv_spline(wavemap, trans_others, k=1, ext=1)
+    spline_ref_water = mp.iuv_spline(wavemap, trans_water, k=1, ext=1)
+    # get the mask wavelength
+    ll_mask_s_others = mask_others['ll_mask_s']
+    ll_mask_s_water = mask_water['ll_mask_s']
+    # set the depths to the tranmission (using the reference splines)
+    wmask_others = 1 - spline_ref_others(mask_others['ll_mask_s'])
+    wmask_water = 1 - spline_ref_water(mask_water['ll_mask_s'])
+    # mask lines that are deep but not too deep
+    mmask_others = (wmask_others > 0.05) & (wmask_others < 0.5)
+    mmask_water = (wmask_water > 0.05) & (wmask_water < 0.5)
+    # mask the mask for others / water
+    ll_mask_s_others = ll_mask_s_others[mmask_others]
+    wmask_others = wmask_others[mmask_others]
+    ll_mask_s_water = ll_mask_s_water[mmask_water]
+    wmask_water = wmask_water[mmask_water]
+    # loop around until convergence or 20th iteration
+    while (dexpo > dexpo_thres) and (iteration < max_iterations):
+        # set up a qc flag
+        flag_qc = False
+        # log progress
+        args = [iteration, dexpo, expo_water, expo_others, dv_abso * 1000]
+        WLOG(params, '', textentry('40-019-00041', args=args))
+        # get the absorption spectrum
+        trans = gen_tellu.get_abso_expo(params, wavemap, expo_others,
+                                        expo_water, spl_others, spl_water,
+                                        ww=ker_width, ex_gau=ker_shape,
+                                        dv_abso=dv_abso, ker_thres=ker_thres,
+                                        wavestart=wavestart, waveend=waveend,
+                                        dvgrid=dvgrid)
+        # divide spectrum by transmission
+        spectrum_tmp = spectrum / (trans * template2)
+        # only keep valid pixels (non NaNs)
+        valid = np.isfinite(spectrum_tmp)
+        # ------------------------------------------------------------------
+        if iteration < 2:
+            # transmission with the exponent value
+            valid0 = (trans > np.exp(trans_thres))
+        # apply valid0 from loop iteration < 2
+        valid &= valid0
+        # ------------------------------------------------------------------
+        # apply some cuts to very discrepant points. These will be set to zero
+        #   not to bias the CCF too much
+        cut = mp.nanmedian(np.abs(spectrum_tmp)) * trans_siglim
+        # set NaN and infinite values to zero
+        # spectrum_tmp[~np.isfinite(spectrum_tmp)] = 0.0
+        valid &= np.isfinite(spectrum_tmp)
+        # apply cut and set values to zero
+        # spectrum_tmp[spectrum_tmp > cut] = 0.0
+        valid &= (spectrum_tmp <= cut)
+        # set negative values to zero
+        # spectrum_tmp[spectrum_tmp < 0.0] = 0.0
+        valid &= spectrum_tmp >= 0.0
+        # ------------------------------------------------------------------
+        # get the CCF of the test spectrum
+        # first spline onto the wave grid
+        spline = mp.iuv_spline(wavemap[valid], spectrum_tmp[valid], k=1, ext=1)
+        # loop around all scanning points in d
+        for d_it in range(len(drange)):
+            # computer rv scaling factor
+            scaling = (1 + drange[d_it] / gen_tellu.speed_of_light)
+            # we compute the ccf_others all the time, even when forcing the
+            # airmass, just to look at its structure and potential residuals
+            # compute for others
+            lothers = np.array(ll_mask_s_others) * scaling
+            tmp_others = spline(lothers) * np.array(wmask_others)
+            ccf_others[d_it] = mp.nanmean(tmp_others[tmp_others != 0.0])
+            # computer for water
+            lwater = np.array(ll_mask_s_water) * scaling
+            tmp_water = spline(lwater) * wmask_water
+            ccf_water[d_it] = mp.nanmean(tmp_water[tmp_water != 0.0])
+
+        # ------------------------------------------------------------------
+        # subtract the median of the ccf outside the core of the gaussian.
+        #     We take this to be the 'external' part of of the scan range
+        # work out the external part mask
+        # with warnings.catch_warnings(record=True) as _:
+        #     external_mask = np.abs(drange) > ccf_scan_range / 2
+        # calculate and subtract external part
+        # external_water = np.nanmedian(ccf_water[external_mask])
+        # ccf_water = ccf_water - external_water
+        # external_others = np.nanmedian(ccf_others[external_mask])
+        # ccf_others = ccf_others - external_others
+
+        # set ccf scan size
+        # ccf_scan_size = int(10 * params['IMAGE_PIXEL_SIZE'])
+        # # calculate and subtract external part
+        # ccf_water_res = mp.lowpassfilter(ccf_water, ccf_scan_size)
+        # ccf_water = ccf_water - ccf_water_res
+        # # calculate and subtract external part
+        # ccf_others_res = mp.lowpassfilter(ccf_others, ccf_scan_size)
+        # ccf_others = ccf_others - ccf_others_res
+
+        # ---------------------------------------------------------------------
+        # remove a polynomial fit (remove continuum of the CCF) for water
+        water_coeffs, _ = mp.robust_polyfit(drange, ccf_water, 2, 3)
+        ccf_water = ccf_water - np.polyval(water_coeffs, drange)
+        # remove a polynomial fit (remove continuum of the CCF) for water
+        others_coeffs, _ = mp.robust_polyfit(drange, ccf_others, 2, 3)
+        ccf_others = ccf_others - np.polyval(others_coeffs, drange)
+
+        # ------------------------------------------------------------------
+        # get the amplitude of the middle of the CCF
+        # work out the internal part mask
+        internal_mask = np.abs(drange) < params['IMAGE_PIXEL_SIZE']
+        amp_water = mp.nansum(ccf_water[internal_mask])
+        if not force_airmass:
+            amp_others = mp.nansum(ccf_others[internal_mask])
+        else:
+            amp_others = 0.0
+        # ------------------------------------------------------------------
+        # count the number of NaNs in the CCF
+        num_nan_ccf = np.sum(~np.isfinite(ccf_water))
+        # if CCF is NaN do not continue
+        if num_nan_ccf > 0:
+            # update qc params
+            qc_values[1] = num_nan_ccf
+            qc_pass[1] = 0
+            # flag qc as failed and break
+            flag_qc = True
+            break
+        else:
+            qc_values[1] = num_nan_ccf
+            qc_pass[1] = 1
+        # ------------------------------------------------------------------
+        # we measure absorption velocity by fitting a gaussian to the
+        #     absorption profile. This updates the dv_abso value for the
+        #     next steps.
+        # if this is the first iteration then fit the  absorption velocity
+        if iteration == 0:
+            # make a guess for the water fit parameters (for curve fit)
+            water_guess = [mp.nanmin(ccf_water), 0, 4]
+            # fit the ccf_water with a guassian
+            popt, pcov = gen_tellu.curve_fit(mp.gauss_function_nodc, drange,
+                                             ccf_water, p0=water_guess)
+            # store the velocity of the water
+            dv_water = popt[1]
+            # make a guess of the others fit parameters (for curve fit)
+            others_guess = [mp.nanmin(ccf_water), 0, 4]
+            # fit the ccf_others with a gaussian
+            popt, pconv = gen_tellu.curve_fit(mp.gauss_function_nodc, drange,
+                                              ccf_others, p0=others_guess)
+            # store the velocity of the other species
+            dv_others = popt[1]
+            # store the mean velocity of water and others
+            if not force_dv_abso:
+                dv_abso = np.mean([dv_water, dv_others])
+        # ------------------------------------------------------------------
+        # store the amplitudes of current exponent values
+        # for other species
+        if not force_airmass:
+            amp_others_list.append(amp_others)
+            expo_others_list.append(expo_others)
+        # for water
+        amp_water_list.append(amp_water)
+        expo_water_list.append(expo_water)
+
+        # ------------------------------------------------------------------
+        # if this is the first iteration force the values of
+        # expo_others and expo water
+        if iteration == 0:
+            # header value to be used
+            expo_others = float(hdr_airmass)
+            # default value for water
+            expo_water = float(default_water_abso)
+        # ------------------------------------------------------------------
+        # else we fit the amplitudes with polynomial fits
+        else:
+            # --------------------------------------------------------------
+            # set value for fit_others
+            # fit_others = [np.nan, hdr_airmass, np.nan]
+            # convert lists to arrays
+            amp_others_arr = np.array(amp_others_list)
+            expo_others_arr = np.array(expo_others_list)
+            amp_water_arr = np.array(amp_water_list)
+            expo_water_arr = np.array(expo_water_list)
+            # first iteration we work out the slope
+            if iteration == 1:
+                # slope of the water
+                diff_expo_water = expo_water_arr[1] - expo_water_arr[0]
+                diff_amp_water = amp_water_arr[1] - amp_water_arr[0]
+                slope_water = diff_expo_water / diff_amp_water
+                # slope of the others
+                if not force_airmass:
+                    diff_expo_others = expo_others_arr[1] - expo_others_arr[0]
+                    diff_amp_others = amp_others_arr[1] - amp_others_arr[0]
+                    slope_others = diff_expo_others / diff_amp_others
+            # move exponent by an increment to get the right exponent
+            expo_water -= amp_water_arr[-1] * slope_water
+            if not force_airmass:
+                expo_others -= amp_others_arr[-1] * slope_others
+
+            # # if we have over 5 iterations we fit a 2nd order polynomial
+            # # to the lowest 5 amplitudes
+            # if iteration > 5:
+            #     if not force_airmass:
+            #         # get others lists as array and sort them
+            #         # sortmask = np.argsort(np.abs(amp_others_arr))
+            #         # amp_others_arr = amp_others_arr[sortmask]
+            #         # expo_others_arr = expo_others_arr[sortmask]
+            #         # polyfit lowest 5 others terms
+            #         fit_others = np.polyfit(amp_others_arr[-4:],
+            #                                 expo_others_arr[-4:], 1)
+            #     # get water lists as arrays and sort them
+            #     # sortmask = np.argsort(np.abs(amp_water_arr))
+            #     # amp_water_arr = amp_water_arr[sortmask]
+            #     # expo_water_arr = expo_water_arr[sortmask]
+            #     # polyfit lowest 5 water terms
+            #     fit_water = np.polyfit(amp_water_arr[-4:],
+            #                            expo_water_arr[-4:], 1)
+            # # else just fit a line
+            # else:
+            #     if not force_airmass:
+            #         fit_others = np.polyfit(amp_others_arr, expo_others_arr, 1)
+            #     fit_water = np.polyfit(amp_water_arr, expo_water_arr, 1)
+            # # --------------------------------------------------------------
+            # # find best guess for other species exponent
+            # expo_others = float(fit_others[1])
+            # # find best guess for water exponent
+            # expo_water = float(fit_water[1])
+            # --------------------------------------------------------------
+            # check whether we have converged yet (by updating dexpo)
+            if force_airmass:
+                dexpo = np.abs(expo_water_prev - expo_water)
+            else:
+                part1 = expo_water_prev - expo_water
+                part2 = expo_others_prev - expo_others
+                dexpo = np.sqrt(part1 ** 2 + part2 ** 2)
+        # --------------------------------------------------------------
+        # keep track of the convergence params
+        expo_water_prev = float(expo_water)
+        expo_others_prev = float(expo_others)
+        # ------------------------------------------------------------------
+        # storage for plotting
+        dd_iterations.append(drange)
+        ccf_water_iterations.append(np.array(ccf_water))
+        ccf_others_iterations.append(np.array(ccf_others))
+        # ------------------------------------------------------------------
+        # finally add one to the iterator
+        iteration += 1
+
+    # ----------------------------------------------------------------------
+    # deal with lower bounds for other species
+    if expo_others < others_bounds[0]:
+        # update qc params
+        qc_values[2] = float(expo_others)
+        qc_pass[2] = 0
+        # flag qc as failed and break
+        flag_qc = True
+    else:
+        qc_values[2] = float(expo_others)
+        qc_pass[2] = 1
+    # deal with upper bounds for other species
+    if expo_others > others_bounds[1]:
+        # update qc params
+        qc_values[3] = float(expo_others)
+        qc_pass[3] = 0
+        # flag qc as failed and break
+        flag_qc = True
+    else:
+        qc_values[3] = float(expo_others)
+        qc_pass[3] = 1
+    # --------------------------------------------------------------
+    # deal with lower bounds for water
+    if expo_water < water_bounds[0]:
+        # update qc params
+        qc_values[4] = float(expo_water)
+        qc_pass[4] = 0
+        # flag qc as failed and break
+        flag_qc = True
+    else:
+        qc_values[4] = float(expo_water)
+        qc_pass[4] = 1
+    # deal with upper bounds for water
+    if expo_water > water_bounds[1]:
+        # update qc params
+        qc_values[5] = float(expo_water)
+        qc_pass[5] = 0
+        # flag qc as failed and break
+        flag_qc = True
+    else:
+        qc_values[5] = float(expo_water)
+        qc_pass[5] = 1
+    # ----------------------------------------------------------------------
+    # deal with iterations hitting the max (no convergence)
+    if iteration == max_iterations - 1:
+        # update qc params
+        qc_values[6] = iteration
+        qc_pass[6] = 0
+        flag_qc = True
+    else:
+        qc_values[6] = iteration
+        qc_pass[6] = 1
+
+    # ----------------------------------------------------------------------
+    # return stuff for plotting
+    return dd_iterations, ccf_water_iterations, ccf_others_iterations
+
+
+
+# =============================================================================
 # backmap functions
 # =============================================================================
 def _do_bad_pix(params, flat_image, dark_image):
@@ -2446,12 +3196,15 @@ if __name__ == '__main__':
         plot_tcorr_plot(_params)
     if 'TELLU_COV' in PLOTS:
         plot_tellu_cov_plot(_params)
-    if 'AIRMASS' in PLOTS:
-        plot_tellu_airmass_plot(_params)
     if 'THERM' in PLOTS:
         plot_therm_plot(_params)
     if 'LEAK' in PLOTS:
         plot_leak_plot(_params)
+    # telluric paper plots
+    if 'AIRMASS' in PLOTS:
+        plot_tellu_airmass_plot(_params)
+    if 'TELLU_CCF' in PLOTS:
+        plot_tellu_ccf(_params)
 
 # =============================================================================
 # End of code
