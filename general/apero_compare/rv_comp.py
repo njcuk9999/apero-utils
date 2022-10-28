@@ -25,7 +25,7 @@ NAME2 = 'md2.Neil.Home(07254)'
 NAME3 = 'md2.UdeM.sqlite(07248)'
 NAME4 = 'md2.UdeM.v07254'
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME2)
+REF_NAME = str(NAME4)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
@@ -33,18 +33,18 @@ paths = dict()
 paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07XXX_extmem/reduced'
 paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_neilhome/red'
 paths[NAME3] = '/scratch2/spirou/drs-data/setup_mini2_sqlite/red'
-paths[NAME4] = '/scratch2/spirou/drs-data/minidata2/reduced'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
-COLORS[NAME1] = ['b', 'orange']
-COLORS[NAME2] = ['', '']
-COLORS[NAME3] = ['g', 'r']
-COLORS[NAME4] = ['k', '0.5']
+COLORS[NAME1] = 'b'
+COLORS[NAME2] = 'r'
+COLORS[NAME3] = 'g'
+COLORS[NAME4] = 'orange'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[NAME1] = 'o'
-MARKERS[NAME2] = ''
+MARKERS[NAME2] = 'v'
 MARKERS[NAME3] = '+'
 MARKERS[NAME4] = 'x'
 # -----------------------------------------------------------------------------
@@ -148,7 +148,7 @@ if __name__ == "__main__":
 
     for name in paths:
         frames[0].scatter(bjds[name], rvs[name], label=name,
-                          color=COLORS[name], marker=MARKERS[name])
+                          color=COLORS[name], marker=MARKERS[name], alpha=0.5)
 
     frames[0].legend(loc=0)
     frames[0].set(xlabel='BJD', ylabel='RV m/s')
@@ -162,7 +162,7 @@ if __name__ == "__main__":
 
         frames[1].scatter(bjds[REF_NAME], diff,
                           label=f'{REF_NAME}-{name}',
-                          color=COLORS[name], marker=MARKERS[name])
+                          color=COLORS[name], marker=MARKERS[name], alpha=0.5)
 
         print(f'rms of difference {REF_NAME}-{name} = {diffrms} m/s')
 

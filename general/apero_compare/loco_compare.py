@@ -35,7 +35,7 @@ NAME2 = 'md2.Neil.Home(07254)'
 NAME3 = 'md2.UdeM.sqlite(07248)'
 NAME4 = 'md2.UdeM.v07254'
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME2)
+REF_NAME = str(NAME4)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
@@ -43,18 +43,18 @@ paths = dict()
 paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07XXX_extmem/calibDB'
 paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_neilhome/calib'
 paths[NAME3] = '/scratch2/spirou/drs-data/setup_mini2_sqlite/calib'
-paths[NAME4] = '/scratch2/spirou/drs-data/minidata2/calibDB'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX/calibDB'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
 COLORS[NAME1] = ['b', 'orange']
-COLORS[NAME2] = ['', '']
+COLORS[NAME2] = ['k', '0.5']
 COLORS[NAME3] = ['g', 'r']
 COLORS[NAME4] = ['k', '0.5']
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[NAME1] = 'o'
-MARKERS[NAME2] = ''
+MARKERS[NAME2] = 's'
 MARKERS[NAME3] = '+'
 MARKERS[NAME4] = 'x'
 # -----------------------------------------------------------------------------
@@ -135,7 +135,8 @@ def loco_plot(lfiles):
                 # plot fiber
                 frame.plot(np.arange(pdata1.shape[0]), diff,
                            marker=MARKERS[name_cmp], color=color, ls='None',
-                           label=f'{REF_NAME}-{name_cmp} Fiber {fiber}')
+                           label=f'{REF_NAME}-{name_cmp} Fiber {fiber}',
+                           alpha=0.5)
 
                 print(f'RMS[{fiber}][{xpixel}]: {rmsdiff}')
 
