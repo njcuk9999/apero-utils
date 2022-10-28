@@ -24,7 +24,7 @@ from tqdm import tqdm
 # Define variables
 # =============================================================================
 NAME1 = 'md2.Udem.Jupiter'
-PATH1 = '/scratch2/spirou/drs-data/minidata2_07XXX'
+PATH1 = '/scratch2/spirou/drs-data/minidata2_07XXX_extmem'
 NAME2 = 'md2.Neil.Home'
 PATH2 = '/scratch2/spirou/drs-data/minidata2_neilhome'
 # -----------------------------------------------------------------------------
@@ -34,6 +34,7 @@ COMPARISON_DIR2 = 'calib'
 # -----------------------------------------------------------------------------
 E2DS_SUFFICES = ['_AB.fits', '_A.fits', '_B.fits', '_C.fits']
 NORDERS = 49
+
 
 # =============================================================================
 # Define classes
@@ -106,7 +107,7 @@ class Comparison:
             if self.image_kind1 == 'e2ds' and self.image1.shape[0] == NORDERS:
                 orders = np.arange(self.image1.shape[0])
                 order_str = '[{0}]'
-                odesc='E2DS'
+                odesc = 'E2DS'
             # else we do all y-axis values at once
             else:
                 orders = [np.arange(self.image1.shape[0])]
@@ -168,7 +169,6 @@ class Comparison:
         self.unload()
 
 
-
 # =============================================================================
 # Define functions
 # =============================================================================
@@ -199,7 +199,6 @@ def load_data(filename):
     return kind, image, table, hdr
 
 
-
 def id_image_kind(filename: str):
     for suffix in E2DS_SUFFICES:
         if filename.endswith(suffix):
@@ -209,7 +208,6 @@ def id_image_kind(filename: str):
 
 
 def loco_plot(name1, name2, filename1, filename2):
-
     title = os.path.basename(filename1)
 
     if filename1.endswith('AB.fits'):
@@ -249,9 +247,6 @@ def loco_plot(name1, name2, filename1, filename2):
     plt.close()
 
 
-
-
-
 # =============================================================================
 # Start of code
 # =============================================================================
@@ -270,7 +265,6 @@ if __name__ == "__main__":
     for filename1 in tqdm(files1):
         for filename2 in files2:
             if os.path.basename(filename1) == os.path.basename(filename2):
-
                 linked_files.append(Comparison(NAME1, NAME2, filename1,
                                                filename2))
 
@@ -291,13 +285,10 @@ if __name__ == "__main__":
     exact_files = np.array(linked_files)[np.array(exact_matches)]
     non_exact_files = np.array(linked_files)[~np.in1d(linked_files, exact_files)]
 
-
     for it, cfile in enumerate(non_exact_files):
         if 'loco' in cfile.basename:
             print(it, cfile.basename)
             loco_plot(NAME1, NAME2, cfile.filename1, cfile.filename2)
-
-
 
 # =============================================================================
 # End of code
