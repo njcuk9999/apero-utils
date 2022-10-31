@@ -30,33 +30,39 @@ from astropy.io import fits
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = 'md2.UdeM.extmem(07254)'
-NAME2 = 'md2.Neil.Home(07254)'
-NAME3 = 'md2.UdeM.sqlite(07248)'
-NAME4 = 'md2.UdeM.v07254'
+NAME1 = 'md2.07248_py3.9.13'
+NAME2 = 'md2.07248_py3.9.7'
+NAME3 = 'md2.07254_py3.9.13'
+NAME4 = 'md2.07254_py3.9.7'
+NAME5 = 'neil@home'
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME4)
+REF_NAME = str(NAME5)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
-paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07XXX_extmem/calibDB'
-paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_neilhome/calib'
-paths[NAME3] = '/scratch2/spirou/drs-data/setup_mini2_sqlite/calib'
-paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX/calibDB'
+paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_13/calib'
+paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_7/calib'
+paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_13/calib'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_7/calib'
+paths[NAME5] = '/scratch2/spirou/drs-data/minidata2_neilhome/calib'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
-COLORS[NAME1] = ['b', 'orange']
-COLORS[NAME2] = ['k', '0.5']
-COLORS[NAME3] = ['g', 'r']
-COLORS[NAME4] = ['k', '0.5']
+COLORS[NAME1] = 'b'
+COLORS[NAME2] = 'r'
+COLORS[NAME3] = 'g'
+COLORS[NAME4] = 'purple'
+COLORS[NAME5] = 'yellow'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[NAME1] = 'o'
 MARKERS[NAME2] = 's'
 MARKERS[NAME3] = '+'
 MARKERS[NAME4] = 'x'
+MARKERS[NAME5] = '^'
+# markers needing facecolor
+has_face = ['o', 's', '^']
 # -----------------------------------------------------------------------------
 # objects to consider
 OBJECTS = ['GL699']
@@ -88,79 +94,82 @@ def loco_plot(lfiles):
     graph_pos = list(itertools.product(range(indices), range(indices)))
     # get the number of columns and rows in plot
     cols, rows = indices, int(np.ceil(N_X_POINTS / indices))
-    # setup the plot
-    plt.close()
-    fig, frames = plt.subplots(ncols=cols, nrows=rows,
-                               figsize=(5 * cols, 5 * rows))
-    # get the reference data
-    data_ref = fits.getdata(lfiles[REF_NAME])
-    # get the x pixel positions to plot at
-    xpixels = np.linspace(0, data_ref.shape[1] - 1, N_X_POINTS, dtype=int)
     # deal with fibers
     if lfiles[REF_NAME].endswith('AB.fits'):
         fibers = dict(A=0, B=1)
     else:
         fibers = dict(C=None)
+    # get the reference data
+    data_ref = fits.getdata(lfiles[REF_NAME])
+    # get the x pixel positions to plot at
+    xpixels = np.linspace(0, data_ref.shape[1] - 1, N_X_POINTS, dtype=int)
+
     # -------------------------------------------------------------------------
-    # loop round each file
-    for name_cmp in lfiles:
-        # don't compare ref_name to ref_name
-        if name_cmp == REF_NAME:
-            continue
+    # loop around each fiber
+    for fiber in fibers:
+        # get the frame to plot on
+        plt.close()
+        fig, frames = plt.subplots(ncols=cols, nrows=rows,
+                                   figsize=(5 * cols, 5 * rows))
+        # loop round each file
+        for name_cmp in lfiles:
+            # don't compare ref_name to ref_name
+            if name_cmp == REF_NAME:
+                continue
+            print(f'Plotting {REF_NAME} - {name_cmp}')
+            # get the comparison data
+            data_cmp = fits.getdata(lfiles[name_cmp])
+            if fibers[fiber] == 0:
+                pdata1 = data_ref[0::2]
+                pdata2 = data_cmp[0::2]
+            elif fibers[fiber] == 1:
+                pdata1 = data_ref[1::2]
+                pdata2 = data_cmp[1::2]
+            else:
+                pdata1 = data_ref
+                pdata2 = data_cmp
 
-        print(f'Plotting {REF_NAME} - {name_cmp}')
-        # get the comparison data
-        data_cmp = fits.getdata(lfiles[name_cmp])
-        # loop around x pixel positions
-        for it, xpixel in enumerate(xpixels):
-            # get the frame to plot on
-            frame = frames[graph_pos[it]]
-            # deal with fibers (AB means we have to get A and B) - C is easier
-            for fiber in fibers:
-                if fibers[fiber] == 0:
-                    pdata1 = data_ref[0::2]
-                    pdata2 = data_cmp[0::2]
-                    color =  COLORS[name_cmp][0]
-                elif fibers[fiber] == 1:
-                    pdata1 = data_ref[1::2]
-                    pdata2 = data_cmp[1::2]
-                    color = COLORS[name_cmp][1]
-                else:
-                    pdata1 = data_ref
-                    pdata2 = data_cmp
-                    color = COLORS[name_cmp][0]
+            if MARKERS[name_cmp] in has_face:
+                pkwargs = dict(marker=MARKERS[name_cmp], markerfacecolor='None',
+                               markeredgecolor=COLORS[name_cmp], ls='None')
+            else:
+                pkwargs = dict(marker=MARKERS[name_cmp], color=COLORS[name_cmp],
+                               ls='None')
 
+            # loop around x pixel positions
+            for it, xpixel in enumerate(xpixels):
+                # deal with fibers (AB means we have to get A and B)
+                # C is easier
+                frame = frames[graph_pos[it]]
                 diff = pdata1[:, xpixel]-pdata2[:, xpixel]
                 rmsdiff = np.nanstd(diff)
                 # plot fiber
                 frame.plot(np.arange(pdata1.shape[0]), diff,
-                           marker=MARKERS[name_cmp], color=color, ls='None',
-                           label=f'{REF_NAME}-{name_cmp} Fiber {fiber}',
-                           alpha=0.5)
+                           label=f'{REF_NAME}-{name_cmp}', **pkwargs)
 
                 print(f'RMS[{fiber}][{xpixel}]: {rmsdiff}')
 
-    # loop around x pixel positions
-    for it, xpixel in enumerate(xpixels):
-        # get the frame to plot on
-        frame = frames[graph_pos[it]]
-        frame.set(xlabel='Order', ylabel=r'$\Delta$ Y pixel',
-                  title=f'X pixel = {xpixel}')
-        frame.legend(loc=0)
+        # loop around x pixel positions
+        for it, xpixel in enumerate(xpixels):
+            # get the frame to plot on
+            frame = frames[graph_pos[it]]
+            frame.set(xlabel='Order', ylabel=r'$\Delta$ Y pixel',
+                      title=f'X pixel = {xpixel}')
+            frame.legend(loc=0)
 
-    for it in range(N_X_POINTS, frames.size):
-        frame = frames[graph_pos[it]]
-        frame.axis('off')
+        for it in range(N_X_POINTS, frames.size):
+            frame = frames[graph_pos[it]]
+            frame.axis('off')
 
-    plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05,
-                        top=0.95, hspace=0.2, wspace=0.2)
-    plt.suptitle(os.path.basename(lfiles[REF_NAME]))
-    if FIGNAME is not None:
-        print(f'Saved to: {FIGNAME}')
-        plt.savefig(FIGNAME)
-    if FIGSHOW:
-        plt.show()
-    plt.close()
+        plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05,
+                            top=0.95, hspace=0.2, wspace=0.2)
+        plt.suptitle(os.path.basename(lfiles[REF_NAME]) + f' FIBER = {fiber}')
+        if FIGNAME is not None:
+            print(f'Saved to: {FIGNAME}')
+            plt.savefig(FIGNAME)
+        if FIGSHOW:
+            plt.show()
+        plt.close()
 
 
 # =============================================================================

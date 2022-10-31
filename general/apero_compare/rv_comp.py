@@ -20,33 +20,39 @@ from astropy.io import fits
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = 'md2.UdeM.extmem(07254)'
-NAME2 = 'md2.Neil.Home(07254)'
-NAME3 = 'md2.UdeM.sqlite(07248)'
-NAME4 = 'md2.UdeM.v07254'
+NAME1 = 'md2.07248_py3.9.13'
+NAME2 = 'md2.07248_py3.9.7'
+NAME3 = 'md2.07254_py3.9.13'
+NAME4 = 'md2.07254_py3.9.7'
+NAME5 = 'neil@home'
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME4)
+REF_NAME = str(NAME5)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
-paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07XXX_extmem/reduced'
-paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_neilhome/red'
-paths[NAME3] = '/scratch2/spirou/drs-data/setup_mini2_sqlite/red'
-paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced'
+paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_13/red'
+paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_7/red'
+paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_13/red'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_7/red'
+paths[NAME5] = '/scratch2/spirou/drs-data/minidata2_neilhome/red'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
 COLORS[NAME1] = 'b'
 COLORS[NAME2] = 'r'
 COLORS[NAME3] = 'g'
-COLORS[NAME4] = 'orange'
+COLORS[NAME4] = 'purple'
+COLORS[NAME5] = 'yellow'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[NAME1] = 'o'
-MARKERS[NAME2] = 'v'
+MARKERS[NAME2] = 's'
 MARKERS[NAME3] = '+'
 MARKERS[NAME4] = 'x'
+MARKERS[NAME5] = '^'
+# markers needing facecolor
+has_face = ['o', 's', '^']
 # -----------------------------------------------------------------------------
 # objects to consider
 OBJECTS = ['GL699']
@@ -147,25 +153,29 @@ if __name__ == "__main__":
     fig, frames = plt.subplots(ncols=1, nrows=2)
 
     for name in paths:
-        frames[0].scatter(bjds[name], rvs[name], label=name,
-                          color=COLORS[name], marker=MARKERS[name], alpha=0.5)
 
-    frames[0].legend(loc=0)
-    frames[0].set(xlabel='BJD', ylabel='RV m/s')
+        if MARKERS[name] in has_face:
+            pkwargs = dict(marker=MARKERS[name], markerfacecolor='None',
+                           markeredgecolor=COLORS[name], ls='None')
+        else:
+            pkwargs = dict(marker=MARKERS[name], color=COLORS[name],
+                           ls='None')
 
-    for name in paths:
+        frames[0].plot(bjds[name], rvs[name], label=name, **pkwargs)
+
         if name == REF_NAME:
             continue
 
         diff = rvs[REF_NAME] - rvs[name]
         diffrms = np.nanstd(diff)
 
-        frames[1].scatter(bjds[REF_NAME], diff,
-                          label=f'{REF_NAME}-{name}',
-                          color=COLORS[name], marker=MARKERS[name], alpha=0.5)
+        frames[1].plot(bjds[REF_NAME], diff, label=f'{REF_NAME}-{name}',
+                       **pkwargs)
 
         print(f'rms of difference {REF_NAME}-{name} = {diffrms} m/s')
 
+    frames[0].legend(loc=0)
+    frames[0].set(xlabel='BJD', ylabel='RV m/s')
     plt.suptitle(f'Difference {RV_KEY} {OBJECTS}')
     frames[1].legend(loc=0)
     frames[1].set(xlabel='BJD', ylabel='$\Delta$RV m/s')
