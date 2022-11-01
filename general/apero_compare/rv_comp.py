@@ -20,22 +20,22 @@ from astropy.io import fits
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = 'md2.07248_py3.9.13'
-NAME2 = 'md2.07248_py3.9.7'
-NAME3 = 'md2.07254_py3.9.13'
-NAME4 = 'md2.07254_py3.9.7'
-NAME5 = 'neil@home'
+NAME1 = '07254_p3913_cook@jupiter'
+NAME2 = '07254_p3907_cook@jupiter'
+NAME3 = '07254_p3907_neil@home'
+NAME4 = '07254_p3907_cook@nb19'
+NAME5 = '07254_p3907_spirou@rali'
 # Define which reduction is the reference reduction
 REF_NAME = str(NAME5)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
-paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_13/red'
-paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_7/red'
-paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_13/red'
-paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_7/red'
-paths[NAME5] = '/scratch2/spirou/drs-data/minidata2_neilhome/red'
+paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_13/red'
+paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_7/red'
+paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_neilhome/red'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07254_py397_nb19/red'
+paths[NAME5] = '/scratch2/spirou/drs-data/minidata2_07254_rali/red'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
@@ -52,7 +52,7 @@ MARKERS[NAME3] = '+'
 MARKERS[NAME4] = 'x'
 MARKERS[NAME5] = '^'
 # markers needing facecolor
-has_face = ['o', 's', '^']
+has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------
 # objects to consider
 OBJECTS = ['GL699']

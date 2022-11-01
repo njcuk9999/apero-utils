@@ -30,22 +30,22 @@ from astropy.io import fits
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = 'md2.07248_py3.9.13'
-NAME2 = 'md2.07248_py3.9.7'
-NAME3 = 'md2.07254_py3.9.13'
-NAME4 = 'md2.07254_py3.9.7'
-NAME5 = 'neil@home'
+NAME1 = '07254_p3913_cook@jupiter'
+NAME2 = '07254_p3907_cook@jupiter'
+NAME3 = '07254_p3907_neil@home'
+NAME4 = '07254_p3907_cook@nb19'
+NAME5 = '07254_p3907_spirou@rali'
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME5)
+REF_NAME = str(NAME3)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
-paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_13/calib'
-paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07248_py_3_9_7/calib'
-paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_13/calib'
-paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_7/calib'
-paths[NAME5] = '/scratch2/spirou/drs-data/minidata2_neilhome/calib'
+paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_13/calib'
+paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07XXX_py_3_9_7/calib'
+paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_neilhome/calib'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07254_py397_nb19/calib'
+paths[NAME5] = '/scratch2/spirou/drs-data/minidata2_07254_rali/calib'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
@@ -62,7 +62,7 @@ MARKERS[NAME3] = '+'
 MARKERS[NAME4] = 'x'
 MARKERS[NAME5] = '^'
 # markers needing facecolor
-has_face = ['o', 's', '^']
+has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------
 # objects to consider
 OBJECTS = ['GL699']
@@ -168,6 +168,7 @@ def loco_plot(lfiles):
             print(f'Saved to: {FIGNAME}')
             plt.savefig(FIGNAME)
         if FIGSHOW:
+            print(f'Showing plot {FIGNAME}')
             plt.show()
         plt.close()
 
@@ -183,6 +184,9 @@ if __name__ == "__main__":
     for name in paths:
         path = paths[name]
         files[name] = get_files(path)
+
+        if len(files[name]) == 0:
+            print(f'No files in {path}')
     # -------------------------------------------------------------------------
     # only deal with files with e2dsff_tcorr_AB.fits
     # we take the first "name" as the reference
