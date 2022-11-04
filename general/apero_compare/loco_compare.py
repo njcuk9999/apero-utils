@@ -30,31 +30,33 @@ from astropy.io import fits
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = '07254_p3907_neil@home_cheby'
-NAME2 = '07254_p3907_cook@nb19_cheby'
-NAME3 = '07254_p3907_spirou@rali_cheby'
+NAME1 = '07254_p3907_neil@home_fix'
+NAME2 = '07254_p3907_cook@nb19_fix'
+NAME3 = '07254_p3907_spirou@rali_fix'
+NAME4 = '07254_p3907_cook@jupiter_fix'
 # Define which reduction is the reference reduction
 REF_NAME = str(NAME1)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
-paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07254_neilhome_cheby/calib'
-paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07XXX/calibDB'
-paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_07254_rali_cheby/calib'
+paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_07254_home/calib'
+paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07254_nb19/calib'
+paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_07254_rali/calib'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_07XXX/calibDB'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
 COLORS[NAME1] = 'b'
 COLORS[NAME2] = 'r'
 COLORS[NAME3] = 'g'
+COLORS[NAME4] = 'orange'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[NAME1] = 'o'
 MARKERS[NAME2] = 's'
 MARKERS[NAME3] = '+'
-# markers needing facecolor
-has_face = ['o', 's', '^', 'd', 'v']
+MARKERS[NAME4] = '^'
 # markers needing facecolor
 has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------
