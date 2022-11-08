@@ -11,6 +11,7 @@ Created on 2022-11-08 at 12:05
 @author: cook
 """
 
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -57,7 +58,6 @@ class Click():
         self.move = False
 
 
-
 class ZoomWindow():
     def __init__(self, ax, func, plot_args, scale=0.1):
         self.ax = ax
@@ -83,7 +83,7 @@ class ZoomWindow():
 class KeyAction():
     def __init__(self, ax):
         self.c1 = ax.figure.canvas.mpl_connect('key_press_event',
-                                                    self.onpress)
+                                               self.onpress)
 
     def onpress(self, event):
 
@@ -100,18 +100,13 @@ class KeyAction():
                 oldcoords = oldcoords[:-1]
             count -= 1
 
+
 # =============================================================================
 # Start of code
 # =============================================================================
 # Main code here
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
-
-    import matplotlib.pyplot as plt
-
-
-
-
 
     newcoords = []
     oldcoords = []
@@ -131,13 +126,15 @@ if __name__ == "__main__":
         # update count
         count += 1
 
+
     fig, frame = plt.subplots(ncols=1, nrows=1)
 
     x = np.arange(1000.0)
     y = np.random.random_integers(0, 100, size=1000).astype(float)
     y[y < 80] = 0
-    y = y * np.sin(x/100)
+    y = y * np.sin(x / 100)
     y[y < 0] = 0.01 * abs(y[y < 0])
+
 
     def our_plot(ax, event, plot_args, scale=1, limits=None):
         _x = plot_args['x']
@@ -150,11 +147,11 @@ if __name__ == "__main__":
             deltax, deltay = xmax - xmin, ymax - ymin
 
             if event.xdata is not None and event.ydata is not None:
-                print(event.xdata, event.ydata,  xmin, xmax, ymin, ymax, scale)
-                ax.set(xlim=[event.xdata-scale*deltax,
-                             event.xdata+scale*deltax],
-                       ylim=[event.ydata-scale*deltay,
-                             event.ydata+scale*deltay])
+                print(event.xdata, event.ydata, xmin, xmax, ymin, ymax, scale)
+                ax.set(xlim=[event.xdata - scale * deltax,
+                             event.xdata + scale * deltax],
+                       ylim=[event.ydata - scale * deltay,
+                             event.ydata + scale * deltay])
                 ax.set_xticklabels([])
                 ax.set_yticklabels([])
                 ax.plot([event.xdata], [event.ydata], marker='+', color='k',
