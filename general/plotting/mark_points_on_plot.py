@@ -26,6 +26,9 @@ import numpy as np
 # =============================================================================
 # Simple mouse click function to store coordinates
 class Click():
+    """
+    Only count clicks that are presses (not zoom or move events)
+    """
     def __init__(self, ax, func, button=1):
         self.ax = ax
         self.func = func
@@ -59,6 +62,9 @@ class Click():
 
 
 class ZoomWindow():
+    """
+    Create a zoom window in the top corner
+    """
     def __init__(self, ax, func, plot_args, scale=0.1):
         self.ax = ax
         self.func = func
@@ -81,6 +87,9 @@ class ZoomWindow():
 
 
 class KeyAction():
+    """
+    Deal with reset and undo points
+    """
     def __init__(self, ax):
         self.c1 = ax.figure.canvas.mpl_connect('key_press_event',
                                                self.onpress)
@@ -112,9 +121,15 @@ if __name__ == "__main__":
     oldcoords = []
     count = 0
 
-
     # plot code here
     def click_action(event, ax):
+        """
+        how to add points on click event
+
+        :param event:
+        :param ax:
+        :return:
+        """
         global newcoords, oldcoords, count
 
         if count % 2 == 0:
@@ -137,6 +152,16 @@ if __name__ == "__main__":
 
 
     def our_plot(ax, event, plot_args, scale=1, limits=None):
+        """
+        Our plot (that needs replicating on zoom in)
+
+        :param ax:
+        :param event:
+        :param plot_args:
+        :param scale:
+        :param limits:
+        :return:
+        """
         _x = plot_args['x']
         _y = plot_args['y']
         ax.cla()
