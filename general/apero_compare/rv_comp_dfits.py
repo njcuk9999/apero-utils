@@ -28,7 +28,7 @@ REF_NAME = str(NAME1)
 paths = dict()
 paths[NAME1] = '/scratch2/spirou/misc/miniruns_v07261/claire_nw.txt'
 paths[NAME2] = '/scratch2/spirou/misc/miniruns_v07261/cook_jupiter.txt'
-paths[NAME3] = '/scratch2/spirou/misc/miniruns_v07261/cook_nb19.txt'
+# paths[NAME3] = '/scratch2/spirou/misc/miniruns_v07261/cook_nb19.txt'
 paths[NAME4] = '/scratch2/spirou/misc/miniruns_v07261/spirou_rali.txt'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
