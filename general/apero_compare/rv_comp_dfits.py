@@ -20,16 +20,18 @@ NAME1 = 'NW'
 NAME2 = 'cook@jupiter'
 NAME3 = 'cook@nb19'
 NAME4 = 'spirou@rali'
+NAME5 = 'andres@LAM'
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME1)
+REF_NAME = str(NAME2)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
 paths[NAME1] = '/scratch2/spirou/misc/miniruns_v07261/claire_nw.txt'
 paths[NAME2] = '/scratch2/spirou/misc/miniruns_v07261/cook_jupiter.txt'
-# paths[NAME3] = '/scratch2/spirou/misc/miniruns_v07261/cook_nb19.txt'
+paths[NAME3] = '/scratch2/spirou/misc/miniruns_v07261/cook_nb19.txt'
 paths[NAME4] = '/scratch2/spirou/misc/miniruns_v07261/spirou_rali.txt'
+paths[NAME5] = '/scratch2/spirou/misc/miniruns_v07261/andres_lam.txt'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
@@ -37,12 +39,14 @@ COLORS[NAME1] = 'b'
 COLORS[NAME2] = 'r'
 COLORS[NAME3] = 'g'
 COLORS[NAME4] = 'orange'
+COLORS[NAME5] = 'yellow'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[NAME1] = 'o'
 MARKERS[NAME2] = 's'
 MARKERS[NAME3] = '+'
 MARKERS[NAME4] = '^'
+MARKERS[NAME5] = 'v'
 # markers needing facecolor
 has_face = ['o', 's', '^', 'd', 'v']
 # rv key
