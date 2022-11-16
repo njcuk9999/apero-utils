@@ -16,22 +16,22 @@ from astropy.table import Table
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = 'NW'
+NAME1 = 'claire@NW'
 NAME2 = 'cook@jupiter'
 NAME3 = 'cook@nb19'
 NAME4 = 'spirou@rali'
 NAME5 = 'andres@LAM'
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME2)
+REF_NAME = str(NAME1)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
-paths[NAME1] = '/scratch2/spirou/misc/miniruns_v07261/claire_nw.txt'
-paths[NAME2] = '/scratch2/spirou/misc/miniruns_v07261/cook_jupiter.txt'
-paths[NAME3] = '/scratch2/spirou/misc/miniruns_v07261/cook_nb19.txt'
-paths[NAME4] = '/scratch2/spirou/misc/miniruns_v07261/spirou_rali.txt'
-paths[NAME5] = '/scratch2/spirou/misc/miniruns_v07261/andres_lam.txt'
+paths[NAME1] = '/scratch2/spirou/misc/miniruns_v07261/py397_req_exact/claire_nw.txt'
+paths[NAME2] = '/scratch2/spirou/misc/miniruns_v07261/py397_req_exact/cook_jupiter.txt'
+# paths[NAME3] = '/scratch2/spirou/misc/miniruns_v07261/py397_req_exact/cook_nb19.txt'
+paths[NAME4] = '/scratch2/spirou/misc/miniruns_v07261/py397_req_exact/spirou_rali.txt'
+# paths[NAME5] = '/scratch2/spirou/misc/miniruns_v07261/py397_req_exact/andres_lam.txt'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
@@ -68,8 +68,8 @@ if __name__ == "__main__":
         # get table
         table = Table.read(paths[name], format='ascii')
         # load into arrays
-        bjds[name] = table['BJD']
-        rvs[name] = table[RV_KEY] * 1000
+        bjds[name] = np.array(table['BJD'])
+        rvs[name] = np.array(table[RV_KEY]) * 1000
     # -------------------------------------------------------------------------
     # plot
     fig, frames = plt.subplots(ncols=1, nrows=2)
