@@ -24,12 +24,69 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # =============================================================================
 fibers = ['A', 'B']
 modes = ['HA', 'HE']
+# --------------------------------------------------------------------------------------
 labels = ['center', 'left', 'right', 'red', 'blue']
 boxsize = 5
 function = np.nanmedian
 func_name = 'Med'
+# --------------------------------------------------------------------------------------
 PLOT = True
 PLOT_PATH = '/nirps_raw/nirps/misc/comm7'
+# --------------------------------------------------------------------------------------
+RAW_DIR_HE = '/nirps_raw/nirps/raw-data/nirps_he/'
+RAW_DIR_HA = '/nirps_raw/nirps/raw-data/nirps_ha/'
+# --------------------------------------------------------------------------------------
+# switch files key = (mode, fiber)
+CASE = 2
+old_files = dict()
+new_files = dict()
+xpos_all = dict()
+ypos_all = dict()
+
+if CASE == 1:
+    # NIRPS HE Fiber A
+    old_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-17/NIRPS_2022-11-17T22_15_02_461.fits'
+    new_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-19/NIRPS_2022-11-19T23_32_10_890.fits'
+    xpos_all[('HE', 'A')] = [2124, 2259, 2358, 3515, 235]
+    ypos_all[('HE', 'A')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HE Fiber B
+    old_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-17/NIRPS_2022-11-17T22_16_42_792.fits'
+    new_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-19/NIRPS_2022-11-19T23_33_51_221.fits'
+    xpos_all[('HE', 'B')] = [2145, 2280, 2380, 3535, 260]
+    ypos_all[('HE', 'B')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HA Fiber A
+    old_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-17/NIRPS_2022-11-17T15_22_57_043.fits'
+    new_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-19/NIRPS_2022-11-19T23_28_44_649.fits'
+    xpos_all[('HA', 'A')] = [2124, 2259, 2358, 3515, 235]
+    ypos_all[('HA', 'A')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HA Fiber B
+    old_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-17/NIRPS_2022-11-17T15_24_37_374.fits'
+    new_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-19/NIRPS_2022-11-19T23_30_24_979.fits'
+    xpos_all[('HA', 'B')] = [2145, 2280, 2380, 3535, 260]
+    ypos_all[('HA', 'B')] = [1952, 4022, 85, 1977, 1900]
+elif CASE == 2:
+    # NIRPS HE Fiber A
+    old_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-19/NIRPS_2022-11-19T23_32_10_890.fits'
+    new_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-20/NIRPS_2022-11-21T03_32_03_549.fits'
+    xpos_all[('HE', 'A')] = [2124, 2259, 2358, 3515, 235]
+    ypos_all[('HE', 'A')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HE Fiber B
+    old_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-19/NIRPS_2022-11-19T23_33_51_221.fits'
+    new_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-20/NIRPS_2022-11-21T03_33_43_879.fits'
+    xpos_all[('HE', 'B')] = [2145, 2280, 2380, 3535, 260]
+    ypos_all[('HE', 'B')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HA Fiber A
+    old_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-19/NIRPS_2022-11-19T23_28_44_649.fits'
+    new_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-20/NIRPS_2022-11-21T03_28_42_888.fits'
+    xpos_all[('HA', 'A')] = [2124, 2259, 2358, 3515, 235]
+    ypos_all[('HA', 'A')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HA Fiber B
+    old_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-19/NIRPS_2022-11-19T23_30_24_979.fits'
+    new_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-20/NIRPS_2022-11-21T03_30_23_218.fits'
+    xpos_all[('HA', 'B')] = [2145, 2280, 2380, 3535, 260]
+    ypos_all[('HA', 'B')] = [1952, 4022, 85, 1977, 1900]
+else:
+    raise ValueError(f'Case = {CASE} not supported')
 
 
 # =============================================================================
