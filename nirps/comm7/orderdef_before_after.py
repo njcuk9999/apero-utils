@@ -31,14 +31,14 @@ boxsize = 5
 function = np.nanmedian
 func_name = 'Med'
 # --------------------------------------------------------------------------------------
-PLOT = False
+PLOT = True
 PLOT_PATH = '/nirps_raw/nirps/misc/comm7'
 # --------------------------------------------------------------------------------------
 RAW_DIR_HE = '/nirps_raw/nirps/raw-data/nirps_he/'
 RAW_DIR_HA = '/nirps_raw/nirps/raw-data/nirps_ha/'
 # --------------------------------------------------------------------------------------
 # switch files key = (mode, fiber)
-CASE = 2
+CASE = 1
 old_files = dict()
 new_files = dict()
 xpos_all = dict()
