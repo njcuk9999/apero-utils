@@ -9,12 +9,13 @@ Created on 2022-11-20 at 19:19
 
 @author: cook
 """
-import numpy as np
-from astropy.io import fits
-from astropy.visualization import imshow_norm, ZScaleInterval
-from astropy.visualization import LinearStretch, LogStretch
 import matplotlib
 import matplotlib.pyplot as plt
+import numpy as np
+from astropy.io import fits
+from astropy.visualization import LinearStretch
+from astropy.visualization import imshow_norm, ZScaleInterval
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # =============================================================================
 # Define variables
@@ -30,12 +31,15 @@ PLOT = True
 # =============================================================================
 # Define functions
 # =============================================================================
-def plot_image(image):
-
+def plot_image(image, title, side='bottom', pad=0.0):
+    if side in ['right', 'left']:
+        orientation = 'vertical'
+    else:
+        orientation = 'horizontal'
     cmap1 = matplotlib.cm.get_cmap('heat').copy()
 
     fig, frame = plt.subplots(ncols=1, nrows=1)
-    _, _ = imshow_norm(image, frame, origin='lower', aspect='auto',
+    im, _ = imshow_norm(image, frame, origin='lower', aspect='auto',
                        interval=ZScaleInterval(), stretch=LinearStretch(),
                        cmap=cmap1, interpolation='None', rasterized=True)
     divider = make_axes_locatable(frame)
@@ -43,7 +47,8 @@ def plot_image(image):
     cbar = fig.colorbar(im, cax=cax, orientation=orientation)
     cbar.ax.tick_params(labelsize=8)
 
-    return 0
+    plt.suptitle(title)
+
 
 
 # =============================================================================
@@ -161,7 +166,7 @@ if __name__ == "__main__":
             diff = new_data - old_data
 
             if PLOT:
-                plot_image(image)
+                plot_image(diff, title=f'NIRPS_{mode} Fiber {fiber}')
 
     # print the summary
     print('\n\n Summary: \n\n')
