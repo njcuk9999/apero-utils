@@ -9,6 +9,8 @@ Created on 2022-11-20 at 19:19
 
 @author: cook
 """
+import os
+
 import matplotlib
 import matplotlib.pyplot as plt
 import numpy as np
@@ -27,6 +29,8 @@ boxsize = 5
 function = np.nanmedian
 func_name = 'Med'
 PLOT = True
+PLOT_PATH = '/nirps_raw/nirps/misc/comm7'
+
 
 # =============================================================================
 # Define functions
@@ -40,15 +44,15 @@ def plot_image(image, title, side='bottom', pad=0.0):
 
     fig, frame = plt.subplots(ncols=1, nrows=1)
     im, _ = imshow_norm(image, frame, origin='lower', aspect='auto',
-                       interval=ZScaleInterval(), stretch=LinearStretch(),
-                       cmap=cmap1, interpolation='None', rasterized=True)
+                        interval=ZScaleInterval(), stretch=LinearStretch(),
+                        cmap=cmap1, interpolation='None', rasterized=True)
     divider = make_axes_locatable(frame)
     cax = divider.append_axes(side, '5%', pad=pad)
     cbar = fig.colorbar(im, cax=cax, orientation=orientation)
     cbar.ax.tick_params(labelsize=8)
+    cbar.ax.title()
 
     plt.suptitle(title)
-
 
 
 # =============================================================================
@@ -162,11 +166,14 @@ if __name__ == "__main__":
             summary_text.append(summary_stat)
 
             # diff image
-            ratio_full = new_data / old_data
+            ratio_full = (new_data / old_data)
 
             if PLOT:
                 plot_image(ratio_full, title=f'NIRPS_{mode} Fiber {fiber}',
                            side='right')
+                plot_path = os.path.join(PLOT_PATH, f'FW_before_after_NIRPS_{mode}_fiber_{fiber}.pdf')
+                plt.savefig(plot_path)
+                plt.show()
 
     # print the summary
     print('\n\n Summary: \n\n')
