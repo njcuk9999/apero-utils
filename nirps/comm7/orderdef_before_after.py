@@ -123,29 +123,10 @@ if __name__ == "__main__":
 
     for mode in modes:
         for fiber in fibers:
-
-            if fiber == 'A' and mode == 'HE':
-                old_file = '/nirps_raw/nirps/raw-data/nirps_he/2022-11-17/NIRPS_2022-11-17T22_15_02_461.fits'
-                new_file = '/nirps_raw/nirps/raw-data/nirps_he/2022-11-19/NIRPS_2022-11-19T23_32_10_890.fits'
-                xpos = [2124, 2259, 2358, 3515, 235]
-                ypos = [1952, 4022, 85, 1977, 1900]
-            elif fiber == 'B' and mode == 'HE':
-                old_file = '/nirps_raw/nirps/raw-data/nirps_he/2022-11-17/NIRPS_2022-11-17T22_16_42_792.fits'
-                new_file = '/nirps_raw/nirps/raw-data/nirps_he/2022-11-19/NIRPS_2022-11-19T23_33_51_221.fits'
-                xpos = [2145, 2280, 2380, 3535, 260]
-                ypos = [1952, 4022, 85, 1977, 1900]
-            elif fiber == 'A' and mode == 'HA':
-                old_file = '/nirps_raw/nirps/raw-data/nirps_ha/2022-11-17/NIRPS_2022-11-17T15_22_57_043.fits'
-                new_file = '/nirps_raw/nirps/raw-data/nirps_ha/2022-11-19/NIRPS_2022-11-19T23_28_44_649.fits'
-                xpos = [2124, 2259, 2358, 3515, 235]
-                ypos = [1952, 4022, 85, 1977, 1900]
-            elif fiber == 'B' and mode == 'HA':
-                old_file = '/nirps_raw/nirps/raw-data/nirps_ha/2022-11-17/NIRPS_2022-11-17T15_24_37_374.fits'
-                new_file = '/nirps_raw/nirps/raw-data/nirps_ha/2022-11-19/NIRPS_2022-11-19T23_30_24_979.fits'
-                xpos = [2145, 2280, 2380, 3535, 260]
-                ypos = [1952, 4022, 85, 1977, 1900]
-            else:
-                raise ValueError(f'mode={mode} fiber={fiber} not supported')
+            old_file = old_files[(mode, fiber)]
+            new_file = new_files[(mode, fiber)]
+            xpos = xpos_all[(mode, fiber)]
+            ypos = ypos_all[(mode, fiber)]
 
             # load old and new file
             old_data = fits.getdata(old_file)
