@@ -161,12 +161,12 @@ if __name__ == "__main__":
 
             summary_text.append(summary_stat)
 
-
             # diff image
-            diff = new_data - old_data
+            ratio_full = new_data / old_data
 
             if PLOT:
-                plot_image(diff, title=f'NIRPS_{mode} Fiber {fiber}')
+                plot_image(ratio_full, title=f'NIRPS_{mode} Fiber {fiber}',
+                           side='right')
 
     # print the summary
     print('\n\n Summary: \n\n')
