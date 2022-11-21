@@ -36,7 +36,7 @@ def plot_image(image, title, side='bottom', pad=0.0):
         orientation = 'vertical'
     else:
         orientation = 'horizontal'
-    cmap1 = matplotlib.cm.get_cmap('heat').copy()
+    cmap1 = matplotlib.cm.get_cmap('gist_heat')
 
     fig, frame = plt.subplots(ncols=1, nrows=1)
     im, _ = imshow_norm(image, frame, origin='lower', aspect='auto',
