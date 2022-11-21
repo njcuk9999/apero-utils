@@ -10,6 +10,7 @@ Created on 2022-11-20 at 19:19
 @author: cook
 """
 import os
+import warnings
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -30,7 +31,7 @@ boxsize = 5
 function = np.nanmedian
 func_name = 'Med'
 # --------------------------------------------------------------------------------------
-PLOT = True
+PLOT = False
 PLOT_PATH = '/nirps_raw/nirps/misc/comm7'
 # --------------------------------------------------------------------------------------
 RAW_DIR_HE = '/nirps_raw/nirps/raw-data/nirps_he/'
@@ -107,7 +108,6 @@ def plot_image(image, title, side='bottom', pad=0.0):
     cax = divider.append_axes(side, '5%', pad=pad)
     cbar = fig.colorbar(im, cax=cax, orientation=orientation)
     cbar.ax.tick_params(labelsize=8)
-    cbar.ax.title()
 
     plt.suptitle(title)
 
@@ -204,7 +204,8 @@ if __name__ == "__main__":
             summary_text.append(summary_stat)
 
             # diff image
-            ratio_full = (new_data / old_data)
+            with warnings.catch_warnings(record=True) as _:
+                ratio_full = (new_data / old_data)
 
             if PLOT:
                 plot_image(ratio_full, title=f'NIRPS_{mode} Fiber {fiber}',
