@@ -31,11 +31,12 @@ boxsize = 5
 function = np.nanmedian
 func_name = 'Med'
 # --------------------------------------------------------------------------------------
-PLOT = True
+PLOT = False
 PLOT_PATH = '/nirps_raw/nirps/misc/comm7'
 # --------------------------------------------------------------------------------------
 RAW_DIR_HE = '/nirps_raw/nirps/raw-data/nirps_he/'
 RAW_DIR_HA = '/nirps_raw/nirps/raw-data/nirps_ha/'
+DPRKEY = 'HIERARCH ESO DPR TYPE'
 # --------------------------------------------------------------------------------------
 # switch files key = (mode, fiber)
 CASE = 3
@@ -107,6 +108,27 @@ elif CASE == 3:
     new_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-21/NIRPS_2022-11-22T03_34_23_159.fits'
     xpos_all[('HA', 'B')] = [2145, 2280, 2380, 3535, 260]
     ypos_all[('HA', 'B')] = [1952, 4022, 85, 1977, 1900]
+elif CASE == 4:
+    # NIRPS HE Fiber A
+    old_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-17/NIRPS_2022-11-17T22_15_02_461.fits'
+    new_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-21/NIRPS_2022-11-22T03_36_09_070.fits'
+    xpos_all[('HE', 'A')] = [2124, 2259, 2358, 3515, 235]
+    ypos_all[('HE', 'A')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HE Fiber B
+    old_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-17/NIRPS_2022-11-17T22_16_42_792.fits'
+    new_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-21/NIRPS_2022-11-22T03_37_49_401.fits'
+    xpos_all[('HE', 'B')] = [2145, 2280, 2380, 3535, 260]
+    ypos_all[('HE', 'B')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HA Fiber A
+    old_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-17/NIRPS_2022-11-17T15_22_57_043.fits'
+    new_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-21/NIRPS_2022-11-22T03_32_42_829.fits'
+    xpos_all[('HA', 'A')] = [2124, 2259, 2358, 3515, 235]
+    ypos_all[('HA', 'A')] = [1952, 4022, 85, 1977, 1900]
+    # NIRPS HA Fiber B
+    old_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-17/NIRPS_2022-11-17T15_24_37_374.fits'
+    new_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-21/NIRPS_2022-11-22T03_34_23_159.fits'
+    xpos_all[('HA', 'B')] = [2145, 2280, 2380, 3535, 260]
+    ypos_all[('HA', 'B')] = [1952, 4022, 85, 1977, 1900]
 else:
     raise ValueError(f'Case = {CASE} not supported')
 
@@ -162,8 +184,10 @@ if __name__ == "__main__":
             print(f'* NIRPS_{mode} Fiber {fiber}')
             print('*' * 50)
             print(f'b={boxsize}')
-            print(f'old={old_hdr["ORIGFILE"]}  EXPTIME={old_hdr["EXPTIME"]}')
-            print(f'new={new_hdr["ORIGFILE"]}  EXPTIME={new_hdr["EXPTIME"]}')
+            print(f'old={old_hdr["ORIGFILE"]}\n\tEXPTIME={old_hdr["EXPTIME"]}  '
+                  f'DPRTYPE={old_hdr[DPRKEY]}   DATE={old_hdr["DATE"]}')
+            print(f'new={new_hdr["ORIGFILE"]}\n\tEXPTIME={new_hdr["EXPTIME"]}  '
+                  f'DPRTYPE={new_hdr[DPRKEY]}   DATE={new_hdr["DATE"]}')
 
             for pos in range(len(xpos)):
                 print(f'{labels[pos]}  \tx,y={xpos[pos]:4d},{ypos[pos]:4d}')
