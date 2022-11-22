@@ -39,7 +39,7 @@ RAW_DIR_HA = '/nirps_raw/nirps/raw-data/nirps_ha/'
 DPRKEY = 'HIERARCH ESO DPR TYPE'
 # --------------------------------------------------------------------------------------
 # switch files key = (mode, fiber)
-CASE = 3
+CASE = 5
 old_files = dict()
 new_files = dict()
 xpos_all = dict()
@@ -137,22 +137,22 @@ elif CASE == 4:
 elif CASE == 5:
     # NIRPS HE Fiber A
     old_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-21/NIRPS_2022-11-22T03_36_09_070.fits'
-    new_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-21/NIRPS_2022-11-22T03_36_09_070.fits'
+    new_files[('HE', 'A')] = RAW_DIR_HE + '2022-11-22/NIRPS_2022-11-22T17_12_31_818.fits'
     xpos_all[('HE', 'A')] = [2124, 2259, 2358, 3515, 235]
     ypos_all[('HE', 'A')] = [1952, 4022, 85, 1977, 1900]
     # NIRPS HE Fiber B
     old_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-21/NIRPS_2022-11-22T03_37_49_401.fits'
-    new_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-21/NIRPS_2022-11-22T03_37_49_401.fits'
+    new_files[('HE', 'B')] = RAW_DIR_HE + '2022-11-22/NIRPS_2022-11-22T17_14_12_148.fits'
     xpos_all[('HE', 'B')] = [2145, 2280, 2380, 3535, 260]
     ypos_all[('HE', 'B')] = [1952, 4022, 85, 1977, 1900]
     # NIRPS HA Fiber A
     old_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-21/NIRPS_2022-11-22T03_32_42_829.fits'
-    new_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-21/NIRPS_2022-11-22T03_32_42_829.fits'
+    new_files[('HA', 'A')] = RAW_DIR_HA + '2022-11-22/NIRPS_2022-11-22T17_09_11_157.fits'
     xpos_all[('HA', 'A')] = [2124, 2259, 2358, 3515, 235]
     ypos_all[('HA', 'A')] = [1952, 4022, 85, 1977, 1900]
     # NIRPS HA Fiber B
     old_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-21/NIRPS_2022-11-22T03_34_23_159.fits'
-    new_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-21/NIRPS_2022-11-22T03_34_23_159.fits'
+    new_files[('HA', 'B')] = RAW_DIR_HA + '2022-11-22/NIRPS_2022-11-22T17_10_51_488.fits'
     xpos_all[('HA', 'B')] = [2145, 2280, 2380, 3535, 260]
     ypos_all[('HA', 'B')] = [1952, 4022, 85, 1977, 1900]
 else:
