@@ -31,7 +31,7 @@ boxsize = 20
 percentile = 95
 func_name = 'P95'
 
-# DATATYPE = 'RAW'
+# DATATYPE 'RAW' or 'PP'
 DATATYPE = 'PP'
 # --------------------------------------------------------------------------------------
 PLOT = True
@@ -59,8 +59,8 @@ image_shape = [4096, 4096]
 
 if DATATYPE == 'RAW':
     # center raw image
-    center_min = [image_shape[0]//2 - size, image_shape[1]//2 + size]
-    center_max = [image_shape[0]//2 - size, image_shape[1]//2 + size]
+    center_min = [image_shape[0]//2 - size, image_shape[1]//2 - size]
+    center_max = [image_shape[0]//2 + size, image_shape[1]//2 + size]
     # order left raw image
     left_min = [image_shape[0] - size - edge, edge]
     left_max = [image_shape[0] - edge, image_shape[1] - edge]
@@ -337,7 +337,7 @@ if __name__ == "__main__":
 
             ratio_90 = new_90 / old_90
 
-            print(f'Percentile[{percentile}]',
+            print(f'FULL image P[{percentile}]',
                   f'\told={old_90:8.3f} new={new_90:8.3f} ratio={ratio_90:.5f}')
 
             # summary stats
