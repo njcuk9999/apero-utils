@@ -18,8 +18,8 @@ import numpy as np
 from astropy.io import fits
 from astropy.visualization import LinearStretch
 from astropy.visualization import imshow_norm, ZScaleInterval
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.patches import Rectangle
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 # =============================================================================
 # Define variables
@@ -59,8 +59,8 @@ image_shape = [4096, 4096]
 
 if DATATYPE == 'RAW':
     # center raw image
-    center_min = [image_shape[0]//2 - size, image_shape[1]//2 - size]
-    center_max = [image_shape[0]//2 + size, image_shape[1]//2 + size]
+    center_min = [image_shape[0] // 2 - size, image_shape[1] // 2 - size]
+    center_max = [image_shape[0] // 2 + size, image_shape[1] // 2 + size]
     # order left raw image
     left_min = [image_shape[0] - size - edge, edge]
     left_max = [image_shape[0] - edge, image_shape[1] - edge]
@@ -75,8 +75,8 @@ if DATATYPE == 'RAW':
     red_max = [image_shape[0] - edge, image_shape[1] - edge]
 else:
     # center raw image
-    center_min = [image_shape[0]//2 - size, image_shape[1]//2 - size]
-    center_max = [image_shape[0]//2 + size, image_shape[1]//2 + size]
+    center_min = [image_shape[0] // 2 - size, image_shape[1] // 2 - size]
+    center_max = [image_shape[0] // 2 + size, image_shape[1] // 2 + size]
     # order left raw image
     left_min = [edge, image_shape[1] - size - edge]
     left_max = [image_shape[0] - edge, image_shape[1] - edge]
@@ -224,9 +224,8 @@ def plot_ratio(image1, image2, ratio, title, side='bottom', pad=0.0,
     images = [image1, ratio, image2]
     titles = ['OLD', 'RATIO', 'NEW']
 
-    fig, frames = plt.subplots(ncols=len(images), nrows=1, figsize=(15, 5), sharex='all', sharey='all')
-
-
+    fig, frames = plt.subplots(ncols=len(images), nrows=1, figsize=(15, 5),
+                               sharex='all', sharey='all')
 
     for it in range(len(images)):
 
@@ -235,15 +234,13 @@ def plot_ratio(image1, image2, ratio, title, side='bottom', pad=0.0,
                             interval=ZScaleInterval(), stretch=LinearStretch(),
                             cmap=cmap1, interpolation='None', rasterized=True)
 
-
         if minpoints is not None and maxpoints is not None and labels is not None:
             for pos in range(len(labels)):
                 frame.add_patch(Rectangle((min_points[pos][1], min_points[pos][0]),
-                                          max_points[pos][1]-min_points[pos][1],
-                                          max_points[pos][0]-min_points[pos][0],
+                                          max_points[pos][1] - min_points[pos][1],
+                                          max_points[pos][0] - min_points[pos][0],
                                           edgecolor='yellow', facecolor='None',
                                           fill=False))
-
 
         divider = make_axes_locatable(frame)
         cax = divider.append_axes(side, '5%', pad=pad)
@@ -273,7 +270,6 @@ if __name__ == "__main__":
             else:
                 old_file = old_files[(mode, fiber)].replace('.fits', '_pp.fits')
                 new_file = new_files[(mode, fiber)].replace('.fits', '_pp.fits')
-
 
             # load old and new file
             old_data = fits.getdata(old_file)
