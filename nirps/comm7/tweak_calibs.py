@@ -184,6 +184,10 @@ def add_append(sdict, key, value):
     return sdict
 
 
+def marker_size_arr(vector, maxsize=10):
+    return int(maxsize * vector/np.max(vector))
+
+
 def plot_grid(storage):
     # close plots
     plt.close()
@@ -203,7 +207,7 @@ def plot_grid(storage):
         exptime = np.array(list(map(lambda x: getattr(x, 'exptime'),
                                     storage[key])))
         # set up plots
-        fig, frames = plt.subplots(ncols=2, nrows=2, figsize=(20, 20))
+        fig, frames = plt.subplots(ncols=2, nrows=2, figsize=(16, 16))
         # sort by nd
         sortmask = np.argsort(nd)
         nd = nd[sortmask]
@@ -218,26 +222,32 @@ def plot_grid(storage):
             frames[0][0].scatter(nd, pflux,
                                  label='Percentile[{}]'.format(percentile),
                                  facecolor='None', edgecolor=PCOLORS[it],
-                                 marker='o')
-            # plot percentile values against exposure time              
+                                 marker='o', s=marker_size_arr(exptime))
+            # plot percentile values against exposure time
             frames[1][0].scatter(exptime, pflux,
                                  label='Percentile[{}]'.format(percentile),
                                  facecolor='None', edgecolor=PCOLORS[it],
-                                 marker='o')
+                                 marker='o', s=marker_size_arr(nd))
 
         # plot fraction of saturated pixels
-        frames[0][1].plot(nd, fsat, marker='o', ls='None')
-        frames[1][1].plot(exptime, fsat, marker='o', ls='None')
-        # -------------------------------------------------------------        
+        frames[0][1].plot(nd, fsat, marker='o', ls='None',
+                          ms=marker_size_arr(exptime, 20))
+        frames[1][1].plot(exptime, fsat, marker='o', ls='None',
+                          ms=marker_size_arr(nd, 20))
+        # -------------------------------------------------------------
         # legend and labels
         frames[0][0].legend(loc=0)
         frames[1][0].legend(loc=0)
-        frames[0][0].set(xlabel='ND', ylabel='Flux / ADU')
-        frames[1][0].set(xlabel='EXPTIME [s]', ylabel='Flux / ADU')
-        frames[0][1].set(xlabel='ND', ylabel='Fraction of saturated pixels')
+        frames[0][0].set(xlabel='ND', ylabel='Flux / ADU',
+                         title='size=exptime')
+        frames[1][0].set(xlabel='EXPTIME [s]', ylabel='Flux / ADU',
+                         title='size=ND')
+        frames[0][1].set(xlabel='ND', ylabel='Fraction of saturated pixels',
+                         title='size=exptime')
         frames[1][1].set(xlabel='EXPTIME',
-                         ylabel='Fraction of saturated pixels')
-        plt.subplots_adjust(right=0.99, left=0.1, wspace=0.4)
+                         ylabel='Fraction of saturated pixels',
+                         title='size=ND')
+        plt.subplots_adjust(right=0.99, left=0.05, wspace=0.1, hspace=0.05)
         plt.suptitle(key)
         plt.savefig('Flux-tweak-{0}.jpg'.format(key))
         plt.show()
