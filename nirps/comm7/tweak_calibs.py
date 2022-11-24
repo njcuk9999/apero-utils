@@ -25,7 +25,7 @@ TIME_START = '2022-11-24T01:10:00.00'
 # Define the time of the last file to use (should be slightly later)
 #   Set to None for no limit
 #   In fits format YYYY-MM-DDThh:mm:ss.ss
-TIME_END = None
+TIME_END = '2022-11-24T08:55:00.00'
 # Define the directory to find the files
 PATH = '/data/NIRPS/INS_ROOT/SYSTEM/DETDATA/'
 # Define the file string to select files (including wildcards)
@@ -184,8 +184,12 @@ def add_append(sdict, key, value):
     return sdict
 
 
-def marker_size_arr(vector, maxsize=10):
-    return int(maxsize * vector/np.max(vector))
+def get_markers():
+    markers = ['o', 'x', '^', 'd', '*', 'v', '<', '>', 's', '+', 'p', 'P', 'h',
+               '1', '2', '3', '4', 'X', 'D']
+    filled = [True, False, True, True, True, True, True, True, True, False,
+              True, True, True, False, False, False, False, True, True]
+    return markers, filled
 
 
 def plot_grid(storage):
@@ -214,40 +218,95 @@ def plot_grid(storage):
         flux = flux[sortmask]
         fsat = fsat[sortmask]
         exptime = exptime[sortmask]
+
+        uexptime = np.unique(exptime)
+        und = np.unique(nd)
+
+        markers, filled = get_markers()
+
         # -------------------------------------------------------------
+        alllabels = []
         # loop around percentiles
         for it, percentile in enumerate(PERCENTILES):
             pflux = flux[:, it]
             # plot percentile values against nd
-            frames[0][0].scatter(nd, pflux,
-                                 label='Percentile[{}]'.format(percentile),
-                                 facecolor='None', edgecolor=PCOLORS[it],
-                                 marker='o', s=marker_size_arr(exptime))
+            # loop around unique exptime
+            for jt, uexptime_it in enumerate(uexptime):
+                # mask exptime
+                mask = exptime == uexptime_it
+                # get label
+                largs = [percentile, uexptime_it]
+                label = 'P[{}] Exptime={} s'.format(*largs)
+                # remove repeated labels
+                if label in alllabels:
+                    label = None
+                else:
+                    alllabels.append(label)
+                # deal with color
+                if filled[jt]:
+                    pkwargs = dict(edgecolor=PCOLORS[it], facecolor='None',
+                                   marker=markers[jt])
+                else:
+                    pkwargs = dict(color=PCOLORS[it], marker=markers[jt])
+                # plot
+                frames[0][0].scatter(nd[mask], pflux[mask], label=label,
+                                     **pkwargs)
             # plot percentile values against exposure time
-            frames[1][0].scatter(exptime, pflux,
-                                 label='Percentile[{}]'.format(percentile),
-                                 facecolor='None', edgecolor=PCOLORS[it],
-                                 marker='o', s=marker_size_arr(nd))
-
+            # loop around unique exptime
+            for jt, und_it in enumerate(und):
+                # mask exptime
+                mask = nd == und_it
+                # get label
+                largs = [percentile, und_it]
+                label = 'P[{}] ND={}'.format(*largs)
+                # remove repeated labels
+                if label in alllabels:
+                    label = None
+                else:
+                    alllabels.append(label)
+                # deal with color
+                if filled[jt]:
+                    pkwargs = dict(edgecolor=PCOLORS[it], facecolor='None',
+                                   marker=markers[jt])
+                else:
+                    pkwargs = dict(color=PCOLORS[it], marker=markers[jt])
+                # plot
+                frames[1][0].scatter(exptime[mask], pflux[mask], label=label,
+                                     **pkwargs)
+        # ---------------------------------------------------------------------
         # plot fraction of saturated pixels
-        frames[0][1].plot(nd, fsat, marker='o', ls='None',
-                          ms=marker_size_arr(exptime, 20))
-        frames[1][1].plot(exptime, fsat, marker='o', ls='None',
-                          ms=marker_size_arr(nd, 20))
+        # loop around unique exptime
+        for jt, uexptime_it in enumerate(uexptime):
+            # mask exptime
+            mask = exptime == uexptime_it
+            # get label
+            largs = [uexptime_it]
+            label = 'Exptime={} s'.format(*largs)
+
+            frames[0][1].plot(nd[mask], fsat[mask], marker=markers[jt],
+                              ls='None', color='k', label=label)
+        # loop around unique exptime
+        for jt, und_it in enumerate(und):
+            # mask exptime
+            mask = nd == und_it
+            # get label
+            largs = [und_it]
+            label = 'ND={}'.format(*largs)
+            # plot
+            frames[1][1].plot(exptime[mask], fsat[mask], marker=markers[jt],
+                              ls='None', color='k', label=label)
         # -------------------------------------------------------------
         # legend and labels
-        frames[0][0].legend(loc=0)
-        frames[1][0].legend(loc=0)
-        frames[0][0].set(xlabel='ND', ylabel='Flux / ADU',
-                         title='size=exptime')
-        frames[1][0].set(xlabel='EXPTIME [s]', ylabel='Flux / ADU',
-                         title='size=ND')
-        frames[0][1].set(xlabel='ND', ylabel='Fraction of saturated pixels',
-                         title='size=exptime')
+        frames[0][0].legend(loc=0, ncol=2, fontsize='x-small')
+        frames[0][1].legend(loc=0, ncol=2, fontsize='x-small')
+        frames[1][0].legend(loc=0, ncol=2, fontsize='x-small')
+        frames[1][1].legend(loc=0, ncol=2, fontsize='x-small')
+        frames[0][0].set(xlabel='ND', ylabel='Flux / ADU')
+        frames[1][0].set(xlabel='EXPTIME [s]', ylabel='Flux / ADU')
+        frames[0][1].set(xlabel='ND', ylabel='Fraction of saturated pixels')
         frames[1][1].set(xlabel='EXPTIME',
-                         ylabel='Fraction of saturated pixels',
-                         title='size=ND')
-        plt.subplots_adjust(right=0.99, left=0.05, wspace=0.1, hspace=0.05)
+                         ylabel='Fraction of saturated pixels')
+        plt.subplots_adjust(right=0.99, left=0.075, wspace=0.2, hspace=0.2)
         plt.suptitle(key)
         plt.savefig('Flux-tweak-{0}.jpg'.format(key))
         plt.show()
