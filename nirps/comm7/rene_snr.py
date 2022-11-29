@@ -9,6 +9,7 @@ Created on 2022-11-20 at 19:19
 """
 import os
 import warnings
+import sys
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,14 +21,25 @@ from scipy.special import erf
 # Define variables
 # =============================================================================
 # set up path
-PATH = '/nirps_raw/nirps/apero-data/drs-data/nirps_he_202211/red/'
-FILENAME = '2022-11-28/NIRPS_2022-11-29T00_18_16_448_pp_e2dsff_A.fits'
+if len(sys.argv) == 2:
+	PATH = sys.argv[1]
+else:
+	raise ValueError('Must provide a path as an argument')
 # define number of pixels away from the center to use
 WIDTH = 100
 # debug plot
-DEBUG = True
+DEBUG = False
 # list of debug plot orders (echelle order number)
 DEBUG_ECHELLE_ORDERS = [90]
+# keywords
+KW_OBJNAME = 'OBJECT'
+KW_SPT = 'HIERARCH ESO OCS TARG SPTYPE'
+KW_DATE = 'DATE'
+KW_EXPTIME = 'EXPTIME'
+KW_AIRMASS = 'HIERARCH ESO TEL AIRM START'
+KW_SEEING = 'HIERARCH ESO TEL AMBI FWHM START'
+KW_MODE = 'HIERARCH ESO INS MODE'
+KW_DPRTYPE = 'HIERARCH ESO DPR TYPE'
 
 
 # =============================================================================
@@ -154,13 +166,21 @@ def rene_fit(y1, y2, y3, y4):
 if __name__ == "__main__":
 	# ----------------------------------------------------------------------
 	# get path
-	abspath = os.path.join(PATH, FILENAME)
+	abspath = PATH
 	# load spectrum
 	data = fits.getdata(abspath)
 	hdr = fits.getheader(abspath)
 	# ----------------------------------------------------------------------
 	# print object name
-	print('=' * 50 + f'\n{hdr["OBJECT"]}\n' + '=' * 50)
+	print('=' * 50 + f'\n{hdr[KW_OBJNAME]}\n' + '=' * 50)
+	print('\tDATE: ', hdr[KW_DATE])
+	print('\tSPT: ', hdr[KW_SPT])
+	print('\tEXPTIME: ', hdr[KW_EXPTIME])
+	print('\tAIRMASS: ', hdr[KW_AIRMASS])
+	print('\tSEEING: ', hdr[KW_SEEING])
+	print('\tMODE: ', hdr[KW_MODE])
+	print('\tDPRTYPE: ', hdr[KW_DPRTYPE])
+	print('=' * 50)
 	# ----------------------------------------------------------------------
 	# get number of orders and pixel size
 	nbo, nbxpix = data.shape
