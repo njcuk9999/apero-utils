@@ -40,7 +40,7 @@ KW_AIRMASS = 'HIERARCH ESO TEL AIRM START'
 KW_SEEING = 'HIERARCH ESO TEL AMBI FWHM START'
 KW_MODE = 'HIERARCH ESO INS MODE'
 KW_DPRTYPE = 'HIERARCH ESO DPR TYPE'
-
+KW_EXTSN059 = 'EXTSN059'
 
 # =============================================================================
 # Define functions
@@ -180,6 +180,7 @@ if __name__ == "__main__":
 	print('\tSEEING: ', hdr[KW_SEEING])
 	print('\tMODE: ', hdr[KW_MODE])
 	print('\tDPRTYPE: ', hdr[KW_DPRTYPE])
+	print('\tEXTSN059: ', hdr[KW_EXTSN059])
 	print('=' * 50)
 	# ----------------------------------------------------------------------
 	# get number of orders and pixel size
