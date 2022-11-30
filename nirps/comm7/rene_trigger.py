@@ -40,8 +40,6 @@ KW_DPR_TYPE = 'HIERARCH ESO DPR TYPE'
 APERO_ENV = 'apero-env-07261'
 # default run.ini file
 DEFAULT_RUN_INI = 'comm_run.ini'
-# test sys.argv
-sys.argv = ['', '--mode=HA', '--dprfilter=OBJECT', '--obsdir=2022-11-28']
 
 
 # ==================================================================
