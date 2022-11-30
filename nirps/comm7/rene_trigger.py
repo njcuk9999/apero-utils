@@ -79,6 +79,9 @@ def get_args():
 	parser.add_argument('--runfile', type=str, default='None',
 	                    help='APERO processing run.ini file to use'
 	                         f'(defaults to {DEFAULT_RUN_INI})')
+	# test mode - do not run apero recipes just test
+	parser.add_argument('--test', type=bool, default=False,
+	                    help='Do not run apero recipes just test')
 	# load arguments with parser
 	args = parser.parse_args()
 	# return arguments
@@ -191,9 +194,18 @@ def run_apero_processing(params, args, obsdir):
 	# -------------------------------------------------------------------------
 	# run apero
 	if args.runfile == 'None':
-		commands += [f'apero_processing.py {DEFAULT_RUN_INI}']
+		cmd = f'apero_processing.py {DEFAULT_RUN_INI}'
+		cmd += f' --obs_dir={obsdir}'
+		if args.test:
+			cmd += ' --test=True'
 	else:
-		commands += [f'apero_processing.py {args.runfile}']
+		cmd = f'apero_processing.py {args.runfile}'
+		cmd += f' --obs_dir={obsdir}'
+		if args.test:
+			cmd += ' --test=True'
+
+
+	commands += [cmd]
 	# -------------------------------------------------------------------------
 	# get reduced dir
 	reddir = os.path.join(params['REDPATH'], obsdir)
@@ -204,6 +216,7 @@ def run_apero_processing(params, args, obsdir):
 	print('\nPlease run the following:\n\n')
 	for command in commands:
 		print(f'{command}')
+	print('\n\n')
 
 
 def main():
