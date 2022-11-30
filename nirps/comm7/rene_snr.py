@@ -14,6 +14,7 @@ import sys
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
+from astropy.table import Table
 from scipy.special import erf
 
 
@@ -25,12 +26,16 @@ if len(sys.argv) == 2:
 	PATH = sys.argv[1]
 else:
 	raise ValueError('Must provide a path as an argument')
+
+FILE_SUFFIX = 'e2dsff_A.fits'
 # define number of pixels away from the center to use
 WIDTH = 100
 # debug plot
 DEBUG = False
 # list of debug plot orders (echelle order number)
 DEBUG_ECHELLE_ORDERS = [90]
+# None for all otheriwse a list
+PRINT_ECHELLE_ORDERS = [90]
 # keywords
 KW_OBJNAME = 'OBJECT'
 KW_SPT = 'HIERARCH ESO OCS TARG SPTYPE'
@@ -41,10 +46,27 @@ KW_SEEING = 'HIERARCH ESO TEL AMBI FWHM START'
 KW_MODE = 'HIERARCH ESO INS MODE'
 KW_DPRTYPE = 'HIERARCH ESO DPR TYPE'
 KW_EXTSN059 = 'EXTSN059'
+# output tables
+OUTTABLE_CSV = '/nirps_raw/nirps/misc/comm7/rene_snr/all_results.csv'
+OUTTABLE_FITS = '/nirps_raw/nirps/misc/comm7/rene_snr/all_results.fits'
+OUTTABLE_TXT = '/nirps_raw/nirps/misc/comm7/rene_snr/all_results.txt'
+
 
 # =============================================================================
 # Define functions
 # =============================================================================
+def get_files(path):
+	all_files = []
+	# loop around all sub directories
+	for root, dirs, files in os.walk(path):
+		for filename in files:
+			if FILE_SUFFIX is not None:
+				if not filename.endswith(FILE_SUFFIX):
+					continue
+			all_files.append(os.path.join(root, filename))
+	return all_files
+
+
 def normal_fraction(sigma=1.0):
 	"""
 	Return the expected fraction of population inside a range
@@ -137,7 +159,14 @@ def measure_snr(vector, order_num, echelle_order):
 		             f'rms={rms:.4f}    noise={noise:.4f}    med={med:.4f}    snr={snr:.4f}')
 		plt.show()
 
-	return snr
+	# property dict
+	pdict = dict()
+	pdict['SNR'] = snr
+	pdict['MED'] = med
+	pdict['NOISE'] = noise
+	pdict['RMS'] = rms
+
+	return pdict
 
 
 def rene_fit(y1, y2, y3, y4):
@@ -165,48 +194,130 @@ def rene_fit(y1, y2, y3, y4):
 # Main code here
 if __name__ == "__main__":
 	# ----------------------------------------------------------------------
-	# get path
-	abspath = PATH
-	# load spectrum
-	data = fits.getdata(abspath)
-	hdr = fits.getheader(abspath)
-	# ----------------------------------------------------------------------
-	# print object name
-	print('=' * 50 + f'\n{hdr[KW_OBJNAME]}\n' + '=' * 50)
-	print('\tDATE: ', hdr[KW_DATE])
-	print('\tSPT: ', hdr[KW_SPT])
-	print('\tEXPTIME: ', hdr[KW_EXPTIME])
-	print('\tAIRMASS: ', hdr[KW_AIRMASS])
-	print('\tSEEING: ', hdr[KW_SEEING])
-	print('\tMODE: ', hdr[KW_MODE])
-	print('\tDPRTYPE: ', hdr[KW_DPRTYPE])
-	print('\tEXTSN059: ', hdr[KW_EXTSN059])
-	print('=' * 50)
-	# ----------------------------------------------------------------------
-	# get number of orders and pixel size
-	nbo, nbxpix = data.shape
-	# storage
-	snr = dict()
-	# loop around each order
-	for order_num in range(nbo):
-		# ----------------------------------------------------------------------
-		# get echelle order
-		echelle_order = hdr[f'WAVEEC{order_num:02d}']
-		# ----------------------------------------------------------------------
-		# get central point
-		cent = nbxpix // 2
-		lower = cent - WIDTH
-		upper = cent + WIDTH
-		# get cut down range
-		measure_data = data[order_num][lower:upper]
-		# ----------------------------------------------------------------------
-		# measure SNR
-		with warnings.catch_warnings(record=True) as _:
-			snr[order_num] = measure_snr(measure_data, order_num, echelle_order)
-		# ----------------------------------------------------------------------
-		# print value
-		print(f'EXT[{order_num}]  ECHELLE[{echelle_order}]: {snr[order_num]}')
+	if os.path.isdir(PATH):
+		individual = False
+		files = get_files(PATH)
+	else:
+		individual = True
+		files = [PATH]
+	# store all data
+	sdict = dict()
+	sdict['target'] = []
+	sdict['file'] = []
+	sdict['spt'] = []
+	sdict['date'] = []
+	sdict['dpr.type'] = []
+	sdict['mode'] = []
+	sdict['Texp'] = []
+	sdict['airmass'] = []
+	sdict['seeing'] = []
+	sdict['EXTSN059'] = []
 
+	# loop around files
+	for abspath in files:
+		# load spectrum
+		data = fits.getdata(abspath)
+		hdr = fits.getheader(abspath)
+		# ----------------------------------------------------------------------
+		if not individual:
+			if 'OBJECT' not in hdr[KW_DPRTYPE]:
+				continue
+		# ----------------------------------------------------------------------
+		# print object name
+		print('\n' + '=' * 50 + f'\n{hdr[KW_OBJNAME]}\n' + '=' * 50)
+		print('\tDATE: ', hdr[KW_DATE])
+		print('\tSPT: ', hdr[KW_SPT])
+		print('\tEXPTIME: ', hdr[KW_EXPTIME])
+		print('\tAIRMASS: ', hdr[KW_AIRMASS])
+		print('\tSEEING: ', hdr[KW_SEEING])
+		print('\tMODE: ', hdr[KW_MODE])
+		print('\tDPRTYPE: ', hdr[KW_DPRTYPE])
+		print('\tEXTSN059: ', hdr[KW_EXTSN059])
+		print('=' * 50)
+		# ----------------------------------------------------------------------
+		# get number of orders and pixel size
+		nbo, nbxpix = data.shape
+		# storage
+		snr, med = dict(), dict()
+
+
+		# add keys
+		sdict['target'].append(hdr[KW_OBJNAME])
+		sdict['file'].append(os.path.basename(abspath))
+		sdict['spt'].append(hdr[KW_SPT])
+		sdict['date'].append(hdr[KW_DATE])
+		sdict['dpr.type'].append(hdr[KW_DPRTYPE])
+		sdict['mode'].append(hdr[KW_MODE])
+		sdict['Texp'].append(hdr[KW_EXPTIME])
+		sdict['airmass'].append(hdr[KW_AIRMASS])
+		sdict['seeing'].append(hdr[KW_SEEING])
+		sdict['EXTSN059'].append(hdr[KW_EXTSN059])
+
+		# loop around each order
+		for order_num in range(nbo):
+			# ----------------------------------------------------------------------
+			# get echelle order
+			echelle_order = hdr[f'WAVEEC{order_num:02d}']
+			# print value
+			if PRINT_ECHELLE_ORDERS is None:
+				print_order = True
+			elif echelle_order in PRINT_ECHELLE_ORDERS:
+				print_order = True
+			else:
+				print_order = False
+			# skip all orders we don't want to print
+			if not print_order:
+				continue
+			# ----------------------------------------------------------------------
+			# get central point
+			cent = nbxpix // 2
+			lower = cent - WIDTH
+			upper = cent + WIDTH
+			# get cut down range
+			measure_data = data[order_num][lower:upper]
+			# ----------------------------------------------------------------------
+			# measure SNR
+			with warnings.catch_warnings(record=True) as _:
+				sout = measure_snr(measure_data, order_num, echelle_order)
+			# ----------------------------------------------------------------------
+			print(f'EXT[{order_num}]  ECHELLE[{echelle_order}] '
+			      f'SNR: {sout["SNR"]:.4f}   MED: {sout["MED"]:.4f}\n\n')
+			# ----------------------------------------------------------------------
+			# add keys
+			snr_key = f'SNR[{echelle_order}]'
+			med_key = f'MED[{echelle_order}]'
+			noise_key = f'NOISE[{echelle_order}]'
+			rms_key  = f'RMS[{echelle_order}]'
+			# ----------------------------------------------------------------------
+			if snr_key not in sdict:
+				sdict[snr_key] = [sout['SNR']]
+				sdict[med_key] = [sout['MED']]
+				sdict[noise_key] = [sout['NOISE']]
+				sdict[rms_key] = [sout['RMS']]
+			else:
+				sdict[snr_key] += [sout['SNR']]
+				sdict[med_key] += [sout['MED']]
+				sdict[noise_key] += [sout['NOISE']]
+				sdict[rms_key] += [sout['RMS']]
+	# ------------------------------------------------------------------------------
+	# save to disk
+	if len(files) > 0:
+
+		if len(np.unique(sdict['mode'])) == 1:
+			table_ext = sdict['mode'][0]
+			# update filenames
+			OUTTABLE_CSV = OUTTABLE_CSV.replace('.csv', table_ext + '.csv')
+			OUTTABLE_FITS = OUTTABLE_FITS.replace('.fits', table_ext + '.fits')
+			OUTTABLE_TXT = OUTTABLE_TXT.replace('.txt', table_ext + '.txt')
+		# convert sdict to table
+		table = Table(sdict)
+		# save to disk
+		print(f'Saving to {OUTTABLE_CSV}')
+		table.write(OUTTABLE_CSV, format='csv', overwrite=True)
+		print(f'Saving to {OUTTABLE_FITS}')
+		table.write(OUTTABLE_FITS, format='fits', overwrite=True)
+		print(f'Saving to {OUTTABLE_TXT}')
+		table.write(OUTTABLE_TXT, format='ascii.fixed_width', overwrite=True)
 
 # =============================================================================
 # End of code
