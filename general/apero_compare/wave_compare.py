@@ -10,21 +10,12 @@ Created on 2022-10-28 at 11:42
 @author: cook
 """
 import os
-
-import matplotlib.pyplot as plt
-import numpy as np
-from astropy.io import fits
-
-
-# =============================================================================
-# Define variables
-# =============================================================================
-import os
 from typing import List
 import itertools
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy.io import fits
+from astropy import constants
 
 
 # =============================================================================
@@ -61,11 +52,14 @@ has_face = ['o', 's', '^', 'd', 'v']
 # objects to consider
 OBJECTS = ['GL699']
 # file suffix to identify file
-FILE_SUFFIX = 'loco_AB.fits'
+FILE_SUFFIX = 'wave_night_AB.fits'
 # plotting parameters
 N_X_POINTS = 4
 FIGSHOW = True
 FIGNAME = None
+# get speed of light
+speed_of_light = constants.c.value
+
 
 # =============================================================================
 # Define functions
@@ -81,7 +75,7 @@ def get_files(path: str) -> List[str]:
 
 
 
-def loco_plot(lfiles):
+def wave_plot(wfiles):
     # get the number of plots if we want a square grid
     indices = int(np.ceil(np.sqrt(N_X_POINTS)))
     # get the positions of each plot
@@ -89,82 +83,79 @@ def loco_plot(lfiles):
     # get the number of columns and rows in plot
     cols, rows = indices, int(np.ceil(N_X_POINTS / indices))
     # deal with fibers
-    if lfiles[REF_NAME].endswith('AB.fits'):
+    if wfiles[REF_NAME].endswith('AB.fits'):
         fibers = dict(A=0, B=1)
     else:
         fibers = dict(C=None)
     # get the reference data
-    data_ref = fits.getdata(lfiles[REF_NAME])
+    data_ref = fits.getdata(wfiles[REF_NAME])
     # get the x pixel positions to plot at
     xpixels = np.linspace(0, data_ref.shape[1] - 1, N_X_POINTS, dtype=int)
 
     # -------------------------------------------------------------------------
-    # loop around each fiber
-    for fiber in fibers:
-        # get the frame to plot on
-        plt.close()
-        fig, frames = plt.subplots(ncols=cols, nrows=rows,
-                                   figsize=(5 * cols, 5 * rows))
-        # loop round each file
-        for name_cmp in lfiles:
-            # don't compare ref_name to ref_name
-            if name_cmp == REF_NAME:
-                continue
-            print(f'Plotting {REF_NAME} - {name_cmp}')
-            # get the comparison data
-            data_cmp = fits.getdata(lfiles[name_cmp])
-            if fibers[fiber] == 0:
-                pdata1 = data_ref[0::2]
-                pdata2 = data_cmp[0::2]
-            elif fibers[fiber] == 1:
-                pdata1 = data_ref[1::2]
-                pdata2 = data_cmp[1::2]
-            else:
-                pdata1 = data_ref
-                pdata2 = data_cmp
 
-            if MARKERS[name_cmp] in has_face:
-                pkwargs = dict(marker=MARKERS[name_cmp], markerfacecolor='None',
-                               markeredgecolor=COLORS[name_cmp], ls='None')
-            else:
-                pkwargs = dict(marker=MARKERS[name_cmp], color=COLORS[name_cmp],
-                               ls='None')
+    # get the frame to plot on
+    plt.close()
+    fig, frames = plt.subplots(ncols=cols, nrows=rows,
+                               figsize=(5 * cols, 5 * rows))
+    # loop round each file
+    for name_cmp in wfiles:
+        # don't compare ref_name to ref_name
+        if name_cmp == REF_NAME:
+            continue
+        print(f'\nPlotting {REF_NAME} - {name_cmp}')
+        # get the comparison data
+        data_cmp = fits.getdata(wfiles[name_cmp])
 
-            # loop around x pixel positions
-            for it, xpixel in enumerate(xpixels):
-                # deal with fibers (AB means we have to get A and B)
-                # C is easier
-                frame = frames[graph_pos[it]]
-                diff = pdata1[:, xpixel]-pdata2[:, xpixel]
-                rmsdiff = np.nanstd(diff)
-                # plot fiber
-                frame.plot(np.arange(pdata1.shape[0]), diff,
-                           label=f'{REF_NAME}-{name_cmp}', **pkwargs)
+        pdata1 = data_ref
+        pdata2 = data_cmp
 
-                print(f'RMS[{fiber}][{xpixel}]: {rmsdiff}')
+        if MARKERS[name_cmp] in has_face:
+            pkwargs = dict(marker=MARKERS[name_cmp], markerfacecolor='None',
+                           markeredgecolor=COLORS[name_cmp], ls='None')
+        else:
+            pkwargs = dict(marker=MARKERS[name_cmp], color=COLORS[name_cmp],
+                           ls='None')
 
         # loop around x pixel positions
         for it, xpixel in enumerate(xpixels):
-            # get the frame to plot on
+            # deal with fibers (AB means we have to get A and B)
+            # C is easier
             frame = frames[graph_pos[it]]
-            frame.set(xlabel='Order', ylabel=r'$\Delta$ Y pixel',
-                      title=f'X pixel = {xpixel}')
-            frame.legend(loc=0)
+            ratio = pdata1[:, xpixel] / pdata2[:, xpixel]
+            rms_ratio = np.nanstd(ratio)
 
-        for it in range(N_X_POINTS, frames.size):
-            frame = frames[graph_pos[it]]
-            frame.axis('off')
+            value = (1 - ratio) * speed_of_light
+            rms_value = rms_ratio * speed_of_light
 
-        plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05,
-                            top=0.95, hspace=0.2, wspace=0.2)
-        plt.suptitle(os.path.basename(lfiles[REF_NAME]) + f' FIBER = {fiber}')
-        if FIGNAME is not None:
-            print(f'Saved to: {FIGNAME}')
-            plt.savefig(FIGNAME)
-        if FIGSHOW:
-            print(f'Showing plot {FIGNAME}')
-            plt.show()
-        plt.close()
+            # plot fiber
+            frame.plot(np.arange(pdata1.shape[0]), value,
+                       label=f'{REF_NAME}-{name_cmp}', **pkwargs)
+
+            print(f'RMS[{xpixel}]: {rms_value}')
+
+    # loop around x pixel positions
+    for it, xpixel in enumerate(xpixels):
+        # get the frame to plot on
+        frame = frames[graph_pos[it]]
+        frame.set(xlabel='Order', ylabel=r'$\Delta$wave  m/s',
+                  title=f'X pixel = {xpixel}')
+        frame.legend(loc=0)
+
+    for it in range(N_X_POINTS, frames.size):
+        frame = frames[graph_pos[it]]
+        frame.axis('off')
+
+    plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05,
+                        top=0.9, hspace=0.2, wspace=0.2)
+    plt.suptitle(os.path.basename(wfiles[REF_NAME]))
+    if FIGNAME is not None:
+        print(f'Saved to: {FIGNAME}')
+        plt.savefig(FIGNAME)
+    if FIGSHOW:
+        print(f'Showing plot {FIGNAME}')
+        plt.show()
+    plt.close()
 
 
 # =============================================================================
@@ -213,7 +204,7 @@ if __name__ == "__main__":
             valid_files[name] = os.path.join(paths[name], valid_basename)
 
         # plot loco plot
-        loco_plot(valid_files)
+        wave_plot(valid_files)
 
 
 

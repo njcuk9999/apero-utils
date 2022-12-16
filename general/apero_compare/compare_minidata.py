@@ -23,14 +23,18 @@ from tqdm import tqdm
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = 'md2.Udem.Jupiter'
-PATH1 = '/scratch2/spirou/drs-data/minidata2_07XXX_extmem'
-NAME2 = 'md2.Neil.Home'
-PATH2 = '/scratch2/spirou/drs-data/minidata2_neilhome'
+NAME1 = 'spirou@rali'
+NAME2 = 'cook@jupiter'
+NAME3 = 'cook@nb19'
+# Define which reduction is the reference reduction
+REF_NAME = str(NAME1)
 # -----------------------------------------------------------------------------
-# should be raw/{obs_dir}  tmp/{obs_dir}   red/{obs_dir}   calib or tellu
-COMPARISON_DIR1 = 'calibDB'
-COMPARISON_DIR2 = 'calib'
+# just add another entry here
+#  i.e. paths[NAME3] = path/to/reduced/dir
+paths = dict()
+paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_rali/red'
+paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced'
+paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_nb19/red'
 # -----------------------------------------------------------------------------
 E2DS_SUFFICES = ['_AB.fits', '_A.fits', '_B.fits', '_C.fits']
 NORDERS = 49
@@ -207,88 +211,71 @@ def id_image_kind(filename: str):
     return 'pp'
 
 
-def loco_plot(name1, name2, filename1, filename2):
-    title = os.path.basename(filename1)
-
-    if filename1.endswith('AB.fits'):
-        fibers = dict(A=0, B=1)
-    else:
-        fibers = dict(C=None)
-    data1 = fits.getdata(filename1)
-    data2 = fits.getdata(filename2)
-
-    xpixels = np.linspace(0, data1.shape[1] - 1, 4, dtype=int)
-    graph_pos = [(0, 0), (0, 1), (1, 0), (1, 1)]
-    plt.close()
-    fig, frames = plt.subplots(ncols=2, nrows=2)
-    for it, xpixel in enumerate(xpixels):
-        frame = frames[graph_pos[it]]
-        # deal with fibers (AB means we have to get A and B) - C is easier
-        for fiber in fibers:
-            if fibers[fiber] == 0:
-                pdata1 = data1[0::2]
-                pdata2 = data2[0::2]
-            elif fibers[fiber] == 1:
-                pdata1 = data1[1::2]
-                pdata2 = data2[1::2]
-            else:
-                pdata1 = data1
-                pdata2 = data2
-            # plot fiber
-            frame.plot(np.arange(pdata1.shape[0]),
-                       pdata1[:, xpixel] - pdata2[:, xpixel],
-                       marker='o', ls='None', label=fiber)
-        frame.set(xlabel='Order', ylabel=f'Y pixel {name1} - {name2}',
-                  title=f'X pixel = {xpixel}')
-        frame.legend(loc=0)
-
-    plt.suptitle(title)
-    plt.show()
-    plt.close()
-
-
 # =============================================================================
 # Start of code
 # =============================================================================
 # Main code here
 if __name__ == "__main__":
-    # -------------------------------------------------------------------------
-    # get all fits files
-    files1 = get_files(os.path.join(PATH1, COMPARISON_DIR1))
-    files2 = get_files(os.path.join(PATH2, COMPARISON_DIR2))
 
+    # storage
+    exact_files = dict()
+    non_exact_files = dict()
+    failed_files = dict()
     # -------------------------------------------------------------------------
-    # storage for linked files
-    linked_files: List[Comparison] = []
-    # get link files
-    print('Linking all files')
-    for filename1 in tqdm(files1):
-        for filename2 in files2:
-            if os.path.basename(filename1) == os.path.basename(filename2):
-                linked_files.append(Comparison(NAME1, NAME2, filename1,
-                                               filename2))
+    for name in paths:
+        # skip ref path
+        if name == REF_NAME:
+            continue
+        # set names
+        name1 = REF_NAME
+        name2 = name
+        # get paths
+        path1 = paths[name1]
+        path2 = paths[name2]
+        # get all fits files
+        files1 = get_files(path1)
+        files2 = get_files(path2)
+        # ---------------------------------------------------------------------
+        # storage for linked files
+        linked_files: List[Comparison] = []
+        # get link files
+        print('Linking all files')
+        for filename1 in tqdm(files1):
+            for filename2 in files2:
+                if os.path.basename(filename1) == os.path.basename(filename2):
+                    linked_files.append(Comparison(name1, name2, filename1,
+                                                   filename2))
 
-    # -------------------------------------------------------------------------
-    # find exact matches
-    exact_matches = []
-    print('Finding exact matches')
-    for it in tqdm(range(len(linked_files))):
-        linked_file = linked_files[it]
-        linked_file.comparison()
-        if linked_file.exact:
-            exact_matches.append(it)
-    msg = '\t Found {0} exact matches. {1} files did not match exactly'
-    margs = [len(exact_matches), len(linked_files) - len(exact_matches)]
-    print(msg.format(*margs))
-    # -------------------------------------------------------------------------
-    # only keep those that don't match
-    exact_files = np.array(linked_files)[np.array(exact_matches)]
-    non_exact_files = np.array(linked_files)[~np.in1d(linked_files, exact_files)]
+        # ---------------------------------------------------------------------
+        # find exact matches
+        exact_matches = []
+        print('Finding exact matches')
+        for it in tqdm(range(len(linked_files))):
+            try:
+                linked_file = linked_files[it]
+                linked_file.comparison()
+                if linked_file.exact:
+                    exact_matches.append(it)
+            except Exception as _:
+                if name in failed_files:
+                    failed_files[name].append(linked_files[it])
+                else:
+                    failed_files[name] = [linked_files[it]]
+        msg = '\t Found {0} exact matches. {1} files did not match exactly'
+        margs = [len(exact_matches), len(linked_files) - len(exact_matches)]
+        print(msg.format(*margs))
+        # ---------------------------------------------------------------------
+        # only keep those that don't match
+        exact_files[name] = np.array(linked_files)[np.array(exact_matches)]
+        non_exact_files[name] = np.array(linked_files)[~np.in1d(np.arange(len(linked_files)), exact_files)]
 
-    for it, cfile in enumerate(non_exact_files):
-        if 'loco' in cfile.basename:
-            print(it, cfile.basename)
-            loco_plot(NAME1, NAME2, cfile.filename1, cfile.filename2)
+
+
+
+
+
+
+
 
 # =============================================================================
 # End of code
