@@ -52,7 +52,7 @@ has_face = ['o', 's', '^', 'd', 'v']
 OBJECTS = ['GL699']
 # define rv key
 RV_KEY = 'RV_OBJ'
-
+XAXIS = 'OBSDIR'
 
 # =============================================================================
 # Define functions
@@ -106,12 +106,14 @@ if __name__ == "__main__":
     # ge bjd vs rv for all objects
     bjds = dict()
     rvs = dict()
+    obsdirs = dict()
 
     # loop around reductions
     for it, name in enumerate(paths):
         # define a list per reduction to store bjds and rvs
         bjds[name] = []
         rvs[name] = []
+        obsdirs[name] = []
         # loop around valid basenames
         for valid_basename in valid_basenames:
             try:
@@ -122,15 +124,17 @@ if __name__ == "__main__":
                 print(f'\tError {type(e)}: {str(e)}')
                 bjds[name].append(np.nan)
                 rvs[name].append(np.nan)
+                obsdirs[name].append(np.nan)
                 continue
             # filter out unwanted object types
             if hdr['OBJECT'].upper() not in OBJECTS:
                 bjds[name].append(np.nan)
                 rvs[name].append(np.nan)
+                obsdirs[name].append(np.nan)
             else:
                 bjds[name].append(hdr['BJD'])
                 rvs[name].append(hdr['RV_OBJ'] * 1000)
-
+                obsdirs[name].append(os.path.dirname(valid_basename))
     # -------------------------------------------------------------------------
     # keep track of nans
     nanmask = np.zeros(len(valid_basenames), dtype=bool)
@@ -148,6 +152,14 @@ if __name__ == "__main__":
 
     for name in paths:
 
+        if XAXIS == 'BJD':
+            xvector = bjds
+            xlabel = 'BJD'
+        else:
+            xvector = obsdirs
+            xlabel ='OBS DIR'
+
+
         if MARKERS[name] in has_face:
             pkwargs = dict(marker=MARKERS[name], markerfacecolor='None',
                            markeredgecolor=COLORS[name], ls='None')
@@ -155,7 +167,7 @@ if __name__ == "__main__":
             pkwargs = dict(marker=MARKERS[name], color=COLORS[name],
                            ls='None')
 
-        frames[0].plot(bjds[name], rvs[name], label=name, **pkwargs)
+        frames[0].plot(xvector[name], rvs[name], label=name, **pkwargs)
 
         if name == REF_NAME:
             continue
@@ -163,16 +175,17 @@ if __name__ == "__main__":
         diff = rvs[REF_NAME] - rvs[name]
         diffrms = np.nanstd(diff)
 
-        frames[1].plot(bjds[REF_NAME], diff, label=f'{REF_NAME}-{name}',
+        frames[1].plot(xvector[REF_NAME], diff, label=f'{REF_NAME}-{name}',
                        **pkwargs)
 
         print(f'rms of difference {REF_NAME}-{name} = {diffrms} m/s')
 
     frames[0].legend(loc=0)
-    frames[0].set(xlabel='BJD', ylabel='RV m/s')
+
+    frames[0].set(xlabel=xlabel, ylabel='RV m/s')
     plt.suptitle(f'Difference {RV_KEY} {OBJECTS}')
     frames[1].legend(loc=0)
-    frames[1].set(xlabel='BJD', ylabel='$\Delta$RV m/s')
+    frames[1].set(xlabel=xlabel, ylabel='$\Delta$RV m/s')
     plt.show()
     plt.close()
 

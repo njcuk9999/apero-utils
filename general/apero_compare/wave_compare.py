@@ -148,7 +148,7 @@ def wave_plot(wfiles):
 
     plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05,
                         top=0.9, hspace=0.2, wspace=0.2)
-    plt.suptitle(os.path.basename(wfiles[REF_NAME]))
+    plt.suptitle(wfiles[REF_NAME])
     if FIGNAME is not None:
         print(f'Saved to: {FIGNAME}')
         plt.savefig(FIGNAME)

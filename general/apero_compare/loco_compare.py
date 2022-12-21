@@ -157,7 +157,7 @@ def loco_plot(lfiles):
 
         plt.subplots_adjust(left=0.05, right=0.95, bottom=0.05,
                             top=0.95, hspace=0.2, wspace=0.2)
-        plt.suptitle(os.path.basename(lfiles[REF_NAME]) + f' FIBER = {fiber}')
+        plt.suptitle(lfiles[REF_NAME] + f' FIBER = {fiber}')
         if FIGNAME is not None:
             print(f'Saved to: {FIGNAME}')
             plt.savefig(FIGNAME)
