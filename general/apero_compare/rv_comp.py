@@ -23,6 +23,7 @@ from astropy.io import fits
 NAME1 = 'spirou@rali'
 NAME2 = 'cook@jupiter'
 NAME3 = 'cook@nb19'
+NAME4 = 'cook@home'
 # Define which reduction is the reference reduction
 REF_NAME = str(NAME1)
 # -----------------------------------------------------------------------------
@@ -32,19 +33,20 @@ paths = dict()
 paths[NAME1] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_rali/red'
 paths[NAME2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced'
 paths[NAME3] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_nb19/red'
+paths[NAME4] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_home/red'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
 COLORS[NAME1] = 'b'
 COLORS[NAME2] = 'r'
 COLORS[NAME3] = 'g'
-# COLORS[NAME4] = 'orange'
+COLORS[NAME4] = 'orange'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[NAME1] = 'o'
 MARKERS[NAME2] = 's'
 MARKERS[NAME3] = '+'
-# MARKERS[NAME4] = '^'
+MARKERS[NAME4] = '^'
 # markers needing facecolor
 has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------

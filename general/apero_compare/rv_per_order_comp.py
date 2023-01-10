@@ -21,6 +21,7 @@ import matplotlib.pyplot as plt
 name1 = 'spirou@rali'
 name2 = 'cook@jupiter'
 name3 = 'cook@nb19'
+name4 = 'cook@home'
 
 ref_name = 'spirou@rali'
 
@@ -28,12 +29,13 @@ paths = dict()
 paths[name1] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_rali/red/'
 paths[name2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced/'
 paths[name3] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_nb19/red/'
+paths[name4] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_home/red/'
 
-obs_dir = '2020-10-07'
+obs_dir = '2020-08-01'
 
 filestr = '*ccf_gl699_neg*_AB.fits'
 
-DIFF_CCF_ORDER = 48
+DIFF_CCF_ORDER = 22
 # -----------------------------------------------------------------------------
 
 # =============================================================================
