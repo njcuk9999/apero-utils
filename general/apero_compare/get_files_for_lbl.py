@@ -25,16 +25,16 @@ name4 = 'cook@home'
 ref_name = 'spirou@rali'
 
 inpaths = dict()
-inpaths[name1] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_rali/red/'
+inpaths[name1] = '/scratch2/spirou/drs-data/minidata2_2023-01-13_rali/red/'
 inpaths[name2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced/'
-inpaths[name3] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_nb19/red/'
-inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_home/red/'
+inpaths[name3] = '/scratch2/spirou/drs-data/minidata2_2023-01-13_nb19/red/'
+# inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_home/red/'
 
 outpaths = dict()
-outpaths[name1] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_rali/science/'
-outpaths[name2] = '/scratch3/lbl/data/minidata_comp/minidata2_07XXX/science/'
-outpaths[name3] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_nb19/science/'
-outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_home/science/'
+outpaths[name1] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-13_rali/science/'
+outpaths[name2] = '/scratch3/lbl/data/minidata_comp/minidata2_2013-01-13_jupiter/science/'
+outpaths[name3] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-13_nb19/science/'
+#outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_home/science/'
 
 
 objname = 'GL699'
@@ -67,8 +67,12 @@ for name in inpaths:
 			continue
 
 		out_file = os.path.join(out_abspath, os.path.basename(filename))
-		print(f'\tAdding {out_file}')
-		os.symlink(filename, out_file)
+
+		if not os.path.exists(out_file):
+			print(f'\tAdding {out_file}')
+			os.symlink(filename, out_file)
+		else:
+			print(f'\tFound {out_file}')
 
 
 # copy blaze files
@@ -88,5 +92,8 @@ for name in inpaths:
 	# loop around files
 	for filename in files:
 		out_file = os.path.join(out_abspath, os.path.basename(filename))
-		print(f'\tAdding {out_file}')
-		os.symlink(filename, out_file)
+		if not os.path.exists(out_file):
+			print(f'\tAdding {out_file}')
+			os.symlink(filename, out_file)
+		else:
+			print(f'\tFound {out_file}')

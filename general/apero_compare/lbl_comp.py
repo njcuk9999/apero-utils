@@ -33,7 +33,7 @@ paths = dict()
 paths[NAME1] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_rali/lblrdb/'
 paths[NAME2] = '/scratch3/lbl/data/minidata_comp/minidata2_07XXX/lblrdb/'
 paths[NAME3] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_nb19/lblrdb/'
-paths[NAME4] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_home/lblrdb/'
+# paths[NAME4] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_home/lblrdb/'
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
