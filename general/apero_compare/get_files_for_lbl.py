@@ -25,15 +25,15 @@ name4 = 'cook@home'
 ref_name = 'spirou@rali'
 
 inpaths = dict()
-inpaths[name1] = '/scratch2/spirou/drs-data/minidata2_2023-01-13_rali/red/'
+inpaths[name1] = '/scratch2/spirou/drs-data/minidata2_2023-01-17_rali/red/'
 inpaths[name2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced/'
-inpaths[name3] = '/scratch2/spirou/drs-data/minidata2_2023-01-13_nb19/red/'
+inpaths[name3] = '/scratch2/spirou/drs-data/minidata2_2023-01-17_nb19/red/'
 # inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_home/red/'
 
 outpaths = dict()
-outpaths[name1] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-13_rali/science/'
-outpaths[name2] = '/scratch3/lbl/data/minidata_comp/minidata2_2013-01-13_jupiter/science/'
-outpaths[name3] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-13_nb19/science/'
+outpaths[name1] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-17_rali/science/'
+outpaths[name2] = '/scratch3/lbl/data/minidata_comp/minidata2_2013-01-17_jupiter/science/'
+outpaths[name3] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-17_nb19/science/'
 #outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_home/science/'
 
 
