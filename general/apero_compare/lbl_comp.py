@@ -192,11 +192,9 @@ if __name__ == "__main__":
     frames[0].legend(loc=0)
 
     frames[0].set(xlabel=TIME_KEY, ylabel='RV m/s')
-    frames[0].ticklabel_format(useOffset=False)
     plt.suptitle(f'Difference {RV_KEY} {OBJECTS}')
     frames[1].legend(loc=0)
     frames[1].set(xlabel=TIME_KEY, ylabel='$\Delta$RV m/s')
-    frames[1].ticklabel_format(useOffset=False)
     plt.show()
     plt.close()
 
