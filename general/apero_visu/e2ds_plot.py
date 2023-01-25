@@ -25,8 +25,8 @@ if mode == 'HA':
     filename = 'NIRPS_2022-12-03T03_32_41_149'
     wavefile = '/nirps_raw/nirps/apero-data/drs-data/nirps_he_202211/calib/NIRPS_2022-11-25T12_00_56_233_pp_e2dsff_A_wavesol_ref_A.fits'
 else:
-    path = '/nirps_raw/nirps/apero-data/drs-data/nirps_he_202211/red/2022-12-05'
-    filename = 'NIRPS_2022-12-06T08_19_48_184'
+    path = '/nirps_raw/nirps/apero-data/drs-data/nirps_he_202211/red/2022-11-26'
+    filename = 'NIRPS_2022-11-27T03_48_19_600'
     wavefile = '/nirps_raw/nirps/apero-data/drs-data/nirps_ha_202211/calib/NIRPS_2022-11-25T12_24_04_050_pp_e2dsff_A_wavesol_ref_A.fits'
 
 pclean_ext = '_pp_tellu_pclean_A.fits'
@@ -50,6 +50,7 @@ def function1():
 # Main code here
 if __name__ == "__main__":
 
+    hdr = fits.getheader(os.path.join(path, filename + e2ds_ext))
     e2ds = fits.getdata(os.path.join(path, filename + e2ds_ext))
     tcorr = fits.getdata(os.path.join(path, filename + tcorr_ext))
     recon = fits.getdata(os.path.join(path, filename + recon_ext))
@@ -58,6 +59,8 @@ if __name__ == "__main__":
     finite_res = fits.getdata(os.path.join(path, filename + pclean_ext),
                               extname='FINITE_RES')
     wavemap = fits.getdata(wavefile)
+
+    objname = hdr['DRSOBJN']
 
     plt.close()
     fig = plt.figure()
@@ -76,24 +79,25 @@ if __name__ == "__main__":
             label2, label3, label4 = None, None, None
 
         frame1.plot(wavemap[order_num], e2ds[order_num], label=label1a,
-                    color='k', lw=0.5)
+                    color='k', alpha=0.8, lw=0.75)
         frame1.plot(wavemap[order_num], tcorr[order_num], label=label1b,
-                    color='r', lw=0.5)
+                    color='r', alpha=0.8, lw=0.75)
 
         frame2.plot(wavemap[order_num], skycorr_sci[order_num], label=label2,
-                    color='orange')
+                    color='orange', lw=0.75)
 
         frame3.plot(wavemap[order_num], recon[order_num], label=label3,
-                    color='b')
+                    color='b', lw=0.75)
 
         frame4.plot(wavemap[order_num], finite_res[order_num], label=label4,
-                    color='purple')
+                    color='purple', lw=0.75)
 
     frame1.legend(loc=0)
     frame2.legend(loc=0)
     frame3.legend(loc=0)
     frame4.legend(loc=0)
 
+    plt.suptitle(f'{objname}     [{filename}]')
     plt.show()
     plt.close()
 
