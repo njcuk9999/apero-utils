@@ -94,6 +94,7 @@ if __name__ == "__main__":
     frame3.legend(loc=0)
     frame4.legend(loc=0)
 
+
     plt.show()
     plt.close()
 
