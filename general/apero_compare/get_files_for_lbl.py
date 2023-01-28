@@ -20,7 +20,7 @@ import os
 name1 = 'spirou@rali'
 name2 = 'cook@jupiter'
 name3 = 'cook@nb19'
-name4 = 'cook@home'
+name4 = 'newworlds'
 
 ref_name = 'spirou@rali'
 
@@ -28,13 +28,13 @@ inpaths = dict()
 inpaths[name1] = '/scratch2/spirou/drs-data/minidata2_2023-01-23_rali/red/'
 inpaths[name2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced/'
 inpaths[name3] = '/scratch2/spirou/drs-data/minidata2_2023-01-23_nb19/red/'
-# inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_2022-12-15_home/red/'
+inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_07273_newworld/red/'
 
 outpaths = dict()
 outpaths[name1] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-23_rali/science/'
 outpaths[name2] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-23_jupiter/science/'
 outpaths[name3] = '/scratch3/lbl/data/minidata_comp/minidata2_2023-01-23_nb19/science/'
-#outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_2022-12-15_home/science/'
+outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_07273_newworld/science/'
 
 
 objname = 'GL699'
