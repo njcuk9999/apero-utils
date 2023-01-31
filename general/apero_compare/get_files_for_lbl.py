@@ -28,13 +28,13 @@ inpaths = dict()
 inpaths[name1] = '/scratch2/spirou/drs-data/mindata2_07275_rali/red/'
 inpaths[name2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced/'
 inpaths[name3] = '/scratch2/spirou/drs-data/mindata2_07275_nb19/red/'
-# inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_07273_newworld/red/'
+inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_07275_newworld/red/'
 
 outpaths = dict()
 outpaths[name1] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_rali/science/'
 outpaths[name2] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter/science/'
 outpaths[name3] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_nb19/science/'
-outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_07273_newworld/science/'
+outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_newworld/science/'
 
 
 objname = 'GL699'
