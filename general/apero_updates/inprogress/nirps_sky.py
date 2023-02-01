@@ -101,6 +101,8 @@ if __name__ == "__main__":
     waveref2 = waveref.ravel()
     # get median sky spectrum, only used for identification of lines
     v = np.nanmedian(all_sky_map_A, axis=0)
+
+    # -------------------------------------------------------------------------
     v[~np.isfinite(v)] = 0
     # find positive excursions in sky signal
     nsig = v / sigma(v)
@@ -132,6 +134,7 @@ if __name__ == "__main__":
         wave_max = np.max(magic_grid[reg_id_magic == ureg])
         g = (waveref2 > wave_min) * (waveref2 < wave_max)
         reg_id[g] = ureg
+    # -------------------------------------------------------------------------
     # plots that you can remove, for debug
     vv = v.reshape(waveref.shape)
     for iord in range(waveref.shape[0]):
@@ -143,6 +146,8 @@ if __name__ == "__main__":
         gg = reg_id == reg
         plt.text(np.mean(waveref2[gg]), 0, '{}'.format(reg))
     plt.show()
+    # -------------------------------------------------------------------------
+
     fig, ax = plt.subplots(nrows=2, ncols=1)
     # construct a model with all lines normalized to a median of 1 in fiber A
     model_A = np.zeros_like(v)
