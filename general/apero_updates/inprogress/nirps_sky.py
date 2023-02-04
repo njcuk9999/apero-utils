@@ -189,52 +189,52 @@ if __name__ == "__main__":
     for ii in tqdm(np.unique(reg_id)[1:]):
         gg = reg_id.ravel() == ii
     
-    all_A = []
-    all_B = []
-    for i in range(all_sky_map_B.shape[0]):
-        tmp_A = all_sky_map_A[i][gg]
-        tmp_B = all_sky_map_B[i][gg]
+        all_A = []
+        all_B = []
+        for i in range(all_sky_map_B.shape[0]):
+            tmp_A = all_sky_map_A[i][gg]
+            tmp_B = all_sky_map_B[i][gg]
+
+            amp = np.nansum(tmp_A)
+            all_A = np.append(all_A, tmp_A / amp)
+            all_B = np.append(all_B, tmp_B / amp)
     
-    amp = np.nansum(tmp_A)
-    all_A = np.append(all_A, tmp_A / amp)
-    all_B = np.append(all_B, tmp_B / amp)
+            if doplot:
+                ax[0].plot(waveref2[gg], tmp_A / amp, alpha=0.5, color='orange')
+                ax[1].plot(waveref2[gg], tmp_B / amp, alpha=0.5, color='orange')
+
+        med_A = np.nanmedian(all_A.reshape(Nbin, len(tmp_A)), axis=0)
+        med_B = np.nanmedian(all_B.reshape(Nbin, len(tmp_B)), axis=0)
     
-    if doplot:
-        ax[0].plot(waveref2[gg], tmp_A / amp, alpha=0.5, color='orange')
-        ax[1].plot(waveref2[gg], tmp_B / amp, alpha=0.5, color='orange')
-    
-    med_A = np.nanmedian(all_A.reshape(Nbin, len(tmp_A)), axis=0)
-    med_B = np.nanmedian(all_B.reshape(Nbin, len(tmp_B)), axis=0)
-    
-    try:
-        dv = (waveref2[gg] / np.mean(waveref2[gg]) - 1) * (constants.c / 1e3)
-        # get the FWHM of the line
-        p0 = [0, np.max(med_A), 4.0, 2.0, 0.0]
-        fit, cov = curve_fit(supergauss, dv, med_A, p0=p0)
-        fwhm_all = np.append(fwhm_all, fit[2])
-        xpix_all = np.append(xpix_all, np.mean(xpix[gg]))
-        nsig = fit[1] / np.nanstd(med_A - supergauss(dv, *fit))
-        nsig_all = np.append(nsig_all, nsig)
-    except:
-        _ = True
-    
-    if ii == 145:
-        doplot = True
-    else:
-        doplot = False
-    if doplot:
-        fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
-    
-    
-    if doplot:
-        ax[0].plot(waveref2[gg], med_A, color='blue')
-        ax[1].plot(waveref2[gg], med_B, color='blue')
-    
-    model_A[gg] = med_A
-    model_B[gg] = med_B
-    if doplot:
-        plt.show()
-    
+        try:
+            dv = (waveref2[gg] / np.mean(waveref2[gg]) - 1) * (constants.c / 1e3)
+            # get the FWHM of the line
+            p0 = [0, np.max(med_A), 4.0, 2.0, 0.0]
+            fit, cov = curve_fit(supergauss, dv, med_A, p0=p0)
+            fwhm_all = np.append(fwhm_all, fit[2])
+            xpix_all = np.append(xpix_all, np.mean(xpix[gg]))
+            nsig = fit[1] / np.nanstd(med_A - supergauss(dv, *fit))
+            nsig_all = np.append(nsig_all, nsig)
+        except:
+            _ = True
+
+        if ii == 145:
+            doplot = True
+        else:
+            doplot = False
+        if doplot:
+            fig, ax = plt.subplots(nrows=2, ncols=1, sharex=True)
+
+
+        if doplot:
+            ax[0].plot(waveref2[gg], med_A, color='blue')
+            ax[1].plot(waveref2[gg], med_B, color='blue')
+
+        model_A[gg] = med_A
+        model_B[gg] = med_B
+        if doplot:
+            plt.show()
+
     keep = nsig_all > 5
     xpix_all = xpix_all[keep]
     fwhm_all = fwhm_all[keep]
