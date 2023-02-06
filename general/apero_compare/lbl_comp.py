@@ -26,6 +26,11 @@ NAME3 = 'cook@nb19'
 NAME4 = 'newworlds'
 NAME5 = 'lam'
 NAME6 = 'halau'
+
+# This is a hack but just to test without certain points
+REJECT_DATE_STARTS = [59063.7786]
+REJECT_DATE_ENDS = [59063.7790]
+
 # Define which reduction is the reference reduction
 REF_NAME = str(NAME1)
 # -----------------------------------------------------------------------------
@@ -36,7 +41,7 @@ paths[NAME1] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_nb19/lblrdb/'
 paths[NAME2] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter/lblrdb/'
 paths[NAME3] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_rali/lblrdb/'
 paths[NAME4] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_newworld/lblrdb/'
-# paths[NAME5] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_lam/lblrdb/'
+paths[NAME5] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_lam/lblrdb/'
 paths[NAME6] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/lblrdb/'
 
 # -----------------------------------------------------------------------------
@@ -166,7 +171,23 @@ if __name__ == "__main__":
         nanmask |= ~np.isfinite(times[name])
         nanmask |= ~np.isfinite(rvs[name])
         nanmask |= ~np.isfinite(ervs[name])
+    # -------------------------------------------------------------------------
+    # reject points
+    if len(REJECT_DATE_ENDS) > 0:
 
+        reject_mask = np.zeros_like(times[REF_NAME], dtype=bool)
+        # convert to numpy arrays and count nanrows
+        for name in paths:
+            for point in range(len(REJECT_DATE_ENDS)):
+                point_mask = times[name] > REJECT_DATE_STARTS[point]
+                point_mask &= times[name] < REJECT_DATE_ENDS[point]
+
+                reject_mask |= point_mask
+        # apply mask
+        for name in paths:
+            times[name] = times[name][~reject_mask]
+            rvs[name] = rvs[name][~reject_mask]
+            ervs[name] = ervs[name][~reject_mask]
     # -------------------------------------------------------------------------
     # plot
     fig, frames = plt.subplots(ncols=1, nrows=2)
