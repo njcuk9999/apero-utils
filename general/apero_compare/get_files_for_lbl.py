@@ -21,6 +21,8 @@ name1 = 'spirou@rali'
 name2 = 'cook@jupiter'
 name3 = 'cook@nb19'
 name4 = 'newworlds'
+name5 = 'lam'
+name6 = 'halau'
 
 ref_name = 'spirou@rali'
 
@@ -29,13 +31,16 @@ inpaths[name1] = '/scratch2/spirou/drs-data/mindata2_07275_rali/red/'
 inpaths[name2] = '/scratch2/spirou/drs-data/minidata2_07XXX/reduced/'
 inpaths[name3] = '/scratch2/spirou/drs-data/mindata2_07275_nb19/red/'
 inpaths[name4] = '/scratch2/spirou/drs-data/minidata2_07275_newworld/red/'
+inpaths[name5] = '/scratch2/spirou/drs-data/minidata2_07275_lam/red/'
+inpaths[name6] = '/scratch2/spirou/drs-data/minidata2_07275_halau/red/'
 
 outpaths = dict()
 outpaths[name1] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_rali/science/'
 outpaths[name2] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter/science/'
 outpaths[name3] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_nb19/science/'
 outpaths[name4] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_newworld/science/'
-
+outpaths[name5] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_lam/science/'
+outpaths[name6] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/rscienceed/'
 
 objname = 'GL699'
 
