@@ -61,8 +61,8 @@ else:
 # define the night of data we want to use
 NIGHT_ALL = dict()
 NIGHT_ALL['SPIROU'] = '2020-08-31'
-NIGHT_ALL['NIRPS_HA'] = '2022-06-17'
-NIGHT_ALL['NIRPS_HE'] = '2022-06-11'
+NIGHT_ALL['NIRPS_HA'] = '2023-01-20'
+NIGHT_ALL['NIRPS_HE'] = '2023-01-20'
 
 uname = os.environ.get('USERNAME', None)
 if uname is None:
@@ -90,7 +90,7 @@ BANDS['$K_{s}$'] = [19577.92 / 10, 23431.05 / 10]  # MKO
 
 # INSTRUMENT = 'SPIROU'
 # INSTRUMENT = 'NIRPS_HA'
-INSTRUMENT = 'NIRPS_HE'
+INSTRUMENT = 'NIRPS_HA'
 
 try:
     NIGHT = NIGHT_ALL[INSTRUMENT]
@@ -112,7 +112,7 @@ PLOTS = []
 # PLOTS.append('BACKMAP')
 # PLOTS.append('FLATBLAZE')
 # PLOTS.append('E2DS')
-# PLOTS.append('S1D')
+PLOTS.append('S1D')
 # PLOTS.append('TCORR')
 # PLOTS.append('TELLU_COV')
 # PLOTS.append('THERM')
@@ -120,7 +120,7 @@ PLOTS = []
 
 # Telluric paper
 # PLOTS.append('AIRMASS')
-PLOTS.append('TELLU_CCF')
+# PLOTS.append('TELLU_CCF')
 
 
 # =============================================================================
@@ -131,10 +131,24 @@ PLOTS.append('TELLU_CCF')
 # SIZE_GRID
 # =============================================================================
 def plot_size_grid(params):
-    if INSTRUMENT == 'SPIROU':
+    if params['INSTRUMENT'] == 'SPIROU':
         odocode = '2510376o'
         hashcode = '2510376o'
-        out_file = 'size_grid.pdf'
+        out_file = 'size_grid_spirou.pdf'
+        fiber = 'AB'
+        wavelim = [950, 2500]
+    elif params['INSTRUMENT'] == 'NIRPS_HA':
+        odocode = 'NIRPS_2023-01-21T08_49_09_968'
+        hashcode = 'NIRPS_2023-01-21T08_49_09_968'
+        out_file = 'size_grid_nirps_ha.pdf'
+        fiber = 'A'
+        wavelim = [965, 1947]
+    elif params['INSTRUMENT'] == 'NIRPS_HE':
+        odocode = 'NIRPS_2023-01-21T08_29_39_506'
+        hashcode = 'NIRPS_2023-01-21T08_29_39_506'
+        out_file = 'size_grid_nirps_he.pdf'
+        fiber = 'A'
+        wavelim = [965, 1947]
     else:
         return
     # get file paths
@@ -143,11 +157,12 @@ def plot_size_grid(params):
     pp_file = os.path.join(params['DRS_DATA_WORKING'], NIGHT,
                            '{0}_pp.fits'.format(hashcode))
     e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                             '{0}_pp_e2dsff_AB.fits'.format(hashcode))
+                             '{0}_pp_e2dsff_{1}.fits'.format(hashcode, fiber))
     s1d_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                            '{0}_pp_s1d_v_AB.fits'.format(hashcode))
+                            '{0}_pp_s1d_v_{1}.fits'.format(hashcode, fiber))
     ts1d_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                             '{0}_pp_s1d_w_tcorr_AB.fits'.format(hashcode))
+                             '{0}_pp_s1d_w_tcorr_{1}.fits'.format(hashcode,
+                                                                  fiber))
     # get
     print('Loading raw image')
     raw_image = fits.getdata(raw_file)
@@ -187,34 +202,37 @@ def plot_size_grid(params):
     # top left raw image
     _ = _norm_image(raw_image, frame1, cmap)
     # add labels
-    frame1.set(xlim=(0, 4096), ylim=(0, 4096))
+    frame1.set(xlim=(0, raw_image.shape[1]), ylim=(0, raw_image.shape[0]))
     frame1.tick_params(axis='both', which='both', bottom=False, top=False,
                        left=False, right=False, labelleft=False,
                        labelbottom=False)
-    frame1.set_title('raw (4096x4096)', loc='left',
+    frame1.set_title('raw ({0}x{1})'.format(*raw_image.shape), loc='left',
                      x=0.05, y=0.95, pad=-14,
                      color='black', backgroundcolor='white')
     # -------------------------------------------------------------------------
     # middle right: flipped + resized image
     _ = _norm_image(image3, frame2, cmap)
     # add labels
-    frame2.set(xlim=(-4, 4092), ylim=(0 - 250, 4096 - 250))
+    xlim = [-params['IMAGE_X_LOW'], params['IMAGE_X_HIGH']]
+    ylim = [-params['IMAGE_Y_LOW'], raw_image.shape[0] - params['IMAGE_Y_LOW']]
+    frame2.set(xlim=xlim, ylim=ylim)
     frame2.tick_params(axis='both', which='both', bottom=False, top=False,
                        left=False, right=False, labelleft=False,
                        labelbottom=False)
-    frame2.set_title('pre-processed, flipped, resized (3100x4088)', loc='left',
-                     x=0.05, y=0.95, pad=-14,
+    frame2.set_title('pre-processed, flipped, resized '
+                     '({0}x{1})'.format(*image3.shape),
+                     loc='left', x=0.05, y=0.95, pad=-14,
                      color='black', backgroundcolor='white')
     # -------------------------------------------------------------------------
     # bottom: e2ds
     _ = _norm_image(e2ds_image, frame3, cmap)
     # add labels
-    frame3.set(xlim=(0, 4088), ylim=(0, 49))
+    frame3.set(xlim=(0, e2ds_image.shape[1]), ylim=(0, e2ds_image.shape[0]))
     frame3.tick_params(axis='both', which='both', bottom=False, top=False,
                        left=False, right=False, labelleft=False,
                        labelbottom=False)
-    frame3.set_title('Extracted (E2DS) 49x4088', loc='left',
-                     x=0.025, y=0.95, pad=-14,
+    frame3.set_title('Extracted (E2DS) {0}x{1}'.format(*e2ds_image.shape),
+                     loc='left', x=0.025, y=0.95, pad=-14,
                      color='black', backgroundcolor='white')
 
     # add band regions
@@ -223,6 +241,9 @@ def plot_size_grid(params):
         band = BANDS[bandname]
         # wave mask
         wavemask = (wavemap > band[0]) & (wavemap < band[1])
+        # skip blank regions
+        if np.sum(wavemask) == 0:
+            continue
         bandpatch, midpoint = poly_region(wavemask)
         frame3.add_patch(bandpatch)
         # plot text
@@ -252,12 +273,13 @@ def plot_size_grid(params):
         txt.set_path_effects([path_effects.withStroke(linewidth=1,
                                                       foreground='k')])
 
-    frame4.set_title('Extracted 1D (S1D) 1x285377',
-                     loc='left', x=0.5, y=0.95, pad=-14,
+    s1d_len = len(s1d_table['wavelength'])
+    frame4.set_title('Extracted 1D (S1D) 1x{0}'.format(s1d_len),
+                     loc='left', x=0.4, y=0.95, pad=-14,
                      color='black', backgroundcolor='white')
     # plot cosmetics
     frame4.axes.yaxis.set_ticks([])
-    frame4.set(xlim=[950, 2500], ylim=[0, 1.05 * maxflux],
+    frame4.set(xlim=wavelim, ylim=[0, 1.05 * maxflux],
                xlabel='Wavelength [nm]')
     frame4.set_yticklabels([])
     # -------------------------------------------------------------------------
@@ -1120,13 +1142,31 @@ def plot_e2ds_plot(params):
 # S1D
 # =============================================================================
 def plot_s1d_plot(params):
-    odocode = '2510303o'
-    first_order = 34
-    last_order = 36
+
+    if params['INSTRUMENT'] == 'SPIROU':
+        odocode = '2510303o'
+        first_order = 34
+        last_order = 36
+        fiber = 'AB'
+        plot_file = 's1d_spirou.pdf'
+    elif params['INSTRUMENT'] == 'NIRPS_HA':
+        odocode = 'NIRPS_2023-01-21T08_49_09_968'
+        first_order = 59
+        last_order = 61
+        fiber = 'A'
+        plot_file = 's1d_nirps_ha.pdf'
+    elif params['INSTRUMENT'] == 'NIRPA_HE':
+        odocode = 'NIRPS_2023-01-21T08_29_39_506'
+        first_order = 59
+        last_order = 61
+        fiber = 'A'
+        plot_file = 's1d_nirps_he.pdf'
+    else:
+        return
     # -------------------------------------------------------------------------
     # get filenames
     e2ds_file = os.path.join(params['DRS_DATA_REDUC'], NIGHT,
-                             '{0}_pp_e2dsff_AB.fits'.format(odocode))
+                             '{0}_pp_e2dsff_{1}.fits'.format(odocode, fiber))
     # -------------------------------------------------------------------------
     # get images
     sp1 = fits.getdata(e2ds_file)
@@ -1237,7 +1277,7 @@ def plot_s1d_plot(params):
                         bottom=0.075)
     plt.suptitle(hdr['OBJECT'])
 
-    outfile = os.path.join(PLOT_PATH, 's1d.pdf')
+    outfile = os.path.join(PLOT_PATH, plot_file)
     print('Saving to file: ' + outfile)
     plt.savefig(outfile)
     print('Showing graph')
@@ -2333,26 +2373,50 @@ def poly_region(mask: np.ndarray):
     return Polygon(poly, facecolor='None', edgecolor='w'), midpoint
 
 
-def fits2wave(image, header):
+def val_cheby(coeffs, xvector,  domain):
+    """
+    Using the output of fit_cheby calculate the fit to x  (i.e. y(x))
+    where y(x) = T0(x) + T1(x) + ... Tn(x)
+​
+    :param coeffs: output from fit_cheby
+    :param xvector: x value for the y values with fit
+    :param domain: domain to be transformed to -1 -- 1. This is important to
+    keep the components orthogonal. For SPIRou orders, the default is 0--4088.
+    You *must* use the same domain when getting values with fit_cheby
+    :return: corresponding y values to the x inputs
+    """
+    # transform to a -1 to 1 domain
+    domain_cheby = 2 * (xvector - domain[0]) / (domain[1] - domain[0]) - 1
+    # fit values using the domain and coefficients
+    yvector = np.polynomial.chebyshev.chebval(domain_cheby, coeffs)
+    # return y vector
+    return yvector
+
+
+def fits2wave(image, hdr):
     """
     Get the wave solution from the header using a filename
     """
     # size of the image
     nbypix, nbxpix = image.shape
     # get the keys with the wavelength polynomials
-    wave_hdr = header['WAVE0*']
+    wave_hdr = hdr['WAVE0*']
     # concatenate into a numpy array
     wave_poly = np.array([wave_hdr[i] for i in range(len(wave_hdr))])
     # get the number of orders
-    nord = header['WAVEORDN']
+    nord = hdr['WAVEORDN']
     # get the per-order wavelength solution
     wave_poly = wave_poly.reshape(nord, len(wave_poly) // nord)
     # project polynomial coefficiels
     wavesol = np.zeros_like(image)
+    # xpixel grid
+    xpix = np.arange(nbxpix)
     # loop around orders
     for order_num in range(nord):
-        ordwave = np.polyval(wave_poly[order_num][::-1], np.arange(nbxpix))
-        wavesol[order_num] = ordwave
+        # calculate wave solution for this order
+        owave = val_cheby(wave_poly[order_num], xpix, domain=[0, nbxpix])
+        # push into wave map
+        wavesol[order_num] = owave
     # return wave grid
     return wavesol
 
