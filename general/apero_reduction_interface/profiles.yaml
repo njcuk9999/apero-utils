@@ -1,0 +1,19 @@
+# name:
+#   apero profile: APERO PROFILE NAME
+#   lbl path: PATH TO LBL FILE
+#   username: USERNAME
+#   password: PASSWORD
+
+spirou V0.7.275 full:
+  apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
+  lbl path: /space/spirou/LBL/SPIROU07275
+  username: spirou
+  password: fantasio
+
+
+spirou V0.7.275 mini run 2 (jupiter):
+  apero profile: /cosmos99/apero-data/drs-settings/minidata2_07254
+  lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter
+  username: spirou
+  password: fantasio
+
