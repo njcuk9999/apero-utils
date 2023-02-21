@@ -57,6 +57,15 @@ COL_WIDTH_DICT['CODE'] = 20
 COL_WIDTH_DICT['RUNSTRING'] = 200
 COL_WIDTH_DICT['START_TIME'] = 50
 COL_WIDTH_DICT['END_TIME'] = 50
+COL_WIDTH_DICT['TEFF'] = 50
+COL_WIDTH_DICT['RAW'] = 25
+COL_WIDTH_DICT['PP'] = 25
+COL_WIDTH_DICT['EXT'] = 25
+COL_WIDTH_DICT['TCORR'] = 25
+COL_WIDTH_DICT['e'] = 25
+COL_WIDTH_DICT['t'] = 25
+COL_WIDTH_DICT['POL'] = 25
+COL_WIDTH_DICT['p'] = 25
 
 # define the default column width
 DEFAULT_COL_WIDTH = 30
@@ -524,16 +533,18 @@ def compile_apero_object_table() -> Table:
     object_table = Table.from_pandas(object_table)
     # ------------------------------------------------------------------
     # add counting columns to the object table
-    object_table['RAW_FILES'] = [0] * len(object_table)
-    object_table['PP_FILES'] = [0] * len(object_table)
-    object_table['EXT_FILES'] = [0] * len(object_table)
-    object_table['TCORR_FILES'] = [0] * len(object_table)
-    object_table['e.fits'] = [0] * len(object_table)
-    object_table['t.fits'] = [0] * len(object_table)
+    object_table['RAW'] = [0] * len(object_table)
+    object_table['PP'] = [0] * len(object_table)
+    object_table['EXT'] = [0] * len(object_table)
+    object_table['TCORR'] = [0] * len(object_table)
     # deal with instruments that have polarimetry
     if has_polar:
-        object_table['POLAR_FILES'] = [0] * len(object_table)
-        object_table['p.fits'] = [0] * len(object_table)
+        object_table['POL'] = [0] * len(object_table)
+    object_table['e'] = [0] * len(object_table)
+    object_table['t'] = [0] * len(object_table)
+    # deal with instruments that have polarimetry
+    if has_polar:
+        object_table['p'] = [0] * len(object_table)
     # ------------------------------------------------------------------
     # log progress
     wlog(params, '', 'Compiling object table (this may take a while)')
@@ -579,13 +590,11 @@ def compile_apero_object_table() -> Table:
         # ------------------------------------------------------------------
         conditions = [raw_cond, pp_cond, ext_cond, tcorr_cond, polar_cond,
                       e_cond, t_cond, p_cond]
-        colnames = ['RAW_FILES', 'PP_FILES', 'EXT_FILES', 'TCORR_FILES',
-                    'POLAR_FILES', 'e.fits', 't.fits', 'p.fits']
+        colnames = ['RAW', 'PP', 'EXT', 'TCORR', 'POL', 'e', 't', 'p']
         # storage of count (for chains
         counts = dict()
         # define chains (if this number is zero do not count)
-        chains = [None, 'RAW_FILES', 'PP_FILES', 'EXT_FILES',
-                  'TCORR_FILES', 'PP_FILES', 'e.fits', 't.fits']
+        chains = [None, 'RAW', 'PP', 'EXT', 'TCORR', 'PP', 'EXT', 'PP']
         # loop around conditions
         for it, condition in enumerate(conditions):
             # deal with polar conditions
@@ -607,7 +616,7 @@ def compile_apero_object_table() -> Table:
             counts[colnames[it]] = count
     # ------------------------------------------------------------------
     # remove rows with no raw entries
-    mask = object_table['RAW_FILES'] > 0
+    mask = object_table['RAW'] > 0
     # apply mask
     object_table = object_table[mask]
     # ------------------------------------------------------------------
