@@ -15,7 +15,6 @@ import re
 from typing import Union
 
 import numpy as np
-import pandas as pd
 import yaml
 from astropy.table import Table
 
@@ -249,9 +248,6 @@ def write_markdown(settings: dict, stats: dict):
         for table_name in tables:
             # get table
             table = stats[profile_name][table_name]
-            # deal with pandas table
-            if isinstance(table, pd.DataFrame):
-                table = Table.from_pandas(table)
             # create a table page for this table
             table_ref_name = cprofile_name.lower() + '_' + table_name.lower()
             # make a markdown page for the table
@@ -479,11 +475,11 @@ def protect(profiles: dict):
 # =============================================================================
 # Functions for the apero stats
 # =============================================================================
-def compile_apero_object_table() -> pd.DataFrame:
+def compile_apero_object_table() -> Table:
     """
     Compile the apero object table
 
-    :return: pd.DataFrame, the object table
+    :return: Table, the apero object table
     """
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
@@ -501,6 +497,8 @@ def compile_apero_object_table() -> pd.DataFrame:
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
     wlog = drs_log.wlog
+    # get polar condition
+    has_polar = HAS_POLAR[params['INSTRUMENT']]
     # get the science fiber from pconst
     science_fibers, ref_fiber = pconst.FIBER_KINDS()
     # we assume the first science fiber is the primary science fiber
@@ -522,6 +520,9 @@ def compile_apero_object_table() -> pd.DataFrame:
     indexdbm = drs_database.FileIndexDatabase(params)
     indexdbm.load_db()
     # ------------------------------------------------------------------
+    # convert pandas dataframe to astropy table
+    object_table = Table.from_pandas(object_table)
+    # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table['RAW_FILES'] = [0] * len(object_table)
     object_table['PP_FILES'] = [0] * len(object_table)
@@ -530,7 +531,7 @@ def compile_apero_object_table() -> pd.DataFrame:
     object_table['e.fits'] = [0] * len(object_table)
     object_table['t.fits'] = [0] * len(object_table)
     # deal with instruments that have polarimetry
-    if HAS_POLAR[params['INSTRUMENT']]:
+    if has_polar:
         object_table['POLAR_FILES'] = [0] * len(object_table)
         object_table['p.fits'] = [0] * len(object_table)
     # ------------------------------------------------------------------
@@ -539,9 +540,9 @@ def compile_apero_object_table() -> pd.DataFrame:
     # ------------------------------------------------------------------
     # for each object we run several counts
     # loop around objects in the object table
-    for pos in tqdm(object_table.index):
+    for pos in tqdm(range(len(object_table))):
         # get the object name
-        objname = object_table.loc[pos, 'OBJNAME']
+        objname = object_table['OBJNAME'][pos]
         # set up where condition for raw files
         raw_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
         # setup up where condition for pp files
@@ -563,12 +564,12 @@ def compile_apero_object_table() -> pd.DataFrame:
         t_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
                   f'AND KW_OUTPUT="DRS_POST_T"')
         # deal with instruments that have polarimetry
-        if HAS_POLAR:
+        if has_polar:
             # setup up where condition for polar files
-            polar_cond = (f'KW_OBJNAME = "{objname}" AND BLOCK_KIND="red" '
+            polar_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
                           f'AND KW_OUTPUT="POL_DEG"')
             # setup up where condition for p.fits files
-            p_cond = (f'KW_OBJNAME = "{objname}" AND BLOCK_KIND="out" '
+            p_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
                       f'AND KW_OUTPUT="DRS_POST_P"')
         else:
             polar_cond = None
@@ -601,7 +602,7 @@ def compile_apero_object_table() -> pd.DataFrame:
             # run the count
             count = indexdbm.database.count(condition=condition)
             # add to object table
-            object_table.at[pos, colnames[it]] = count
+            object_table[colnames[it]][pos] = count
             # set counts
             counts[colnames[it]] = count
     # ------------------------------------------------------------------
@@ -614,11 +615,11 @@ def compile_apero_object_table() -> pd.DataFrame:
     return object_table
 
 
-def compile_apero_recipe_table() -> pd.DataFrame:
+def compile_apero_recipe_table() -> Table:
     """
     Compile the apero recipe log table
 
-    :return: pd.DataFrame, the recipe log table
+    :return: apero recipe log table
     """
     # must import here (so that os.environ is set)
     from apero.core import constants
@@ -642,7 +643,7 @@ def compile_apero_recipe_table() -> pd.DataFrame:
     log_table = logdbm.database.get(columns=','.join(LOG_COLUMNS),
                                     sort_by='START_TIME',
                                     sort_descending=False,
-                                    return_pandas=True)
+                                    return_table=True)
     # ------------------------------------------------------------------
     return log_table
 
@@ -779,7 +780,7 @@ def compile_apero_message_table() -> Table:
 # =============================================================================
 # Functions for compiling the lbl stats
 # =============================================================================
-def add_lbl_count(profile: dict, object_table: pd.DataFrame) -> pd.DataFrame:
+def add_lbl_count(profile: dict, object_table: Table) -> Table:
     # TODO: Fill out this function
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
@@ -804,6 +805,9 @@ def add_lbl_count(profile: dict, object_table: pd.DataFrame) -> pd.DataFrame:
     object_table['LBL_TEMPLATES'] = np.zeros(len(object_table), dtype=str)
     object_table['LBL_SELECT'] = np.zeros(len(object_table), dtype=str)
     object_table['LBL_COUNT'] = np.zeros(len(object_table), dtype=int)
+    lbl_templates = []
+    lbl_select = []
+    lbl_count = []
     # -------------------------------------------------------------------------
     # deal with no valid lbl path
     if lbl_path is None:
@@ -814,7 +818,7 @@ def add_lbl_count(profile: dict, object_table: pd.DataFrame) -> pd.DataFrame:
     # print that we are analysing lbl outputs
     wlog(params, '', 'Analysing LBL files')
     # -------------------------------------------------------------------------
-    # get a list of object names
+    # get object name
     objnames = np.array(object_table['OBJNAME'])
     # loop around objects
     for pos, objname in tqdm(enumerate(objnames)):
@@ -823,6 +827,9 @@ def add_lbl_count(profile: dict, object_table: pd.DataFrame) -> pd.DataFrame:
         directories = glob.glob(os.path.join(lbl_path, 'lblrv', f'{objname}_*'))
         # deal with no directories --> skip
         if len(directories) == 0:
+            lbl_templates.append('')
+            lbl_select.append('')
+            lbl_count.append(0)
             continue
         # store a list of templates
         templates = []
@@ -833,16 +840,20 @@ def add_lbl_count(profile: dict, object_table: pd.DataFrame) -> pd.DataFrame:
             # get the template name for each directory
             template = os.path.basename(directory).split('_')[1]
             # get the number of lbl files in each directory
-            lbl_count = len(glob.glob(os.path.join(directory, '*lbl.fits')))
+            count = len(glob.glob(os.path.join(directory, '*lbl.fits')))
             # append storage
             templates.append(template)
-            counts.append(lbl_count)
+            counts.append(count)
         # decide which template to use (using max of counts)
         select = np.argmax(counts)
-        # add to object table
-        object_table.at[pos, 'LBL_TEMPLATES'] = ','.join(templates)
-        object_table.at[pos, 'LBL_SELECT'] = templates[select]
-        object_table.at[pos, 'LBL_COUNT'] = int(counts[select])
+        lbl_templates.append(','.join(templates))
+        lbl_select.append(templates[select])
+        lbl_count.append(int(counts[select]))
+    # -------------------------------------------------------------------------
+    # add to object table
+    object_table['LBL_TEMPLATES'] = lbl_templates
+    object_table['LBL_SELECT'] = lbl_select
+    object_table['LBL_COUNT'] = lbl_count
     # -------------------------------------------------------------------------
     # return the object table
     return object_table
@@ -897,9 +908,6 @@ def save_stats(settings: dict, stats: dict):
         # deal with no table
         if stats[table_name] is None:
             continue
-        # deal with pandas dataframes
-        if isinstance(stats[table_name], pd.DataFrame):
-            table = Table.from_pandas(stats[table_name])
         # otherwise we assume it is an astropy table
         else:
             table = stats[table_name]
