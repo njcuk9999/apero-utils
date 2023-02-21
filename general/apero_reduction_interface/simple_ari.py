@@ -408,6 +408,12 @@ def protect(profiles: dict):
         # get the password file
         local_pass_dir = os.path.join(settings['PASS1'])
         remote_pass_dir = HTPASSWD_PATH
+
+        # check if account in profiles
+        if 'account' in profiles[profile_name]:
+            if len(profiles[profile_name]['account']) > 0:
+                password_store[username] = profiles[profile_name]['account']
+
         # store password for same usernames
         if username in password_store:
             password = password_store[username]

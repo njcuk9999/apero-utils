@@ -4,16 +4,38 @@
 #   username: USERNAME
 #   password: PASSWORD
 
-#   Password generated with https://hostingcanada.org/htpasswd-generator/
-#       Do not use real password in here
-
 spirou V0.7.275 full:
   apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
   lbl path: /space/spirou/LBL/SPIROU07275
   username: spirou
+  account: fantasio
 
 spirou V0.7.275 mini run 2 (jupiter):
   apero profile: /cosmos99/apero-data/drs-settings/minidata2_07254
   lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter
   username: spirou
+  account: fantasio
 
+nirps ha V0.7.275 ref cal:
+    apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_ha
+    lbl path: /space/spirou/LBL/NIRPS_HA
+    username: nirps
+    account: nirps4all
+
+nirps ha V0.7.275 per night cal:
+    apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpsha_pernight
+    lbl path: /space/spirou/LBL/NIRPS_HA_pernight
+    username: nirps
+    account: nirps4all
+
+nirps he V0.7.275 ref cal:
+    apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_he
+    lbl path: /space/spirou/LBL/NIRPS_HE
+    username: nirps
+    account: nirps4all
+
+nirps he V0.7.275 per night cal:
+    apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpshe_pernight
+    lbl path: /space/spirou/LBL/NIRPS_HE_pernight
+    username: nirps
+    account: nirps4all
