@@ -55,26 +55,30 @@ COL_WIDTH_DICT['MESSAGE'] = 100
 COL_WIDTH_DICT['LOG_FILE'] = 300
 COL_WIDTH_DICT['CODE'] = 20
 COL_WIDTH_DICT['RUNSTRING'] = 200
-COL_WIDTH_DICT['START_TIME'] = 50
-COL_WIDTH_DICT['END_TIME'] = 50
-COL_WIDTH_DICT['TEFF'] = 50
-COL_WIDTH_DICT['RAW'] = 25
-COL_WIDTH_DICT['PP'] = 25
-COL_WIDTH_DICT['EXT'] = 25
-COL_WIDTH_DICT['TCORR'] = 25
-COL_WIDTH_DICT['e'] = 25
-COL_WIDTH_DICT['t'] = 25
-COL_WIDTH_DICT['POL'] = 25
-COL_WIDTH_DICT['p'] = 25
-
+COL_WIDTH_DICT['START_TIME'] = 60
+COL_WIDTH_DICT['END_TIME'] = 60
+COL_WIDTH_DICT['RA_DEG'] = 5
+COL_WIDTH_DICT['DEC_DEG'] = 5
+COL_WIDTH_DICT['TEFF'] = 5
+COL_WIDTH_DICT['SP_TYPE'] = 5
+COL_WIDTH_DICT['RAW'] = 5
+COL_WIDTH_DICT['PP'] = 5
+COL_WIDTH_DICT['EXT'] = 5
+COL_WIDTH_DICT['TCORR'] = 5
+COL_WIDTH_DICT['e'] = 5
+COL_WIDTH_DICT['t'] = 5
+COL_WIDTH_DICT['POL'] = 5
+COL_WIDTH_DICT['p'] = 5
+COL_WIDTH_DICT['LBL_COUNT'] = 5
+COL_WIDTH_DICT['LBL_SELECT'] = 5
 # define the default column width
-DEFAULT_COL_WIDTH = 30
+DEFAULT_COL_WIDTH = 10
 # define table width info
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
 
 # Currently takes ~ 1 minute for SPIROU full profile
-SKIP_OBJ_TABLE = False
+SKIP_OBJ_TABLE = True
 # Currently takes ~ 1 minute for SPIROU full profile
 SKIP_RECIPE_TABLE = True
 # Currently takes ~ 20 minute for SPIROU full profile
@@ -811,9 +815,9 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     # first column: templates used for lbl
     # second column: template selected for lbl count
     # third column: number of lbl files for template with most lbl files
-    object_table['LBL_TEMPLATES'] = np.zeros(len(object_table), dtype=str)
     object_table['LBL_SELECT'] = np.zeros(len(object_table), dtype=str)
     object_table['LBL_COUNT'] = np.zeros(len(object_table), dtype=int)
+    object_table['LBL_TEMPLATES'] = np.zeros(len(object_table), dtype=str)
     lbl_templates = []
     lbl_select = []
     lbl_count = []
@@ -1015,6 +1019,8 @@ def _get_column_widths(table: Table):
     # widths must be percentages (100% total)
     cwidths = np.array(cwidths)
     cwidths = np.floor(100 * cwidths / np.sum(cwidths)).astype(int) - 1
+    # any cwidths that are 0 are set to 1
+    cwidths[cwidths == 0] = 1
     # widths must be strings
     cwidths = list(cwidths.astype(str))
     # -------------------------------------------------------------------------
