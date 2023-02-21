@@ -178,8 +178,19 @@ def update_apero_profile(profile: dict):
     :param profile: dict, the profile to update
     :return:
     """
+    from apero.base import base
+    from apero.core import constants
+    from apero.core.constants import param_functions
     # use os to add DRS_UCONFIG to the path
     os.environ['DRS_UCONFIG'] = profile['apero profile']
+    # reload DPARAMS and IPARAMS
+    base.DPARAMS = base.load_database_yaml()
+    base.IPARAMS = base.load_install_yaml()
+    # ------------------------------------------------------------------
+    # invalidate cache
+    param_functions.CONFIG_CACHE = dict()
+    # make sure parameters is reloaded (and not cached)
+    _ = constants.load(cache=False)
 
 
 def write_markdown(settings: dict, stats: dict):
