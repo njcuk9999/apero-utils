@@ -11,6 +11,7 @@ Created on 2023-02-20 at 9:35
 """
 import os
 import re
+from typing import Union
 
 import numpy as np
 import pandas as pd
@@ -37,16 +38,82 @@ REPROCESS = True
 # Define output path
 OUTPUT_PATH = '.'
 # define sphinx directories
-WORKING_DIR = 'working'
-DATA_DIR = 'working/data/'
-RST_DIR = 'working/rst/'
-HTML_DIR = 'working/_build/html/'
-OUT_DIR = 'working/output/'
+_WORKING_DIR = '/data/spirou/cook/simple_ari/working/'
+_DATA_DIR = 'data'
+_RST_DIR = 'rst'
+_HTML_DIR = '_build/html'
+_OUT_DIR = 'output'
+# ssh path
 SSH_PATH = '/export/www/home/cook/www/apero-drs/'
+# define path to local htpasswd file
+HTPASSWD_PATH = '/home/cook/apero_ari/'
+_PASS_DIR = 'pass'
+
+# column width modifiers
+COL_WIDTH_DICT = dict()
+COL_WIDTH_DICT['MESSAGE'] = 100
+COL_WIDTH_DICT['LOG_FILE'] = 300
+COL_WIDTH_DICT['CODE'] = 20
+COL_WIDTH_DICT['RUNSTRING'] = 200
+COL_WIDTH_DICT['START_TIME'] = 50
+COL_WIDTH_DICT['END_TIME'] = 50
+
+# define the default column width
+DEFAULT_COL_WIDTH = 30
+# define table width info
+DEFAULT_TABLE_WIDTH = 100
+DEFAULT_TABLE_LENGTH = 6
+
 
 # =============================================================================
 # Define functions
 # =============================================================================
+def get_settings(profile_name: Union[str, None] = None) -> dict:
+    # storage for settings
+    param_settings = dict()
+    # clean profile name
+    if profile_name is None:
+        cpname = 'None'
+    else:
+        cpname = clean_profile_name(profile_name)
+    # add the clean profile name to the settings
+    param_settings['CPN'] = cpname
+    # create paths
+    param_settings['WORKING'] = _WORKING_DIR
+    if profile_name is not None:
+        param_settings['DATA'] = os.path.join(_WORKING_DIR, cpname, _DATA_DIR)
+        param_settings['RST'] = os.path.join(_WORKING_DIR, cpname, _RST_DIR)
+        param_settings['DIR'] = os.path.join(_WORKING_DIR, cpname)
+        param_settings['PASS1'] = os.path.join(_WORKING_DIR, _PASS_DIR, '1',
+                                               cpname)
+        param_settings['PASS2'] = os.path.join(_WORKING_DIR, _PASS_DIR, '2',
+                                               cpname)
+    else:
+        param_settings['DATA'] = None
+        param_settings['RST'] = None
+        param_settings['DIR'] = None
+        param_settings['PASS1'] = None
+        param_settings['PASS2'] = None
+        # set the global paths for sphinx
+    param_settings['HTML'] = os.path.join(_WORKING_DIR, _HTML_DIR)
+    param_settings['OUT'] = os.path.join(_WORKING_DIR, _OUT_DIR)
+    # make sure directories exist
+    if profile_name is not None and not os.path.exists(param_settings['DATA']):
+        os.makedirs(param_settings['DATA'])
+    if profile_name is not None and not os.path.exists(param_settings['RST']):
+        os.makedirs(param_settings['RST'])
+    if profile_name is not None and not os.path.exists(param_settings['PASS1']):
+        os.makedirs(param_settings['PASS1'])
+    if profile_name is not None and not os.path.exists(param_settings['PASS2']):
+        os.makedirs(param_settings['PASS2'])
+    if not os.path.exists(param_settings['HTML']):
+        os.makedirs(param_settings['HTML'])
+    if not os.path.exists(param_settings['OUT']):
+        os.makedirs(param_settings['OUT'])
+    # return all parameter settings
+    return param_settings
+
+
 def compile_stats(profile: dict) -> dict:
     """
     Compile the stats for a given profile
@@ -82,7 +149,7 @@ def update_apero_profile(profile: dict):
     os.environ['DRS_UCONFIG'] = profile['apero profile']
 
 
-def write_markdown(stats: dict):
+def write_markdown(settings: dict, stats: dict):
     from apero.tools.module.documentation import drs_markdown
     # list tables to load
     tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
@@ -93,60 +160,89 @@ def write_markdown(stats: dict):
     profile_files = []
     # loop around profiles
     for profile_name in stats:
+        # get settings
+        settings = get_settings(profile_name)
         # reference name is just a cleaned version of the profile name
-        ref_name = clean_profile_name(profile_name)
+        ref_name = settings['CPN']
         # add to ref_names
-        profile_files.append('rst/profile_' + ref_name + '.rst')
+        profile_files.append(f'{ref_name}/rst/profile.rst')
     # create ARI index page
     index_page = drs_markdown.MarkDownPage('ari_index')
     # add title
     index_page.add_title('APERO Reduction Interface (ARI)')
     # -------------------------------------------------------------------------
+    # Add basic text
+    # construct text to add
+    index_page.add_text('This is the APERO Reduction Interface (ARI).')
+    index_page.add_newline()
+    index_page.add_text('Please select a reduction')
+    index_page.add_newline()
+    index_page.add_text('If you believe you should have the username/password '
+                        'please contact neil.james.cook@gmail.com')
+    # -------------------------------------------------------------------------
     # add table of contents
     index_page.add_table_of_contents(profile_files)
     # save index page
-    index_page.write_page(os.path.join(WORKING_DIR, 'index.rst'))
+    index_page.write_page(os.path.join(settings['WORKING'], 'index.rst'))
     # -------------------------------------------------------------------------
     # step 2: write a page for each profile with the stats. Each page should
     #         just be a table of contents
     # -------------------------------------------------------------------------
     # loop around profiles
     for profile_name in stats:
+        # get settings
+        settings = get_settings(profile_name)
         # get the reference name
-        ref_name = clean_profile_name(profile_name)
+        cprofile_name = settings['CPN']
         # create a page
-        profile_page = drs_markdown.MarkDownPage(ref_name)
+        profile_page = drs_markdown.MarkDownPage(cprofile_name)
         # add title
         profile_page.add_title(profile_name)
         # store the reference name for profile page table of contents
         table_files = []
         # loop around tables
         for table_name in tables:
+            # get table
+            table = stats[profile_name][table_name]
+            # deal with pandas table
+            if isinstance(table, pd.DataFrame):
+                table = Table.from_pandas(table)
+            # deal with column widths for this file type
+            cwidth, cwidths = _get_column_widths(table)
             # create a table page for this table
-            table_ref_name = ref_name.lower() + '_' + table_name.lower()
+            table_ref_name = cprofile_name.lower() + '_' + table_name.lower()
             # make a markdown page for the table
             table_page = drs_markdown.MarkDownPage(table_ref_name)
             # add object table
-            table_filename = construct_table_filename(profile_name, table_name,
-                                                      fmt='csv')
+            table_filename = f'{table_name}.csv'
             table_title = table_name.lower().replace('_', ' ')
-            table_page.add_csv_table(table_title, table_filename)
+            table_page.add_title(table_title)
+            table_page.add_csv_table('', '../data/' + table_filename,
+                                     width=cwidth, widths=cwidths)
             # save table page
             table_markdown_file = os.path.basename(table_filename).lower()
             table_markdown_file = table_markdown_file.replace('.csv', '.rst')
             # write table page
             print('Writing table page: {0}'.format(table_markdown_file))
-            table_page.write_page(os.path.join(RST_DIR, table_markdown_file))
+            table_page.write_page(os.path.join(settings['RST'],
+                                               table_markdown_file))
             # store the reference name for profile page table of contents
-            table_files.append('rst/' + os.path.basename(table_markdown_file))
+            #  these are in the same dir as profile_page so do not add the
+            #  rst sub-dir
+            table_files.append(os.path.basename(table_markdown_file))
         # add table of contents to profile page
         profile_page.add_table_of_contents(table_files)
         # save profile page
-        profile_file = 'profile_{0}.rst'.format(ref_name)
-        profile_page.write_page(os.path.join(RST_DIR, profile_file))
+        profile_page.write_page(os.path.join(settings['RST'], 'profile.rst'))
 
 
-def compile_docs():
+def compile_docs(settings: dict):
+    """
+    Compile the documentation
+
+    :param settings: dict, the settings for the documentation
+    :return:
+    """
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero import lang
@@ -167,7 +263,7 @@ def compile_docs():
     # get current directory
     cwd = os.getcwd()
     # change to docs directory
-    os.chdir(os.path.realpath(WORKING_DIR))
+    os.chdir(settings['WORKING'])
     # ------------------------------------------------------------------
     # clean build
     # ------------------------------------------------------------------
@@ -188,16 +284,23 @@ def compile_docs():
     # ------------------------------------------------------------------
     # clear out the output directory
     # Removing content of {0}
-    wlog(params, '', textentry('40-506-00007', args=[HTML_DIR]))
-    os.system(f'rm -rf {os.path.realpath(OUT_DIR)}/*')
+    wlog(params, '', textentry('40-506-00007', args=[settings['HTML']]))
+    os.system(f'rm -rf {settings["OUT"]}/*')
     # copy
-    drs_path.copytree(os.path.realpath(HTML_DIR), os.path.realpath(OUT_DIR))
+    drs_path.copytree(settings['HTML'], settings["OUT"])
     # ------------------------------------------------------------------
     # change back to current directory
     os.chdir(cwd)
 
 
-def upload_docs():
+def upload_docs(settings: dict):
+    """
+    Upload the documentation to the web server
+
+    :param settings: dict, the settings for the documentation
+
+    :return:
+    """
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
@@ -212,7 +315,7 @@ def upload_docs():
     # get WLOG
     wlog = drs_log.wlog
     # get output directory
-    out_dir = os.path.realpath(OUT_DIR)
+    out_dir = settings['OUT']
     # ------------------------------------------------------------------
     # change permission of all files and directories
     os.system(f'chmod 777 -R {out_dir}')
@@ -230,6 +333,90 @@ def upload_docs():
     wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
     # run command (will require password)
     os.system(drs_documentation.RSYNC_CMD.format(**rdict))
+
+
+def protect(profiles: dict):
+    """
+    Protect the documentation with .htaccess and .htpasswd files
+
+    :param profiles: dict, the profiles to protect
+
+    :return:
+    """
+    import getpass
+    from apero.core import constants
+    from apero.tools.module.documentation import drs_documentation
+    from apero.core.utils import drs_startup
+    from apero.core.core import drs_log
+    # ------------------------------------------------------------------
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
+    # get WLOG
+    wlog = drs_log.wlog
+    # ------------------------------------------------------------------
+    # password store
+    password_store = dict()
+    # create a .htpasswrd file for each profile
+    for profile_name in profiles:
+        # get the profile settings
+        settings = get_settings(profile_name)
+        # get the output directory
+        cpn = settings['CPN']
+        # get username from profile
+        username = profiles[profile_name]['username']
+        # get the password file
+        local_pass_dir = os.path.join(settings['PASS1'])
+        remote_pass_dir = HTPASSWD_PATH
+        # store password for same usernames
+        if username in password_store:
+            password = password_store[username]
+        else:
+            # try to get the password from the user and make sure it matches
+            while True:
+                # get the password
+                password = getpass.getpass(f'Enter password for {profile_name}: ')
+                # repeat password
+                password2 = getpass.getpass(f'Repeat password for {profile_name}: ')
+                if password == password2:
+                    break
+                else:
+                    # Passwords do not match
+                    print('Password must match')
+        # create the password file
+        os.system(f'htpasswd -b -c {local_pass_dir}/.htpasswd {username} {password}')
+
+        # get the .htaccess file
+        local_htaccess_file = os.path.join(settings['PASS2'], '.htaccess')
+        remote_htaccess_file = os.path.join(SSH_PATH, 'ari/', cpn, '.htaccess')
+        # construct lines to add to .htaccess file
+        lines = []
+        lines.append('AuthType Basic\n')
+        lines.append('AuthName "Protected Site"\n')
+        lines.append(f'AuthUserFile {remote_pass_dir}/{cpn}/.htpasswd\n')
+        lines.append('require valid-user\n')
+        # create the .htaccess file
+        with open(local_htaccess_file, 'w') as htafile:
+            htafile.writelines(lines)
+
+        # copy local files to remote
+        localfiles = [local_pass_dir, local_htaccess_file]
+        remotefiles = [remote_pass_dir, remote_htaccess_file]
+        # set up rsync dict
+        rdict = dict()
+        rdict['SSH'] = drs_documentation.SSH_OPTIONS
+        rdict['USER'] = drs_documentation.SSH_USER
+        rdict['HOST'] = drs_documentation.SSH_HOST
+        # loop around files
+        for it in range(len(localfiles)):
+            # modify input/output rsync dict
+            rdict['INPATH'] = localfiles[it]
+            rdict['OUTPATH'] = remotefiles[it]
+            # print command to rsync
+            wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
+            # run command (will require password)
+            os.system(drs_documentation.RSYNC_CMD.format(**rdict))
 
 
 # =============================================================================
@@ -384,7 +571,7 @@ def compile_apero_recipe_table() -> pd.DataFrame:
     # get WLOG
     wlog = drs_log.wlog
     # log progress
-    wlog(params, '', 'Compiling apero log table')
+    wlog(params, '', 'Compiling apero log table (this may take a while)')
     # ------------------------------------------------------------------
     # get the log database from apero
     logdbm = drs_database.LogDatabase(params)
@@ -569,12 +756,12 @@ def split_line(parts, rawstring):
         return None
 
 
-def save_stats(stats: dict, profile_name: str):
+def save_stats(settings: dict, stats: dict):
     """
     Save the stats for a given profile
 
+    :param settings: dict, the settings for the profile:
     :param stats: dict, the stats to save
-    :param stats_filename: str, the filename to save the stats to
 
     :return:
     """
@@ -589,9 +776,9 @@ def save_stats(stats: dict, profile_name: str):
         else:
             table = stats[table_name]
         # construct filename for table
-        table_filename = construct_table_filename(profile_name, table_name)
+        table_filename = f'{table_name}.fits'
         # construct full path
-        table_path = os.path.join(OUTPUT_PATH, DATA_DIR, 'data', table_filename)
+        table_path = os.path.join(settings['DATA'], table_filename)
         # write the table to the file
         table.write(table_path, format='fits',
                     overwrite=True)
@@ -599,11 +786,12 @@ def save_stats(stats: dict, profile_name: str):
                     format='csv', overwrite=True)
 
 
-def load_stats(profile_name: str) -> dict:
+def load_stats(settings: dict) -> dict:
     """
     Load the stats for a given profile
 
-    :param stats_filename: str, the filename to load the stats from
+    :param settings: dict, the settings for the profile:
+
     :return: dict, the stats for the profile
     """
     # set up storage for the output dictionary
@@ -613,9 +801,9 @@ def load_stats(profile_name: str) -> dict:
     # loop around tables and load them
     for table_name in tables:
         # construct filename for table
-        table_filename = construct_table_filename(profile_name, table_name)
+        table_filename = f'{table_name}.fits'
         # construct full path
-        table_path = os.path.join(OUTPUT_PATH, DATA_DIR, table_filename)
+        table_path = os.path.join(settings['DATA'], table_filename)
         # load the table
         profile_stats[table_name] = Table.read(table_path)
     # return the profile stats
@@ -655,38 +843,41 @@ def clean_profile_name(profile_name: str) -> str:
     # remove ugly double underscores
     while '__' in profile_name:
         profile_name = profile_name.replace('__', '_')
+    # remove starting and ending underscores
+    profile_name = profile_name.strip('_')
     # return cleaned up profile name
     return profile_name
 
 
-def construct_filename(profile_name: str) -> str:
+def _get_column_widths(table: Table):
     """
-    Construct the filename for the stats file
-
-    :param profile_name: str, the name of the profile
-    :return: str, the apero stats filename
+    Take a table and get columns widths from lookup table
+    (or assign default value)
     """
-    # clean up profile name
-    profile_name = clean_profile_name(profile_name)
-    # return cleaned up profile name
-    return 'apero_ari_{0}.fits'.format(profile_name)
-
-
-def construct_table_filename(profile_name: str, table_name: str,
-                             fmt='fits') -> str:
-    """
-    Construct the filename for the stats file
-
-    :param profile_name: str, the name of the profile
-    :param table_name: str, the name of the table
-    :return: str, the apero stats filename
-    """
-    # clean up profile name
-    profile_name = clean_profile_name(profile_name)
-    # construct filename
-    filename = 'apero_ari_{0}_{1}.{2}'.format(profile_name, table_name, fmt)
-    # return filename
-    return filename
+    cwidths = []
+    # loop around column names and look up the widths in the lookup table
+    for colname in table.colnames:
+        # if they are in the look up table use this width
+        if colname in COL_WIDTH_DICT:
+            cwidths.append(COL_WIDTH_DICT[colname])
+        # otherwise use the default width
+        else:
+            cwidths.append(DEFAULT_COL_WIDTH)
+    # widths must be percentages (100% total)
+    cwidths = np.array(cwidths)
+    cwidths = np.floor(100 * cwidths / np.sum(cwidths)).astype(int) - 1
+    # widths must be strings
+    cwidths = list(cwidths.astype(str))
+    # -------------------------------------------------------------------------
+    # deal with table width
+    if len(table.colnames) <= DEFAULT_TABLE_LENGTH:
+        cwidth = None
+    else:
+        cfrac = DEFAULT_TABLE_WIDTH / DEFAULT_TABLE_LENGTH
+        cwidth = '{0}%'.format(int(np.floor(len(table.colnames) * cfrac)))
+    # -------------------------------------------------------------------------
+    # return a list of the columns
+    return cwidth, cwidths
 
 
 # =============================================================================
@@ -697,23 +888,13 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # step 1: read the yaml file
     apero_profiles = read_yaml_file()
-    # make output path
-    outpath = os.path.join(OUTPUT_PATH, WORKING_DIR)
-    if not os.path.exists(DATA_DIR):
-        os.makedirs(DATA_DIR)
-    if not os.path.exists(RST_DIR):
-        os.makedirs(RST_DIR)
-    # make out direcory
-    if not os.path.exists(OUT_DIR):
-        os.makedirs(OUT_DIR)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
     # loop around profiles from yaml file
     for apero_profile_name in apero_profiles:
-        # construct filename for apero stats
-        ari_filename = construct_filename(apero_profile_name)
-        apero_stats_filename = os.path.join(outpath, ari_filename)
+        # sort out settings
+        ari_settings = get_settings(apero_profile_name)
         # we reprocess if the file does not exist or if REPROCESS is True
         if REPROCESS:
             # print progress
@@ -728,7 +909,7 @@ if __name__ == "__main__":
             all_apero_stats[apero_profile_name] = apero_stats
             # -----------------------------------------------------------------
             # Save stats to disk
-            save_stats(apero_stats, apero_profile_name)
+            save_stats(ari_settings, apero_stats)
         # otherwise we load the stats from disk
         else:
             # print progress
@@ -736,17 +917,23 @@ if __name__ == "__main__":
             print('Loading stats for profile: {0}'.format(apero_profile_name))
             print('=' * 50)
             # load stats
-            apero_stats = load_stats(apero_profile_name)
+            apero_stats = load_stats(ari_settings)
             # add to all_apero_stats
             all_apero_stats[apero_profile_name] = apero_stats
     # ----------------------------------------------------------------------
+    # sort out settings
+    ari_settings = get_settings()
+    # ----------------------------------------------------------------------
     # step 3: write markdown files
-    write_markdown(all_apero_stats)
+    write_markdown(ari_settings, all_apero_stats)
     # ----------------------------------------------------------------------
     # step 4: compile sphinx files
-    compile_docs()
+    compile_docs(ari_settings)
     # ----------------------------------------------------------------------
     # step 5: upload to hosting
-    upload_docs()
+    upload_docs(ari_settings)
+    # ----------------------------------------------------------------------
+    # step 6: protect profiles
+    protect(apero_profiles)
 
 # =============================================================================

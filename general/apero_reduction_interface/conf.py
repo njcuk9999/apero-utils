@@ -60,6 +60,11 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 html_theme = 'bizstyle'
 user_agent = 'Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25.0'
 
+html_theme_options = {
+    # Disable showing the sidebar. Defaults to 'false'
+    'nosidebar': True,
+}
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -67,5 +72,5 @@ html_static_path = ['_static']
 
 
 # add custom css
-# def setup(app):
-#     app.add_css_file('apero.css')  # give a filename you created.
+def setup(app):
+    app.add_css_file('apero.css')  # give a filename you created.
