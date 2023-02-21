@@ -9,6 +9,7 @@ Created on 2023-02-20 at 9:35
 
 @author: cook
 """
+import glob
 import os
 import re
 from typing import Union
@@ -780,7 +781,70 @@ def compile_apero_message_table() -> Table:
 # =============================================================================
 def add_lbl_count(profile: dict, object_table: pd.DataFrame) -> pd.DataFrame:
     # TODO: Fill out this function
-    _ = profile
+    # must import here (so that os.environ is set)
+    # noinspection PyPep8Naming
+    from apero.base.base import TQDM as tqdm
+    from apero.core import constants
+    from apero.core.core import drs_log
+    from apero.core.utils import drs_startup
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
+    # get WLOG
+    wlog = drs_log.wlog
+    # -------------------------------------------------------------------------
+    # get the lbl path
+    lbl_path = profile['lbl path']
+    # -------------------------------------------------------------------------
+    # we are adding three columns to the object table
+    # first column: templates used for lbl
+    # second column: template selected for lbl count
+    # third column: number of lbl files for template with most lbl files
+    object_table['LBL_TEMPLATES'] = np.zeros(len(object_table), dtype=str)
+    object_table['LBL_SELECT'] = np.zeros(len(object_table), dtype=str)
+    object_table['LBL_COUNT'] = np.zeros(len(object_table), dtype=int)
+    # -------------------------------------------------------------------------
+    # deal with no valid lbl path
+    if lbl_path is None:
+        return object_table
+    # deal with lbl path not existing
+    if not os.path.exists(lbl_path):
+        return object_table
+    # print that we are analysing lbl outputs
+    wlog(params, '', 'Analysing LBL files')
+    # -------------------------------------------------------------------------
+    # get a list of object names
+    objnames = np.array(object_table['OBJNAME'])
+    # loop around objects
+    for pos, objname in tqdm(enumerate(objnames)):
+        # for each object find all directories in lbl path that match this
+        #   object name
+        directories = glob.glob(os.path.join(lbl_path, 'lblrv', f'{objname}_*'))
+        # deal with no directories --> skip
+        if len(directories) == 0:
+            continue
+        # store a list of templates
+        templates = []
+        # store a list of counts
+        counts = []
+        # loop around each directory
+        for directory in directories:
+            # get the template name for each directory
+            template = os.path.basename(directory).split('_')[1]
+            # get the number of lbl files in each directory
+            lbl_count = len(glob.glob(os.path.join(directory, '*lbl.fits')))
+            # append storage
+            templates.append(template)
+            counts.append(lbl_count)
+        # decide which template to use (using max of counts)
+        select = np.argmax(counts)
+        # add to object table
+        object_table.at[pos, 'LBL_TEMPLATES'] = ','.join(templates)
+        object_table.at[pos, 'LBL_SELECT'] = templates[select]
+        object_table.at[pos, 'LBL_COUNT'] = int(counts[select])
+    # -------------------------------------------------------------------------
+    # return the object table
     return object_table
 
 
