@@ -64,6 +64,13 @@ DEFAULT_COL_WIDTH = 30
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
 
+# Currently takes ~ 1 minute for SPIROU full profile
+SKIP_OBJ_TABLE = False
+# Currently takes ~ 1 minute for SPIROU full profile
+SKIP_RECIPE_TABLE = True
+# Currently takes ~ 20 minute for SPIROU full profile
+SKIP_MSG_TABLE = True
+
 
 # =============================================================================
 # Define functions
@@ -114,7 +121,7 @@ def get_settings(profile_name: Union[str, None] = None) -> dict:
     return param_settings
 
 
-def compile_stats(profile: dict) -> dict:
+def compile_stats(settings: dict, profile: dict) -> dict:
     """
     Compile the stats for a given profile
 
@@ -125,16 +132,42 @@ def compile_stats(profile: dict) -> dict:
     profile_stats = dict()
     # deal with updating the path (as DRS_UCONFIG) from apero profile
     update_apero_profile(profile)
-    # get the object table (astropy table)
-    object_table = compile_apero_object_table()
-    # add the lbl count
-    object_table = add_lbl_count(profile, object_table)
-    # add final object table to profile stats
-    profile_stats['OBJECT_TABLE'] = object_table
-    # get the recipe log table
-    profile_stats['RECIPE_TABLE'] = compile_apero_recipe_table()
-    # get the message log table
-    profile_stats['MESSAGE_TABLE'] = compile_apero_message_table()
+    # get paths to tables
+    object_table_file = os.path.join(settings['DATA'], 'OBJECT_TABLE.fits')
+    recipe_table_file = os.path.join(settings['DATA'], 'RECIPE_TABLE.fits')
+    message_table_file = os.path.join(settings['DATA'], 'MESSAGE_TABLE.fits')
+    # ------------------------------------------------------------------
+    # deal with skipping object table
+    if SKIP_OBJ_TABLE and os.path.exists(object_table_file):
+        profile_stats['OBJECT_TABLE'] = Table.read(object_table_file)
+    elif SKIP_OBJ_TABLE:
+        profile_stats['OBJECT_TABLE'] = None
+    else:
+        # get the object table (astropy table)
+        object_table = compile_apero_object_table()
+        # add the lbl count
+        object_table = add_lbl_count(profile, object_table)
+        # add final object table to profile stats
+        profile_stats['OBJECT_TABLE'] = object_table
+    # ------------------------------------------------------------------
+    # deal with skipping recipe table
+    if SKIP_RECIPE_TABLE and os.path.exists(recipe_table_file):
+        profile_stats['RECIPE_TABLE'] = Table.read(recipe_table_file)
+    elif SKIP_RECIPE_TABLE:
+        profile_stats['RECIPE_TABLE'] = None
+    else:
+        # get the recipe log table
+        profile_stats['RECIPE_TABLE'] = compile_apero_recipe_table()
+    # ------------------------------------------------------------------
+    # deal with skipping message table
+    if SKIP_MSG_TABLE and os.path.exists(message_table_file):
+        profile_stats['MESSAGE_TABLE'] = Table.read(message_table_file)
+    elif SKIP_MSG_TABLE:
+        profile_stats['MESSAGE_TABLE'] = None
+    else:
+        # get the message log table
+        profile_stats['MESSAGE_TABLE'] = compile_apero_message_table()
+    # ------------------------------------------------------------------
     # return the profile stats
     return profile_stats
 
@@ -207,8 +240,6 @@ def write_markdown(settings: dict, stats: dict):
             # deal with pandas table
             if isinstance(table, pd.DataFrame):
                 table = Table.from_pandas(table)
-            # deal with column widths for this file type
-            cwidth, cwidths = _get_column_widths(table)
             # create a table page for this table
             table_ref_name = cprofile_name.lower() + '_' + table_name.lower()
             # make a markdown page for the table
@@ -217,8 +248,16 @@ def write_markdown(settings: dict, stats: dict):
             table_filename = f'{table_name}.csv'
             table_title = table_name.lower().replace('_', ' ')
             table_page.add_title(table_title)
-            table_page.add_csv_table('', '../data/' + table_filename,
-                                     width=cwidth, widths=cwidths)
+            # deal with column widths for this file type
+            if table is not None:
+                # get column widths
+                cwidth, cwidths = _get_column_widths(table)
+                # add the csv version of this table
+                table_page.add_csv_table('', '../data/' + table_filename,
+                                         width=cwidth, widths=cwidths)
+            else:
+                # if we have no table then add a message
+                table_page.add_text('No table created.')
             # save table page
             table_markdown_file = os.path.basename(table_filename).lower()
             table_markdown_file = table_markdown_file.replace('.csv', '.rst')
@@ -548,6 +587,11 @@ def compile_apero_object_table() -> pd.DataFrame:
             # set counts
             counts[colnames[it]] = count
     # ------------------------------------------------------------------
+    # remove rows with no raw entries
+    mask = object_table['RAW_FILES'] > 0
+    # apply mask
+    object_table = object_table[mask]
+    # ------------------------------------------------------------------
     # return object table
     return object_table
 
@@ -686,12 +730,12 @@ def compile_apero_message_table() -> Table:
                 shortname = raw_id
                 # -------------------------------------------------------------
                 # check to see whether '[' and ']' are in raw_msg
-                if '[' in raw_msg and ']' in raw_msg:
+                try:
                     # get the code (we assume code is before the first "]")
                     code = raw_msg.split(']')[0].split('[')[1]
                     # get message (assume it is after "[code]:")
                     message = raw_msg.split(f'[{code}]:')[1]
-                else:
+                except Exception as _:
                     code = ''
                     message = raw_msg
                 # -------------------------------------------------------------
@@ -769,6 +813,9 @@ def save_stats(settings: dict, stats: dict):
     tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
     # loop around tables and load them
     for table_name in tables:
+        # deal with no table
+        if stats[table_name] is None:
+            continue
         # deal with pandas dataframes
         if isinstance(stats[table_name], pd.DataFrame):
             table = Table.from_pandas(stats[table_name])
@@ -804,6 +851,10 @@ def load_stats(settings: dict) -> dict:
         table_filename = f'{table_name}.fits'
         # construct full path
         table_path = os.path.join(settings['DATA'], table_filename)
+        # might not be on disk
+        if not os.path.exists(table_path):
+            profile_stats[table_name] = None
+            continue
         # load the table
         profile_stats[table_name] = Table.read(table_path)
     # return the profile stats
@@ -904,7 +955,7 @@ if __name__ == "__main__":
             # get profile
             apero_profile = apero_profiles[apero_profile_name]
             # compile stats
-            apero_stats = compile_stats(apero_profile)
+            apero_stats = compile_stats(ari_settings, apero_profile)
             # add to all_apero_stats
             all_apero_stats[apero_profile_name] = apero_stats
             # -----------------------------------------------------------------
