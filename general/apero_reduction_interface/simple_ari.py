@@ -17,6 +17,7 @@ from typing import Union
 import numpy as np
 import yaml
 from astropy.table import Table
+from astropy.time import Time
 
 # =============================================================================
 # Define variables
@@ -525,6 +526,7 @@ def compile_apero_object_table() -> Table:
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table['RAW_FILES'] = [0] * len(object_table)
+    object_table['LATEST_RAW'] = [' '*25] * len(object_table)
     object_table['PP_FILES'] = [0] * len(object_table)
     object_table['EXT_FILES'] = [0] * len(object_table)
     object_table['TCORR_FILES'] = [0] * len(object_table)
@@ -574,6 +576,17 @@ def compile_apero_object_table() -> Table:
         else:
             polar_cond = None
             p_cond = None
+        # ------------------------------------------------------------------
+        # deal with finding the latest raw file
+        # ------------------------------------------------------------------
+        latest_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
+        times = indexdbm.get_entries('KW_MID_OBS_TIME', condition=latest_cond)
+        # if there are no entries we have no raw files for this object
+        if len(times) == 0:
+            continue
+        # find maximum time value and convert to human time
+        latest_time = Time(np.max(times), format='mjd')
+        object_table['LATEST_RAW'][pos] = latest_time.iso
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
