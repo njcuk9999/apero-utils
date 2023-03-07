@@ -157,8 +157,8 @@ if __name__ == "__main__":
         wave_min = np.min(magic_grid[reg_id_magic == ureg])
         wave_max = np.max(magic_grid[reg_id_magic == ureg])
     
-    g = (waveref2 > wave_min) * (waveref2 < wave_max)
-    reg_id[g] = ureg
+        g = (waveref2 > wave_min) * (waveref2 < wave_max)
+        reg_id[g] = ureg
     
     
     # plots that you can remove, for debug

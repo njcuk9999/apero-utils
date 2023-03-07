@@ -56,17 +56,30 @@ COL_WIDTH_DICT['MESSAGE'] = 100
 COL_WIDTH_DICT['LOG_FILE'] = 300
 COL_WIDTH_DICT['CODE'] = 20
 COL_WIDTH_DICT['RUNSTRING'] = 200
-COL_WIDTH_DICT['START_TIME'] = 50
-COL_WIDTH_DICT['END_TIME'] = 50
-
+COL_WIDTH_DICT['START_TIME'] = 60
+COL_WIDTH_DICT['END_TIME'] = 60
+COL_WIDTH_DICT['RA_DEG'] = 5
+COL_WIDTH_DICT['DEC_DEG'] = 5
+COL_WIDTH_DICT['TEFF'] = 5
+COL_WIDTH_DICT['SP_TYPE'] = 5
+COL_WIDTH_DICT['RAW'] = 5
+COL_WIDTH_DICT['PP'] = 5
+COL_WIDTH_DICT['EXT'] = 5
+COL_WIDTH_DICT['TCORR'] = 5
+COL_WIDTH_DICT['e'] = 5
+COL_WIDTH_DICT['t'] = 5
+COL_WIDTH_DICT['POL'] = 5
+COL_WIDTH_DICT['p'] = 5
+COL_WIDTH_DICT['LBL_COUNT'] = 5
+COL_WIDTH_DICT['LBL_SELECT'] = 5
 # define the default column width
-DEFAULT_COL_WIDTH = 30
+DEFAULT_COL_WIDTH = 10
 # define table width info
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
 
 # Currently takes ~ 1 minute for SPIROU full profile
-SKIP_OBJ_TABLE = False
+SKIP_OBJ_TABLE = True
 # Currently takes ~ 1 minute for SPIROU full profile
 SKIP_RECIPE_TABLE = True
 # Currently takes ~ 20 minute for SPIROU full profile
@@ -525,17 +538,19 @@ def compile_apero_object_table() -> Table:
     object_table = Table.from_pandas(object_table)
     # ------------------------------------------------------------------
     # add counting columns to the object table
-    object_table['RAW_FILES'] = [0] * len(object_table)
-    object_table['LATEST_RAW'] = [' '*25] * len(object_table)
-    object_table['PP_FILES'] = [0] * len(object_table)
-    object_table['EXT_FILES'] = [0] * len(object_table)
-    object_table['TCORR_FILES'] = [0] * len(object_table)
-    object_table['e.fits'] = [0] * len(object_table)
-    object_table['t.fits'] = [0] * len(object_table)
+    object_table['RAW'] = [0] * len(object_table)
+    object_table['LATEST_RAW'] = [' ' * 25] * len(object_table)
+    object_table['PP'] = [0] * len(object_table)
+    object_table['EXT'] = [0] * len(object_table)
+    object_table['TCORR'] = [0] * len(object_table)
     # deal with instruments that have polarimetry
     if has_polar:
-        object_table['POLAR_FILES'] = [0] * len(object_table)
-        object_table['p.fits'] = [0] * len(object_table)
+        object_table['POL'] = [0] * len(object_table)
+    object_table['e'] = [0] * len(object_table)
+    object_table['t'] = [0] * len(object_table)
+    # deal with instruments that have polarimetry
+    if has_polar:
+        object_table['p'] = [0] * len(object_table)
     # ------------------------------------------------------------------
     # log progress
     wlog(params, '', 'Compiling object table (this may take a while)')
@@ -592,13 +607,11 @@ def compile_apero_object_table() -> Table:
         # ------------------------------------------------------------------
         conditions = [raw_cond, pp_cond, ext_cond, tcorr_cond, polar_cond,
                       e_cond, t_cond, p_cond]
-        colnames = ['RAW_FILES', 'PP_FILES', 'EXT_FILES', 'TCORR_FILES',
-                    'POLAR_FILES', 'e.fits', 't.fits', 'p.fits']
+        colnames = ['RAW', 'PP', 'EXT', 'TCORR', 'POL', 'e', 't', 'p']
         # storage of count (for chains
         counts = dict()
         # define chains (if this number is zero do not count)
-        chains = [None, 'RAW_FILES', 'PP_FILES', 'EXT_FILES',
-                  'TCORR_FILES', 'PP_FILES', 'e.fits', 't.fits']
+        chains = [None, 'RAW', 'PP', 'EXT', 'TCORR', 'PP', 'EXT', 'PP']
         # loop around conditions
         for it, condition in enumerate(conditions):
             # deal with polar conditions
@@ -620,7 +633,7 @@ def compile_apero_object_table() -> Table:
             counts[colnames[it]] = count
     # ------------------------------------------------------------------
     # remove rows with no raw entries
-    mask = object_table['RAW_FILES'] > 0
+    mask = object_table['RAW'] > 0
     # apply mask
     object_table = object_table[mask]
     # ------------------------------------------------------------------
@@ -815,9 +828,9 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     # first column: templates used for lbl
     # second column: template selected for lbl count
     # third column: number of lbl files for template with most lbl files
-    object_table['LBL_TEMPLATES'] = np.zeros(len(object_table), dtype=str)
     object_table['LBL_SELECT'] = np.zeros(len(object_table), dtype=str)
     object_table['LBL_COUNT'] = np.zeros(len(object_table), dtype=int)
+    object_table['LBL_TEMPLATES'] = np.zeros(len(object_table), dtype=str)
     lbl_templates = []
     lbl_select = []
     lbl_count = []
@@ -1019,6 +1032,8 @@ def _get_column_widths(table: Table):
     # widths must be percentages (100% total)
     cwidths = np.array(cwidths)
     cwidths = np.floor(100 * cwidths / np.sum(cwidths)).astype(int) - 1
+    # any cwidths that are 0 are set to 1
+    cwidths[cwidths == 0] = 1
     # widths must be strings
     cwidths = list(cwidths.astype(str))
     # -------------------------------------------------------------------------
