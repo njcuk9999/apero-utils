@@ -17,6 +17,7 @@ from typing import Union
 import numpy as np
 import yaml
 from astropy.table import Table
+from astropy.time import Time
 
 # =============================================================================
 # Define variables
@@ -57,20 +58,20 @@ COL_WIDTH_DICT['CODE'] = 20
 COL_WIDTH_DICT['RUNSTRING'] = 200
 COL_WIDTH_DICT['START_TIME'] = 60
 COL_WIDTH_DICT['END_TIME'] = 60
-COL_WIDTH_DICT['RA_DEG'] = 5
-COL_WIDTH_DICT['DEC_DEG'] = 5
-COL_WIDTH_DICT['TEFF'] = 5
-COL_WIDTH_DICT['SP_TYPE'] = 5
-COL_WIDTH_DICT['RAW'] = 5
-COL_WIDTH_DICT['PP'] = 5
-COL_WIDTH_DICT['EXT'] = 5
-COL_WIDTH_DICT['TCORR'] = 5
-COL_WIDTH_DICT['e'] = 5
-COL_WIDTH_DICT['t'] = 5
-COL_WIDTH_DICT['POL'] = 5
-COL_WIDTH_DICT['p'] = 5
-COL_WIDTH_DICT['LBL_COUNT'] = 5
-COL_WIDTH_DICT['LBL_SELECT'] = 5
+COL_WIDTH_DICT['RA_DEG'] = 3
+COL_WIDTH_DICT['DEC_DEG'] = 3
+COL_WIDTH_DICT['TEFF'] = 3
+COL_WIDTH_DICT['SP_TYPE'] = 3
+COL_WIDTH_DICT['RAW'] = 3
+COL_WIDTH_DICT['PP'] = 3
+COL_WIDTH_DICT['EXT'] = 3
+COL_WIDTH_DICT['TCORR'] = 3
+COL_WIDTH_DICT['e'] = 3
+COL_WIDTH_DICT['t'] = 3
+COL_WIDTH_DICT['POL'] = 3
+COL_WIDTH_DICT['p'] = 3
+COL_WIDTH_DICT['LBL_COUNT'] = 3
+COL_WIDTH_DICT['LBL_SELECT'] = 3
 # define the default column width
 DEFAULT_COL_WIDTH = 10
 # define table width info
@@ -78,7 +79,7 @@ DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
 
 # Currently takes ~ 1 minute for SPIROU full profile
-SKIP_OBJ_TABLE = True
+SKIP_OBJ_TABLE = False
 # Currently takes ~ 1 minute for SPIROU full profile
 SKIP_RECIPE_TABLE = True
 # Currently takes ~ 20 minute for SPIROU full profile
@@ -538,6 +539,7 @@ def compile_apero_object_table() -> Table:
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table['RAW'] = [0] * len(object_table)
+    object_table['LATEST_RAW'] = [' ' * 25] * len(object_table)
     object_table['PP'] = [0] * len(object_table)
     object_table['EXT'] = [0] * len(object_table)
     object_table['TCORR'] = [0] * len(object_table)
@@ -589,6 +591,17 @@ def compile_apero_object_table() -> Table:
         else:
             polar_cond = None
             p_cond = None
+        # ------------------------------------------------------------------
+        # deal with finding the latest raw file
+        # ------------------------------------------------------------------
+        latest_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
+        times = indexdbm.get_entries('KW_MID_OBS_TIME', condition=latest_cond)
+        # if there are no entries we have no raw files for this object
+        if len(times) == 0:
+            continue
+        # find maximum time value and convert to human time
+        latest_time = Time(np.max(times), format='mjd')
+        object_table['LATEST_RAW'][pos] = latest_time.iso
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
