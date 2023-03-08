@@ -34,7 +34,7 @@ PROFILE_FILE = 'profiles.yaml'
 def get_args():
     parser = argparse.ArgumentParser(description='Rene\'s magic trigger')
     # add obs dir
-    parser.add_argument('--obsdir', type=str, default='None',
+    parser.add_argument('obsdir', type=str, default='None',
                         help='Observation directory name(s) separated by '
                              'commas')
     # test mode - do not run apero recipes just test
