@@ -79,7 +79,7 @@ DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
 
 # Currently takes ~ 1 minute for SPIROU full profile
-SKIP_OBJ_TABLE = True
+SKIP_OBJ_TABLE = False
 # Currently takes ~ 1 minute for SPIROU full profile
 SKIP_RECIPE_TABLE = True
 # Currently takes ~ 20 minute for SPIROU full profile
