@@ -9,17 +9,14 @@ Created on 2023-03-08 at 11:59
 
 @author: cook
 """
-from typing import Any, Dict
-import numpy as np
-import matplotlib.pyplot as plt
-from astropy.io import fits
-from astropy.table import Table
-from astropy import units as u
-from tqdm import tqdm
-import warnings
 import argparse
-import yaml
 import os
+from typing import Any, Dict
+
+import astropy.units as uu
+import numpy as np
+import yaml
+from astropy.time import Time
 
 
 # =============================================================================
@@ -34,7 +31,7 @@ PROFILE_FILE = 'profiles.yaml'
 def get_args():
     parser = argparse.ArgumentParser(description='Rene\'s magic trigger')
     # add obs dir
-    parser.add_argument('obsdir', type=str, default='None',
+    parser.add_argument('--obsdir', type=str, default='*',
                         help='Observation directory name(s) separated by '
                              'commas')
     # test mode - do not run apero recipes just test
@@ -58,8 +55,8 @@ def get_settings():
     args = get_args()
     # ----------------------------------------------------------------------
     # must have an observation directory
-    if args.obsdir in ['None', None, 'Null', '']:
-        raise ValueError('Must provide an observation directory')
+    if args.obsdir in ['None', 'Null', '', None, '*']:
+        obs_dirs = '*'
     else:
         obs_dirs = args.obsdir.split(',')
     # ----------------------------------------------------------------------
@@ -148,15 +145,23 @@ def make_sym_links(settings: Dict[str, Any]):
         inpath = settings['PROFILES'][profile]['raw dir']
         # get the raw directory from params
         outpath = params['DRS_DATA_RAW']
+        # get obs dirs
+        obs_dirs = settings['OBS_DIRS']
+        # deal with getting all obs_dirs
+        if obs_dirs == '*':
+            obs_dirs = get_obs_dirs(settings['PROFILES'][profile])
         # loop around obs dirs
-        for obs_dir in settings['OBS_DIRS']:
+        for obs_dir in obs_dirs:
             # get the full path
             full_inpath = os.path.join(inpath, obs_dir)
             full_outpath = os.path.join(outpath, obs_dir)
-            # print sym link creation
+            # print symlink creation
             print(f'\t\tCreating symlink {full_outpath}')
             # deal with test mode
             if settings['TEST']:
+                continue
+            # check if rawlink exists
+            if not os.path.exists(full_inpath):
                 continue
             # check if the symlink exists
             if os.path.exists(full_outpath):
@@ -166,6 +171,31 @@ def make_sym_links(settings: Dict[str, Any]):
             os.symlink(full_inpath, full_outpath)
 
 
+def get_obs_dirs(profile):
+    # get raw directory path from profile
+    path = profile['raw dir']
+    # set start date
+    start_date = str(profile['start date'])
+    # store obs dirs
+    obs_dirs = []
+    # convert start date to a astropy time
+    start = Time(start_date)
+    end = Time.now()
+    # get time delta
+    delta = (end - start).to(uu.day).round()
+    # get a list of days
+    days = start + np.arange(delta.value) * uu.day
+    # loop around days and check for directory in path
+    for day in days:
+        # get the directory name
+        obs_dir = day.iso.split(' ')[0]
+        # check if the directory exists
+        if os.path.exists(os.path.join(path, obs_dir)):
+            obs_dirs.append(obs_dir)
+    # return the obs dirs
+    return obs_dirs
+
+
 def run_precheck(settings: Dict[str, Any]):
     """
     Run the precheck on all profiles
@@ -173,6 +203,7 @@ def run_precheck(settings: Dict[str, Any]):
     :param settings: dict, settings dictionary
     """
     _  = settings
+    print('\tNot implemented.')
     return
 
 
@@ -189,13 +220,19 @@ def run_processing(settings: Dict[str, Any]):
         # update the apero profile
         _ = update_apero_profile(settings['PROFILES'][profile])
         # get the run file
-        runfile = profile['apero run file']
+        runfile = settings['PROFILES'][profile]['apero run file']
+        # get the obs dirs
+        obs_dirs = settings['OBS_DIRS']
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_processing
         # run apero processing
-        apero_processing.main(runfile=runfile,
-                              include_obs_dirs=','.join(settings['OBS_DIRS']),
-                              test=settings['TEST'])
+        if obs_dirs == '*':
+            apero_processing.main(runfile=runfile,
+                                  test=settings['TEST'])
+        else:
+            apero_processing.main(runfile=runfile,
+                                  include_obs_dirs=','.join(obs_dirs),
+                                  test=settings['TEST'])
 
 
 def run_apero_get(settings: Dict[str, Any]):
@@ -211,16 +248,15 @@ def run_apero_get(settings: Dict[str, Any]):
         # update the apero profile
         _ = update_apero_profile(settings['PROFILES'][profile])
         # get the output types
-        outtypes = profile['apero out types']
+        outtypes = settings['PROFILES'][profile]['apero out types']
         # get the dpr types
-        dprtypes = profile['apero dpr types']
+        dprtypes = settings['PROFILES'][profile]['apero dpr types']
         # get the output path
-        outpath = profile['lbl in path']
+        outpath = settings['PROFILES'][profile]['lbl in path']
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_get
         # run apero processing
-        apero_get.main(objnames='*',
-                       dprtypes=dprtypes, outtypes=outtypes,
+        apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=outtypes,
                        outpath=outpath, fibers='A', symlinks=True,
                        test=settings['TEST'])
 
@@ -232,6 +268,7 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     :param settings: dict, settings dictionary
     """
     _  = settings
+    print('\tNot implemented.')
     return
 
 

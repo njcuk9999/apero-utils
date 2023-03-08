@@ -11,6 +11,7 @@ nirps ha V0.7.275 ref cal:
         - OBJ_FP
         - OBJ_DARK
         - OBJ_SKY
+    start date: 2022-11-01
 
 nirps ha V0.7.275 per night cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpsha_pernight
@@ -25,6 +26,7 @@ nirps ha V0.7.275 per night cal:
         - OBJ_FP
         - OBJ_DARK
         - OBJ_SKY
+    start date: 2022-11-01
 
 nirps he V0.7.275 ref cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_he
@@ -39,6 +41,7 @@ nirps he V0.7.275 ref cal:
         - OBJ_FP
         - OBJ_DARK
         - OBJ_SKY
+    start date: 2022-11-01
 
 nirps he V0.7.275 per night cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpshe_pernight
@@ -53,3 +56,4 @@ nirps he V0.7.275 per night cal:
         - OBJ_FP
         - OBJ_DARK
         - OBJ_SKY
+    start date: 2022-11-01
