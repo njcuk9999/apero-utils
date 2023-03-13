@@ -1,0 +1,29 @@
+nirps he V0.7.275 ref cal:
+    apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_he
+    lbl in path: /space/spirou/obj_full_NIRPS_HE
+    lbl path: /space/spirou/LBL/NIRPS_HE
+    raw dir: /nirps_raw/nirps/apero-data/common/rawsym202211-HE
+    apero run file: online_run.ini
+    apero out types:
+        - TELLU_OBJ
+        - EXT_E2DS_FF
+    apero dpr types:
+        - OBJ_FP
+        - OBJ_DARK
+        - OBJ_SKY
+    start date: 2022-11-01
+
+nirps he V0.7.275 per night cal:
+    apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpshe_pernight
+    lbl in path: /space/spirou/obj_full_NIRPS_HE_per_night
+    lbl path: /space/spirou/LBL/NIRPS_HE_pernight
+    raw dir: /nirps_raw/nirps/apero-data/common/rawsym202211-HE
+    apero run file: online_run.ini
+    apero out types:
+        - TELLU_OBJ
+        - EXT_E2DS_FF
+    apero dpr types:
+        - OBJ_FP
+        - OBJ_DARK
+        - OBJ_SKY
+    start date: 2022-11-01

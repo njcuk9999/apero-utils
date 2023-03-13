@@ -22,7 +22,7 @@ from astropy.time import Time
 # =============================================================================
 # Define variables
 # =============================================================================
-PROFILE_FILE = 'profiles.yaml'
+
 # -----------------------------------------------------------------------------
 
 # =============================================================================
@@ -31,6 +31,8 @@ PROFILE_FILE = 'profiles.yaml'
 def get_args():
     parser = argparse.ArgumentParser(description='Rene\'s magic trigger')
     # add obs dir
+    parser.add_argument('profile', type=str, default='None',
+                        help='The profile yaml to use')
     parser.add_argument('--obsdir', type=str, default='*',
                         help='Observation directory name(s) separated by '
                              'commas')
@@ -66,7 +68,7 @@ def get_settings():
     settings['TEST'] = args.test
     # ----------------------------------------------------------------------
     # read the yaml file and push into settings
-    settings = read_yaml(PROFILE_FILE, settings)
+    settings = read_yaml(args.profile, settings)
     # ----------------------------------------------------------------------
     # return the settings
     return settings
