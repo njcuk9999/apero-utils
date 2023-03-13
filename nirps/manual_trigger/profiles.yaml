@@ -2,7 +2,7 @@ nirps ha V0.7.275 ref cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_ha
     lbl in path: /space/spirou/obj_full_NIRPS_HA
     lbl path: /space/spirou/LBL/NIRPS_HA
-    raw dir: /nirps_raw/nirps/apero-data/common/rawsym202211-HA
+    raw dir: /nirps_raw/nirps/raw-data/nirps_ha
     apero run file: online_run.ini
     apero out types:
         - TELLU_OBJ
@@ -17,7 +17,7 @@ nirps ha V0.7.275 per night cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpsha_pernight
     lbl in path: /space/spirou/obj_full_NIRPS_HA_per_night
     lbl path: /space/spirou/LBL/NIRPS_HA_pernight
-    raw dir: /nirps_raw/nirps/apero-data/common/rawsym202211-HA
+    raw dir: /nirps_raw/nirps/raw-data/nirps_ha
     apero run file: online_run.ini
     apero out types:
         - TELLU_OBJ
@@ -32,7 +32,7 @@ nirps he V0.7.275 ref cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_he
     lbl in path: /space/spirou/obj_full_NIRPS_HE
     lbl path: /space/spirou/LBL/NIRPS_HE
-    raw dir: /nirps_raw/nirps/apero-data/common/rawsym202211-HE
+    raw dir: /nirps_raw/nirps/raw-data/nirps_he
     apero run file: online_run.ini
     apero out types:
         - TELLU_OBJ
@@ -47,7 +47,7 @@ nirps he V0.7.275 per night cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpshe_pernight
     lbl in path: /space/spirou/obj_full_NIRPS_HE_per_night
     lbl path: /space/spirou/LBL/NIRPS_HE_pernight
-    raw dir: /nirps_raw/nirps/apero-data/common/rawsym202211-HE
+    raw dir: /nirps_raw/nirps/raw-data/nirps_he
     apero run file: online_run.ini
     apero out types:
         - TELLU_OBJ

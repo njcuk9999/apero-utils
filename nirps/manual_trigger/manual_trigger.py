@@ -157,20 +157,22 @@ def make_sym_links(settings: Dict[str, Any]):
             # get the full path
             full_inpath = os.path.join(inpath, obs_dir)
             full_outpath = os.path.join(outpath, obs_dir)
-            # print symlink creation
-            print(f'\t\tCreating symlink {full_outpath}')
+
             # deal with test mode
             if settings['TEST']:
+                print(f'\t\tSkipping symlink {full_outpath} [TEST]')
                 continue
             # check if rawlink exists
             if not os.path.exists(full_inpath):
+                print(f'\t\tSkipping {full_inpath} [does not exist]')
                 continue
+
+            # print symlink creation
+            print(f'\t\tCreating symlink {full_outpath}')
             # check if the symlink exists
-            if os.path.exists(full_outpath):
-                # if it does then remove it
-                os.remove(full_outpath)
-            # make the symlink
-            os.symlink(full_inpath, full_outpath)
+            if not os.path.islink(full_outpath):
+                # make the symlink
+                os.symlink(full_inpath, full_outpath)
 
 
 def get_obs_dirs(profile):
