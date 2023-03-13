@@ -745,7 +745,7 @@ class CheckUsedCalibs(SubTest):
         self.used_calib_df = used_calib_df[mask.index[mask]]
         self.calib_df = calib_df
         self.test_html_path = test_html_path
-        self.dmax = 7.0
+        self.dmax = delta_mjd_max
 
     def run(self):
 
@@ -765,6 +765,7 @@ class CheckUsedCalibs(SubTest):
             drop_mask_all = drop_mask.all()
             # Always keep CDBWAVE because means that wavelength solution
             # in header is old, even if it is indeed a master==1 file
+            # TODO: Use log flag or other way to decide if skip or not
             if "CDBWAVE" in drop_mask_all.index:
                 drop_mask_all["CDBWAVE"] = False
             drop_inds = drop_mask_all.index[~drop_mask_all]

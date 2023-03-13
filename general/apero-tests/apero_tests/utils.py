@@ -679,6 +679,7 @@ def missing_index_headers(
             try:
                 # TODO: Get header keys from this dict as well
                 # TODO: Make this loop files around
+                # BUG: This is not finished!
                 tbl = Table.read(
                     ind_df.iloc[34].ABSPATH, hdu=("PARAM_TABLE", 1)
                 )

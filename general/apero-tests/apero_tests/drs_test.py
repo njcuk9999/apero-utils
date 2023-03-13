@@ -13,6 +13,7 @@ import apero_tests.subtest as st
 import apero_tests.utils as ut
 import pandas as pd
 from apero.core import constants
+from apero.core.core import drs_database
 from apero.core.core.drs_argument import DrsArgument
 from apero.core.core.drs_base_classes import BinaryDict
 from apero.core.core.drs_file import DrsFitsFile
@@ -150,9 +151,6 @@ class DrsTest:
             self.input_path = self.dirpaths[self.recipe.in_block_str]
             self.output_path = self.dirpaths[self.recipe.out_block_str]
             self.calibdb_path = self.params["DRS_CALIB_DB"]
-            self.calibdb_seed_path = os.path.join(
-                self.params["DRS_DATA_ASSETS"], "databases", "reset.calib.csv"
-            )
 
             # Path to HTML report
             self.html_path = Path(
@@ -429,7 +427,15 @@ class DrsTest:
         ].copy()
 
         # Don't keep seed values
-        calib_seed = pd.read_csv(self.calibdb_seed_path, skipinitialspace=True)
+
+        # get parameters from params
+        asset_dir = self.params['DRS_DATA_ASSETS']
+        reset_path = self.params['DATABASE_DIR']
+        calibdbm = drs_database.CalibrationDatabase(self.params)
+        # construct reset file
+        reset_abspath = os.path.join(asset_dir, reset_path, calibdbm.dbreset)
+        # construct reset file
+        calib_seed = pd.read_csv(reset_abspath, skipinitialspace=True)
         calib_df = calib_df[~calib_df.UHASH.isin(calib_seed.UHASH)]
 
         return calib_df
@@ -611,6 +617,7 @@ class DrsTest:
         # but default value depends on what we check. So need to set these before
         # perform action (see quicklook block for example)
         # TODO: Set default values automatically, in DRS or in a separate default dict ?
+        # TODO: Set false by default for all flags (added this after talking to Neil)
         flag_names = list(log_df["FLAGSTR"].str.split("|").explode().unique())
         log_df[
             flag_names
@@ -894,9 +901,12 @@ class DrsTest:
                 )
             )
 
+            if "leak" in self.name:
+                __import__('ipdb').set_trace()
             subtest_list.append(
                 st.CheckUsedCalibs(
-                    self.cdb_used_df, self.html_path, self.all_calib_df
+                    self.cdb_used_df, self.html_path, self.all_calib_df,
+                    delta_mjd_max=self.params["MAX_CALIB_DTIME"]
                 )
             )
 
