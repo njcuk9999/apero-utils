@@ -4,7 +4,10 @@ author: Neil Cook
 last update: 2023-03-13
 
 This file should be kept the same as `/cosmos99/README.md`
-
+This file is also present in `apero-utils` at:
+- `/cosmos99/spirou/apero-bin/apero-utils/nirps/toolbox/general/file_system.md`
+- `/cosmos99/nirps/apero-bin/apero-utils/nirps/toolbox/general/file_system.md`
+- https://github.com/njcuk9999/apero-utils/blob/master/nirps/toolbox/general/file_system.md
 
 The `/cosmos99` drive is for SPIRou and NIRPS data reduction only.
 Please do not add new directories.
