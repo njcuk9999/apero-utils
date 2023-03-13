@@ -12,6 +12,7 @@ Created on 2023-02-20 at 9:35
 import glob
 import os
 import re
+import sys
 from typing import Union
 
 import numpy as np
@@ -22,8 +23,6 @@ from astropy.time import Time
 # =============================================================================
 # Define variables
 # =============================================================================
-# define profile yaml file
-PROFILE_FILE = 'profiles.yaml'
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
@@ -77,13 +76,6 @@ DEFAULT_COL_WIDTH = 10
 # define table width info
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
-
-# Currently takes ~ 1 minute for SPIROU full profile
-SKIP_OBJ_TABLE = False
-# Currently takes ~ 1 minute for SPIROU full profile
-SKIP_RECIPE_TABLE = True
-# Currently takes ~ 20 minute for SPIROU full profile
-SKIP_MSG_TABLE = True
 
 
 # =============================================================================
@@ -150,11 +142,15 @@ def compile_stats(settings: dict, profile: dict) -> dict:
     object_table_file = os.path.join(settings['DATA'], 'OBJECT_TABLE.fits')
     recipe_table_file = os.path.join(settings['DATA'], 'RECIPE_TABLE.fits')
     message_table_file = os.path.join(settings['DATA'], 'MESSAGE_TABLE.fits')
+    # get skip criteria
+    skip_obj_table = profile['skip obj table']
+    skip_recipe_table = profile['skip recipe table']
+    skip_msg_table = profile['skip msg table']
     # ------------------------------------------------------------------
     # deal with skipping object table
-    if SKIP_OBJ_TABLE and os.path.exists(object_table_file):
+    if skip_obj_table and os.path.exists(object_table_file):
         profile_stats['OBJECT_TABLE'] = Table.read(object_table_file)
-    elif SKIP_OBJ_TABLE:
+    elif skip_obj_table:
         profile_stats['OBJECT_TABLE'] = None
     else:
         # get the object table (astropy table)
@@ -165,18 +161,18 @@ def compile_stats(settings: dict, profile: dict) -> dict:
         profile_stats['OBJECT_TABLE'] = object_table
     # ------------------------------------------------------------------
     # deal with skipping recipe table
-    if SKIP_RECIPE_TABLE and os.path.exists(recipe_table_file):
+    if skip_recipe_table and os.path.exists(recipe_table_file):
         profile_stats['RECIPE_TABLE'] = Table.read(recipe_table_file)
-    elif SKIP_RECIPE_TABLE:
+    elif skip_recipe_table:
         profile_stats['RECIPE_TABLE'] = None
     else:
         # get the recipe log table
         profile_stats['RECIPE_TABLE'] = compile_apero_recipe_table()
     # ------------------------------------------------------------------
     # deal with skipping message table
-    if SKIP_MSG_TABLE and os.path.exists(message_table_file):
+    if skip_msg_table and os.path.exists(message_table_file):
         profile_stats['MESSAGE_TABLE'] = Table.read(message_table_file)
-    elif SKIP_MSG_TABLE:
+    elif skip_msg_table:
         profile_stats['MESSAGE_TABLE'] = None
     else:
         # get the message log table
@@ -976,14 +972,16 @@ def load_stats(settings: dict) -> dict:
     return profile_stats
 
 
-def read_yaml_file() -> dict:
+def read_yaml_file(profile_filename: str) -> dict:
     """
-    Read the yaml file PROFILE_FILE for the list of profiles using pyyaml
+    Read the yaml file  for the list of profiles using pyyaml
+
+    :param profile_filename: str, the filename of the yaml file
 
     :return:
     """
     # read the yaml file "profiles.yaml" for the list of profiles using pyyaml
-    with open(PROFILE_FILE, 'r') as stream:
+    with open(profile_filename, 'r') as stream:
         # try to load the yaml file
         try:
             profiles = yaml.safe_load(stream)
@@ -1054,8 +1052,12 @@ def _get_column_widths(table: Table):
 # Main code here
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
+    # assume the first argument is the profile filename
+    if len(sys.argv) != 2:
+        raise IOError('Please supply the profile filename')
+    profile_filename = sys.argv[1]
     # step 1: read the yaml file
-    apero_profiles = read_yaml_file()
+    apero_profiles = read_yaml_file(profile_filename)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()

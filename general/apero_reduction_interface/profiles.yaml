@@ -1,41 +1,63 @@
 # name:
-#   apero profile: APERO PROFILE NAME
-#   lbl path: PATH TO LBL FILE
-#   username: USERNAME
-#   password: PASSWORD
+#     apero profile: str, absolute path to APERO profile (settings)
+#     lbl path: str, absolute path to LBL directory
+#     username: str, username for html
+#     account: str, account for html
+#     skip obj table: bool: if True, skip making the object table
+#     skip recipe table: bool: if True, skip making the recipe table
+#     skip msg table: bool: if True, skip making the msg table
+
 
 spirou V0.7.275 full:
   apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
   lbl path: /space/spirou/LBL/SPIROU07275
   username: spirou
   account: fantasio
+  skip obj table: True
+  skip recipe table: True
+  skip msg table: True
 
 spirou V0.7.275 mini run 2 (jupiter):
   apero profile: /cosmos99/apero-data/drs-settings/minidata2_07254
   lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter
   username: spirou
   account: fantasio
+  skip obj table: True
+  skip recipe table: True
+  skip msg table: True
 
 nirps ha V0.7.275 ref cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_ha
     lbl path: /space/spirou/LBL/NIRPS_HA
     username: nirps
     account: nirps4all
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
 
 nirps ha V0.7.275 per night cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpsha_pernight
     lbl path: /space/spirou/LBL/NIRPS_HA_pernight
     username: nirps
     account: nirps4all
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
 
 nirps he V0.7.275 ref cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_he
     lbl path: /space/spirou/LBL/NIRPS_HE
     username: nirps
     account: nirps4all
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
 
 nirps he V0.7.275 per night cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpshe_pernight
     lbl path: /space/spirou/LBL/NIRPS_HE_pernight
     username: nirps
     account: nirps4all
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
