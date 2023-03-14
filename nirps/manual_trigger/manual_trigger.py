@@ -22,7 +22,8 @@ from astropy.time import Time
 # =============================================================================
 # Define variables
 # =============================================================================
-
+# start time
+START_TIME = Time.now()
 # -----------------------------------------------------------------------------
 
 # =============================================================================
@@ -262,7 +263,7 @@ def run_apero_get(settings: Dict[str, Any]):
         # run apero processing
         apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=outtypes,
                        outpath=outpath, fibers='A', symlinks=True,
-                       test=settings['TEST'])
+                       test=settings['TEST'], since=START_TIME.iso)
 
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):
