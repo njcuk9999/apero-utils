@@ -252,9 +252,9 @@ def run_apero_get(settings: Dict[str, Any]):
         # update the apero profile
         _ = update_apero_profile(settings['PROFILES'][profile])
         # get the output types
-        outtypes = settings['PROFILES'][profile]['apero out types']
+        outtypes = ','.join(settings['PROFILES'][profile]['apero out types'])
         # get the dpr types
-        dprtypes = settings['PROFILES'][profile]['apero dpr types']
+        dprtypes = ','.join(settings['PROFILES'][profile]['apero dpr types'])
         # get the output path
         outpath = settings['PROFILES'][profile]['lbl in path']
         # need to import apero_processing
