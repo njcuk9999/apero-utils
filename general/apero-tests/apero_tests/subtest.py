@@ -694,7 +694,7 @@ class CountCalibEntries(SubTest):
             # calib_count = self.calib_df.groupby("KEYNAME").size()
             calib_count = self.calib_df.groupby("KEYNAME").nunique().FILENAME
             if not self.ismaster:
-                master_mask = self.calib_df["SUPERCAL"].astype(bool)
+                master_mask = self.calib_df["REFCAL"].astype(bool)
                 if master_mask.sum() == 0:
                     master_calib_count = zero_count.copy()
                 else:
@@ -759,7 +759,7 @@ class CheckUsedCalibs(SubTest):
             ind_for_db = stacked_fdf[stacked_fdf.isin(self.calib_df.FILENAME)]
             calib_ind_used = calib_with_fname.loc[ind_for_db]
             drop_map = (
-                calib_ind_used.SUPERCAL.astype(int).groupby("FILENAME").all()
+                calib_ind_used.REFCAL.astype(int).groupby("FILENAME").all()
             )
             drop_mask = fdf.replace(drop_map)
             drop_mask_all = drop_mask.all()
