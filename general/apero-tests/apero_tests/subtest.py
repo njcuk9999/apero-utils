@@ -461,7 +461,7 @@ class PlotQCTest(SubTest):
         if odometer_flag:
             data_dict_qc_plot = {"Night": qc_values.index.tolist()}
             data_dict_qc_plot["Odometer"] = self.log_df.ODOMETER.tolist()
-            for key, series in qc_values.iteritems():
+            for key, series in qc_values.items():
                 data_dict_qc_plot[key] = series.tolist()
 
         elif order_flag:
@@ -472,7 +472,7 @@ class PlotQCTest(SubTest):
 
         else:
             data_dict_qc_plot = {"Night": qc_values.index.tolist()}
-            for key, series in qc_values.iteritems():
+            for key, series in qc_values.items():
                 # HACK: Just making the code run, probably a a bad result and need to fix underlying cause in tests setup
                 if key is None:
                     key = "None"
