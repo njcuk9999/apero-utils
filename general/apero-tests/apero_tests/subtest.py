@@ -768,13 +768,17 @@ class CheckUsedCalibs(SubTest):
             if "CDBWAVE" in drop_mask_all.index:
                 drop_mask_all["CDBWAVE"] = False
             drop_inds = drop_mask_all.index[~drop_mask_all]
+            # TODO: For apero_mk_template, end up with empty used_calib_df -> is this OK
             self.used_calib_df = self.used_calib_df[drop_inds]
-            delta_mjd_df = self.used_calib_df.xs(
-                "DELTA_MJD", axis=1, level=1
-            ).abs()
-            check_per_ctype = delta_mjd_df > self.dmax
-            bool_mask = check_per_ctype.any(axis=1)
-            n_fail = bool_mask.sum()
+            if len(self.used_calib_df.columns) == 0:
+                n_fail = 0
+            else:
+                delta_mjd_df = self.used_calib_df.xs(
+                    "DELTA_MJD", axis=1, level=1
+                ).abs()
+                check_per_ctype = delta_mjd_df > self.dmax
+                bool_mask = check_per_ctype.any(axis=1)
+                n_fail = bool_mask.sum()
         else:
             n_fail = 0
 
