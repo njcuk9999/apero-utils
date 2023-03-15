@@ -89,6 +89,7 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
     Write an html interactive plot from a data set in a dictionary.
     """
 
+    # TODO: Remove duplicate code between types of plots
     test_dir = test_html_path.parent
     test_file = test_html_path.name
     save_path = Path(test_dir, subtest, subtest + ".html")
