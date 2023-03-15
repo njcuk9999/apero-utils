@@ -128,7 +128,7 @@ class CheckMissingAdded(SubTest):
                 "File": df_reset.FILENAME,
             }
             for k in self.inspect_kwds:
-                data_dict[k] = data_dict[k]
+                data_dict[k] = df_reset[k]
 
             self.details = inspect_table(
                 self.parent_test.html_path,
