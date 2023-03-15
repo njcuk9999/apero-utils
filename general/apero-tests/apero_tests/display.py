@@ -235,6 +235,10 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
 
         axis_map_list = list(axis_map.keys())
 
+        if len(axis_map_list) == 0:
+            # If nothing to plot, return none
+            return None
+
         # create widget
         y_axis_widget = Select(
             title="Quality Control",
