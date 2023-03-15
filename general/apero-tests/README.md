@@ -7,9 +7,9 @@ tests with APERO 0.6 outputs*
 Series of tests to make sure everything was properly reduced by APERO.
 
 ## Development and running the tests
-The tests are meant to be integrated in apero and are not a package on their own (i.e. are developed in apero-utils), but for development purposes, `apero_tests` is treated as a standalone package.
+The tests are meant to be integrated in APERO and are not a package on their own (i.e. are developed in apero-utils), but for development purposes, `apero_tests` is treated as a standalone package.
 
-Make sure they are in your `PYTHONPATH` (with conda, this is just `conda develop /path/to/apero-tests`).
+Make sure they are in your `PYTHONPATH` (with conda, this is just `conda develop /path/to/apero-tests`, or adding a `.pth` file in your virtual environment's site-package directory).
 Or even simpler, run everyting from the parent directory.
 
 ## Structure
