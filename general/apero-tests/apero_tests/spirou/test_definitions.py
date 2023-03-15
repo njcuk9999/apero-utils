@@ -14,7 +14,6 @@ from apero.core.constants import path_definitions
 
 start = time.time()
 
-# TODO: Remove "master" nomenclature now that APERO does not use that
 # =============================================================================
 # Define variables
 # =============================================================================
@@ -79,13 +78,13 @@ red_missing_index, red_not_found = ut.missing_index_headers(
     cache_suffix="_red",
 )
 red_full_index = ut.make_full_index(red_index, red_missing_index)
-master_calib_db = ut.load_db_entries(
+ref_calib_db = ut.load_db_entries(
     "CALIB", instrument=__INSTRUMENT__
 )  # All calibdb entries
 tellu_df = ut.load_db_entries(
     "TELLU", instrument=__INSTRUMENT__
 )  # All telludb entries
-# master_cdb_index = ut.load_db
+# ref_cdb_index = ut.load_db
 
 # FUTURE: This should change in 0.7 with new way to match files per recipe
 # Some global tests are done here (before per-recipe)
@@ -147,18 +146,18 @@ tests.append(global_test)
 #
 
 # -----------------------------------------------------------------------------
-# Dark Master Test
+# Dark Ref Test
 # -----------------------------------------------------------------------------
-# cal_dark_master = DrsTest(
-#     drs_recipe=RECIPE_DICT["apero_dark_master_spirou.py"],
+# cal_dark_ref = DrsTest(
+#     drs_recipe=RECIPE_DICT["apero_dark_ref_spirou.py"],
 #     all_log_df=red_log,
 #     all_index_df=red_index,
-#     all_master_calib_df=master_calib_db,
+#     all_ref_calib_df=ref_calib_db,
 #     all_tellu_df=tellu_df,
 #     all_cdb_used_df=red_cdb_used_df,
 # )
 #
-# tests.append(cal_dark_master)
+# tests.append(cal_dark_ref)
 
 
 # -----------------------------------------------------------------------------
@@ -168,7 +167,7 @@ cal_badpix = DrsTest(
     drs_recipe=RECIPE_DICT["apero_badpix_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -184,7 +183,7 @@ cal_loc = DrsTest(
     drs_recipe=RECIPE_DICT["apero_loc_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -194,16 +193,16 @@ tests.append(cal_loc)
 # -----------------------------------------------------------------------------
 # Shape Ref Test
 # -----------------------------------------------------------------------------
-cal_shape_master = DrsTest(
+cal_shape_ref = DrsTest(
     drs_recipe=RECIPE_DICT["apero_shape_ref_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
-tests.append(cal_shape_master)
+tests.append(cal_shape_ref)
 
 # -----------------------------------------------------------------------------
 # Shape (per night) Test
@@ -212,7 +211,7 @@ cal_shape = DrsTest(
     drs_recipe=RECIPE_DICT["apero_shape_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -226,7 +225,7 @@ cal_flat = DrsTest(
     drs_recipe=RECIPE_DICT["apero_flat_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -241,7 +240,7 @@ cal_thermal = DrsTest(
     drs_recipe=RECIPE_DICT["apero_thermal_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -252,31 +251,31 @@ tests.append(cal_thermal)
 # -----------------------------------------------------------------------------
 # Leak Ref Test
 # -----------------------------------------------------------------------------
-cal_leak_master = DrsTest(
+cal_leak_ref = DrsTest(
     drs_recipe=RECIPE_DICT["apero_leak_ref_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
-tests.append(cal_leak_master)
+tests.append(cal_leak_ref)
 
 
 # -----------------------------------------------------------------------------
 # Wavelength Ref Test
 # -----------------------------------------------------------------------------
-cal_wave_master = DrsTest(
+cal_wave_ref = DrsTest(
     drs_recipe=RECIPE_DICT["apero_wave_ref_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
 
-tests.append(cal_wave_master)
+tests.append(cal_wave_ref)
 
 
 # -----------------------------------------------------------------------------
@@ -286,7 +285,7 @@ cal_wave_night = DrsTest(
     drs_recipe=RECIPE_DICT["apero_wave_night_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -301,7 +300,7 @@ cal_extract = DrsTest(
     drs_recipe=RECIPE_DICT["apero_extract_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -317,7 +316,7 @@ tests.append(cal_extract)
 #     drs_recipe=RECIPE_DICT["apero_leak_spirou.py"],
 #     all_log_df=red_log,
 #     all_index_df=red_index,
-#     all_master_calib_df=master_calib_db,
+#     all_ref_calib_df=ref_calib_db,
 #     all_tellu_df=tellu_df,
 #     all_cdb_used_df=red_cdb_used_df,
 # )
@@ -333,7 +332,7 @@ obj_mk_tellu = DrsTest(
     drs_recipe=RECIPE_DICT["apero_mk_tellu_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -353,7 +352,7 @@ obj_fit_tellu = DrsTest(
     drs_recipe=RECIPE_DICT["apero_fit_tellu_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -373,7 +372,7 @@ obj_mk_template = DrsTest(
     drs_recipe=RECIPE_DICT["apero_mk_template_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )
@@ -392,7 +391,7 @@ cal_ccf = DrsTest(
     drs_recipe=RECIPE_DICT["apero_ccf_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
-    all_master_calib_df=master_calib_db,
+    all_ref_calib_df=ref_calib_db,
     all_tellu_df=tellu_df,
     all_cdb_used_df=red_cdb_used_df,
 )

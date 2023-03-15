@@ -103,7 +103,7 @@ class CountLogTest(SubTest):
         self,
         log_df: DataFrame,
         test_html_path: str,
-        master_flag: str = "--master",
+        ref_flag: str = "--ref",
         group_kwds: Optional[Sequence[str]] = None,
     ):
         """
@@ -114,9 +114,9 @@ class CountLogTest(SubTest):
 
         :param log_df: DataFrame with log entries for a recipe.
         :type log_df: DataFrame
-        :param master_flag: Flag that denotes a master call in the log
-                            RUNSTRING, defaults to "--master"
-        :type master_flag: str, optional
+        :param ref_flag: Flag that denotes a ref call in the log
+                            RUNSTRING, defaults to "--ref"
+        :type ref_flag: str, optional
         :param group_kwds: Columns used to group the log DF before counting.
                            The default ["RECIPE", "SUBLEVEL", "LEVELCRIT"]
                            is used when set to None.
@@ -126,7 +126,7 @@ class CountLogTest(SubTest):
         super().__init__(description="# of calls in logs")
 
         self.log_df = log_df
-        self.master_flag = master_flag
+        self.ref_flag = ref_flag
         self.test_html_path = test_html_path
         if group_kwds is not None:
             self.group_kwds = group_kwds
@@ -135,11 +135,11 @@ class CountLogTest(SubTest):
 
     def run(self):
 
-        master_mask = self.log_df.RUNSTRING.str.contains(self.master_flag)
-        master_df = self.log_df[master_mask]
-        master_count = master_df.groupby(self.group_kwds).count().RECIPE_KIND
+        ref_mask = self.log_df.RUNSTRING.str.contains(self.ref_flag)
+        ref_df = self.log_df[ref_mask]
+        ref_count = ref_df.groupby(self.group_kwds).count().RECIPE_KIND
         tot_count = self.log_df.groupby(self.group_kwds).count().RECIPE_KIND
-        log_count = tot_count.sub(master_count, fill_value=0).astype(int)
+        log_count = tot_count.sub(ref_count, fill_value=0).astype(int)
 
         dup_subset = ["RUNSTRING", "RECIPE", "SUBLEVEL", "LEVELCRIT", "PID"]
         ulog_df = self.log_df.drop_duplicates(subset=dup_subset).copy()
@@ -667,7 +667,7 @@ class CheckCalibEntriesFiles(SubTest):
 
 class CountCalibEntries(SubTest):
     def __init__(
-        self, calib_df: DataFrame, calib_keys: List[str], master: bool = False
+        self, calib_df: DataFrame, calib_keys: List[str], ref: bool = False
     ):
         """
         Count entries in calibdb
@@ -676,15 +676,15 @@ class CountCalibEntries(SubTest):
         :type calib_df: DataFrame
         :param calib_keys: Calib db keys for current test
         :type calib_keys: List[str]
-        :param master: True if master recipe, defaults to False
-        :type master: bool, optional
+        :param ref: True if ref recipe, defaults to False
+        :type ref: bool, optional
         """
 
         super().__init__(description="# of entries in calib DB")
 
         self.calib_df = calib_df
         self.calib_keys = list(set(calib_keys))
-        self.ismaster = master
+        self.isref = ref
 
     def run(self):
         zero_count = pd.Series(0, index=self.calib_keys)
@@ -693,19 +693,19 @@ class CountCalibEntries(SubTest):
             # TODO: Check with Neil that OK to use nunique here
             # calib_count = self.calib_df.groupby("KEYNAME").size()
             calib_count = self.calib_df.groupby("KEYNAME").nunique().FILENAME
-            if not self.ismaster:
-                master_mask = self.calib_df["REFCAL"].astype(bool)
-                if master_mask.sum() == 0:
-                    master_calib_count = zero_count.copy()
+            if not self.isref:
+                ref_mask = self.calib_df["REFCAL"].astype(bool)
+                if ref_mask.sum() == 0:
+                    ref_calib_count = zero_count.copy()
                 else:
-                    master_calib_df = self.calib_df[master_mask]
-                    master_calib_count = master_calib_df.groupby(
+                    ref_calib_df = self.calib_df[ref_mask]
+                    ref_calib_count = ref_calib_df.groupby(
                         "KEYNAME"
                     ).size()
-                    msg = "Additional entries with master == 1"
-                    self.comments = f"{msg}: {master_calib_count}"
+                    msg = "Additional entries with ref == 1"
+                    self.comments = f"{msg}: {ref_calib_count}"
 
-                calib_count -= master_calib_count
+                calib_count -= ref_calib_count
 
         else:
             self.result = 0
@@ -764,7 +764,7 @@ class CheckUsedCalibs(SubTest):
             drop_mask = fdf.replace(drop_map)
             drop_mask_all = drop_mask.all()
             # Always keep CDBWAVE because means that wavelength solution
-            # in header is old, even if it is indeed a master==1 file
+            # in header is old, even if it is indeed a ref==1 file
             if "CDBWAVE" in drop_mask_all.index:
                 drop_mask_all["CDBWAVE"] = False
             drop_inds = drop_mask_all.index[~drop_mask_all]

@@ -44,7 +44,7 @@ class DrsTest:
         pp_flag: bool = False,
         all_log_df: Optional[DataFrame] = None,
         all_index_df: Optional[DataFrame] = None,
-        all_master_calib_df: Optional[DataFrame] = None,
+        all_ref_calib_df: Optional[DataFrame] = None,
         all_tellu_df: Optional[DataFrame] = None,
         all_cdb_used_df: Optional[DataFrame] = None,
     ):
@@ -70,9 +70,9 @@ class DrsTest:
         :type  all_log_df: Optional[DataFrame]
         :param all_index_df: DataFrame with index for all recipes
         :type all_index_df: Optional[DataFrame]
-        :param all_master_calib_df: DataFrame with master calib info for all
+        :param all_ref_calib_df: DataFrame with ref calib info for all
                                     recipes
-        :type all_master_calib_df: Optional[DataFrame]
+        :type all_ref_calib_df: Optional[DataFrame]
         :param all_tellu_df: DataFrame with tellu info for all recipes
         :type all_tellu_df: Optional[DataFrame]
         :param all_cdb_used_df: DataFrame with info about used calibs for all
@@ -98,7 +98,7 @@ class DrsTest:
         self.recipe_name = None
         self.params = None  # DRS parameters
         self.pconst = None  # DRS constants
-        self.isref = False  # Is it a master recipe?
+        self.isref = False  # Is it a ref recipe?
         self.output_drs_files = None
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
@@ -201,13 +201,13 @@ class DrsTest:
                 "CALIB", instrument=self.instrument
             )
 
-            # Load calibdb DF (master entries and calibdb files)
+            # Load calibdb DF (ref entries and calibdb files)
             self.calib_df = self.load_calib_df(
-                all_calib_df=all_master_calib_df
+                all_calib_df=all_ref_calib_df
             )
 
             # Needed for "used calibs" test
-            self.all_calib_df = all_master_calib_df
+            self.all_calib_df = all_ref_calib_df
 
             if not self.pp_flag:
                 self.cdb_used_df = self.load_cdb_used_df(
@@ -397,9 +397,9 @@ class DrsTest:
         self, all_calib_df: Optional[DataFrame] = None, force: bool = True
     ) -> Union[DataFrame, None]:
         """
-        Load Master calibdb
+        Load Reference calibdb
 
-        :return: Dataframe with master calibdb entries
+        :return: Dataframe with reference calibdb entries
         :rtype: pd.DataFrame
         """
 
@@ -591,11 +591,11 @@ class DrsTest:
             )
         ]
 
-        # Drop runs with "--master" because they re-generate the same files
+        # Drop runs with "--ref" because they re-generate the same files
         # NOTE: Might be different in 0.7
-        # TODO: Use apero function to remove unwanted arguments regardless of if recipe is master
-        master_mask = log_df.RUNSTRING.str.contains("--master")
-        log_df = log_df[~master_mask] if not self.isref else log_df
+        # TODO: Use apero function to remove unwanted arguments regardless of if recipe is ref
+        ref_mask = log_df.RUNSTRING.str.contains("--ref")
+        log_df = log_df[~ref_mask] if not self.isref else log_df
         log_df = log_df.copy()
 
         # Add binary flags from recipe
@@ -846,7 +846,7 @@ class DrsTest:
 
             # calibDB entries count
             st_cdb_entries = st.CountCalibEntries(
-                self.calib_df, self.calibdb_keys, master=self.isref
+                self.calib_df, self.calibdb_keys, ref=self.isref
             )
             subtest_list.append(st_cdb_entries)
 
