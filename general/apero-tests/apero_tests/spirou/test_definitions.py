@@ -14,6 +14,7 @@ from apero.core.constants import path_definitions
 
 start = time.time()
 
+# TODO: Remove "master" nomenclature now that APERO does not use that
 # =============================================================================
 # Define variables
 # =============================================================================
@@ -191,10 +192,10 @@ cal_loc = DrsTest(
 tests.append(cal_loc)
 
 # -----------------------------------------------------------------------------
-# Shape Master Test
+# Shape Ref Test
 # -----------------------------------------------------------------------------
 cal_shape_master = DrsTest(
-    drs_recipe=RECIPE_DICT["apero_shape_master_spirou.py"],
+    drs_recipe=RECIPE_DICT["apero_shape_ref_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
@@ -249,10 +250,10 @@ tests.append(cal_thermal)
 
 
 # -----------------------------------------------------------------------------
-# Leak Master Test
+# Leak Ref Test
 # -----------------------------------------------------------------------------
 cal_leak_master = DrsTest(
-    drs_recipe=RECIPE_DICT["apero_leak_master_spirou.py"],
+    drs_recipe=RECIPE_DICT["apero_leak_ref_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,
@@ -264,10 +265,10 @@ tests.append(cal_leak_master)
 
 
 # -----------------------------------------------------------------------------
-# Wavelength Master Test
+# Wavelength Ref Test
 # -----------------------------------------------------------------------------
 cal_wave_master = DrsTest(
-    drs_recipe=RECIPE_DICT["apero_wave_master_spirou.py"],
+    drs_recipe=RECIPE_DICT["apero_wave_ref_spirou.py"],
     all_log_df=red_log,
     all_index_df=red_index,
     all_master_calib_df=master_calib_db,

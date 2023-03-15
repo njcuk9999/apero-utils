@@ -98,7 +98,7 @@ class DrsTest:
         self.recipe_name = None
         self.params = None  # DRS parameters
         self.pconst = None  # DRS constants
-        self.ismaster = False  # Is it a master recipe?
+        self.isref = False  # Is it a master recipe?
         self.output_drs_files = None
         self.output_hkeys = []  # Output header keys
         self.calibdb_keys = []  # Calibdb keys
@@ -139,10 +139,11 @@ class DrsTest:
             # TODO: Confirm this attribute with Neil
             self.params = self.recipe.params
             self.pconst = constants.pload(self.instrument)
-            self.ismaster = self.recipe.master
+            self.isref = self.recipe.reference
             # HACK: Should use DRS to define that. Remove when fixed in apero-drs
-            if "wave_master" in self.recipe_name:
-                self.ismaster = True
+            # 
+            if "wave_ref" in self.recipe_name:
+                self.isref = True
 
             # Path to input and output directories
             self.dirpaths = self.get_dir_path()
@@ -594,7 +595,7 @@ class DrsTest:
         # NOTE: Might be different in 0.7
         # TODO: Use apero function to remove unwanted arguments regardless of if recipe is master
         master_mask = log_df.RUNSTRING.str.contains("--master")
-        log_df = log_df[~master_mask] if not self.ismaster else log_df
+        log_df = log_df[~master_mask] if not self.isref else log_df
         log_df = log_df.copy()
 
         # Add binary flags from recipe
@@ -751,11 +752,11 @@ class DrsTest:
 
                 # HACK: Ideally this would not rely on EXT_ prefix to skip ext files I think
                 if (
-                    self.ismaster
-                    and not ofile.outclass.master
+                    self.isref
+                    and not ofile.outclass.reference
                     and not ofile.name.startswith("EXT_")
                 ):
-                    if "wave_master" not in self.recipe_name:
+                    if "wave_ref" not in self.recipe_name:
                         print(
                             f"UNEXPECTED file {ofile} for recipe {self.recipe_name}"
                         )
@@ -845,7 +846,7 @@ class DrsTest:
 
             # calibDB entries count
             st_cdb_entries = st.CountCalibEntries(
-                self.calib_df, self.calibdb_keys, master=self.ismaster
+                self.calib_df, self.calibdb_keys, master=self.isref
             )
             subtest_list.append(st_cdb_entries)
 
