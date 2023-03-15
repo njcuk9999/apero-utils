@@ -21,7 +21,7 @@ DATABASES = {
     "TELLU": drs_database.TelluricDatabase,
     "CALIB": drs_database.CalibrationDatabase,
     "LOG": drs_database.LogDatabase,
-    "INDEX": drs_database.IndexDatabase,
+    "INDEX": drs_database.FileIndexDatabase,
 }
 
 
@@ -617,7 +617,7 @@ def missing_index_headers(
 
         # Get header keys corresponding to index columns
         pconstant = constants.pload(instrument)
-        index_cols = pconstant.INDEX_HEADER_COLS().names
+        index_cols = pconstant.FILEINDEX_HEADER_COLS().names
         keys = [params[col][0] for col in index_cols]
 
         # Some keys might be missing because they are dropped for combined files
