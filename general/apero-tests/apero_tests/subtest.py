@@ -478,6 +478,11 @@ class PlotQCTest(SubTest):
                     key = "None"
                 data_dict_qc_plot[key] = series.tolist()
 
+        if "Night" in data_dict_qc_plot and "other" in data_dict_qc_plot["Night"]:
+            other_list = [n for n in data_dict_qc_plot["Night"] if n == "other"]
+            data_dict_qc_plot["Night"] = [n for n in data_dict_qc_plot["Night"] if n != "other"]
+            self.comments = f"Dropped {len(other_list)} rows with OBS_DIR = other."
+
         self.result = "See the Details column"
         self.details = inspect_plot(
             self.test_html_path,
