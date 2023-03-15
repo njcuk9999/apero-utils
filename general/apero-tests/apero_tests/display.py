@@ -157,8 +157,8 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
 
         # plot
         p = figure(
-            plot_width=1200,
-            plot_height=700,
+            width=1200,
+            height=700,
             tools=TOOLS,
             toolbar_location="left",
             x_axis_label="Night",
@@ -207,8 +207,8 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
 
         # plot
         p = figure(
-            plot_width=1200,
-            plot_height=700,
+            width=1200,
+            height=700,
             tools=TOOLS,
             toolbar_location="left",
             x_axis_label="Order",
@@ -263,8 +263,8 @@ def inspect_plot(test_html_path, subtest, data_dict, title):
 
         # plot
         p = figure(
-            plot_width=1200,
-            plot_height=700,
+            width=1200,
+            height=700,
             tools=TOOLS,
             toolbar_location="left",
             x_axis_label="Night",
@@ -377,8 +377,8 @@ def delta_mjd_plot(test_html_path, subtest, cdb_df, title):
 
     # plot
     p = figure(
-        plot_width=1200,
-        plot_height=700,
+        width=1200,
+        height=700,
         tools=TOOLS,
         toolbar_location="right",
         x_axis_label="OBS_DIR",
