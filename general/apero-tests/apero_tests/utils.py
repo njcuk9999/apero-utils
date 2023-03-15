@@ -573,7 +573,7 @@ def missing_index_headers(
 
         # If no missing files
         if len(out_not_in_index) == 0:
-            return out_not_in_index, pd.Series([], dtype=object)
+            return pd.DataFrame([]), pd.Series([], dtype=object)
 
         # We treat missing files on a per-basename basis
         out_basename = out_not_in_index.apply(os.path.basename)
