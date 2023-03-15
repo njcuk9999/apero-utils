@@ -147,7 +147,7 @@ def make_full_index(
     if len(missing_index) > 0:
         # NOTE: Need to add index_key here to avoid having len > 0
         missing_index[index_key] = False
-        full_index = real_index.append(missing_index)
+        full_index = pd.concat([real_index, missing_index])
     else:
         full_index = real_index.copy()
     full_index = full_index.sort_values(["OBS_DIR", "LAST_MODIFIED"])
@@ -562,9 +562,7 @@ def missing_index_headers(
         and not force
     ):
         missing_ind_df_cache = pd.read_csv(cache_path, index_col=0)
-        not_found_series_cache = pd.read_csv(
-            cache_not_found, index_col=0, squeeze=True
-        )
+        not_found_series_cache = pd.read_csv(cache_not_found, index_col=0).squeeze("columns")
     else:
         missing_ind_df_cache = None
 
