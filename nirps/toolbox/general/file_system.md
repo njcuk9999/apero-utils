@@ -64,3 +64,20 @@ Contact neil.cook@umontreal.ca for more info.
 - topcat                 `/cosmos99/nirps/bin/topcat`
 - ds9                    `/cosmos99/nirps/bin/ds9`
 - geneva data:           `/cosmos99/nirps/geneva-data ` <---- `/nirps_raw/nirps/geneva-data`
+
+
+## Python
+
+Please do not install any packages to the base conda environment.
+
+### Create New environment
+
+	conda create --name={conda env name} python=3.9
+
+### See current environments
+
+	conda env list
+
+### Remove environment
+
+	conda remove --name {conda env name} --all
