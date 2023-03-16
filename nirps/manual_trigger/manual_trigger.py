@@ -22,8 +22,10 @@ from astropy.time import Time
 # =============================================================================
 # Define variables
 # =============================================================================
-
+# start time
+START_TIME = Time.now()
 # -----------------------------------------------------------------------------
+
 
 # =============================================================================
 # Define functions
@@ -206,7 +208,7 @@ def run_precheck(settings: Dict[str, Any]):
 
     :param settings: dict, settings dictionary
     """
-    _  = settings
+    _ = settings
     print('\tNot implemented.')
     return
 
@@ -252,17 +254,17 @@ def run_apero_get(settings: Dict[str, Any]):
         # update the apero profile
         _ = update_apero_profile(settings['PROFILES'][profile])
         # get the output types
-        outtypes = settings['PROFILES'][profile]['apero out types']
+        outtypes = ','.join(settings['PROFILES'][profile]['apero out types'])
         # get the dpr types
-        dprtypes = settings['PROFILES'][profile]['apero dpr types']
+        dprtypes = ','.join(settings['PROFILES'][profile]['apero dpr types'])
         # get the output path
         outpath = settings['PROFILES'][profile]['lbl in path']
-        # need to import apero_processing
+        # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_get
         # run apero processing
         apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=outtypes,
                        outpath=outpath, fibers='A', symlinks=True,
-                       test=settings['TEST'])
+                       test=settings['TEST'], since=START_TIME.iso)
 
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):
@@ -271,7 +273,7 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
 
     :param settings: dict, settings dictionary
     """
-    _  = settings
+    _ = settings
     print('\tNot implemented.')
     return
 
@@ -304,8 +306,6 @@ if __name__ == "__main__":
     # run the apero reduction interface
     print_process('Running apero reduction interface')
     run_apero_reduction_interface(trigger_settings)
-
-
 
 
 # =============================================================================
