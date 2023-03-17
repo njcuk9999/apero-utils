@@ -206,7 +206,7 @@ def update_apero_profile(profile: dict):
     _ = constants.load(cache=False)
 
 
-def write_markdown(settings: dict, stats: dict):
+def write_markdown(gsettings: dict, settings: dict, stats: dict):
     from apero.tools.module.documentation import drs_markdown
     # list tables to load
     tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
@@ -218,7 +218,7 @@ def write_markdown(settings: dict, stats: dict):
     # loop around profiles
     for profile_name in stats:
         # get settings
-        settings = get_settings(profile_name)
+        settings = get_settings(gsettings, profile_name)
         # reference name is just a cleaned version of the profile name
         ref_name = settings['CPN']
         # add to ref_names
@@ -248,7 +248,7 @@ def write_markdown(settings: dict, stats: dict):
     # loop around profiles
     for profile_name in stats:
         # get settings
-        settings = get_settings(profile_name)
+        settings = get_settings(gsettings, profile_name)
         # get the reference name
         cprofile_name = settings['CPN']
         # create a page
@@ -377,7 +377,7 @@ def upload_docs(settings: dict):
     # get output directory
     out_dir = settings['OUT']
     # get the instrument
-    instrument = settings['INSTRUMENT']
+    instrument = settings['INSTRUMENT'].lower()
     # ------------------------------------------------------------------
     # change permission of all files and directories
     os.system(f'chmod 777 -R {out_dir}')
@@ -1013,7 +1013,7 @@ if __name__ == "__main__":
     ari_settings = get_settings(gsettings)
     # ----------------------------------------------------------------------
     # step 3: write markdown files
-    write_markdown(ari_settings, all_apero_stats)
+    write_markdown(gsettings, ari_settings, all_apero_stats)
     # ----------------------------------------------------------------------
     # step 4: compile sphinx files
     compile_docs(ari_settings)
