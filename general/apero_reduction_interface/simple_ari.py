@@ -13,7 +13,7 @@ import glob
 import os
 import re
 import sys
-from typing import Union
+from typing import Any, Dict, Union
 
 import numpy as np
 import yaml
@@ -81,7 +81,8 @@ DEFAULT_TABLE_LENGTH = 6
 # =============================================================================
 # Define functions
 # =============================================================================
-def get_settings(profile_name: Union[str, None] = None) -> dict:
+def get_settings(settings: Dict[str, Any],
+                 profile_name: Union[str, None] = None) -> dict:
     # storage for settings
     param_settings = dict()
     # clean profile name
@@ -110,6 +111,8 @@ def get_settings(profile_name: Union[str, None] = None) -> dict:
         # set the global paths for sphinx
     param_settings['HTML'] = os.path.join(_WORKING_DIR, _HTML_DIR)
     param_settings['OUT'] = os.path.join(_WORKING_DIR, _OUT_DIR)
+    # get params from apero
+    param_settings['INSTRUMENT'] = settings['instrument']
     # make sure directories exist
     if profile_name is not None and not os.path.exists(param_settings['DATA']):
         os.makedirs(param_settings['DATA'])
@@ -373,6 +376,8 @@ def upload_docs(settings: dict):
     wlog = drs_log.wlog
     # get output directory
     out_dir = settings['OUT']
+    # get the instrument
+    instrument = settings['INSTRUMENT']
     # ------------------------------------------------------------------
     # change permission of all files and directories
     os.system(f'chmod 777 -R {out_dir}')
@@ -385,101 +390,11 @@ def upload_docs(settings: dict):
     rdict['USER'] = drs_documentation.SSH_USER
     rdict['HOST'] = drs_documentation.SSH_HOST
     rdict['INPATH'] = out_dir
-    rdict['OUTPATH'] = os.path.join(SSH_PATH, 'ari/')
+    rdict['OUTPATH'] = os.path.join(SSH_PATH, f'ari/{instrument}/')
     # print command to rsync
     wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
     # run command (will require password)
     os.system(drs_documentation.RSYNC_CMD.format(**rdict))
-
-
-def protect(profiles: dict):
-    """
-    Protect the documentation with .htaccess and .htpasswd files
-
-    :param profiles: dict, the profiles to protect
-
-    :return:
-    """
-    import getpass
-    from apero.core import constants
-    from apero.tools.module.documentation import drs_documentation
-    from apero.core.utils import drs_startup
-    from apero.core.core import drs_log
-    # ------------------------------------------------------------------
-    # get the parameter dictionary of constants from apero
-    params = constants.load()
-    # set apero pid
-    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
-    # get WLOG
-    wlog = drs_log.wlog
-    # ------------------------------------------------------------------
-    # password store
-    password_store = dict()
-    # create a .htpasswrd file for each profile
-    for profile_name in profiles:
-        # get the profile settings
-        settings = get_settings(profile_name)
-        # get the output directory
-        cpn = settings['CPN']
-        # get username from profile
-        username = profiles[profile_name]['username']
-        # get the password file
-        local_pass_dir = os.path.join(settings['PASS1'])
-        remote_pass_dir = HTPASSWD_PATH
-
-        # check if account in profiles
-        if 'account' in profiles[profile_name]:
-            if len(profiles[profile_name]['account']) > 0:
-                password_store[username] = profiles[profile_name]['account']
-
-        # store password for same usernames
-        if username in password_store:
-            password = password_store[username]
-        else:
-            # try to get the password from the user and make sure it matches
-            while True:
-                # get the password
-                password = getpass.getpass(f'Enter password for {profile_name}: ')
-                # repeat password
-                password2 = getpass.getpass(f'Repeat password for {profile_name}: ')
-                if password == password2:
-                    break
-                else:
-                    # Passwords do not match
-                    print('Password must match')
-        # create the password file
-        os.system(f'htpasswd -b -c {local_pass_dir}/.htpasswd {username} {password}')
-
-        # get the .htaccess file
-        local_htaccess_file = os.path.join(settings['PASS2'], '.htaccess')
-        remote_htaccess_file = os.path.join(SSH_PATH, 'ari/', cpn, '.htaccess')
-        # construct lines to add to .htaccess file
-        lines = []
-        lines.append('AuthType Basic\n')
-        lines.append('AuthName "Protected Site"\n')
-        lines.append(f'AuthUserFile {remote_pass_dir}/{cpn}/.htpasswd\n')
-        lines.append('require valid-user\n')
-        # create the .htaccess file
-        with open(local_htaccess_file, 'w') as htafile:
-            htafile.writelines(lines)
-
-        # copy local files to remote
-        localfiles = [local_pass_dir, local_htaccess_file]
-        remotefiles = [remote_pass_dir, remote_htaccess_file]
-        # set up rsync dict
-        rdict = dict()
-        rdict['SSH'] = drs_documentation.SSH_OPTIONS
-        rdict['USER'] = drs_documentation.SSH_USER
-        rdict['HOST'] = drs_documentation.SSH_HOST
-        # loop around files
-        for it in range(len(localfiles)):
-            # modify input/output rsync dict
-            rdict['INPATH'] = localfiles[it]
-            rdict['OUTPATH'] = remotefiles[it]
-            # print command to rsync
-            wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
-            # run command (will require password)
-            os.system(drs_documentation.RSYNC_CMD.format(**rdict))
 
 
 # =============================================================================
@@ -1058,13 +973,16 @@ if __name__ == "__main__":
     profile_filename = sys.argv[1]
     # step 1: read the yaml file
     apero_profiles = read_yaml_file(profile_filename)
+    # get global settings
+    gsettings = dict(apero_profiles['settings'])
+    del apero_profiles['settings']
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
     # loop around profiles from yaml file
     for apero_profile_name in apero_profiles:
         # sort out settings
-        ari_settings = get_settings(apero_profile_name)
+        ari_settings = get_settings(gsettings, apero_profile_name)
         # we reprocess if the file does not exist or if REPROCESS is True
         if REPROCESS:
             # print progress
@@ -1092,7 +1010,7 @@ if __name__ == "__main__":
             all_apero_stats[apero_profile_name] = apero_stats
     # ----------------------------------------------------------------------
     # sort out settings
-    ari_settings = get_settings()
+    ari_settings = get_settings(gsettings)
     # ----------------------------------------------------------------------
     # step 3: write markdown files
     write_markdown(ari_settings, all_apero_stats)
@@ -1102,8 +1020,5 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # step 5: upload to hosting
     upload_docs(ari_settings)
-    # ----------------------------------------------------------------------
-    # step 6: protect profiles
-    protect(apero_profiles)
 
 # =============================================================================
