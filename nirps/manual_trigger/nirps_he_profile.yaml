@@ -12,6 +12,7 @@ nirps he V0.7.275 ref cal:
         - OBJ_DARK
         - OBJ_SKY
     start date: 2022-11-01
+    lbl in symlinks: True
 
 nirps he V0.7.275 per night cal:
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpshe_pernight
@@ -27,3 +28,4 @@ nirps he V0.7.275 per night cal:
         - OBJ_DARK
         - OBJ_SKY
     start date: 2022-11-01
+    lbl in symlinks: True

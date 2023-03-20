@@ -1,0 +1,16 @@
+setup_spirou_stable_07:
+    apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
+    lbl in path: /space/spirou/obj_full_SPIROU_v07275
+    lbl path: /space/spirou/LBL/SPIROU07275
+    raw dir: /spirou/cfht_nights/common/raw
+    apero run file: online_run.ini
+    apero out types:
+        - TELLU_OBJ
+    apero dpr types:
+        - POLAR_FP
+        - POLAR_DARK
+        - OBJ_FP
+        - OBJ_DARK
+    start date: 2022-11-01
+    lbl in symlinks: False
+

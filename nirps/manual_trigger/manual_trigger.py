@@ -259,11 +259,13 @@ def run_apero_get(settings: Dict[str, Any]):
         dprtypes = ','.join(settings['PROFILES'][profile]['apero dpr types'])
         # get the output path
         outpath = settings['PROFILES'][profile]['lbl in path']
+        # whether we want symlinks
+        symlinks = settings['PROFILES'][profile]['lbl in symlinks']
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_get
         # run apero processing
         apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=outtypes,
-                       outpath=outpath, fibers='A', symlinks=True,
+                       outpath=outpath, fibers='A', symlinks=symlinks,
                        test=settings['TEST'], since=START_TIME.iso)
 
 
