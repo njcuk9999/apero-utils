@@ -42,9 +42,21 @@ def get_args():
     # test mode - do not run apero recipes just test
     parser.add_argument('--test', type=bool, default=False,
                         help='Do not run apero recipes just test')
-
-    parser.add_argument('--only_makelinks', type=bool, default=False)
-
+    # link switch
+    parser.add_argument('--links', type=bool, default=True)
+    parser.add_argument('--only_links', type=bool, default=False)
+    # precheck switch
+    parser.add_argument('--precheck', type=bool, default=True)
+    parser.add_argument('--only_precheck', type=bool, default=False)
+    # process switch
+    parser.add_argument('--process', type=bool, default=True)
+    parser.add_argument('--only_process', type=bool, default=False)
+    # apero get switch
+    parser.add_argument('--get', type=bool, default=True)
+    parser.add_argument('--only_get', type=bool, default=False)
+    # apero reduction interface switch
+    parser.add_argument('--ari', type=bool, default=True)
+    parser.add_argument('--only_ari', type=bool, default=False)
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -72,8 +84,48 @@ def get_settings():
     settings['OBS_DIRS'] = obs_dirs
     # add the test mode
     settings['TEST'] = args.test
-    # only make links
-    settings['ONLY_MAKELINKS'] = args.only_makelinks
+    # get switches
+    settings['MAKELINKS'] = args.links
+    settings['ONLYLINKS'] = args.only_links
+    settings['PRECHECK'] = args.precheck
+    settings['ONLYPRECHECK'] = args.only_precheck
+    settings['PROCESSING'] = args.process
+    settings['ONLYPROCESSING'] = args.only_process
+    settings['APERO_GET'] = args.get
+    settings['ONLYAPEROGET'] = args.only_get
+    settings['REDUCTION_INTERFACE'] = args.ari
+    settings['ONLYREDUCTIONINTERFACE'] = args.only_ari
+    # deal with only switches (turn off all other switches)
+    if settings['ONLYLINKS']:
+        settings['MAKELINKS'] = True
+        settings['PRECHECK'] = False
+        settings['PROCESSING'] = False
+        settings['APERO_GET'] = False
+        settings['REDUCTION_INTERFACE'] = False
+    if settings['ONLYPRECHECK']:
+        settings['MAKELINKS'] = False
+        settings['PRECHECK'] = True
+        settings['PROCESSING'] = False
+        settings['APERO_GET'] = False
+        settings['REDUCTION_INTERFACE'] = False
+    if settings['ONLYPROCESSING']:
+        settings['MAKELINKS'] = False
+        settings['PRECHECK'] = False
+        settings['PROCESSING'] = True
+        settings['APERO_GET'] = False
+        settings['REDUCTION_INTERFACE'] = False
+    if settings['ONLYAPEROGET']:
+        settings['MAKELINKS'] = False
+        settings['PRECHECK'] = False
+        settings['PROCESSING'] = False
+        settings['APERO_GET'] = True
+        settings['REDUCTION_INTERFACE'] = False
+    if settings['ONLYREDUCTIONINTERFACE']:
+        settings['MAKELINKS'] = False
+        settings['PRECHECK'] = False
+        settings['PROCESSING'] = False
+        settings['APERO_GET'] = False
+        settings['REDUCTION_INTERFACE'] = True
     # ----------------------------------------------------------------------
     # read the yaml file and push into settings
     settings = read_yaml(args.profile, settings)
@@ -301,27 +353,41 @@ if __name__ == "__main__":
     trigger_settings = get_settings()
     # ----------------------------------------------------------------------
     # make symbolic links
-    print_process('Making symbolic links')
-    make_sym_links(trigger_settings)
-    if trigger_settings['ONLY_MAKELINKS']:
-        print('\t\tSkipping rest of script [ONLY_MAKELINKS]')
-        sys.exit(0)
+    if trigger_settings['MAKELINKS']:
+        print_process('Making symbolic links')
+        make_sym_links(trigger_settings)
+        # deal with only creating links
+        if trigger_settings['ONLYLINKS']:
+            print_process('Only making symbolic links')
+            sys.exit(0)
     # ----------------------------------------------------------------------
     # run apero precheck on all profiles
-    print_process('Running apero precheck')
-    run_precheck(trigger_settings)
+    if trigger_settings['PRECHECK']:
+        print_process('Running apero precheck')
+        run_precheck(trigger_settings)
+        # deal with only running precheck
+        if trigger_settings['ONLYPRECHECK']:
+            print_process('Only running apero precheck')
+            sys.exit(0)
     # ----------------------------------------------------------------------
     # run apero processing on all profiles
-    print_process('Running apero processing')
-    run_processing(trigger_settings)
+    if trigger_settings['PROCESSING']:
+        print_process('Running apero processing')
+        run_processing(trigger_settings)
+        # deal with only running processing
+        if trigger_settings['ONLYPROCESSING']:
+            print_process('Only running apero processing')
+            sys.exit(0)
     # ----------------------------------------------------------------------
     # run apero get on all profiles
-    print_process('Running apero get')
-    run_apero_get(trigger_settings)
+    if trigger_settings['APERO_GET']:
+        print_process('Running apero get')
+        run_apero_get(trigger_settings)
     # ----------------------------------------------------------------------
     # run the apero reduction interface
-    print_process('Running apero reduction interface')
-    run_apero_reduction_interface(trigger_settings)
+    if trigger_settings['REDUCTION_INTERFACE']:
+        print_process('Running apero reduction interface')
+        run_apero_reduction_interface(trigger_settings)
 
 
 # =============================================================================
