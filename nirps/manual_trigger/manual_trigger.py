@@ -9,6 +9,7 @@ Created on 2023-03-08 at 11:59
 
 @author: cook
 """
+import sys
 import argparse
 import os
 from typing import Any, Dict
@@ -41,6 +42,9 @@ def get_args():
     # test mode - do not run apero recipes just test
     parser.add_argument('--test', type=bool, default=False,
                         help='Do not run apero recipes just test')
+
+    parser.add_argument('--only_makelinks', type=bool, default=False)
+
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -68,6 +72,8 @@ def get_settings():
     settings['OBS_DIRS'] = obs_dirs
     # add the test mode
     settings['TEST'] = args.test
+    # only make links
+    settings['ONLY_MAKELINKS'] = args.only_makelinks
     # ----------------------------------------------------------------------
     # read the yaml file and push into settings
     settings = read_yaml(args.profile, settings)
@@ -172,9 +178,14 @@ def make_sym_links(settings: Dict[str, Any]):
             # print symlink creation
             print(f'\t\tCreating symlink {full_outpath}')
             # check if the symlink exists
-            if not os.path.islink(full_outpath):
-                # make the symlink
-                os.symlink(full_inpath, full_outpath)
+            if os.path.islink(full_outpath):
+                continue
+            # check if directory is a real link
+            if os.path.exists(full_outpath):
+                continue
+
+            # make the symlink
+            os.symlink(full_inpath, full_outpath)
 
 
 def get_obs_dirs(profile):
@@ -292,6 +303,9 @@ if __name__ == "__main__":
     # make symbolic links
     print_process('Making symbolic links')
     make_sym_links(trigger_settings)
+    if trigger_settings['ONLY_MAKELINKS']:
+        print('\t\tSkipping rest of script [TEST]')
+        sys.exit(0)
     # ----------------------------------------------------------------------
     # run apero precheck on all profiles
     print_process('Running apero precheck')
