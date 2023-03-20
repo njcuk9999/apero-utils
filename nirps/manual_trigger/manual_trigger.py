@@ -304,7 +304,7 @@ if __name__ == "__main__":
     print_process('Making symbolic links')
     make_sym_links(trigger_settings)
     if trigger_settings['ONLY_MAKELINKS']:
-        print('\t\tSkipping rest of script [TEST]')
+        print('\t\tSkipping rest of script [ONLY_MAKELINKS]')
         sys.exit(0)
     # ----------------------------------------------------------------------
     # run apero precheck on all profiles
