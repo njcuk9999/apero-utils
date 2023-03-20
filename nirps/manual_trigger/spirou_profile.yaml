@@ -1,16 +1,26 @@
 setup_spirou_stable_07:
+    # the apero profile to use (controlled sym link raw data directory and all
+    #    apero reduced data directories)
     apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
+    # apero get output path
     lbl in path: /space/spirou/obj_full_SPIROU_v07275
+    # directory where lbl files are processed
     lbl path: /space/spirou/LBL/SPIROU07275
+    # directory where raw data is downloaded
     raw dir: /spirou/cfht_nights/common/raw
+    # apero processing run.ini file
     apero run file: online_run.ini
+    # apero get valid header key: DRSOUTID
     apero out types:
         - TELLU_OBJ
+    # apero get valid header key: DPRTYPE
     apero dpr types:
         - POLAR_FP
         - POLAR_DARK
         - OBJ_FP
         - OBJ_DARK
+    # start date if not using --obsdir argument
     start date: 2022-11-01
+    # sym links in apero get
     lbl in symlinks: False
 

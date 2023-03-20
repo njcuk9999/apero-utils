@@ -1,31 +1,51 @@
 nirps he V0.7.275 ref cal:
+    # the apero profile to use (controlled sym link raw data directory and all
+    #    apero reduced data directories)
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirps_he
+    # apero get output path
     lbl in path: /space/spirou/obj_full_NIRPS_HE
+    # directory where lbl files are processed
     lbl path: /space/spirou/LBL/NIRPS_HE
+    # directory where raw data is downloaded
     raw dir: /nirps_raw/nirps/raw-data/nirps_he
+    # apero processing run.ini file
     apero run file: online_run.ini
+    # apero get valid header key: DRSOUTID
     apero out types:
         - TELLU_OBJ
         - EXT_E2DS_FF
+    # apero get valid header key: DPRTYPE
     apero dpr types:
         - OBJ_FP
         - OBJ_DARK
         - OBJ_SKY
+    # start date if not using --obsdir argument
     start date: 2022-11-01
+    # sym links in apero get
     lbl in symlinks: True
 
 nirps he V0.7.275 per night cal:
+    # the apero profile to use (controlled sym link raw data directory and all
+    #    apero reduced data directories)
     apero profile: /nirps_raw/nirps/apero-data/drs-settings/setup_07254_nirpshe_pernight
+    # apero get output path
     lbl in path: /space/spirou/obj_full_NIRPS_HE_pernight
+    # directory where lbl files are processed
     lbl path: /space/spirou/LBL/NIRPS_HE_pernight
+    # directory where raw data is downloaded
     raw dir: /nirps_raw/nirps/raw-data/nirps_he
+    # apero processing run.ini file
     apero run file: online_run.ini
+    # apero get valid header key: DRSOUTID
     apero out types:
         - TELLU_OBJ
         - EXT_E2DS_FF
+    # apero get valid header key: DPRTYPE
     apero dpr types:
         - OBJ_FP
         - OBJ_DARK
         - OBJ_SKY
+    # start date if not using --obsdir argument
     start date: 2022-11-01
+    # sym links in apero get
     lbl in symlinks: True
