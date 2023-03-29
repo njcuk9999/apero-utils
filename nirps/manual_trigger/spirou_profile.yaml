@@ -19,6 +19,19 @@ setup_spirou_stable_07:
         - POLAR_DARK
         - OBJ_FP
         - OBJ_DARK
+    # apero get science fibers
+    apero get sci fibers:
+        - AB
+    # apero get calib fibers
+    apero get cal fibers:
+        - C
+    # apero template types
+    apero template out types:
+        - TELLU_TEMP_S1DV
+    # apero simultaneous FP dprtypes
+    apero simfp dprtypes:
+        - OBJ_FP
+        - POLAR_FP
     # start date if not using --obsdir argument
     start date: 2022-11-01
     # sym links in apero get

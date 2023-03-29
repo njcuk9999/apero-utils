@@ -57,6 +57,9 @@ def get_args():
     # apero reduction interface switch
     parser.add_argument('--ari', type=bool, default=True)
     parser.add_argument('--only_ari', type=bool, default=False)
+    # apero get --since parameter
+    parser.add_argument('--since', type=str, default='None',
+                        help='APERO get - only copy files processed since this date')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -84,6 +87,11 @@ def get_settings():
     settings['OBS_DIRS'] = obs_dirs
     # add the test mode
     settings['TEST'] = args.test
+    # deal with since parameter
+    if args.since in [None, 'None', 'Null']:
+        settings['SINCE'] = None
+    else:
+        settings['SINCE'] = args.since
     # get switches
     settings['MAKELINKS'] = args.links
     settings['ONLYLINKS'] = args.only_links
@@ -314,22 +322,64 @@ def run_apero_get(settings: Dict[str, Any]):
     for profile in settings['PROFILES']:
         # print progress
         print(f'\tRunning profile: {profile}')
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
         # update the apero profile
-        _ = update_apero_profile(settings['PROFILES'][profile])
+        _ = update_apero_profile(pdict)
         # get the output types
-        outtypes = ','.join(settings['PROFILES'][profile]['apero out types'])
+        outtypes = ','.join(pdict['apero out types'])
         # get the dpr types
-        dprtypes = ','.join(settings['PROFILES'][profile]['apero dpr types'])
+        dprtypes = ','.join(pdict['apero dpr types'])
+        # get fibers from settings
+        scifibers = pdict['apero get sci fibers']
+        calfibers = pdict['apero get cal fibers']
+        # template output types
+        template_outtypes = pdict['apero template out types']
         # get the output path
-        outpath = settings['PROFILES'][profile]['lbl in path']
+        lbl_in_path = pdict['lbl in path']
+        outpath_objects = os.path.join(lbl_in_path, 'objects')
+        outpath_templates = os.path.join(lbl_in_path, 'templates')
+        outpath_calib = os.path.join(lbl_in_path, 'calib')
+        outpath_fpfp = os.path.join(lbl_in_path, 'fpfp')
         # whether we want symlinks
-        symlinks = settings['PROFILES'][profile]['lbl in symlinks']
+        symlinks = pdict['lbl in symlinks']
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_get
-        # run apero processing
+        # run apero get for objects
         apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=outtypes,
-                       outpath=outpath, fibers='A', symlinks=symlinks,
-                       test=settings['TEST'], since=START_TIME.iso)
+                       outpath=outpath_objects, fibers=scifibers,
+                       symlinks=symlinks,
+                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get for templates
+        apero_get.main(objnames='*', dprtypes=dprtypes,
+                       outtypes=template_outtypes,
+                       outpath=outpath_templates, fibers=scifibers,
+                       symlinks=symlinks, nosubdir=True,
+                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get for simultaneous FP
+        apero_get.main(objnames='*', dprtypes=pdict['apero simfp dprtypes'],
+                       outtypes='EXT_E2DS_FF',
+                       outpath=outpath_objects, fibers=calfibers,
+                       symlinks=symlinks,
+                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get for extracted FP_FP
+        apero_get.main(objnames='*', dprtypes='FP_FP',
+                       outtypes='EXT_E2DS_FF',
+                       outpath=outpath_fpfp, fibers=calfibers,
+                       symlinks=symlinks, nosubdir=True,
+                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get for calibs (wave + blaze) science fiber
+        apero_get.main(objnames='*',
+                       outtypes='FF_BLAZE,WAVE_NIGHT',
+                       outpath=outpath_calib, fibers=scifibers,
+                       symlinks=symlinks, nosubdir=True,
+                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get for calibs (wave + blaze) science fiber
+        apero_get.main(objnames='*',
+                       outtypes='FF_BLAZE,WAVE_NIGHT',
+                       outpath=outpath_calib, fibers=calfibers,
+                       symlinks=symlinks, nosubdir=True,
+                       test=settings['TEST'], since=settings['SINCE'])
 
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):
