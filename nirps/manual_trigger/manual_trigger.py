@@ -186,7 +186,7 @@ def update_apero_profile(profile: dict):
     from apero.core import constants
     from apero.core.constants import param_functions
     # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile['apero profile']
+    os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
     # reload DPARAMS and IPARAMS
     base.DPARAMS = base.load_database_yaml()
     base.IPARAMS = base.load_install_yaml()
@@ -207,19 +207,21 @@ def make_sym_links(settings: Dict[str, Any]):
     """
     # loop around profiles
     for profile in settings['PROFILES']:
+        # get the profile dictionary
+        pdict = settings['PROFILES'][profile]
         # print progress
         print(f'\tRunning profile: {profile}')
         # update the apero profile
-        params = update_apero_profile(settings['PROFILES'][profile])
+        params = update_apero_profile(pdict)
         # get raw directory path from profile
-        inpath = settings['PROFILES'][profile]['raw dir']
+        inpath = pdict['general']['raw dir']
         # get the raw directory from params
         outpath = params['DRS_DATA_RAW']
         # get obs dirs
         obs_dirs = settings['OBS_DIRS']
         # deal with getting all obs_dirs
         if obs_dirs == '*':
-            obs_dirs = get_obs_dirs(settings['PROFILES'][profile])
+            obs_dirs = get_obs_dirs(pdict)
         # loop around obs dirs
         for obs_dir in obs_dirs:
             # get the full path
@@ -250,9 +252,9 @@ def make_sym_links(settings: Dict[str, Any]):
 
 def get_obs_dirs(profile):
     # get raw directory path from profile
-    path = profile['raw dir']
+    path = profile['general']['raw dir']
     # set start date
-    start_date = str(profile['start date'])
+    start_date = str(profile['general']['start date'])
     # store obs dirs
     obs_dirs = []
     # convert start date to a astropy time
@@ -294,10 +296,12 @@ def run_processing(settings: Dict[str, Any]):
     for profile in settings['PROFILES']:
         # print progress
         print(f'\tRunning profile: {profile}')
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
         # update the apero profile
-        _ = update_apero_profile(settings['PROFILES'][profile])
+        _ = update_apero_profile(pdict)
         # get the run file
-        runfile = settings['PROFILES'][profile]['apero run file']
+        runfile = pdict['processing']['run file']
         # get the obs dirs
         obs_dirs = settings['OBS_DIRS']
         # need to import apero_processing
@@ -318,6 +322,7 @@ def run_apero_get(settings: Dict[str, Any]):
 
     :param settings: dict, settings dictionary
     """
+    from apero.core import constants
     # loop around profiles
     for profile in settings['PROFILES']:
         # print progress
@@ -326,44 +331,73 @@ def run_apero_get(settings: Dict[str, Any]):
         pdict = settings['PROFILES'][profile]
         # update the apero profile
         pparams = update_apero_profile(pdict)
+        pconst = constants.pload()
         # get the output types
-        red_outtypes = ','.join(pdict['apero out types red'])
-        lbl_outtypes = ','.join(pdict['apero out types lbl'])
+        red_outtypes = ','.join(pdict['get']['science out types'])
+        lbl_outtypes = ','.join(pdict['get-lbl']['science out types'])
         # get the dpr types
-        dprtypes = ','.join(pdict['apero dpr types'])
+        red_dprtypes = ','.join(pdict['get']['science dpr types'])
+        lbl_dprtypes = ','.join(pdict['get-lbl']['science dpr types'])
+        simfp_dprtypes = ','.join(pdict['get-lbl']['simfp dprtypes'])
         # get fibers from settings
-        scifibers = pdict['apero get sci fibers']
-        calfibers = pdict['apero get cal fibers']
+        scifibers, calfiber = pconst.FIBER_KINDS()
+        calfibers = [calfiber]
         # template output types
-        template_outtypes = pdict['apero template out types']
+        template_outtypes = pdict['get-lbl']['template out types']
         # get the object dir in the apero reduction path
         red_path = pparams['DRS_DATA_REDUC']
         obj_path = os.path.join(os.path.dirname(red_path), 'objects')
         # get the output path
-        lbl_in_path = pdict['lbl in path']
+        lbl_in_path = pdict['general']['lbl in path']
         outpath_objects = os.path.join(lbl_in_path, 'science')
         outpath_templates = os.path.join(lbl_in_path, 'templates')
         outpath_calib = os.path.join(lbl_in_path, 'calib')
         outpath_fp = os.path.join(lbl_in_path, 'science/FP')
         # whether we want symlinks
-        symlinks = pdict['lbl in symlinks']
-        # reset these paths
-        if symlinks:
-            directories = [obj_path, outpath_objects, outpath_templates,
-                           outpath_calib, outpath_fp]
-            for directory in directories:
-                reset_directory(directory)
+        red_symlinks = pdict['get']['symlinks']
+        lbl_symlinks = pdict['get-lbl']['symlinks']
+        # ----------------------------------------------------------
+        # reset reduced directories
+        # ----------------------------------------------------------
+        if red_symlinks:
+            directories = [outpath_objects]
+            dtypes = ['objects']
+            for it, directory in enumerate(directories):
+                if dtypes[it] is None:
+                    continue
+                if dtypes[it] in pdict['get']['reset']:
+                    reset_directory(directory)
+        # ----------------------------------------------------------
+        # reset lbl directories
+        # ----------------------------------------------------------
+        if lbl_symlinks:
+            directories = [obj_path, outpath_templates, outpath_calib]
+            dtypes = ['science', 'templates', 'calib']
+            for it, directory in enumerate(directories):
+                if dtypes[it] is None:
+                    continue
+                if dtypes[it] in pdict['get-lbl']['reset']:
+                    reset_directory(directory)
+
+        # ---------------------------------------------------------------------
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_get
+        # --------------------------------------------------------------
+        # Copy to reduced 'objects' directory
+        # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
-        apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=red_outtypes,
-                       outpath=obj_path, fibers=scifibers,
-                       symlinks=symlinks,
+        apero_get.main(objnames='*', dprtypes=red_dprtypes,
+                       outtypes=red_outtypes, outpath=obj_path,
+                       fibers=scifibers, symlinks=red_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
+        # --------------------------------------------------------------
+        # Copy to LBL directory
+        # --------------------------------------------------------------
         # run apero get for objects for lbl
-        apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=lbl_outtypes,
+        apero_get.main(objnames='*', dprtypes=lbl_dprtypes,
+                       outtypes=lbl_outtypes,
                        outpath=outpath_objects, fibers=scifibers,
-                       symlinks=symlinks,
+                       symlinks=lbl_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=template_outtypes,
@@ -371,28 +405,28 @@ def run_apero_get(settings: Dict[str, Any]):
                        symlinks=False, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for simultaneous FP
-        apero_get.main(objnames='*', dprtypes=pdict['apero simfp dprtypes'],
+        apero_get.main(objnames='*', dprtypes=simfp_dprtypes,
                        outtypes='EXT_E2DS_FF', nosubdir=True,
                        outpath=outpath_fp, fibers=calfibers,
-                       symlinks=symlinks,
+                       symlinks=lbl_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for extracted FP_FP
         apero_get.main(objnames='*', dprtypes='FP_FP',
                        outtypes='EXT_E2DS_FF',
                        outpath=outpath_fp, fibers=calfibers,
-                       symlinks=symlinks, nosubdir=True,
+                       symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
         apero_get.main(objnames='*',
                        outtypes='FF_BLAZE,WAVE_NIGHT',
                        outpath=outpath_calib, fibers=scifibers,
-                       symlinks=symlinks, nosubdir=True,
+                       symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
         apero_get.main(objnames='*',
                        outtypes='FF_BLAZE,WAVE_NIGHT',
                        outpath=outpath_calib, fibers=calfibers,
-                       symlinks=symlinks, nosubdir=True,
+                       symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
 
 
