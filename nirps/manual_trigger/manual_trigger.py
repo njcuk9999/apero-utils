@@ -344,13 +344,13 @@ def run_apero_get(settings: Dict[str, Any]):
         outpath_objects = os.path.join(lbl_in_path, 'science')
         outpath_templates = os.path.join(lbl_in_path, 'templates')
         outpath_calib = os.path.join(lbl_in_path, 'calib')
-        outpath_fpfp = os.path.join(lbl_in_path, 'fpfp')
+        outpath_fp = os.path.join(lbl_in_path, 'science/FP')
         # whether we want symlinks
         symlinks = pdict['lbl in symlinks']
         # reset these paths
         if symlinks:
             directories = [obj_path, outpath_objects, outpath_templates,
-                           outpath_calib, outpath_fpfp]
+                           outpath_calib, outpath_fp]
             for directory in directories:
                 reset_directory(directory)
         # need to import apero_get (for this profile)
@@ -369,18 +369,18 @@ def run_apero_get(settings: Dict[str, Any]):
         apero_get.main(objnames='*', dprtypes=dprtypes,
                        outtypes=template_outtypes,
                        outpath=outpath_templates, fibers=scifibers,
-                       symlinks=symlinks, nosubdir=True,
+                       symlinks=False, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for simultaneous FP
         apero_get.main(objnames='*', dprtypes=pdict['apero simfp dprtypes'],
-                       outtypes='EXT_E2DS_FF',
-                       outpath=outpath_objects, fibers=calfibers,
+                       outtypes='EXT_E2DS_FF', nosubdir=True,
+                       outpath=outpath_fp, fibers=calfibers,
                        symlinks=symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for extracted FP_FP
         apero_get.main(objnames='*', dprtypes='FP_FP',
                        outtypes='EXT_E2DS_FF',
-                       outpath=outpath_fpfp, fibers=calfibers,
+                       outpath=outpath_fp, fibers=calfibers,
                        symlinks=symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
