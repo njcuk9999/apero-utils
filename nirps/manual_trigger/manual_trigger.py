@@ -365,9 +365,8 @@ def run_apero_get(settings: Dict[str, Any]):
                        outpath=outpath_objects, fibers=scifibers,
                        symlinks=symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for templates
-        apero_get.main(objnames='*', dprtypes=dprtypes,
-                       outtypes=template_outtypes,
+        # run apero get for templates (no DPRTYPE as they could be different)
+        apero_get.main(objnames='*', outtypes=template_outtypes,
                        outpath=outpath_templates, fibers=scifibers,
                        symlinks=False, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
