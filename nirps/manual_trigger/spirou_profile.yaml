@@ -10,8 +10,22 @@ setup_spirou_stable_07:
     raw dir: /spirou/cfht_nights/common/raw
     # apero processing run.ini file
     apero run file: online_run.ini
-    # apero get valid header key: DRSOUTID
-    apero out types:
+    # apero get valid header key: DRSOUTID (for apero red dir)
+    apero out types red:
+        - EXT_E2DS_FF
+        - EXT_S1D_V
+        - TELLU_OBJ
+        - TELLU_RECON
+        - TELLU_PCLEAN
+        - TELLU_TEMP
+        - TELLU_TEMP_S1DV
+        - DRS_POST_E
+        - DRS_POST_S
+        - DRS_POST_T
+        - DRS_POST_V
+        - DRS_POST_P
+    # apero get valid header key: DRSOUTID (for lbl)
+    apero out types lbl:
         - TELLU_OBJ
     # apero get valid header key: DPRTYPE
     apero dpr types:

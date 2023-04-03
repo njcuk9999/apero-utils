@@ -9,16 +9,16 @@ Created on 2023-03-08 at 11:59
 
 @author: cook
 """
-import sys
 import argparse
 import os
+import shutil
+import sys
 from typing import Any, Dict
 
 import astropy.units as uu
 import numpy as np
 import yaml
 from astropy.time import Time
-
 
 # =============================================================================
 # Define variables
@@ -325,9 +325,10 @@ def run_apero_get(settings: Dict[str, Any]):
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
         # update the apero profile
-        _ = update_apero_profile(pdict)
+        pparams = update_apero_profile(pdict)
         # get the output types
-        outtypes = ','.join(pdict['apero out types'])
+        red_outtypes = ','.join(pdict['apero out types red'])
+        lbl_outtypes = ','.join(pdict['apero out types lbl'])
         # get the dpr types
         dprtypes = ','.join(pdict['apero dpr types'])
         # get fibers from settings
@@ -335,18 +336,32 @@ def run_apero_get(settings: Dict[str, Any]):
         calfibers = pdict['apero get cal fibers']
         # template output types
         template_outtypes = pdict['apero template out types']
+        # get the object dir in the apero reduction path
+        red_path = pparams['DRS_DATA_REDUC']
+        obj_path = os.path.join(os.path.dirname(red_path), 'objects')
         # get the output path
         lbl_in_path = pdict['lbl in path']
-        outpath_objects = os.path.join(lbl_in_path, 'objects')
+        outpath_objects = os.path.join(lbl_in_path, 'science')
         outpath_templates = os.path.join(lbl_in_path, 'templates')
         outpath_calib = os.path.join(lbl_in_path, 'calib')
         outpath_fpfp = os.path.join(lbl_in_path, 'fpfp')
         # whether we want symlinks
         symlinks = pdict['lbl in symlinks']
+        # reset these paths
+        if symlinks:
+            directories = [obj_path, outpath_objects, outpath_templates,
+                           outpath_calib, outpath_fpfp]
+            for directory in directories:
+                reset_directory(directory)
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_get
-        # run apero get for objects
-        apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=outtypes,
+        # run apero get to make the objects dir in apero dir
+        apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=red_outtypes,
+                       outpath=obj_path, fibers=scifibers,
+                       symlinks=symlinks,
+                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get for objects for lbl
+        apero_get.main(objnames='*', dprtypes=dprtypes, outtypes=lbl_outtypes,
                        outpath=outpath_objects, fibers=scifibers,
                        symlinks=symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
@@ -380,6 +395,18 @@ def run_apero_get(settings: Dict[str, Any]):
                        outpath=outpath_calib, fibers=calfibers,
                        symlinks=symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
+
+
+def reset_directory(directory: str, reset: bool = False):
+    # if directory does not exist create it
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        return
+    # if we are here and want to reset we should remove the directory tree
+    if reset:
+        shutil.rmtree(directory)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
 
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):

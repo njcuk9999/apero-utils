@@ -10,10 +10,23 @@ nirps he V0.7.275:
     raw dir: /nirps_raw/nirps/raw-data/nirps_he
     # apero processing run.ini file
     apero run file: online_run.ini
-    # apero get valid header key: DRSOUTID
-    apero out types:
-        - TELLU_OBJ
+    # apero get valid header key: DRSOUTID (for apero red dir)
+    apero out types red:
         - EXT_E2DS_FF
+        - EXT_S1D_V
+        - TELLU_OBJ
+        - TELLU_RECON
+        - TELLU_PCLEAN
+        - TELLU_TEMP
+        - TELLU_TEMP_S1DV
+        - DRS_POST_E
+        - DRS_POST_S
+        - DRS_POST_T
+        - DRS_POST_V
+        - DRS_POST_P
+    # apero get valid header key: DRSOUTID (for lbl)
+    apero out types lbl:
+        - TELLU_OBJ
     # apero get valid header key: DPRTYPE
     apero dpr types:
         - OBJ_FP
