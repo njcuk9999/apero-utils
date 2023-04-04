@@ -15,7 +15,7 @@ nirps ha V0.7.275:
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        apero run file: online_run.ini
+        run file: online_run.ini
         # reset all data
         reset: False
     # apero_get settings
