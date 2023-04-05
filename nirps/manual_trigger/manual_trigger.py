@@ -362,10 +362,13 @@ def run_apero_get(settings: Dict[str, Any]):
         if red_symlinks:
             directories = [outpath_objects]
             dtypes = ['objects']
+            reset = dict['get']['reset']
             for it, directory in enumerate(directories):
                 if dtypes[it] is None:
                     continue
-                if dtypes[it] in pdict['get']['reset']:
+                if reset is None:
+                    continue
+                if dtypes[it] in reset:
                     reset_directory(directory)
         # ----------------------------------------------------------
         # reset lbl directories
@@ -373,10 +376,13 @@ def run_apero_get(settings: Dict[str, Any]):
         if lbl_symlinks:
             directories = [obj_path, outpath_templates, outpath_calib]
             dtypes = ['science', 'templates', 'calib']
+            reset = dict['get-lbl']['reset']
             for it, directory in enumerate(directories):
                 if dtypes[it] is None:
                     continue
-                if dtypes[it] in pdict['get-lbl']['reset']:
+                if reset is None:
+                    continue
+                if dtypes[it] in reset:
                     reset_directory(directory)
 
         # ---------------------------------------------------------------------
