@@ -1,0 +1,76 @@
+nirps ha V0.7.275 online:
+    # general settings
+    general:
+        # directory where raw data is downloaded
+        raw dir: /nirps_raw/nirps/raw-data/nirps_he
+        # the apero profile to use (controlled sym link raw data directory and all
+        #    apero reduced data directories)
+        apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_online
+        # apero get output path
+        lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_online/
+        # start date if not using --obsdir argument
+        start date: 2022-11-01
+    # apero_processing settings
+    processing:
+        # apero processing run.ini file
+        run file: online_ref_cal.ini
+        # reset all data
+        reset: True
+    # apero_get settings
+    get:
+        # apero get valid header key: DRSOUTID (for apero red dir)
+        science out types:
+            - EXT_E2DS_FF
+            - EXT_S1D_V
+            - TELLU_OBJ
+            - TELLU_RECON
+            - TELLU_PCLEAN
+            - TELLU_TEMP
+            - TELLU_TEMP_S1DV
+            - DRS_POST_E
+            - DRS_POST_S
+            - DRS_POST_T
+            - DRS_POST_V
+            - DRS_POST_P
+        # input dpr types
+        science dpr types:
+            - OBJ_FP
+            - OBJ_DARK
+            - OBJ_SKY
+        # sym links in apero get
+        symlinks: True
+        # reset options (if symlinks = True)
+        reset:
+            # - objects
+    # apero_get settings for lbl
+    get-lbl:
+        # input telluric
+        science out types:
+            - TELLU_OBJ
+        # input dpr types
+        science dpr types:
+            - OBJ_FP
+            - OBJ_DARK
+            - OBJ_SKY
+        # apero template types
+        template out types:
+            - TELLU_TEMP_S1DV
+        # apero simultaneous FP dprtypes
+        simfp dprtypes:
+            - OBJ_FP
+        # sym links in apero get
+        symlinks: True
+        # reset options (if symlinks = True)
+        reset:
+            - science
+            - telluric
+            - calib
+    # lbl settings
+    lbl:
+        wrap script:
+
+
+
+
+
+
