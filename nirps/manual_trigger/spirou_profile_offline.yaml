@@ -5,17 +5,17 @@ nirps ha V0.7.275 online:
         raw dir: /spirou/cfht_nights/common/raw
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/spirou/apero-settings/spirou_07276_online
+        apero profile: /cosmos99/spirou/apero-settings/spirou_07276_offline
         # directory where lbl files are processed
-        lbl path: /cosmos99/spirou/lbl-data/spirou_07276_online/
+        lbl path: /cosmos99/spirou/lbl-data/spirou_07276_offline/
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: online_run.ini
+        run file: complete_run.ini
         # reset all data
-        reset: False
+        reset: True
     # apero_get settings
     get:
         # apero get valid header key: DRSOUTID (for apero red dir)

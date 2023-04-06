@@ -2,20 +2,20 @@ nirps ha V0.7.275 online:
     # general settings
     general:
         # directory where raw data is downloaded
-        raw dir: /spirou/cfht_nights/common/raw
+        raw dir: /nirps_raw/nirps/raw-data/nirps_ha
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/spirou/apero-settings/spirou_07276_online
+        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_offline
         # directory where lbl files are processed
-        lbl path: /cosmos99/spirou/lbl-data/spirou_07276_online/
+        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_offline/
         # start date if not using --obsdir argument
-        start date: 2018-01-01
+        start date: 2022-11-01
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: online_run.ini
+        run file: complete_run.ini
         # reset all data
-        reset: False
+        reset: True
     # apero_get settings
     get:
         # apero get valid header key: DRSOUTID (for apero red dir)
@@ -34,10 +34,9 @@ nirps ha V0.7.275 online:
             - DRS_POST_P
         # input dpr types
         science dpr types:
-            - POLAR_FP
-            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
+            - OBJ_SKY
         # sym links in apero get
         symlinks: True
         # reset options (if symlinks = True)
@@ -50,10 +49,9 @@ nirps ha V0.7.275 online:
             - TELLU_OBJ
         # input dpr types
         science dpr types:
-            - POLAR_FP
-            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
+            - OBJ_SKY
         # apero template types
         template out types:
             - TELLU_TEMP_S1DV
