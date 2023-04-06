@@ -5,11 +5,9 @@ nirps ha V0.7.275:
         raw dir: /nirps_raw/nirps/raw-data/nirps_ha
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276
-        # apero get output path
-        lbl in path: /cosmos99/nirps/lbl-data/nirps_ha_07276/
+        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
         # directory where lbl files are processed
-        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276/lbl
+        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
         # start date if not using --obsdir argument
         start date: 2022-11-01
     # apero_processing settings

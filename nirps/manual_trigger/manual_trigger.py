@@ -348,7 +348,7 @@ def run_apero_get(settings: Dict[str, Any]):
         red_path = pparams['DRS_DATA_REDUC']
         obj_path = os.path.join(os.path.dirname(red_path), 'objects')
         # get the output path
-        lbl_in_path = pdict['general']['lbl in path']
+        lbl_in_path = pdict['general']['lbl path']
         outpath_objects = os.path.join(lbl_in_path, 'science')
         outpath_templates = os.path.join(lbl_in_path, 'templates')
         outpath_calib = os.path.join(lbl_in_path, 'calib')

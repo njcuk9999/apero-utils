@@ -5,11 +5,9 @@ nirps ha V0.7.275:
         raw dir: /spirou/cfht_nights/common/raw
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
-        # apero get output path
-        lbl in path: /space/spirou/obj_full_SPIROU_v07275
+        apero profile: /cosmos99/spirou/apero-settings/spirou_07276_online
         # directory where lbl files are processed
-        lbl path: /space/spirou/LBL/SPIROU07275
+        lbl path: /cosmos99/spirou/lbl-data/spirou_07276_online/
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # apero_processing settings
