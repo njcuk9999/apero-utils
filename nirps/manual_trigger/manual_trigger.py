@@ -357,6 +357,14 @@ def run_apero_get(settings: Dict[str, Any]):
         red_symlinks = pdict['get']['symlinks']
         lbl_symlinks = pdict['get-lbl']['symlinks']
         # ----------------------------------------------------------
+        # check directories exist - try to make them if they don't
+        # ----------------------------------------------------------
+        directories = [obj_path, outpath_templates, outpath_calib,
+                       outpath_objects]
+        for directory in directories:
+            if not os.path.exists(directory):
+                os.makedirs(directory)
+        # ----------------------------------------------------------
         # reset reduced directories
         # ----------------------------------------------------------
         if red_symlinks:
