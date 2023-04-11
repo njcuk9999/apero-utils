@@ -14,8 +14,10 @@ nirps ha V0.7.275 online:
     processing:
         # apero processing run.ini file
         run file: complete_run.ini
-        # reset all data
-        reset: True
+        # reset data
+        #  options are "None", "all" or a list "tmp", "red", "out"
+        reset:
+            - all
     # apero_get settings
     get:
         # apero get valid header key: DRSOUTID (for apero red dir)

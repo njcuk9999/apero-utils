@@ -13,7 +13,7 @@ import argparse
 import os
 import shutil
 import sys
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 import astropy.units as uu
 import numpy as np
@@ -32,6 +32,11 @@ START_TIME = Time.now()
 # Define functions
 # =============================================================================
 def get_args():
+    """
+    Define the command line arguments
+
+    :return: argparse namespace object containing arguments
+    """
     parser = argparse.ArgumentParser(description='Rene\'s magic trigger')
     # add obs dir
     parser.add_argument('profile', type=str, default='None',
@@ -250,7 +255,15 @@ def make_sym_links(settings: Dict[str, Any]):
             os.symlink(full_inpath, full_outpath)
 
 
-def get_obs_dirs(profile):
+def get_obs_dirs(profile: Dict[str, Any]) -> List[str]:
+    """
+    Get the observation directories from the raw directory
+    This is used when no obs_dirs are specified in the yaml file
+
+    :param profile: dict, the profile dictionary from the yaml file
+
+    :return: list of observation directories
+    """
     # get raw directory path from profile
     path = profile['general']['raw dir']
     # set start date
@@ -299,7 +312,10 @@ def run_processing(settings: Dict[str, Any]):
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
         # update the apero profile
-        _ = update_apero_profile(pdict)
+        params = update_apero_profile(pdict)
+        # deal with a reset
+        if pdict['processing']['reset'] is not None:
+            apero_reset(params, pdict)
         # get the run file
         runfile = pdict['processing']['run file']
         # get the obs dirs
@@ -314,6 +330,40 @@ def run_processing(settings: Dict[str, Any]):
             apero_processing.main(runfile=runfile,
                                   include_obs_dirs=','.join(obs_dirs),
                                   test=settings['TEST'])
+
+
+def apero_reset(params: Any, pdict: Dict[str, Any]):
+    """
+    Reset the processing folders
+
+    :param params: ParamDict, parmaeters dictionary of constants for this
+                   profile
+    :param pdict: Dict, the yaml dictionary for this profile
+
+    :return: None, removes files and updates database
+    """
+    # import the drs_reset module
+    from apero.tools.module.setup import drs_reset
+    from apero.tools.recipes.bin import apero_reset
+    # get the reset directories
+    reset_dirs = pdict['processing']['reset']
+    # define the function to use for each type (via a dictionary)
+    reset_funcs = dict()
+    reset_funcs['tmp'] = drs_reset.reset_tmp_folders
+    reset_funcs['red'] = drs_reset.reset_reduced_folders
+    reset_funcs['out'] = drs_reset.reset_out_folders
+    # print progress
+    print('\t\tResetting processing')
+    # deal with None in reset dirs
+    if 'None' in reset_dirs:
+        return
+    # deal with all in reset dirs
+    if 'all' in reset_dirs:
+        apero_reset.main(warn=False)
+    # loop around directories to be reset
+    for reset_dir in reset_dirs:
+        if reset_dir in reset_funcs:
+            reset_funcs[reset_dir](params)
 
 
 def run_apero_get(settings: Dict[str, Any]):
