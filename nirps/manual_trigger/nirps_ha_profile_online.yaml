@@ -29,6 +29,7 @@ nirps ha V0.7.275:
             - TELLU_PCLEAN
             - TELLU_TEMP
             - TELLU_TEMP_S1DV
+            - CCF_RV
             - DRS_POST_E
             - DRS_POST_S
             - DRS_POST_T
