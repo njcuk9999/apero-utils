@@ -62,7 +62,9 @@ table.csvtable tr.row-even {
     background-color: #bbbbbb;
     font-size: 0.75em;
 }
-
+th {
+    position: sticky;
+}
 
 /*div.sphinxsidebar {
     max-height: 100%;

@@ -328,6 +328,9 @@ def compile_docs(settings: dict):
         # copy conf.py make.bat and Makefile to the working directory
         shutil.copy(__file__.replace('simple_ari.py', copy_file),
                     os.path.join(settings['WORKING'], copy_file))
+    # copy the static directory as well
+    shutil.copytree(__file__.replace('simple_ari.py', '_static'),
+                    os.path.join(settings['WORKING'], '_static'))
     # ------------------------------------------------------------------
     # get current directory
     cwd = os.getcwd()
