@@ -43,11 +43,6 @@ _DATA_DIR = 'data'
 _RST_DIR = 'rst'
 _HTML_DIR = '_build/html'
 _OUT_DIR = 'output'
-# ssh path
-SSH_PATH = '/export/www/home/cook/www/apero-drs/'
-# define path to local htpasswd file
-HTPASSWD_PATH = '/home/cook/apero_ari/'
-_PASS_DIR = 'pass'
 
 # column width modifiers
 COL_WIDTH_DICT = dict()
@@ -328,6 +323,11 @@ def compile_docs(settings: dict):
         # copy conf.py make.bat and Makefile to the working directory
         shutil.copy(__file__.replace('simple_ari.py', copy_file),
                     os.path.join(settings['WORKING'], copy_file))
+    # get _static directory
+    static_outdir = os.path.join(settings['WORKING'], '_static')
+    # deal with static_outdir existing
+    if os.path.exists(static_outdir):
+        shutil.rmtree(static_outdir)
     # copy the static directory as well
     shutil.copytree(__file__.replace('simple_ari.py', '_static'),
                     os.path.join(settings['WORKING'], '_static'))
@@ -398,11 +398,12 @@ def upload_docs(settings: dict):
         out_dir += os.sep
     # get rsync dict
     rdict = dict()
-    rdict['SSH'] = drs_documentation.SSH_OPTIONS
-    rdict['USER'] = drs_documentation.SSH_USER
-    rdict['HOST'] = drs_documentation.SSH_HOST
+    rdict['SSH'] = settings['ssh']['options']
+    rdict['USER'] = settings['ssh']['user']
+    rdict['HOST'] = settings['ssh']['host']
     rdict['INPATH'] = out_dir
-    rdict['OUTPATH'] = os.path.join(SSH_PATH, f'ari/{instrument}/')
+    rdict['OUTPATH'] = os.path.join(settings['ssh']['directory'],
+                                    f'ari/{instrument}/')
     # print command to rsync
     wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
     # run command (will require password)
