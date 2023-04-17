@@ -516,7 +516,7 @@ def compile_apero_object_table(settings: dict) -> Table:
     # loop around objects in the object table
     for pos in tqdm(range(len(object_table))):
         # get the object name
-        objname = object_table[OBJECT_COLUMN][pos]
+        objname = object_table['_OBJECT'][pos]
         # set up where condition for raw files
         raw_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
         # setup up where condition for pp files
