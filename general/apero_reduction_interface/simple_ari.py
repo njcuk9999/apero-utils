@@ -243,7 +243,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     index_page.add_text('If you believe you should have the username/password '
                         'please contact neil.james.cook@gmail.com')
     index_page.add_newline()
-    index_page.add_text('Last updated: {0}'.format(Time.now()))
+    index_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
     index_page.add_newline()
     # -------------------------------------------------------------------------
     # add table of contents
@@ -548,7 +548,7 @@ def compile_apero_object_table(settings: dict, profile: dict) -> Table:
             continue
         # find maximum time value and convert to human time
         latest_time = Time(np.max(times), format='mjd')
-        object_table['LATEST_RAW'][pos] = latest_time.isot
+        object_table['LATEST_RAW'][pos] = latest_time.iso
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
