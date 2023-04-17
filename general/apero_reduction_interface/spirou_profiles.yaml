@@ -3,7 +3,7 @@ settings:
   # Instrument (either SPIROU or NIRPS)
   instrument: SPIROU
   # Working directory: where to store the website data
-  working directory: /cosmos99/nirps/apero-data/misc/apero-ari
+  working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
 
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)
