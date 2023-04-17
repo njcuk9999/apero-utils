@@ -10,6 +10,7 @@ Created on 2023-02-20 at 9:35
 @author: cook
 """
 import glob
+import shutil
 import os
 import re
 import sys
@@ -319,6 +320,14 @@ def compile_docs(settings: dict):
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
     wlog = drs_log.wlog
+    # ------------------------------------------------------------------
+    # get list of files to copy
+    copy_files = ['conf.py', 'make.bat', 'Makefile']
+    # loop around files and copy
+    for copy_file in copy_files:
+        # copy conf.py make.bat and Makefile to the working directory
+        shutil.copy(__file__.replace('simple_ari.py', copy_file),
+                    os.path.join(settings['WORKING'], copy_file))
     # ------------------------------------------------------------------
     # get current directory
     cwd = os.getcwd()
