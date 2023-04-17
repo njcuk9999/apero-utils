@@ -367,7 +367,7 @@ def compile_docs(settings: dict):
     os.chdir(cwd)
 
 
-def upload_docs(settings: dict):
+def upload_docs(gsettings: dict, settings: dict):
     """
     Upload the documentation to the web server
 
@@ -400,11 +400,11 @@ def upload_docs(settings: dict):
         out_dir += os.sep
     # get rsync dict
     rdict = dict()
-    rdict['SSH'] = settings['ssh']['options']
-    rdict['USER'] = settings['ssh']['user']
-    rdict['HOST'] = settings['ssh']['host']
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
     rdict['INPATH'] = out_dir
-    rdict['OUTPATH'] = os.path.join(settings['ssh']['directory'],
+    rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
                                     f'ari/{instrument}/')
     # print command to rsync
     wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
@@ -1034,6 +1034,6 @@ if __name__ == "__main__":
     compile_docs(ari_settings)
     # ----------------------------------------------------------------------
     # step 5: upload to hosting
-    upload_docs(ari_settings)
+    upload_docs(gsettings, ari_settings)
 
 # =============================================================================
