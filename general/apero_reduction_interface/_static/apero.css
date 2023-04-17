@@ -62,8 +62,10 @@ table.csvtable tr.row-even {
     background-color: #bbbbbb;
     font-size: 0.75em;
 }
-th {
+
+table.csvtable th.head {
     position: sticky;
+    top: 0;
 }
 
 /*div.sphinxsidebar {
