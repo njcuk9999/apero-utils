@@ -482,6 +482,7 @@ def compile_apero_object_table(settings: dict) -> Table:
     # ------------------------------------------------------------------
     # add a temporary column
     object_table['_OBJECT'] = np.array(object_table[OBJECT_COLUMN])
+    object_table[OBJECT_COLUMN] = [''*255] * len(object_table)
     # change the object column to a url
     for it, row in enumerate(object_table):
         # get the object name for this row
@@ -1033,7 +1034,7 @@ def _get_column_widths(table: Table):
     return cwidth, cwidths
 
 
-def _make_url(value, url):
+def _make_url(value: str, url: str) -> str:
     """
     Make a url from a value and a url
     """
