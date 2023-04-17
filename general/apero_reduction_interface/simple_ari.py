@@ -43,6 +43,8 @@ _DATA_DIR = 'data'
 _RST_DIR = 'rst'
 _HTML_DIR = '_build/html'
 _OUT_DIR = 'output'
+# define path to local htpasswd file
+_PASS_DIR = 'pass'
 
 # column width modifiers
 COL_WIDTH_DICT = dict()
