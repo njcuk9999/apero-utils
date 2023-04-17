@@ -234,6 +234,9 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     index_page.add_newline()
     index_page.add_text('If you believe you should have the username/password '
                         'please contact neil.james.cook@gmail.com')
+    index_page.add_newline()
+    index_page.add_text('Last updated: {0}'.format(Time.now()))
+    index_page.add_newline()
     # -------------------------------------------------------------------------
     # add table of contents
     index_page.add_table_of_contents(profile_files)
