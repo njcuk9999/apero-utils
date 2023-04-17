@@ -482,7 +482,7 @@ def compile_apero_object_table(settings: dict) -> Table:
     # ------------------------------------------------------------------
     # add a temporary column
     object_table['_OBJECT'] = np.array(object_table[OBJECT_COLUMN])
-    object_table[OBJECT_COLUMN] = [''*255] * len(object_table)
+    object_table[OBJECT_COLUMN] = [' '*255] * len(object_table)
     # change the object column to a url
     for it, row in enumerate(object_table):
         # get the object name for this row
