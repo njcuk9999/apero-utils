@@ -483,16 +483,6 @@ def compile_apero_object_table(settings: dict) -> Table:
     # add a temporary column
     object_table['_OBJECT'] = np.array(object_table[OBJECT_COLUMN])
     object_table[OBJECT_COLUMN] = [' '*255] * len(object_table)
-    # change the object column to a url
-    for it, row in enumerate(object_table):
-        # get the object name for this row
-        objname = row['_OBJECT']
-        # generate url for object
-        object_url = f'{instrument}_{outdir}_{objname}_index'
-        # replace  object name with the object name + object url
-        object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
-        # Create object pages
-        _create_object_page(settings, objname, object_url)
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table['RAW'] = [0] * len(object_table)
@@ -593,6 +583,17 @@ def compile_apero_object_table(settings: dict) -> Table:
     mask = object_table['RAW'] > 0
     # apply mask
     object_table = object_table[mask]
+    # ------------------------------------------------------------------
+    # change the object column to a url
+    for it, row in enumerate(object_table):
+        # get the object name for this row
+        objname = row['_OBJECT']
+        # generate url for object
+        object_url = f'{instrument}_{outdir}_{objname}_index'
+        # replace  object name with the object name + object url
+        object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
+        # Create object pages
+        _create_object_page(settings, objname, object_url)
     # ------------------------------------------------------------------
     # return object table
     return object_table
