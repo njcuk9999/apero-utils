@@ -161,7 +161,7 @@ def compile_stats(settings: dict, profile: dict) -> dict:
         profile_stats['OBJECT_TABLE'] = None
     else:
         # get the object table (astropy table)
-        object_table = compile_apero_object_table(settings)
+        object_table = compile_apero_object_table(settings, profile)
         # add the lbl count
         object_table = add_lbl_count(profile, object_table)
         # remove the temporary object column
@@ -426,7 +426,7 @@ def upload_docs(gsettings: dict, settings: dict):
 # =============================================================================
 # Functions for the apero stats
 # =============================================================================
-def compile_apero_object_table(settings: dict) -> Table:
+def compile_apero_object_table(settings: dict, profile: dict) -> Table:
     """
     Compile the apero object table
 
@@ -593,7 +593,7 @@ def compile_apero_object_table(settings: dict) -> Table:
         # replace  object name with the object name + object url
         object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
         # Create object pages
-        _create_object_page(settings, objname, object_url)
+        _create_object_page(settings, profile, objname, object_url)
     # ------------------------------------------------------------------
     # return object table
     return object_table
@@ -786,9 +786,6 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     # first column: templates used for lbl
     # second column: template selected for lbl count
     # third column: number of lbl files for template with most lbl files
-    object_table['LBL_SELECT'] = np.zeros(len(object_table), dtype=str)
-    object_table['LBL_COUNT'] = np.zeros(len(object_table), dtype=int)
-    object_table['LBL_LINK'] = np.zeros(len(object_table), dtype=str)
     lbl_templates = []
     lbl_select = []
     lbl_count = []
@@ -851,13 +848,16 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
 # =============================================================================
 # Worker functions
 # =============================================================================
-def _create_object_page(settings:dict, objname: str, objurl: str):
+def _create_object_page(settings:dict, profile: dict, objname: str,
+                        objurl: str):
     # import drs_markdown
     from apero.tools.module.documentation import drs_markdown
-    # create ARI index page
+    # create ARI object page
     object_page = drs_markdown.MarkDownPage(objurl)
+    # get the profile name
+    name = profile['profile name']
     # add title
-    object_page.add_title(objname)
+    object_page.add_title(f'{objname} ({name})')
     # -------------------------------------------------------------------------
     # Add basic text
     # construct text to add
@@ -1068,6 +1068,8 @@ if __name__ == "__main__":
     for apero_profile_name in apero_profiles:
         # sort out settings
         ari_settings = get_settings(gsettings, apero_profile_name)
+        # add profile name to settings
+        apero_profiles[apero_profile_name]['profile name'] = apero_profile_name
         # we reprocess if the file does not exist or if REPROCESS is True
         if REPROCESS:
             # print progress
