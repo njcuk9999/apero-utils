@@ -44,7 +44,7 @@ _RST_DIR = 'rst'
 _HTML_DIR = '_build/html'
 _OUT_DIR = 'output'
 # Define output object data dir
-_OBJ_OUT_DIR = 'bjects'
+_OBJ_OUT_DIR = 'objects'
 # define path to local htpasswd file
 _PASS_DIR = 'pass'
 # define the column which is the object name
@@ -486,7 +486,7 @@ def compile_apero_object_table(settings: dict) -> Table:
     # change the object column to a url
     for it, row in enumerate(object_table):
         # get the object name for this row
-        objname = row[OBJECT_COLUMN]
+        objname = row['_OBJECT']
         # generate url for object
         object_url = f'`{instrument}_{outdir}_{objname}_index`_'
         # replace  object name with the object name + object url
