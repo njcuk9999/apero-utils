@@ -10,6 +10,8 @@ settings:
     user: cook
     host: venus.astro.umontreal.ca
     options: ssh -oport=5822
+  # whether to reset the working directory
+  reset: True
 
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)

@@ -44,7 +44,7 @@ _RST_DIR = 'rst'
 _HTML_DIR = '_build/html'
 _OUT_DIR = 'output'
 # Define output object data dir
-_OBJ_OUT_DIR = 'output/objects'
+_OBJ_OUT_DIR = 'bjects'
 # define path to local htpasswd file
 _PASS_DIR = 'pass'
 # define the column which is the object name
@@ -112,7 +112,7 @@ def get_settings(settings: Dict[str, Any],
     # set the global paths for sphinx
     param_settings['HTML'] = os.path.join(working_dir, _HTML_DIR)
     param_settings['OUT'] = os.path.join(working_dir, _OUT_DIR)
-    param_settings['OBJ_OUT'] = os.path.join(working_dir, _OBJ_OUT_DIR)
+    param_settings['OBJ_OUT'] = os.path.join(working_dir, cpname, _OBJ_OUT_DIR)
     # get params from apero
     param_settings['INSTRUMENT'] = settings['instrument']
     # make sure directories exist
@@ -1055,6 +1055,10 @@ if __name__ == "__main__":
     # get global settings
     gsettings = dict(apero_profiles['settings'])
     del apero_profiles['settings']
+    # deal with a reset
+    if gsettings['reset']:
+        # remove working directory
+        shutil.rmtree(gsettings['working directory'], ignore_errors=True)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
