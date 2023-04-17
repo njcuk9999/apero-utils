@@ -548,7 +548,7 @@ def compile_apero_object_table(settings: dict, profile: dict) -> Table:
             continue
         # find maximum time value and convert to human time
         latest_time = Time(np.max(times), format='mjd')
-        object_table['LATEST_RAW'][pos] = latest_time.iso
+        object_table['LATEST_RAW'][pos] = latest_time.isot
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
