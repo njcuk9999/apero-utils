@@ -488,7 +488,7 @@ def compile_apero_object_table(settings: dict) -> Table:
         # get the object name for this row
         objname = row['_OBJECT']
         # generate url for object
-        object_url = f'`{instrument}_{outdir}_{objname}_index`_'
+        object_url = f'{instrument}_{outdir}_{objname}_index'
         # replace  object name with the object name + object url
         object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
         # Create object pages
