@@ -38,7 +38,6 @@ REPROCESS = True
 # Define output path
 OUTPUT_PATH = '.'
 # define sphinx directories
-_WORKING_DIR = '/data/spirou/cook/simple_ari/working/'
 _DATA_DIR = 'data'
 _RST_DIR = 'rst'
 _HTML_DIR = '_build/html'
@@ -93,14 +92,15 @@ def get_settings(settings: Dict[str, Any],
     # add the clean profile name to the settings
     param_settings['CPN'] = cpname
     # create paths
-    param_settings['WORKING'] = _WORKING_DIR
+    working_dir = settings['working directory']
+    param_settings['WORKING'] = working_dir
     if profile_name is not None:
-        param_settings['DATA'] = os.path.join(_WORKING_DIR, cpname, _DATA_DIR)
-        param_settings['RST'] = os.path.join(_WORKING_DIR, cpname, _RST_DIR)
-        param_settings['DIR'] = os.path.join(_WORKING_DIR, cpname)
-        param_settings['PASS1'] = os.path.join(_WORKING_DIR, _PASS_DIR, '1',
+        param_settings['DATA'] = os.path.join(working_dir, cpname, _DATA_DIR)
+        param_settings['RST'] = os.path.join(working_dir, cpname, _RST_DIR)
+        param_settings['DIR'] = os.path.join(working_dir, cpname)
+        param_settings['PASS1'] = os.path.join(working_dir, _PASS_DIR, '1',
                                                cpname)
-        param_settings['PASS2'] = os.path.join(_WORKING_DIR, _PASS_DIR, '2',
+        param_settings['PASS2'] = os.path.join(working_dir, _PASS_DIR, '2',
                                                cpname)
     else:
         param_settings['DATA'] = None
@@ -109,8 +109,8 @@ def get_settings(settings: Dict[str, Any],
         param_settings['PASS1'] = None
         param_settings['PASS2'] = None
         # set the global paths for sphinx
-    param_settings['HTML'] = os.path.join(_WORKING_DIR, _HTML_DIR)
-    param_settings['OUT'] = os.path.join(_WORKING_DIR, _OUT_DIR)
+    param_settings['HTML'] = os.path.join(working_dir, _HTML_DIR)
+    param_settings['OUT'] = os.path.join(working_dir, _OUT_DIR)
     # get params from apero
     param_settings['INSTRUMENT'] = settings['instrument']
     # make sure directories exist
