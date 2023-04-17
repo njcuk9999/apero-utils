@@ -43,9 +43,12 @@ _DATA_DIR = 'data'
 _RST_DIR = 'rst'
 _HTML_DIR = '_build/html'
 _OUT_DIR = 'output'
+# Define output object data dir
+_OBJ_OUT_DIR = 'output/objects'
 # define path to local htpasswd file
 _PASS_DIR = 'pass'
-
+# define the column which is the object name
+OBJECT_COLUMN = 'OBJNAME'
 # column width modifiers
 COL_WIDTH_DICT = dict()
 COL_WIDTH_DICT['MESSAGE'] = 100
@@ -106,9 +109,10 @@ def get_settings(settings: Dict[str, Any],
         param_settings['DIR'] = None
         param_settings['PASS1'] = None
         param_settings['PASS2'] = None
-        # set the global paths for sphinx
+    # set the global paths for sphinx
     param_settings['HTML'] = os.path.join(working_dir, _HTML_DIR)
     param_settings['OUT'] = os.path.join(working_dir, _OUT_DIR)
+    param_settings['OBJ_OUT'] = os.path.join(working_dir, _OBJ_OUT_DIR)
     # get params from apero
     param_settings['INSTRUMENT'] = settings['instrument']
     # make sure directories exist
@@ -124,6 +128,8 @@ def get_settings(settings: Dict[str, Any],
         os.makedirs(param_settings['HTML'])
     if not os.path.exists(param_settings['OUT']):
         os.makedirs(param_settings['OUT'])
+    if not os.path.exists(param_settings['OBJ_OUT']):
+        os.makedirs(param_settings['OBJ_OUT'])
     # return all parameter settings
     return param_settings
 
@@ -155,9 +161,11 @@ def compile_stats(settings: dict, profile: dict) -> dict:
         profile_stats['OBJECT_TABLE'] = None
     else:
         # get the object table (astropy table)
-        object_table = compile_apero_object_table()
+        object_table = compile_apero_object_table(settings)
         # add the lbl count
         object_table = add_lbl_count(profile, object_table)
+        # remove the temporary object column
+        del object_table['_OBJECT']
         # add final object table to profile stats
         profile_stats['OBJECT_TABLE'] = object_table
     # ------------------------------------------------------------------
@@ -275,8 +283,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                 # get column widths
                 cwidth, cwidths = _get_column_widths(table)
                 # add the csv version of this table
-                table_page.add_csv_table('', '../data/' + table_filename,
-                                         width=cwidth, widths=cwidths)
+                table_page.add_csv_table('', '../data/' + table_filename)
+                #                         ,width=cwidth, widths=cwidths)
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
@@ -418,7 +426,7 @@ def upload_docs(gsettings: dict, settings: dict):
 # =============================================================================
 # Functions for the apero stats
 # =============================================================================
-def compile_apero_object_table() -> Table:
+def compile_apero_object_table(settings: dict) -> Table:
     """
     Compile the apero object table
 
@@ -447,6 +455,10 @@ def compile_apero_object_table() -> Table:
     # we assume the first science fiber is the primary science fiber
     science_fiber = science_fibers[0]
     # ------------------------------------------------------------------
+    # get the parameters for lbl website url
+    instrument = settings['INSTRUMENT']
+    outdir = os.path.basename(settings['OBJ_OUT'])
+    # ------------------------------------------------------------------
     # get the astrometric database from apero
     astrodbm = drs_database.AstrometricDatabase(params)
     astrodbm.load_db()
@@ -465,6 +477,21 @@ def compile_apero_object_table() -> Table:
     # ------------------------------------------------------------------
     # convert pandas dataframe to astropy table
     object_table = Table.from_pandas(object_table)
+    # ------------------------------------------------------------------
+    # Deal with object pages
+    # ------------------------------------------------------------------
+    # add a temporary column
+    object_table['_OBJECT'] = np.array(object_table[OBJECT_COLUMN])
+    # change the object column to a url
+    for it, row in enumerate(object_table):
+        # get the object name for this row
+        objname = row[OBJECT_COLUMN]
+        # generate url for object
+        object_url = f'`{instrument}_{outdir}_{objname}_index`_'
+        # replace  object name with the object name + object url
+        object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
+        # Create object pages
+        _create_object_page(settings, objname, object_url)
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table['RAW'] = [0] * len(object_table)
@@ -488,7 +515,7 @@ def compile_apero_object_table() -> Table:
     # loop around objects in the object table
     for pos in tqdm(range(len(object_table))):
         # get the object name
-        objname = object_table['OBJNAME'][pos]
+        objname = object_table[OBJECT_COLUMN][pos]
         # set up where condition for raw files
         raw_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
         # setup up where condition for pp files
@@ -759,7 +786,7 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     # third column: number of lbl files for template with most lbl files
     object_table['LBL_SELECT'] = np.zeros(len(object_table), dtype=str)
     object_table['LBL_COUNT'] = np.zeros(len(object_table), dtype=int)
-    object_table['LBL_TEMPLATES'] = np.zeros(len(object_table), dtype=str)
+    object_table['LBL_LINK'] = np.zeros(len(object_table), dtype=str)
     lbl_templates = []
     lbl_select = []
     lbl_count = []
@@ -774,7 +801,7 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     wlog(params, '', 'Analysing LBL files')
     # -------------------------------------------------------------------------
     # get object name
-    objnames = np.array(object_table['OBJNAME'])
+    objnames = np.array(object_table['_OBJECT'])
     # loop around objects
     for pos, objname in tqdm(enumerate(objnames)):
         # for each object find all directories in lbl path that match this
@@ -801,9 +828,14 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
             counts.append(count)
         # decide which template to use (using max of counts)
         select = np.argmax(counts)
-        lbl_templates.append(','.join(templates))
-        lbl_select.append(templates[select])
-        lbl_count.append(int(counts[select]))
+        # get strings to add to storage
+        _template = ','.join(templates)
+        _select = templates[select]
+        _count = int(counts[select])
+        # append to lists
+        lbl_templates.append(_template)
+        lbl_select.append(_select)
+        lbl_count.append(_count)
     # -------------------------------------------------------------------------
     # add to object table
     object_table['LBL_TEMPLATES'] = lbl_templates
@@ -817,6 +849,28 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
 # =============================================================================
 # Worker functions
 # =============================================================================
+def _create_object_page(settings:dict, objname: str, objurl: str):
+    # import drs_markdown
+    from apero.tools.module.documentation import drs_markdown
+    # create ARI index page
+    object_page = drs_markdown.MarkDownPage(objurl)
+    # add title
+    object_page.add_title(objname)
+    # -------------------------------------------------------------------------
+    # Add basic text
+    # construct text to add
+    object_page.add_text('Information about this object will go here.')
+    object_page.add_newline()
+    # TODO: Insert Etienne's code here
+    # -------------------------------------------------------------------------
+    # construct a path for the object name
+    object_page_path = settings['OBJ_OUT']
+    # construct the rst filename
+    rst_filename = f'{objname}.rst'
+    # save index page
+    object_page.write_page(os.path.join(object_page_path, rst_filename))
+
+
 def split_line(parts, rawstring):
     # store list of variables
     variables = []
@@ -977,6 +1031,13 @@ def _get_column_widths(table: Table):
     # -------------------------------------------------------------------------
     # return a list of the columns
     return cwidth, cwidths
+
+
+def _make_url(value, url):
+    """
+    Make a url from a value and a url
+    """
+    return f':ref:`{value} <{url}>`'
 
 
 # =============================================================================
