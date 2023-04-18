@@ -556,8 +556,8 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
         # setup where condition for ccf files
         # TODO: Get KW_OUTPUT from file definitions + deal with QC
         ccf_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
-                      f'AND KW_OUTPUT="CCF_RV" '
-                      f'AND KW_FIBER="{science_fiber}"')
+                    f'AND KW_OUTPUT="CCF_RV" '
+                    f'AND KW_FIBER="{science_fiber}"')
         # setup where condition for e.fits files
         e_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
                   f'AND KW_OUTPUT="DRS_POST_E"')
@@ -957,7 +957,7 @@ class ObjectData:
                 self.get_header_keys(self.headers[file_kind],
                                      self.file_lists[it])
 
-    def get_header_keys(self, keys: Dict[str, Dict[str]], files: List[str]):
+    def get_header_keys(self, keys: Dict[str, Dict[str, str]], files: List[str]):
         """
         Get the header keys from the files
         :param keys: dictionary of keys to get (with their properties)
@@ -1407,7 +1407,7 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
     ypoints = np.array(lbl_vrad[low], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red',  head_width=0.5, head_length=1.5, alpha=0.5)
+                       color='red', head_width=0.5, head_length=1.5, alpha=0.5)
     # same as above for the high outliers
     high = lbl_vrad > ylim[1]
     xpoints = np.array(lbl_plot_date[high], dtype=float)
@@ -1447,7 +1447,7 @@ def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
     # compute the stats
     # --------------------------------------------------------------------------
     # get the 25, 50 and 75 percentile of the velocity uncertainty
-    p_sigma = np.nanpercentile(lbl_svrad, [25,50,75])
+    p_sigma = np.nanpercentile(lbl_svrad, [25, 50, 75])
     # get the 25, 50 and 75 percentile of the velocity
     v_sigma = np.nanpercentile(lbl_vrad - np.nanmedian(lbl_vrad), [25, 50, 75])
     # get the low outliers
@@ -1507,6 +1507,7 @@ def ccf_stats_table():
 
 def time_series_stats_table():
     pass
+
 
 # =============================================================================
 # Worker functions
