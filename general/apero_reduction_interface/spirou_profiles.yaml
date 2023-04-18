@@ -13,6 +13,7 @@ settings:
   # whether to reset the working directory
   reset: True
 
+# -----------------------------------------------------------------------------
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)
 #     lbl path: str, absolute path to LBL directory

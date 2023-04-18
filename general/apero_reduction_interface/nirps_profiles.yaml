@@ -48,3 +48,64 @@ nirps he V0.7.276 offline:
     skip obj table: False
     skip recipe table: True
     skip msg table: True
+
+
+# -----------------------------------------------------------------------------
+# Header keys
+headers:
+  EXT:
+    EXT_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    EXT_Y:
+      key: EXTSN015
+      label: 'SNR[Order 15 (#134 1.082$\mu$m)]'
+      dtype: float
+    EXT_H:
+      key: EXTSN060
+      label: 'SNR[Order 60 (#89 1.629$\mu$m)]'
+      dtype: float
+    SEEING_START:
+      key: HIERARCH ESO TEL AMBI FWHM START
+      label: Seeing at start
+      dtype: float
+    SEEING_END:
+      key: HIERARCH ESO TEL AMBI FWHM END
+      label: Seeing at end
+      dtype: float
+    AIRMASS_START:
+      key: HIERARCH ESO TEL AIRM START
+      label: Airmass at start
+      dtype: float
+    AIRMASS_END:
+      key: HIERARCH ESO TEL AIRM END
+      label: Airmass at end
+      dtype: float
+  CCF:
+    CCF_MJDMID:
+      key: MJDMID
+      label: CCF MJD
+      dtype: float
+      timefmt: mjd
+    CCF_DV:
+      key: RV_CORR
+      label: CCF RV
+      unit: km/s
+      dtype: float
+    CCF_SDV:
+      key: DVRMS_CC
+      label: CCF RV Error
+      unit: km/s
+      dtype: float
+    CCF_FWHM:
+      key: CCFMFWHM
+      label: CCF FWHM
+      unit: km/s
+      dtype: float
+  LBL:
+    EXT_H:
+      key: EXTSN060
+      label: 'SNR[Order 60 (#89 1.629$\mu$m)]'
+      dtype: float

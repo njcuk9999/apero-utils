@@ -10,16 +10,19 @@ Created on 2023-02-20 at 9:35
 @author: cook
 """
 import glob
-import shutil
 import os
 import re
+import shutil
 import sys
-from typing import Any, Dict, Union
+from typing import Any, Dict, List, Tuple, Union
 
+import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 from astropy.table import Table
 from astropy.time import Time
+from astropy.io import fits
+from astropy import units as uu
 
 # =============================================================================
 # Define variables
@@ -43,12 +46,24 @@ _DATA_DIR = 'data'
 _RST_DIR = 'rst'
 _HTML_DIR = '_build/html'
 _OUT_DIR = 'output'
+_ITEM_DIR = 'items'
+_DOWN_DIR = 'downloads'
 # Define output object data dir
 _OBJ_OUT_DIR = 'objects'
 # define path to local htpasswd file
 _PASS_DIR = 'pass'
 # define the column which is the object name
 OBJECT_COLUMN = 'OBJNAME'
+# define the count / file columns
+COUNT_COLS = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p']
+# define chains (if this number is zero do not count)
+COUNT_CHAINS = [None, 'RAW', 'PP', 'EXT', 'TCORR', 'TCORR', 'PP', 'EXT',
+                'TCORR', 'TCORR']
+# define the lbl rdb suffix (lbl or lbl2)
+LBL_SUFFIX = 'lbl'
+# object page styling
+DIVIDER_COLOR = '#FFA500'
+DIVIDER_HEIGHT = 6
 # column width modifiers
 COL_WIDTH_DICT = dict()
 COL_WIDTH_DICT['MESSAGE'] = 100
@@ -103,16 +118,22 @@ def get_settings(settings: Dict[str, Any],
                                                cpname)
         param_settings['PASS2'] = os.path.join(working_dir, _PASS_DIR, '2',
                                                cpname)
+        param_settings['ITEMS'] = os.path.join(working_dir, cpname, _ITEM_DIR)
+        param_settings['DOWNS'] = os.path.join(working_dir, cpname, _DOWN_DIR)
+        param_settings['OBJ_OUT'] = os.path.join(working_dir, cpname,
+                                                 _OBJ_OUT_DIR)
     else:
         param_settings['DATA'] = None
         param_settings['RST'] = None
         param_settings['DIR'] = None
         param_settings['PASS1'] = None
         param_settings['PASS2'] = None
+        param_settings['ITEMS'] = None
+        param_settings['DOWNS'] = None
+        param_settings['OBJ_OUT'] = None
     # set the global paths for sphinx
     param_settings['HTML'] = os.path.join(working_dir, _HTML_DIR)
     param_settings['OUT'] = os.path.join(working_dir, _OUT_DIR)
-    param_settings['OBJ_OUT'] = os.path.join(working_dir, cpname, _OBJ_OUT_DIR)
     # get params from apero
     param_settings['INSTRUMENT'] = settings['instrument']
     # make sure directories exist
@@ -130,11 +151,15 @@ def get_settings(settings: Dict[str, Any],
         os.makedirs(param_settings['OUT'])
     if not os.path.exists(param_settings['OBJ_OUT']):
         os.makedirs(param_settings['OBJ_OUT'])
+    if not os.path.exists(param_settings['ITEMS']):
+        os.makedirs(param_settings['ITEMS'])
+    if not os.path.exists(param_settings['DOWNS']):
+        os.makedirs(param_settings['DOWNS'])
     # return all parameter settings
     return param_settings
 
 
-def compile_stats(settings: dict, profile: dict) -> dict:
+def compile_stats(settings: dict, profile: dict, headers: dict) -> dict:
     """
     Compile the stats for a given profile
 
@@ -161,9 +186,11 @@ def compile_stats(settings: dict, profile: dict) -> dict:
         profile_stats['OBJECT_TABLE'] = None
     else:
         # get the object table (astropy table)
-        object_table = compile_apero_object_table(settings, profile)
+        object_table, filedict = compile_apero_object_table()
         # add the lbl count
-        object_table = add_lbl_count(profile, object_table)
+        object_table, filedict = add_lbl_count(profile, object_table, filedict)
+        # add the object pages
+        add_obj_pages(settings, profile, headers, object_table, filedict)
         # remove the temporary object column
         del object_table['_OBJECT']
         # add final object table to profile stats
@@ -280,11 +307,9 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             table_page.add_title(table_title)
             # deal with column widths for this file type
             if table is not None:
-                # get column widths
-                cwidth, cwidths = _get_column_widths(table)
                 # add the csv version of this table
-                table_page.add_csv_table('', '../data/' + table_filename)
-                #                         ,width=cwidth, widths=cwidths)
+                table_page.add_csv_table('', f'../{_DATA_DIR}/' +
+                                         table_filename)
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
@@ -426,7 +451,10 @@ def upload_docs(gsettings: dict, settings: dict):
 # =============================================================================
 # Functions for the apero stats
 # =============================================================================
-def compile_apero_object_table(settings: dict, profile: dict) -> Table:
+FileDictReturn = Dict[str, Dict[str, List[str]]]
+
+
+def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     """
     Compile the apero object table
 
@@ -455,10 +483,6 @@ def compile_apero_object_table(settings: dict, profile: dict) -> Table:
     # we assume the first science fiber is the primary science fiber
     science_fiber = science_fibers[0]
     # ------------------------------------------------------------------
-    # get the parameters for lbl website url
-    instrument = settings['INSTRUMENT']
-    outdir = os.path.basename(settings['OBJ_OUT'])
-    # ------------------------------------------------------------------
     # get the astrometric database from apero
     astrodbm = drs_database.AstrometricDatabase(params)
     astrodbm.load_db()
@@ -482,7 +506,7 @@ def compile_apero_object_table(settings: dict, profile: dict) -> Table:
     # ------------------------------------------------------------------
     # add a temporary column
     object_table['_OBJECT'] = np.array(object_table[OBJECT_COLUMN])
-    object_table[OBJECT_COLUMN] = [' '*255] * len(object_table)
+    object_table[OBJECT_COLUMN] = [' ' * 255] * len(object_table)
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table['RAW'] = [0] * len(object_table)
@@ -499,6 +523,14 @@ def compile_apero_object_table(settings: dict, profile: dict) -> Table:
     if has_polar:
         object_table['p'] = [0] * len(object_table)
     # ------------------------------------------------------------------
+    # storage for files for each type
+    file_dict = dict()
+    # loop around column names and add a empty list for each
+    for objname in object_table[OBJECT_COLUMN]:
+        file_dict[objname] = dict()
+        for colname in COUNT_COLS:
+            file_dict[objname][colname] = []
+    # ------------------------------------------------------------------
     # log progress
     wlog(params, '', 'Compiling object table (this may take a while)')
     # ------------------------------------------------------------------
@@ -511,22 +543,30 @@ def compile_apero_object_table(settings: dict, profile: dict) -> Table:
         raw_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
         # setup up where condition for pp files
         pp_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="tmp"'
-        # setup up where condition for ext files
+        # setup where condition for ext files
         # TODO: Get KW_OUTPUT from file definitions + deal with QC
         ext_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
                     f'AND KW_OUTPUT="EXT_E2DS_FF" '
                     f'AND KW_FIBER="{science_fiber}"')
-        # setup up where condition for tcorr files
+        # setup where condition for tcorr files
         # TODO: Get KW_OUTPUT from file definitions + deal with QC
         tcorr_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
                       f'AND KW_OUTPUT="TELLU_OBJ" '
                       f'AND KW_FIBER="{science_fiber}"')
-        # setup up where condition for e.fits files
+        # setup where condition for ccf files
+        # TODO: Get KW_OUTPUT from file definitions + deal with QC
+        ccf_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
+                      f'AND KW_OUTPUT="CCF_RV" '
+                      f'AND KW_FIBER="{science_fiber}"')
+        # setup where condition for e.fits files
         e_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
                   f'AND KW_OUTPUT="DRS_POST_E"')
-        # setup up where condition for t.fits files
+        # setup where condition for t.fits files
         t_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
                   f'AND KW_OUTPUT="DRS_POST_T"')
+        # setup where condition for v.fits files
+        v_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
+                  f'AND KW_OUTPUT="DRS_POST_V"')
         # deal with instruments that have polarimetry
         if has_polar:
             # setup up where condition for polar files
@@ -552,51 +592,50 @@ def compile_apero_object_table(settings: dict, profile: dict) -> Table:
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
-        conditions = [raw_cond, pp_cond, ext_cond, tcorr_cond, polar_cond,
-                      e_cond, t_cond, p_cond]
-        colnames = ['RAW', 'PP', 'EXT', 'TCORR', 'POL', 'e', 't', 'p']
+        conditions = [raw_cond, pp_cond, ext_cond, tcorr_cond, ccf_cond,
+                      polar_cond, e_cond, t_cond, v_cond, p_cond]
         # storage of count (for chains
         counts = dict()
-        # define chains (if this number is zero do not count)
-        chains = [None, 'RAW', 'PP', 'EXT', 'TCORR', 'PP', 'EXT', 'PP']
         # loop around conditions
         for it, condition in enumerate(conditions):
             # deal with polar conditions
             if condition is None:
                 continue
             # deal with chains
-            if chains[it] is not None:
+            if COUNT_CHAINS[it] is not None:
                 # get count from counts
-                count = counts[chains[it]]
+                count = counts[COUNT_CHAINS[it]]
                 # if the count is zero then continue
                 if count == 0:
-                    counts[colnames[it]] = 0
+                    counts[COUNT_COLS[it]] = 0
                     continue
-            # run the count
-            count = indexdbm.database.count(condition=condition)
+            # get the files
+            files = indexdbm.get_entries('ABSPATH', condition=condition)
+            # get the count
+            count = len(files)
+            # append to files
+            file_dict[objname][COUNT_COLS[it]] = files
             # add to object table
-            object_table[colnames[it]][pos] = count
+            object_table[COUNT_COLS[it]][pos] = count
             # set counts
-            counts[colnames[it]] = count
+            counts[COUNT_COLS[it]] = count
     # ------------------------------------------------------------------
     # remove rows with no raw entries
     mask = object_table['RAW'] > 0
     # apply mask
     object_table = object_table[mask]
     # ------------------------------------------------------------------
-    # change the object column to a url
-    for it, row in enumerate(object_table):
-        # get the object name for this row
-        objname = row['_OBJECT']
-        # generate url for object
-        object_url = f'{instrument}_{outdir}_{objname}_index'
-        # replace  object name with the object name + object url
-        object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
-        # Create object pages
-        _create_object_page(settings, profile, objname, object_url)
+    # remove objects for file_dict with zero raw entries
+    for objname in object_table[OBJECT_COLUMN]:
+        # deal with objects not in the file dict
+        if objname not in file_dict:
+            continue
+        # deal with objects with no raw files
+        if len(file_dict[objname]['RAW']) == 0:
+            del file_dict[objname]
     # ------------------------------------------------------------------
     # return object table
-    return object_table
+    return object_table, file_dict
 
 
 def compile_apero_recipe_table() -> Table:
@@ -764,8 +803,8 @@ def compile_apero_message_table() -> Table:
 # =============================================================================
 # Functions for compiling the lbl stats
 # =============================================================================
-def add_lbl_count(profile: dict, object_table: Table) -> Table:
-    # TODO: Fill out this function
+def add_lbl_count(profile: dict, object_table: Table,
+                  file_dict: FileDictReturn) -> Tuple[Table, FileDictReturn]:
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.base.base import TQDM as tqdm
@@ -792,10 +831,10 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     # -------------------------------------------------------------------------
     # deal with no valid lbl path
     if lbl_path is None:
-        return object_table
+        return object_table, file_dict
     # deal with lbl path not existing
     if not os.path.exists(lbl_path):
-        return object_table
+        return object_table, file_dict
     # print that we are analysing lbl outputs
     wlog(params, '', 'Analysing LBL files')
     # -------------------------------------------------------------------------
@@ -805,21 +844,33 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     for pos, objname in tqdm(enumerate(objnames)):
         # for each object find all directories in lbl path that match this
         #   object name
-        directories = glob.glob(os.path.join(lbl_path, 'lblrv', f'{objname}_*'))
+        lblrv_dir = glob.glob(os.path.join(lbl_path, 'lblrv', f'{objname}_*'))
+        # get all the lbl rdb files for this object name
+        rdb_glob = f'{LBL_SUFFIX}_{objname}_*.rdb'
+        all_lblrdb_files = glob.glob(os.path.join(lbl_path, 'lblrdb', rdb_glob))
+        # remove drift files from the lbl rdb files
+        lblrdb_files = []
+        for lblrdb_file in all_lblrdb_files:
+            if 'drift' not in lblrdb_file:
+                lblrdb_files.append(lblrdb_file)
+        # ---------------------------------------------------------------------
         # deal with no directories --> skip
-        if len(directories) == 0:
+        if len(lblrv_dir) == 0:
             lbl_templates.append('')
             lbl_select.append('')
             lbl_count.append(0)
+            # add an empty list to the LBLRDB file dict for this object
+            file_dict[objname]['LBLRDB'] = []
             continue
         # store a list of templates
         templates = []
         # store a list of counts
         counts = []
         # loop around each directory
-        for directory in directories:
+        for directory in lblrv_dir:
             # get the template name for each directory
-            template = os.path.basename(directory).split('_')[1]
+            basename = os.path.basename(directory)
+            template = basename.split(f'{objname}_')[-1]
             # get the number of lbl files in each directory
             count = len(glob.glob(os.path.join(directory, '*lbl.fits')))
             # append storage
@@ -835,6 +886,8 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
         lbl_templates.append(_template)
         lbl_select.append(_select)
         lbl_count.append(_count)
+        # add an empty list to the LBLRDB file dict for this object
+        file_dict[objname]['LBLRDB'] = lblrdb_files
     # -------------------------------------------------------------------------
     # add to object table
     object_table['LBL_TEMPLATES'] = lbl_templates
@@ -842,37 +895,622 @@ def add_lbl_count(profile: dict, object_table: Table) -> Table:
     object_table['LBL_COUNT'] = lbl_count
     # -------------------------------------------------------------------------
     # return the object table
-    return object_table
+    return object_table, file_dict
 
+
+# =============================================================================
+# Functions for making object pages
+# =============================================================================
+class ObjectData:
+    def __init__(self, profile, settings, headers,
+                 objname, file_dict, object_table):
+        # get the object name
+        self.objname = objname
+        # get the file_dictionary for this object
+        self.raw_files = file_dict[objname]['RAW']
+        self.pp_files = file_dict[objname]['PP']
+        self.ext_files = file_dict[objname]['EXT']
+        self.tcorr_files = file_dict[objname]['TCORR']
+        self.ccf_files = file_dict[objname]['CCF']
+        self.lbl_rdb_files = file_dict[objname]['LBLRDB']
+        # get the object_table row for this object
+        self.object_table = object_table[object_table['_OBJECT'] == objname]
+        # ---------------------------------------------------------------------
+        # get spectrum output parameters (for page integration)
+        self.spec_snr_plot_path = None
+        self.spec_stats_table = None
+        self.spec_download_table = None
+        # get lbl output parameters (for page integration)
+        self.lbl_combinations = []
+        self.lbl_plot_path = dict()
+        self.lbl_stats_table = dict()
+        self.lbl_dwn_table = dict()
+        # get ccf output parameters (for page integration)
+        self.ccf_rv_plot_path = None
+        self.ccf_med_plot_path = None
+        self.ccf_stats_table = None
+        self.ccf_download_table = None
+        # get time series output parameters (for page integration)
+        self.time_series_stats_table = None
+        self.time_series_download_table = None
+        # ---------------------------------------------------------------------
+        # misc (save for use throughout)
+        self.settings = settings
+        self.profile = profile
+        self.headers = headers
+        # ---------------------------------------------------------------------
+        # store the required header info
+        self.header_dict = dict()
+        # file lists to match COUNT COLS
+        self.file_lists = [self.raw_files, self.pp_files, self.ext_files,
+                           self.tcorr_files, self.ccf_files, None, None,
+                           None, None, None]
+
+    def populate_header_dict(self):
+        """
+        Populate the header dictionary with the required header keys
+        :return:
+        """
+        # loop around COUNT COLS and populate header dict
+        for it, file_kind in enumerate(COUNT_COLS):
+            if file_kind in self.headers and self.file_lists[it] is not None:
+                self.get_header_keys(self.headers[file_kind],
+                                     self.file_lists[it])
+
+    def get_header_keys(self, keys: Dict[str, Dict[str]], files: List[str]):
+        """
+        Get the header keys from the files
+        :param keys: dictionary of keys to get (with their properties)
+        :param files: list of files (for error reporting)
+        :return:
+        """
+
+        # deal with no keys
+        if len(keys) == 0:
+            return
+        # get an array of length of the files for each key
+        for keydict in keys:
+            # get key
+            key = keys[keydict]['key']
+            # deal with no files
+            if len(files) == 0:
+                self.header_dict[key] = None
+            else:
+                self.header_dict[key] = np.full(len(files), np.nan)
+        # loop around files and populate the header_dict
+        for pos, filename in enumerate(files):
+            header = fits.getheader(filename)
+            for keydict in keys:
+                # get key (for header dict)
+                key = keys[keydict]['key']
+                # get value (for header dict)
+                value = _header_value(keys[keydict], header, filename)
+                # set value in header dict
+                self.header_dict[key][pos] = value
+
+    def get_spec_parameters(self):
+        pass
+
+    def get_lbl_parameters(self):
+        """
+        Get the LBL parameters for this object
+
+        :return:
+        """
+        # don't go here is lbl rdb files are not present
+        if len(self.lbl_rdb_files) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # ---------------------------------------------------------------------
+        # get the ext h-band key
+        ext_h_key = self.headers['LBL']['EXT_H']['key']
+        # store the object+ template combinations
+        lbl_objtmps = dict()
+        # get the lbl objname+templates combinations
+        for lbl_rdb_file in self.lbl_rdb_files:
+            # get the basename
+            basename = os.path.basename(lbl_rdb_file)
+            # get the objname+template
+            lbl_objtmp = basename.split(f'{LBL_SUFFIX}_')[-1].split('.rdb')[0]
+            # append to list
+            lbl_objtmps[lbl_objtmp] = lbl_rdb_file
+        # loop around the objname+template combinations
+        for lbl_objtmp in lbl_objtmps:
+            # load rdb file
+            rdb_table = Table.read(lbl_objtmps[lbl_objtmp], format='ascii.rdb')
+            # get the values required
+            lbl_rjd = np.array(rdb_table['rjd'])
+            lbl_vrad = np.array(rdb_table['vrad'])
+            lbl_svrad = np.array(rdb_table['svrad'])
+            lbl_plot_date = np.array(rdb_table['plot_date'])
+            lbl_snr_h = np.array(rdb_table[ext_h_key])
+            # -----------------------------------------------------------------
+            # plot the figure
+            # -----------------------------------------------------------------
+            # get the plot base name
+            plot_base_name = 'lbl_plot_' + lbl_objtmp + '.png'
+            # get the plot path
+            plot_path = os.path.join(item_save_path, plot_base_name)
+            # plot the lbl figure
+            lbl_props = lbl_plot(lbl_plot_date, lbl_vrad, lbl_svrad, lbl_snr_h,
+                                 plot_path, plot_title=lbl_objtmp)
+            # -----------------------------------------------------------------
+            # construct the stats
+            # -----------------------------------------------------------------
+            # get the stats base name
+            stat_base_name = 'lbl_stat_' + lbl_objtmp + '.txt'
+            # get the stat path
+            stat_path = os.path.join(item_save_path, stat_base_name)
+            # compute the stats
+            lbl_stats_table(lbl_rjd, lbl_vrad, lbl_svrad, lbl_props,
+                            stat_path)
+            # -----------------------------------------------------------------
+            # construct the download table
+            # -----------------------------------------------------------------
+            # get the download base name
+            dwn_base_name = 'lbl_download_' + lbl_objtmp + '.txt'
+            # get the download path
+            download_path = os.path.join(down_save_path, dwn_base_name)
+            # define the download files
+            down_files = [lbl_objtmps[lbl_objtmp]]
+            # define the download descriptions
+            down_descs = ['RDB file']
+            # compute the download table
+            download_table(down_files, down_descs, down_rel_path,
+                           download_path)
+            # -----------------------------------------------------------------
+            # update the paths
+            self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
+            self.lbl_stats_table[lbl_objtmp] = item_rel_path + stat_base_name
+            self.lbl_dwn_table[lbl_objtmp] = item_rel_path + dwn_base_name
+        # ---------------------------------------------------------------------
+        # set the lbl combinations
+        self.lbl_combinations = lbl_objtmps.keys()
+
+    def get_ccf_parameters(self):
+        pass
+
+    def get_time_series_parameters(self):
+        pass
+
+
+def add_obj_pages(settings: dict, profile: dict, headers: dict,
+                  object_table: Table, file_dict: FileDictReturn):
+    # must import here (so that os.environ is set)
+    # noinspection PyPep8Naming
+    from apero.base.base import TQDM as tqdm
+    from apero.core import constants
+    from apero.core.core import drs_log
+    from apero.tools.module.documentation import drs_markdown
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # get WLOG
+    wlog = drs_log.wlog
+    # ------------------------------------------------------------------
+    # get the parameters for lbl website url
+    instrument = settings['INSTRUMENT']
+    outdir = os.path.basename(settings['OBJ_OUT'])
+    # ------------------------------------------------------------------
+    # print progress
+    wlog(params, '', 'Creating object pages')
+    # change the object column to a url
+    for it, row in tqdm(enumerate(object_table)):
+        # get the object name for this row
+        objname = row['_OBJECT']
+        # create the object class
+        object_instance = ObjectData(settings, profile, headers,
+                                     objname, file_dict, object_table)
+        # ---------------------------------------------------------------------
+        # populate the header dictionary for this object instance
+        wlog(params, '', f'\tPopulating header dictionary for {objname}')
+        object_instance.populate_header_dict()
+        # ---------------------------------------------------------------------
+        # generate url for object
+        object_url = f'{instrument}_{outdir}_{objname}_index'
+        # replace  object name with the object name + object url
+        object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
+        # create ARI object page
+        object_page = drs_markdown.MarkDownPage(object_url)
+        # get the profile name
+        name = profile['profile name']
+        # add title
+        object_page.add_title(f'{objname} ({name})')
+        # ---------------------------------------------------------------------
+        # Add basic text
+        # construct text to add
+        object_page.add_text(f'This page was last modified: {Time.now()}')
+        object_page.add_newline()
+        # ---------------------------------------------------------------------
+        # table of contents
+        # ---------------------------------------------------------------------
+        # Add the names of the sections
+        names = ['Spectrum', 'LBL', 'CCF', 'Time series']
+        # add the links to the pages
+        items = [f'spectrum_objpage_{objname}',
+                 f'lbl_objpage_{objname}',
+                 f'ccf_objpage_{objname}', f'timeseries_objpage_{objname}']
+        # add table of contents
+        object_page.add_table_of_contents(items=items, names=names)
+        # ---------------------------------------------------------------------
+        # Spectrum section
+        # ---------------------------------------------------------------------
+        # print progress
+        wlog(params, '', f'\tCreating spectrum section for {objname}')
+        # add spectrum section
+        objpage_spectrum(object_page, names[0], items[0], object_instance)
+        # ---------------------------------------------------------------------
+        # LBL section
+        # ---------------------------------------------------------------------
+        # print progress
+        wlog(params, '', f'\tCreating LBL section for {objname}')
+        # add LBL section
+        objpage_lbl(object_page, names[1], items[1], object_instance)
+        # ---------------------------------------------------------------------
+        # CCF section
+        # ---------------------------------------------------------------------
+        # print progress
+        wlog(params, '', f'\tCreating CCF section for {objname}')
+        # add CCF section
+        objpage_ccf(object_page, names[2], items[2], object_instance)
+        # ---------------------------------------------------------------------
+        # Time series section
+        # ---------------------------------------------------------------------
+        # print progress
+        wlog(params, '', f'\tCreating time series section for {objname}')
+        # add time series section
+        objpage_timeseries(object_page, names[3], items[3], object_instance)
+        # ---------------------------------------------------------------------
+        # construct a path for the object name
+        object_page_path = settings['OBJ_OUT']
+        # construct the rst filename
+        rst_filename = f'{objname}.rst'
+        # save index page
+        object_page.write_page(os.path.join(object_page_path, rst_filename))
+
+
+def objpage_spectrum(page: Any, name: str, ref: str,
+                     object_instance: ObjectData):
+    # add divider
+    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # add a reference to this section
+    page.add_reference(ref)
+    # add the section heading
+    page.add_section(name)
+    # ------------------------------------------------------------------
+    # deal with no spectrum found
+    if len(object_instance.ext_files) == 0:
+        page.add_text('No spectrum found')
+        return
+    # ------------------------------------------------------------------
+    # get the spectrum parameters
+    object_instance.get_spec_parameters()
+    # ------------------------------------------------------------------
+    # add the snr plot
+    if object_instance.spec_snr_plot_path is not None:
+        # add the snr plot to the page
+        page.add_image(object_instance.spec_snr_plot_path)
+        # add a new line
+        page.add_newline()
+    # ------------------------------------------------------------------
+    # add stats
+    if object_instance.spec_stats_table is not None:
+        # add some stats
+        page.add_sub_section('Spectrum Stats')
+        # add the stats table
+        page.add_csv_table('', object_instance.spec_stats_table)
+    # ------------------------------------------------------------------
+    # add download links
+    if object_instance.spec_download_table is not None:
+        page.add_sub_section('Spectrum Downloads')
+        # add the stats table
+        page.add_csv_table('', object_instance.spec_download_table)
+
+
+def objpage_lbl(page: Any, name: str, ref: str,
+                object_instance: ObjectData):
+    # add divider
+    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # add a reference to this section
+    page.add_reference(ref)
+    # add the section heading
+    page.add_section(name)
+    # ------------------------------------------------------------------
+    # deal with no spectrum found
+    if len(object_instance.lbl_combinations) == 0:
+        page.add_text('No LBL reduction found')
+        return
+    # ------------------------------------------------------------------
+    # get the spectrum parameters
+    object_instance.get_lbl_parameters()
+    # ------------------------------------------------------------------
+    # loop around the object+template combinations
+    for objcomb in object_instance.lbl_combinations:
+        # add the lbl plot
+        if object_instance.lbl_plot_path[objcomb] is not None:
+            # add the snr plot to the page
+            page.add_image(object_instance.lbl_plot_path[objcomb])
+            # add a new line
+            page.add_newline()
+        # ------------------------------------------------------------------
+        # add stats
+        if object_instance.lbl_stats_table[objcomb] is not None:
+            # add some stats
+            page.add_sub_section('LBL Stats')
+            # add the stats table
+            page.add_csv_table('', object_instance.lbl_stats_table[objcomb])
+        # ------------------------------------------------------------------
+        # add download links
+        if object_instance.spec_download_table is not None:
+            page.add_sub_section('LBL Downloads')
+            # add the stats table
+            page.add_csv_table('', object_instance.lbl_dwn_table[objcomb])
+
+
+def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
+    # add divider
+    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # add a reference to this section
+    page.add_reference(ref)
+    # add the section heading
+    page.add_section(name)
+    # ------------------------------------------------------------------
+    # get the spectrum parameters
+    object_instance.get_ccf_parameters()
+    # ------------------------------------------------------------------
+    # add the ccf rv plot
+    if object_instance.ccf_rv_plot_path is not None:
+        # add the snr plot to the page
+        page.add_image(object_instance.ccf_rv_plot_path)
+        # add a new line
+        page.add_newline()
+    # add the ccf med plot
+    if object_instance.ccf_rv_plot_path is not None:
+        # add the snr plot to the page
+        page.add_image(object_instance.ccf_med_plot_path)
+        # add a new line
+        page.add_newline()
+    # ------------------------------------------------------------------
+    # add stats
+    if object_instance.ccf_stats_table is not None:
+        # add some stats
+        page.add_sub_section('CCF Stats')
+        # add the stats table
+        page.add_csv_table('', object_instance.ccf_stats_table)
+    # ------------------------------------------------------------------
+    # add download links
+    if object_instance.ccf_download_table is not None:
+        page.add_sub_section('CCF Downloads')
+        # add the stats table
+        page.add_csv_table('', object_instance.ccf_download_table)
+
+
+def objpage_timeseries(page: Any, name: str, ref: str,
+                       object_instance: ObjectData):
+    # add divider
+    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # add a reference to this section
+    page.add_reference(ref)
+    # add the section heading
+    page.add_section(name)
+    # ------------------------------------------------------------------
+    # get the spectrum parameters
+    object_instance.get_time_series_parameters()
+    # ------------------------------------------------------------------
+    # add stats
+    if object_instance.time_series_stats_table is not None:
+        # add some stats
+        page.add_sub_section('Time Series Stats')
+        # add the stats table
+        page.add_csv_table('', object_instance.time_series_stats_table)
+    # ------------------------------------------------------------------
+    # add download links
+    if object_instance.ccf_download_table is not None:
+        page.add_sub_section('Time Series Downloads')
+        # add the stats table
+        page.add_csv_table('', object_instance.time_series_download_table)
+
+
+# =============================================================================
+# Plots, stat tables and download tables
+# =============================================================================
+def download_table(files: List[str], descriptions: List[str],
+                   down_rel_path: str, down_path: str):
+    """
+    Generic download table saving to the item relative path
+
+    :param files:
+    :param descriptions:
+    :param down_rel_path:
+    :param down_path:
+    :return:
+    """
+    # --------------------------------------------------------------------------
+    # storage for ref file
+    ref_paths = dict()
+    # storage for outpath
+    out_paths = dict()
+    # storage for inpath
+    in_paths = dict()
+    # storage for the descriptions
+    descs = dict()
+    # get the out dir (item directory)
+    out_dir = os.path.dirname(down_path)
+
+    # loop around files and get the paths
+    for it, filename in enumerate(files):
+        # get the basename
+        basename = os.path.basename(filename)
+        # get the in path
+        in_paths[basename] = filename
+        # get the reference path (for the link)
+        ref_paths[basename] = down_rel_path + basename
+        # get the outpath
+        out_paths[basename] = os.path.join(out_dir, basename)
+        # get the descriptions
+        descs[basename] = descriptions[it]
+    # --------------------------------------------------------------------------
+    # construct the stats table
+    # --------------------------------------------------------------------------
+    # start with a download dictionary
+    down_dict = dict(Description=[], Value=[])
+    # loop around files
+    for basename in in_paths:
+        # add the rdb file
+        down_dict['Description'].append(descs[basename])
+        down_dict['Value'].append(ref_paths[basename])
+        # copy the file from in path to out path
+        shutil.copy(in_paths[basename], out_paths[basename])
+    # --------------------------------------------------------------------------
+    # convert to table
+    down_table = Table(down_dict)
+    # write to file as csv file
+    down_table.write(down_path, format='ascii.csv', overwrite=True)
+
+
+def spec_plot():
+    pass
+
+
+def spec_stats_table():
+    pass
+
+
+def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
+             lbl_svrad: np.ndarray, lbl_snr_h: np.ndarray,
+             plot_path: str, plot_title: str) -> Dict[str, Any]:
+    # setup the figure
+    fig, frame = plt.subplots(2, 1, figsize=(12, 6), sharex='all')
+    # plot the points
+    frame[0].plot_date(lbl_plot_date, lbl_vrad, marker='.', alpha=0.5,
+                       color='green', ls='None')
+    # plot the error bars
+    frame[0].errorbar(lbl_plot_date, lbl_vrad, yerr=lbl_svrad,
+                      marker='o', alpha=0.5, color='green', ls='None')
+    # find percentile cuts that will be expanded by 150% for the ylim
+    pp = np.nanpercentile(lbl_vrad, [10, 90])
+    diff = pp[1] - pp[0]
+    central_val = np.nanmean(pp)
+    # used for plotting but also for the flagging of outliers
+    ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
+    # length of the arrow flagging outliers
+    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    # flag the low outliers
+    low = lbl_vrad < ylim[0]
+    # get the x and y values of the outliers to be looped over within
+    # the arrow plotting
+    xpoints = np.array(lbl_plot_date[low], dtype=float)
+    ypoints = np.array(lbl_vrad[low], dtype=float)
+    for ix in range(len(xpoints)):
+        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+                       color='red',  head_width=0.5, head_length=1.5, alpha=0.5)
+    # same as above for the high outliers
+    high = lbl_vrad > ylim[1]
+    xpoints = np.array(lbl_plot_date[high], dtype=float)
+    ypoints = np.array(lbl_vrad[high], dtype=float)
+    for ix in range(len(xpoints)):
+        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+                       color='red', head_width=0.5, head_length=1.5, alpha=0.5)
+    # setting the plot
+    frame[0].set(ylim=ylim)
+    frame[0].set(title=plot_title)
+    frame[0].grid(which='both', color='lightgray', linestyle='--')
+    frame[0].set(ylabel='Velocity [m/s]')
+    # simple plot of the SNR in a sample order. You need to
+    # update the relevant ketword for SPIRou
+    frame[1].plot_date(lbl_plot_date, lbl_snr_h, marker='.',
+                       alpha=0.5, color='green', ls='None')
+    frame[1].grid(which='both', color='lightgray', linestyle='--')
+    frame[1].set(xlabel='Date')
+    frame[1].set(ylabel='EXTSN060')
+    plt.tight_layout()
+    # save figure and close the plot
+    plt.savefig(plot_path)
+    plt.close()
+    # some parameters are required later save them in a dictionary
+    props = dict()
+    props['low'] = low
+    props['high'] = high
+    props['ylim'] = ylim
+    # return the props
+    return props
+
+
+def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
+                    lbl_svrad: np.ndarray,
+                    props: Dict[str, Any], stat_path: str):
+    # --------------------------------------------------------------------------
+    # compute the stats
+    # --------------------------------------------------------------------------
+    # get the 25, 50 and 75 percentile of the velocity uncertainty
+    p_sigma = np.nanpercentile(lbl_svrad, [25,50,75])
+    # get the 25, 50 and 75 percentile of the velocity
+    v_sigma = np.nanpercentile(lbl_vrad - np.nanmedian(lbl_vrad), [25, 50, 75])
+    # get the low outliers
+    low = props['low']
+    # get the high outliers
+    high = props['high']
+    # calculate the number of nights
+    n_nights = len(np.unique(np.floor(lbl_rjd)))
+    # calculate the systemetic velocity
+    sys_vel = np.nanmedian(lbl_vrad)
+    # calculate the velocity domain considered valid
+    vel_domain = props['ylim']
+    # --------------------------------------------------------------------------
+    # construct the stats table
+    # --------------------------------------------------------------------------
+    # start with a stats dictionary
+    stat_dict = dict(Description=[], Value=[])
+    # add rv uncertainty
+    stat_dict['Description'].append('RV Uncertainty (25, 50, 75 percentile)')
+    stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*p_sigma))
+    # add the absolute deviation
+    stat_dict['Description'].append('RV Absolute Deviation (25, 50, 75 '
+                                    'percentile)')
+    stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*v_sigma))
+    # add the number of measurements
+    stat_dict['Description'].append('Number of Measurements')
+    stat_dict['Value'].append(len(lbl_vrad))
+    # add the spurious low points
+    stat_dict['Description'].append('Number of Spurious Low Points')
+    stat_dict['Value'].append(np.sum(low))
+    # add the spurious high points
+    stat_dict['Description'].append('Number of Spurious High Points')
+    stat_dict['Value'].append(np.sum(high))
+    # add the number of nights
+    stat_dict['Description'].append('Number of Nights')
+    stat_dict['Value'].append(n_nights)
+    # add the systemic velocity
+    stat_dict['Description'].append('Systemic Velocity')
+    stat_dict['Value'].append('{:.2f} m/s'.format(sys_vel))
+    # add the Velocity domain considered
+    stat_dict['Description'].append('Velocity Domain considered valid')
+    stat_dict['Value'].append('{:.2f} - {:.2f} m/s'.format(*vel_domain))
+    # --------------------------------------------------------------------------
+    # convert to table
+    stat_table = Table(stat_dict)
+    # write to file as csv file
+    stat_table.write(stat_path, format='ascii.csv', overwrite=True)
+
+
+def ccf_plot():
+    pass
+
+
+def ccf_stats_table():
+    pass
+
+
+def time_series_stats_table():
+    pass
 
 # =============================================================================
 # Worker functions
 # =============================================================================
-def _create_object_page(settings:dict, profile: dict, objname: str,
-                        objurl: str):
-    # import drs_markdown
-    from apero.tools.module.documentation import drs_markdown
-    # create ARI object page
-    object_page = drs_markdown.MarkDownPage(objurl)
-    # get the profile name
-    name = profile['profile name']
-    # add title
-    object_page.add_title(f'{objname} ({name})')
-    # -------------------------------------------------------------------------
-    # Add basic text
-    # construct text to add
-    object_page.add_text('Information about this object will go here.')
-    object_page.add_newline()
-    # TODO: Insert Etienne's code here
-    # -------------------------------------------------------------------------
-    # construct a path for the object name
-    object_page_path = settings['OBJ_OUT']
-    # construct the rst filename
-    rst_filename = f'{objname}.rst'
-    # save index page
-    object_page.write_page(os.path.join(object_page_path, rst_filename))
-
-
 def split_line(parts, rawstring):
     # store list of variables
     variables = []
@@ -1042,6 +1680,54 @@ def _make_url(value: str, url: str) -> str:
     return f':ref:`{value} <{url}>`'
 
 
+def _header_value(keydict: Dict[str, str], header: fits.Header,
+                  filename: str):
+    # get properties of header key
+    key = keydict['key']
+    unit = keydict.get('unit', None)
+    dtype = keydict.get('dtype', None)
+    timefmt = keydict.get('timefmt', None)
+    # -------------------------------------------------------------------------
+    # get raw value from header
+    rawvalue = header.get(key, None)
+    # deal with no value
+    if rawvalue is None:
+        raise ValueError(f'HeaderKey: {key} not found in header'
+                         f'\n\tFile: {filename}')
+    # -------------------------------------------------------------------------
+    # deal with dtype
+    if dtype is not None:
+        try:
+            if dtype == 'int':
+                rawvalue = int(rawvalue)
+            elif dtype == 'float':
+                rawvalue = float(rawvalue)
+            elif dtype == 'bool':
+                rawvalue = bool(rawvalue)
+        except Exception as _:
+            raise ValueError(f'HeaderDtype: {dtype} not valid for '
+                             f'{key}={rawvalue}\n\tFile: {filename}')
+    # -------------------------------------------------------------------------
+    # deal with time
+    if timefmt is not None:
+        try:
+            return Time(rawvalue, format=timefmt)
+        except Exception as _:
+            raise ValueError(f'HeaderTime: {timefmt} not valid for '
+                             f'{key}={rawvalue}\n\tFile: {filename}')
+    # -------------------------------------------------------------------------
+    # deal with units
+    if unit is not None:
+        try:
+            rawvalue = uu.Quantity(rawvalue, unit)
+        except ValueError:
+            raise ValueError(f'HeaderUnit: {unit} not valid for '
+                             f'{key}={rawvalue}\n\tFile: {filename}')
+    # -------------------------------------------------------------------------
+    # return the raw value
+    return rawvalue
+
+
 # =============================================================================
 # Start of code
 # =============================================================================
@@ -1056,7 +1742,9 @@ if __name__ == "__main__":
     apero_profiles = read_yaml_file(profile_filename)
     # get global settings
     gsettings = dict(apero_profiles['settings'])
+    header_settings = dict(apero_profiles['headers'])
     del apero_profiles['settings']
+    del apero_profiles['headers']
     # deal with a reset
     if gsettings['reset']:
         # remove working directory
@@ -1079,7 +1767,8 @@ if __name__ == "__main__":
             # get profile
             apero_profile = apero_profiles[apero_profile_name]
             # compile stats
-            apero_stats = compile_stats(ari_settings, apero_profile)
+            apero_stats = compile_stats(ari_settings, apero_profile,
+                                        header_settings)
             # add to all_apero_stats
             all_apero_stats[apero_profile_name] = apero_stats
             # -----------------------------------------------------------------
