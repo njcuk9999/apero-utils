@@ -27,6 +27,8 @@ nirps ha V0.7.275 online:
             - TELLU_OBJ
             - TELLU_RECON
             - TELLU_PCLEAN
+            - SC1D_V_FILE
+            - RC1D_V_FILE
             - TELLU_TEMP
             - TELLU_TEMP_S1DV
             - DRS_POST_E
