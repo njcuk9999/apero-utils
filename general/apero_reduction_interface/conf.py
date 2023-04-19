@@ -63,6 +63,8 @@ user_agent = 'Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25
 html_theme_options = {
     # Disable showing the sidebar. Defaults to 'false'
     'nosidebar': True,
+    # set the max body width
+    'body_max_width': 'none',
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
