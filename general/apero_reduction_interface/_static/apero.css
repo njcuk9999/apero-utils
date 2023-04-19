@@ -55,18 +55,13 @@ body {
     text-shadow: none;
 }
 
-table.csvtable {}
-.csvtable2 {}
-
 
 table.csvtable tr.row-odd {
     background-color: #aabbcc;
-    font-size: 0.75em;
 }
 
 table.csvtable tr.row-even {
     background-color: #bbbbbb;
-    font-size: 0.75em;
 }
 
 table.csvtable th.head {
@@ -76,12 +71,10 @@ table.csvtable th.head {
 
 table.csvtable2 tr.row-odd {
     background-color: #aabbcc;
-    font-size: 0.75em;
 }
 
 table.csvtable2 tr.row-even {
     background-color: #EBEBEB;
-    font-size: 0.75em;
 }
 
 
