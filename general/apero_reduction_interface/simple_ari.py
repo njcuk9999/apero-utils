@@ -1049,7 +1049,7 @@ class ObjectData:
             stat_path = os.path.join(item_save_path, stat_base_name)
             # compute the stats
             lbl_stats_table(lbl_rjd, lbl_vrad, lbl_svrad, lbl_props,
-                            stat_path)
+                            stat_path, title='LBL stats')
             # -----------------------------------------------------------------
             # construct the download table
             # -----------------------------------------------------------------
@@ -1063,7 +1063,7 @@ class ObjectData:
             down_descs = ['RDB file']
             # compute the download table
             download_table(down_files, down_descs, down_rel_path,
-                           download_path, title='LBL Stats')
+                           download_path, title='LBL Download')
             # -----------------------------------------------------------------
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
@@ -1456,7 +1456,7 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
 
 def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
                     lbl_svrad: np.ndarray,
-                    props: Dict[str, Any], stat_path: str):
+                    props: Dict[str, Any], stat_path: str, title: str):
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -1506,8 +1506,13 @@ def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
     stat_dict['Description'].append('Velocity Domain considered valid')
     stat_dict['Value'].append('{:.2f} - {:.2f} m/s'.format(*vel_domain))
     # --------------------------------------------------------------------------
+    # change the columns names
+    stat_dict2 = dict()
+    stat_dict2[title] = stat_dict['Description']
+    stat_dict2[' '] = stat_dict['Value']
+    # --------------------------------------------------------------------------
     # convert to table
-    stat_table = Table(stat_dict)
+    stat_table = Table(stat_dict2)
     # write to file as csv file
     stat_table.write(stat_path, format='ascii.csv', overwrite=True)
 

@@ -1,7 +1,6 @@
 import numpy as np
 from astropy.io import fits
 
-
 # =============================================================================
 # Define variables
 # =============================================================================
@@ -10,7 +9,8 @@ NAMPS = 32
 # number of x pixels
 NBXPIX = 4096
 # the fits file to correct
-FILENAME = ''
+FILENAME = '/cosmos99/nirps/apero-data/nirps_he_07276_online/raw/2022-12-06'
+
 
 # =============================================================================
 # Define functions
@@ -71,8 +71,11 @@ if __name__ == "__main__":
     # loop around columns in image and remove bad_col_pattern
     for col in in_col:
         image[:, col] = image[:, col] - bad_col_pattern
-
+    # -------------------------------------------------------------------------
     # save the corrected image over the slope
-    with fits.open(FILENAME, mode='update') as hdul:
+    with fits.open(FILENAME) as hdul:
+        # change the extension=1 image only
         hdul[1].data = image
-
+        # write to new file
+        hdul.writeto(FILENAME.replace('.fits', '_corrected.fits'),
+                     overwrite=True)
