@@ -73,6 +73,11 @@ table.csvtable2 {
     max-width: 100%;
 }
 
+
+table.csvtable th {
+    background-color: #E4A15A;
+}
+
 table.csvtable2 tr.row-odd {
     background-color: #FEF0E1;
 }
