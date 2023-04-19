@@ -119,7 +119,8 @@ def get_settings(settings: Dict[str, Any],
         param_settings['PASS2'] = os.path.join(working_dir, _PASS_DIR, '2',
                                                cpname)
         param_settings['ITEMS'] = os.path.join(working_dir, cpname, _ITEM_DIR)
-        param_settings['DOWNS'] = os.path.join(working_dir, cpname, _DOWN_DIR)
+        param_settings['DOWNS'] = os.path.join(working_dir, _OUT_DIR, cpname,
+                                               _DOWN_DIR)
         param_settings['OBJ_OUT'] = os.path.join(working_dir, cpname,
                                                  _OBJ_OUT_DIR)
     else:
@@ -1006,7 +1007,6 @@ class ObjectData:
         item_save_path = self.settings['ITEMS']
         item_rel_path = f'../{_ITEM_DIR}/'
         down_save_path = self.settings['DOWNS']
-        down_rel_path = f'../{_DOWN_DIR}/'
         # ---------------------------------------------------------------------
         # get the ext h-band key
         ext_h_key = self.headers['LBL']['EXT_H']['key']
@@ -1055,20 +1055,18 @@ class ObjectData:
             # -----------------------------------------------------------------
             # get the download base name
             dwn_base_name = 'lbl_download_' + lbl_objtmp + '.txt'
-            # get the download path
-            download_path = os.path.join(down_save_path, dwn_base_name)
             # define the download files
             down_files = [lbl_objtmps[lbl_objtmp]]
             # define the download descriptions
             down_descs = ['RDB file']
             # compute the download table
-            download_table(down_files, down_descs, down_rel_path,
-                           download_path, title='LBL Download')
+            download_table(down_files, down_descs, item_rel_path,
+                           item_save_path, down_save_path, title='LBL Download')
             # -----------------------------------------------------------------
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
             self.lbl_stats_table[lbl_objtmp] = item_rel_path + stat_base_name
-            self.lbl_dwn_table[lbl_objtmp] = down_rel_path + dwn_base_name
+            self.lbl_dwn_table[lbl_objtmp] = item_rel_path + dwn_base_name
         # ---------------------------------------------------------------------
         # set the lbl combinations
         self.lbl_combinations = lbl_objtmps.keys()
@@ -1328,7 +1326,8 @@ def objpage_timeseries(page: Any, name: str, ref: str,
 # Plots, stat tables and download tables
 # =============================================================================
 def download_table(files: List[str], descriptions: List[str],
-                   down_rel_path: str, down_path: str, title: str):
+                   item_rel_path: str, item_path: str, down_path: str,
+                   title: str):
     """
     Generic download table saving to the item relative path
 
@@ -1357,7 +1356,7 @@ def download_table(files: List[str], descriptions: List[str],
         # get the in path
         in_paths[basename] = filename
         # get the reference path (for the link)
-        ref_paths[basename] = down_rel_path + basename
+        ref_paths[basename] = item_rel_path + basename
         # get the outpath
         out_paths[basename] = os.path.join(out_dir, basename)
         # get the descriptions
@@ -1371,7 +1370,7 @@ def download_table(files: List[str], descriptions: List[str],
     for basename in in_paths:
         # add the rdb file
         down_dict['Description'].append(descs[basename])
-        down_dict['Value'].append(_make_url(basename, ref_paths[basename]))
+        down_dict['Value'].append(_make_download(basename, ref_paths[basename]))
         # copy the file from in path to out path
         shutil.copy(in_paths[basename], out_paths[basename])
     # --------------------------------------------------------------------------
@@ -1383,7 +1382,7 @@ def download_table(files: List[str], descriptions: List[str],
     # convert to table
     down_table = Table(down_dict2)
     # write to file as csv file
-    down_table.write(down_path, format='ascii.csv', overwrite=True)
+    down_table.write(item_path, format='ascii.csv', overwrite=True)
 
 
 def spec_plot():
@@ -1699,6 +1698,13 @@ def _make_url(value: str, url: str) -> str:
     Make a url from a value and a url
     """
     return f':ref:`{value} <{url}>`'
+
+
+def _make_download(value: str, url: str) -> str:
+    """
+    Make a download link from a value and a url
+    """
+    return f':download:`{value} <{url}>`'
 
 
 def _header_value(keydict: Dict[str, str], header: fits.Header,
