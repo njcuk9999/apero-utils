@@ -393,8 +393,8 @@ def run_apero_get(settings: Dict[str, Any]):
         scifibers, calfiber = pconst.FIBER_KINDS()
         calfibers = [calfiber]
         # template output types
-        red_template_outtypes = pdict['get']['template out types']
-        lbl_template_outtypes = pdict['get-lbl']['template out types']
+        red_template_outtypes = ','.join(pdict['get']['template out types'])
+        lbl_template_outtypes = ','.join(pdict['get-lbl']['template out types'])
         # get the object dir in the apero reduction path
         red_path = pparams['DRS_DATA_REDUC']
         obj_path = os.path.join(os.path.dirname(red_path), 'objects')
