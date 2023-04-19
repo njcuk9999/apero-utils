@@ -1376,7 +1376,8 @@ def download_table(files: List[str], descriptions: List[str],
         shutil.copy(in_paths[basename], out_paths[basename])
     # --------------------------------------------------------------------------
     # change the columns names
-    down_dict2 = dict(title=down_dict['Description'])
+    down_dict2 = dict()
+    down_dict2[title] = down_dict['Description']
     down_dict2[' '] = down_dict['Value']
     # --------------------------------------------------------------------------
     # convert to table
@@ -1462,7 +1463,8 @@ def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
     # get the 25, 50 and 75 percentile of the velocity uncertainty
     p_sigma = np.nanpercentile(lbl_svrad, [25, 50, 75])
     # get the 25, 50 and 75 percentile of the velocity
-    v_sigma = np.nanpercentile(lbl_vrad - np.nanmedian(lbl_vrad), [25, 50, 75])
+    v_sigma = np.nanpercentile(abs(lbl_vrad - np.nanmedian(lbl_vrad)),
+                               [25, 50, 75])
     # get the low outliers
     low = props['low']
     # get the high outliers
