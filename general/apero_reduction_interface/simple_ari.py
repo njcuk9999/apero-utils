@@ -1211,7 +1211,7 @@ def objpage_spectrum(page: Any, name: str, ref: str,
     # add the snr plot
     if object_instance.spec_snr_plot_path is not None:
         # add the snr plot to the page
-        page.add_image(object_instance.spec_snr_plot_path)
+        page.add_image(object_instance.spec_snr_plot_path, align='left')
         # add a new line
         page.add_newline()
     # ------------------------------------------------------------------
@@ -1251,7 +1251,7 @@ def objpage_lbl(page: Any, name: str, ref: str,
         # add the lbl plot
         if object_instance.lbl_plot_path[objcomb] is not None:
             # add the snr plot to the page
-            page.add_image(object_instance.lbl_plot_path[objcomb])
+            page.add_image(object_instance.lbl_plot_path[objcomb], align='left')
             # add a new line
             page.add_newline()
         # ------------------------------------------------------------------
@@ -1280,13 +1280,13 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     # add the ccf rv plot
     if object_instance.ccf_rv_plot_path is not None:
         # add the snr plot to the page
-        page.add_image(object_instance.ccf_rv_plot_path)
+        page.add_image(object_instance.ccf_rv_plot_path, align='left')
         # add a new line
         page.add_newline()
     # add the ccf med plot
     if object_instance.ccf_rv_plot_path is not None:
         # add the snr plot to the page
-        page.add_image(object_instance.ccf_med_plot_path)
+        page.add_image(object_instance.ccf_med_plot_path, align='left')
         # add a new line
         page.add_newline()
     # ------------------------------------------------------------------
