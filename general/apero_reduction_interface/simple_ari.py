@@ -23,6 +23,7 @@ from astropy.table import Table
 from astropy.time import Time
 from astropy.io import fits
 from astropy import units as uu
+from scipy.optimize import curve_fit
 
 # =============================================================================
 # Define variables
@@ -65,12 +66,16 @@ COUNT_COLS = ['RAW FILE  ',
               't.fits    ',
               'v.fits    ',
               'p.fits    ']
+# header cols
+HEADER_COL = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p']
 # define chains (if this number is zero do not count)
 COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3]]
 # define the lbl rdb suffix (lbl or lbl2)
 LBL_SUFFIX = 'lbl'
+# define how many ccf files to use
+MAX_NUM_CCF = 100
 # object page styling
 DIVIDER_COLOR = '#FFA500'
 DIVIDER_HEIGHT = 6
@@ -810,7 +815,7 @@ def compile_apero_message_table() -> Table:
 
 
 # =============================================================================
-# Functions for compiling the lbl stats
+# Functions for compiling the lbl/ccf stats
 # =============================================================================
 def add_lbl_count(profile: dict, object_table: Table,
                   file_dict: FileDictReturn) -> Tuple[Table, FileDictReturn]:
@@ -907,6 +912,79 @@ def add_lbl_count(profile: dict, object_table: Table,
     return object_table, file_dict
 
 
+def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
+    """
+    Choose CCF files based on the most numerious of a single mask
+    and then the MAX_NUM_CCF selected uniformly in time
+    """
+    from apero.core.utils import drs_utils
+    # get parameters from props
+    masks = ccf_props['masks']
+    files = np.array(ccf_props['files'])
+    mjd = ccf_props['mjd']
+    # storage of the ccf mask count
+    mask_names, mask_counts = [], []
+    # loop around masks
+    for mask in masks:
+        # count how many files of each mask
+        mask_names = np.append(mask_names, mask)
+        mask_counts = np.append(mask_counts, np.sum(masks == mask))
+    # choose the mask with the most counts
+    chosen_mask = mask_names[np.argmax(mask_counts)]
+    # filter files and mjd by chosen mask
+    mask_mask = masks == chosen_mask
+    sfiles = files[mask_mask]
+    smjd = mjd[mask_mask]
+    # now choose files distributed equally in time
+    time_mask = drs_utils.uniform_time_list(smjd, MAX_NUM_CCF)
+    # filter files by the time mask
+    sfiles = sfiles[time_mask]
+    # return ccf props
+    return sfiles
+
+def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Fit the median CCF in order to plot the graph
+
+    :param ccf_props:
+    :return:
+    """
+    from apero.core.math.gauss import gauss_function
+    # get parameters from props
+    rv_vec = ccf_props['rv_vec']
+    med_ccf = ccf_props['med_ccf']
+    y1_1sig = ccf_props['y1_1sig']
+    y2_1sig = ccf_props['y2_1sig']
+    # set up guess
+    amp0 = 1 - med_ccf[np.argmin(med_ccf)]
+    pos0 = rv_vec[np.argmin(med_ccf)]
+    sig0 = 4.0
+    dc0 = 1.0
+    guess = [-amp0, pos0, sig0, dc0]
+    # try to fit the median ccf
+    try:
+        coeffs, _ = curve_fit(gauss_function, rv_vec, med_ccf, p0=guess)
+        fit = gauss_function(rv_vec, *coeffs)
+        xlim = [coeffs[1] - coeffs[2] * 20, coeffs[1] + coeffs[2] * 20]
+        ylim = [np.min(y1_1sig - fit), np.max(y2_1sig - fit)]
+        has_fit = True
+    except Exception as _:
+        fit = np.full(len(rv_vec), np.nan)
+        xlim = [np.min(rv_vec), np.max(rv_vec)]
+        ylim = [np.min(med_ccf), np.max(med_ccf)]
+        has_fit = False
+    # adjust ylim
+    ylim = [ylim[0] - 0.1 * (ylim[1] - ylim[0]),
+            ylim[1] + 0.1 * (ylim[1] - ylim[1])]
+    # add to ccf_props
+    ccf_props['has_fit'] = has_fit
+    ccf_props['fit'] = fit
+    ccf_props['xlim'] = xlim
+    ccf_props['ylim'] = ylim
+    # return ccf props
+    return ccf_props
+
+
 # =============================================================================
 # Functions for making object pages
 # =============================================================================
@@ -926,22 +1004,21 @@ class ObjectData:
         self.object_table = object_table[object_table[OBJECT_COLUMN] == objname]
         # ---------------------------------------------------------------------
         # get spectrum output parameters (for page integration)
-        self.spec_snr_plot_path = None
+        self.spec_plot_path = None
         self.spec_stats_table = None
-        self.spec_download_table = None
+        self.spec_dwn_table = None
         # get lbl output parameters (for page integration)
         self.lbl_combinations = []
         self.lbl_plot_path = dict()
         self.lbl_stats_table = dict()
         self.lbl_dwn_table = dict()
         # get ccf output parameters (for page integration)
-        self.ccf_rv_plot_path = None
-        self.ccf_med_plot_path = None
+        self.ccf_plot_path = None
         self.ccf_stats_table = None
-        self.ccf_download_table = None
+        self.ccf_dwn_table = None
         # get time series output parameters (for page integration)
         self.time_series_stats_table = None
-        self.time_series_download_table = None
+        self.time_series_dwn_table = None
         # ---------------------------------------------------------------------
         # misc (save for use throughout)
         self.settings = settings
@@ -961,7 +1038,7 @@ class ObjectData:
         :return:
         """
         # loop around COUNT COLS and populate header dict
-        for it, file_kind in enumerate(COUNT_COLS):
+        for it, file_kind in enumerate(HEADER_COL):
             if file_kind in self.headers and self.file_lists[it] is not None:
                 self.get_header_keys(self.headers[file_kind],
                                      self.file_lists[it])
@@ -989,6 +1066,9 @@ class ObjectData:
                 self.header_dict[keydict] = None
             elif dtype == 'float' and timefmt is None and unit is None:
                 self.header_dict[keydict] = np.full(len(files), np.nan)
+            elif unit is not None:
+                null_list = [np.nan]*len(files)
+                self.header_dict[keydict] = uu.Quantity(null_list, unit)
             else:
                 self.header_dict[keydict] = np.array([None]*len(files))
         # loop around files and populate the header_dict
@@ -1019,6 +1099,9 @@ class ObjectData:
         down_save_path = self.settings['DOWNS']
         down_rel_path = f'../{_DOWN_DIR}/'
         # ---------------------------------------------------------------------
+        # storage of properties
+        lbl_props = dict()
+        # ---------------------------------------------------------------------
         # get the ext h-band key
         ext_h_key = self.headers['LBL']['EXT_H']['key']
         # store the object+ template combinations
@@ -1036,11 +1119,11 @@ class ObjectData:
             # load rdb file
             rdb_table = Table.read(lbl_objtmps[lbl_objtmp], format='ascii.rdb')
             # get the values required
-            lbl_rjd = np.array(rdb_table['rjd'])
-            lbl_vrad = np.array(rdb_table['vrad'])
-            lbl_svrad = np.array(rdb_table['svrad'])
-            lbl_plot_date = np.array(rdb_table['plot_date'])
-            lbl_snr_h = np.array(rdb_table[ext_h_key])
+            lbl_props['rjd'] = np.array(rdb_table['rjd'])
+            lbl_props['vrad'] = np.array(rdb_table['vrad'])
+            lbl_props['svrad'] = np.array(rdb_table['svrad'])
+            lbl_props['plot_date'] = np.array(rdb_table['plot_date'])
+            lbl_props['snr_h'] = np.array(rdb_table[ext_h_key])
             # -----------------------------------------------------------------
             # plot the figure
             # -----------------------------------------------------------------
@@ -1049,8 +1132,8 @@ class ObjectData:
             # get the plot path
             plot_path = os.path.join(item_save_path, plot_base_name)
             # plot the lbl figure
-            lbl_props = lbl_plot(lbl_plot_date, lbl_vrad, lbl_svrad, lbl_snr_h,
-                                 plot_path, plot_title=lbl_objtmp)
+            lbl_props = lbl_plot(lbl_props, plot_path,
+                                 plot_title=f'LBL {lbl_objtmp}')
             # -----------------------------------------------------------------
             # construct the stats
             # -----------------------------------------------------------------
@@ -1059,8 +1142,7 @@ class ObjectData:
             # get the stat path
             stat_path = os.path.join(item_save_path, stat_base_name)
             # compute the stats
-            lbl_stats_table(lbl_rjd, lbl_vrad, lbl_svrad, lbl_props,
-                            stat_path, title='LBL stats')
+            lbl_stats_table(lbl_props, stat_path, title='LBL stats')
             # -----------------------------------------------------------------
             # construct the download table
             # -----------------------------------------------------------------
@@ -1085,7 +1167,81 @@ class ObjectData:
         self.lbl_combinations = lbl_objtmps.keys()
 
     def get_ccf_parameters(self):
-        pass
+        # don't go here is lbl rdb files are not present
+        if len(self.ccf_files) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # -----------------------------------------------------------------
+        # storage for ccf values
+        ccf_props = dict()
+        # get values for use in plot
+        ccf_props['mjd'] = Time(np.array(self.header_dict['CCF_MJDMID']))
+        ccf_props['dv'] = np.array(self.header_dict['CCF_DV'].to(uu.m/uu.s))
+        ccf_props['sdv'] = np.array(self.header_dict['CCF_SDV'].to(uu.m/uu.s).value)
+        ccf_props['fwhm'] = np.array(self.header_dict['CCF_FWHM'].to(uu.m/uu.s).value)
+        ccf_props['masks'] = np.array(self.header_dict['CCF_MASK'])
+        ccf_props['files'] = np.array(self.ccf_files)
+        # -----------------------------------------------------------------
+        # select ccf files to use
+        select_files = choose_ccf_files(ccf_props)
+        # load the first file to get the rv vector
+        ccf_table0 = Table.read(select_files[0], format='fits', hdu=1)
+        # get the rv vector
+        ccf_props['rv_vec'] = ccf_table0['RV']
+        # storage for the CCF vectors
+        all_ccf = np.zeros((len(select_files), len(ccf_table0)))
+        # loop around all other files, load them and load into all_ccf
+        for row, select_file in enumerate(select_files):
+            table_row = Table.read(select_file, format='fits', hdu=1)
+            # get the combined CCF for this file
+            ccf_row = table_row['Combined']
+            # normalize ccf
+            ccf_row = ccf_row / np.nanmedian(ccf_row)
+            # push into vector
+            all_ccf[row] = ccf_row
+        # -----------------------------------------------------------------
+        # y1 full is the min of all ccfs
+        ccf_props['y1_full'] = np.nanmin(all_ccf, axis=0)
+        # y2 full is the max of all ccfs
+        ccf_props['y2_full'] = np.nanmax(all_ccf, axis=0)
+        # y1 1sig is the 15th percentile of all ccfs
+        ccf_props['y1_1sig'] = np.nanpercentile(all_ccf, 15, axis=0)
+        # y2 1sig is the 84th percentile of all ccfs
+        ccf_props['y2_1sig'] = np.nanpercentile(all_ccf, 84, axis=0)
+        # med ccf is the median ccf (50th percentile)
+        ccf_props['med_ccf'] = np.nanmedian(all_ccf, axis=0)
+        # delete all_ccf to save memeory
+        del all_ccf
+        # fit the median ccf
+        ccf_props = fit_ccf(ccf_props)
+        # -----------------------------------------------------------------
+        # plot the figure
+        # -----------------------------------------------------------------
+        # get the plot base name
+        plot_base_name = 'ccf_plot_' + self.objname + '.png'
+        # get the plot path
+        plot_path = os.path.join(item_save_path, plot_base_name)
+        # plot the lbl figure
+        ccf_plot(ccf_props, plot_path, plot_title=f'CCF {self.objname}')
+        # -----------------------------------------------------------------
+        # construct the stats
+        # -----------------------------------------------------------------
+        # get the stats base name
+        stat_base_name = 'lbl_stat_' + self.objname + '.txt'
+        # get the stat path
+        stat_path = os.path.join(item_save_path, stat_base_name)
+        # compute the stats
+        ccf_stats_table(ccf_props, stat_path, title='CCF stats')
+        # -----------------------------------------------------------------
+        # update the paths
+        self.ccf_plot_path = item_rel_path + plot_base_name
+        self.ccf_stats_table = item_rel_path + stat_base_name
+        self.ccf_dwn_table = None
 
     def get_time_series_parameters(self):
         pass
@@ -1220,9 +1376,9 @@ def objpage_spectrum(page: Any, name: str, ref: str,
     object_instance.get_spec_parameters()
     # ------------------------------------------------------------------
     # add the snr plot
-    if object_instance.spec_snr_plot_path is not None:
+    if object_instance.spec_plot_path is not None:
         # add the snr plot to the page
-        page.add_image(object_instance.spec_snr_plot_path, align='left')
+        page.add_image(object_instance.spec_plot_path, align='left')
         # add a new line
         page.add_newline()
     # ------------------------------------------------------------------
@@ -1233,9 +1389,9 @@ def objpage_spectrum(page: Any, name: str, ref: str,
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
-    if object_instance.spec_download_table is not None:
+    if object_instance.spec_dwn_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.spec_download_table,
+        page.add_csv_table('', object_instance.spec_dwn_table,
                            cssclass='csvtable2')
 
 
@@ -1286,22 +1442,25 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
+    # ------------------------------------------------------------------
+    # deal with no spectrum found
+    if len(object_instance.ccf_files) == 0:
+        # add the section heading
+        page.add_section(name)
+        # print that there is no LBL reduction found
+        page.add_text('No CCF files found')
+        return
+    # ------------------------------------------------------------------
     # add the section heading
     page.add_section(name)
     # ------------------------------------------------------------------
     # get the spectrum parameters
     object_instance.get_ccf_parameters()
     # ------------------------------------------------------------------
-    # add the ccf rv plot
-    if object_instance.ccf_rv_plot_path is not None:
+    # add the ccf plot
+    if object_instance.ccf_plot_path is not None:
         # add the snr plot to the page
-        page.add_image(object_instance.ccf_rv_plot_path, align='left')
-        # add a new line
-        page.add_newline()
-    # add the ccf med plot
-    if object_instance.ccf_rv_plot_path is not None:
-        # add the snr plot to the page
-        page.add_image(object_instance.ccf_med_plot_path, align='left')
+        page.add_image(object_instance.ccf_plot_path, align='left')
         # add a new line
         page.add_newline()
     # ------------------------------------------------------------------
@@ -1312,9 +1471,9 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
-    if object_instance.ccf_download_table is not None:
+    if object_instance.ccf_dwn_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.ccf_download_table,
+        page.add_csv_table('', object_instance.ccf_dwn_table,
                            cssclass='csvtable2')
 
 
@@ -1337,9 +1496,9 @@ def objpage_timeseries(page: Any, name: str, ref: str,
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
-    if object_instance.ccf_download_table is not None:
+    if object_instance.ccf_dwn_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.time_series_download_table,
+        page.add_csv_table('', object_instance.time_series_dwn_table,
                            cssclass='csvtable2')
 
 
@@ -1413,22 +1572,29 @@ def spec_stats_table():
     pass
 
 
-def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
-             lbl_svrad: np.ndarray, lbl_snr_h: np.ndarray,
-             plot_path: str, plot_title: str) -> Dict[str, Any]:
+def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
+             plot_title: str) -> Dict[str, Any]:
     # setup the figure
     fig, frame = plt.subplots(2, 1, figsize=(12, 6), sharex='all')
+    # get parameters from props
+    plot_date = lbl_props['plot_date']
+    vrad = lbl_props['vrad']
+    svrad = lbl_props['svrad']
+    snr_h = lbl_props['snr_h']
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
+    # --------------------------------------------------------------------------
+    # Top plot LBL RV
+    # --------------------------------------------------------------------------
     # plot the points
-    frame[0].plot_date(lbl_plot_date, lbl_vrad, fmt='.', alpha=0.5,
+    frame[0].plot_date(plot_date, vrad, fmt='.', alpha=0.5,
                        color='green', ls='None')
     # plot the error bars
-    frame[0].errorbar(lbl_plot_date, lbl_vrad, yerr=lbl_svrad,
+    frame[0].errorbar(plot_date, vrad, yerr=svrad,
                       marker='o', alpha=0.5, color='green', ls='None')
     # find percentile cuts that will be expanded by 150% for the ylim
-    pp = np.nanpercentile(lbl_vrad, [10, 90])
+    pp = np.nanpercentile(vrad, [10, 90])
     diff = pp[1] - pp[0]
     central_val = np.nanmean(pp)
     # used for plotting but also for the flagging of outliers
@@ -1436,67 +1602,71 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
     # length of the arrow flagging outliers
     l_arrow = (ylim[1] - ylim[0]) / 10.0
     # flag the low outliers
-    low = lbl_vrad < ylim[0]
+    low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
-    xpoints = np.array(lbl_plot_date[low], dtype=float)
-    ypoints = np.array(lbl_vrad[low], dtype=float)
+    xpoints = np.array(plot_date[low], dtype=float)
+    ypoints = np.array(vrad[low], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.1, head_length=1.5, alpha=0.5)
+                       color='red', head_width=0.1, head_length=0.25*l_arrow,
+                       alpha=0.5)
     # same as above for the high outliers
-    high = lbl_vrad > ylim[1]
-    xpoints = np.array(lbl_plot_date[high], dtype=float)
-    ypoints = np.array(lbl_vrad[high], dtype=float)
+    high = vrad > ylim[1]
+    xpoints = np.array(plot_date[high], dtype=float)
+    ypoints = np.array(vrad[high], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.1, head_length=1.5, alpha=0.5)
+                       color='red', head_width=0.1, head_length=0.25*l_arrow,
+                       alpha=0.5)
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
     frame[0].grid(which='both', color='lightgray', linestyle='--')
     frame[0].set(ylabel='Velocity [m/s]')
+    # --------------------------------------------------------------------------
+    # Bottom plot SNR
+    # --------------------------------------------------------------------------
     # simple plot of the SNR in a sample order. You need to
     # update the relevant ketword for SPIRou
-    frame[1].plot_date(lbl_plot_date, lbl_snr_h, fmt='.',
+    frame[1].plot_date(plot_date, snr_h, fmt='.',
                        alpha=0.5, color='green', ls='None')
     frame[1].grid(which='both', color='lightgray', linestyle='--')
     frame[1].set(xlabel='Date')
     frame[1].set(ylabel='EXTSN060')
     plt.tight_layout()
+    # --------------------------------------------------------------------------
     # save figure and close the plot
     plt.savefig(plot_path)
     plt.close()
     # some parameters are required later save them in a dictionary
-    props = dict()
-    props['low'] = low
-    props['high'] = high
-    props['ylim'] = ylim
+    lbl_props['low'] = low
+    lbl_props['high'] = high
+    lbl_props['ylim'] = ylim
     # return the props
-    return props
+    return lbl_props
 
 
-def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
-                    lbl_svrad: np.ndarray,
-                    props: Dict[str, Any], stat_path: str, title: str):
+def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
+    # get parameters from props
+    rjd = lbl_props['rjd']
+    vrad = lbl_props['vrad']
+    svrad = lbl_props['svrad']
+    low =lbl_props['low']
+    high = lbl_props['high']
+    vel_domain = lbl_props['ylim']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
     # get the 25, 50 and 75 percentile of the velocity uncertainty
-    p_sigma = np.nanpercentile(lbl_svrad, [25, 50, 75])
+    p_sigma = np.nanpercentile(svrad, [25, 50, 75])
     # get the 25, 50 and 75 percentile of the velocity
-    v_sigma = np.nanpercentile(abs(lbl_vrad - np.nanmedian(lbl_vrad)),
+    v_sigma = np.nanpercentile(abs(vrad - np.nanmedian(vrad)),
                                [25, 50, 75])
-    # get the low outliers
-    low = props['low']
-    # get the high outliers
-    high = props['high']
     # calculate the number of nights
-    n_nights = len(np.unique(np.floor(lbl_rjd)))
+    n_nights = len(np.unique(np.floor(rjd)))
     # calculate the systemetic velocity
-    sys_vel = np.nanmedian(lbl_vrad)
-    # calculate the velocity domain considered valid
-    vel_domain = props['ylim']
+    sys_vel = np.nanmedian(vrad)
     # --------------------------------------------------------------------------
     # construct the stats table
     # --------------------------------------------------------------------------
@@ -1511,7 +1681,7 @@ def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
     stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*v_sigma))
     # add the number of measurements
     stat_dict['Description'].append('Number of Measurements')
-    stat_dict['Value'].append(len(lbl_vrad))
+    stat_dict['Value'].append(len(vrad))
     # add the spurious low points
     stat_dict['Description'].append('Number of Spurious Low Points')
     stat_dict['Value'].append(np.sum(low))
@@ -1539,12 +1709,131 @@ def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
     stat_table.write(stat_path, format='ascii.csv', overwrite=True)
 
 
-def ccf_plot():
-    pass
+def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
+    # get parameters from props
+    mjd = ccf_props['mjd']
+    dv = ccf_props['dv']
+    sdv = ccf_props['sdv']
+    rv_vec = ccf_props['rv_vec']
+    y1_full = ccf_props['y1_full']
+    y2_full = ccf_props['y2_full']
+    y1_1sig = ccf_props['y1_1sig']
+    y2_1sig = ccf_props['y2_1sig']
+    med_ccf = ccf_props['med_ccf']
+    has_fit = ccf_props['has_fit']
+    fit = ccf_props['fit']
+    xlim = ccf_props['xlim']
+    ylim = ccf_props['ylim']
+    # --------------------------------------------------------------------------
+    # setup the figure
+    fig, frame = plt.subplots(3, 1, figsize=(12, 9))
+    # set background color
+    frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame[2].set_facecolor(PLOT_BACKGROUND_COLOR)
+    # --------------------------------------------------------------------------
+    # Top plot CCF RV
+    # --------------------------------------------------------------------------
+    # # plot the CCF RV points
+    frame[0].plot_date(mjd.plot_date, dv, fmt='.', alpha=0.5,
+                       color='green')
+    # plot the CCF RV errors
+    frame[0].errorbar(mjd.plot_date, dv, yerr=sdv, fmt='o',
+                      alpha=0.5, color='green')
+    frame[0].grid(which='both', color='lightgray', ls='--')
+    frame[0].set(xlabel='Date', ylabel='Velocity [m/s]')
+    # --------------------------------------------------------------------------
+    # Middle plot median CCF
+    # --------------------------------------------------------------------------
+    # mask by xlim
+    limmask = (rv_vec > xlim[0]) & (rv_vec < xlim[1])
+
+    frame[1].fill_between(rv_vec[limmask], y1_full[limmask], y2_full[limmask],
+                          color='red', alpha=0.5)
+    frame[1].fill_between(rv_vec[limmask], y1_1sig[limmask], y2_1sig[limmask],
+                          color='red', alpha=0.5)
+    frame[1].plot(rv_vec[limmask], med_ccf[limmask], alpha=1.0, color='black')
+    if has_fit:
+        frame[1].plot(rv_vec[limmask], fit[limmask], alpha=0.8,
+                      label='Gaussian fit', ls='--')
+    frame[1].legend(loc=0)
+    frame[1].set(xlabel='RV [km/s]',
+                 ylabel='Normalized CCF')
+    frame[1].grid(which='both', color='lightgray', ls='--')
+
+    # --------------------------------------------------------------------------
+    # Bottom plot median CCF residuals
+    # --------------------------------------------------------------------------
+    if has_fit:
+        frame[2].fill_between(rv_vec[limmask], y1_full[limmask]-fit[limmask],
+                              y2_full[limmask]-fit[limmask], color='red',
+                              alpha=0.5, label='full envelope')
+        frame[2].fill_between(rv_vec[limmask], y1_1sig[limmask]-fit[limmask],
+                              y2_1sig[limmask]-fit[limmask], color='orange',
+                              alpha=0.5, label='1-$\sigma$')
+        frame[2].plot(rv_vec[limmask], med_ccf[limmask]-fit[limmask],
+                      alpha=0.8, label='Median residual')
+        frame[2].legend(loc=0)
+        frame[2].set(xlabel='RV [km/s]', ylabel='Residuals')
+    else:
+        frame[2].text(0.5, 0.5, 'No fit to CCF possible',
+                      horizontalalignment='center')
+        frame[2].legend(loc=0)
+        frame[2].set(xlim=[0, 1], ylim=[0, 1], xlabel='RV [km/s]',
+                     ylabel='Residuals')
+    frame[2].grid(which='both', color='lightgray', ls='--')
+    # --------------------------------------------------------------------------
+    # add title
+    plt.suptitle(plot_title)
+    plt.subplots_adjust(hspace=0.1, left=0.1, right=0.99)
+    # save figure and close the plot
+    plt.savefig(plot_path)
+    plt.close()
 
 
-def ccf_stats_table():
-    pass
+def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
+
+    from apero.core.math import estimate_sigma
+    # get parameters from props
+    vrad = ccf_props['dv']
+    fwhm = ccf_props['fwhm']
+    # --------------------------------------------------------------------------
+    # compute the stats
+    # --------------------------------------------------------------------------
+    # get the systemic velocity
+    sys_vel = np.nanmedian(vrad)
+    # get the error in systemic velocity
+    err_sys_vel = estimate_sigma(vrad)
+    # get the fwhm
+    ccf_fwhm = np.nanmedian(fwhm)
+    # get the error on fwhm
+    err_ccf_fwhm = estimate_sigma(fwhm)
+    # --------------------------------------------------------------------------
+    # construct the stats table
+    # --------------------------------------------------------------------------
+    # start with a stats dictionary
+    stat_dict = dict(Description=[], Value=[])
+    # add systemic velocity
+    stat_dict['Description'].append('CCF systemic velocity')
+    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(sys_vel, err_sys_vel)
+    stat_dict['Value'].append(value)
+    # add fwhm
+    stat_dict['Description'].append('CCF FWHM')
+    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(ccf_fwhm, err_ccf_fwhm)
+    stat_dict['Value'].append(value)
+    # add number of files
+    stat_dict['Description'].append('Number of CCF files')
+    stat_dict['Value'].append(len(ccf_props['files']))
+    # --------------------------------------------------------------------------
+    # change the columns names
+    stat_dict2 = dict()
+    stat_dict2[title] = stat_dict['Description']
+    stat_dict2[' '] = stat_dict['Value']
+    # --------------------------------------------------------------------------
+    # convert to table
+    stat_table = Table(stat_dict2)
+    # write to file as csv file
+    stat_table.write(stat_path, format='ascii.csv', overwrite=True)
 
 
 def time_series_stats_table():

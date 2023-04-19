@@ -21,20 +21,6 @@ settings:
 #     skip obj table: bool: if True, skip making the object table
 #     skip recipe table: bool: if True, skip making the recipe table
 #     skip msg table: bool: if True, skip making the msg table
-#nirps ha V0.7.276 online:
-#    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
-#    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
-#    skip obj table: False
-#    skip recipe table: True
-#    skip msg table: True
-#
-#nirps ha V0.7.276 offline:
-#    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_offline
-#    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_offline/
-#    skip obj table: False
-#    skip recipe table: True
-#    skip msg table: True
-
 nirps he V0.7.276 online:
     apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_online
     lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_online/
@@ -42,13 +28,26 @@ nirps he V0.7.276 online:
     skip recipe table: True
     skip msg table: True
 
-#nirps he V0.7.276 offline:
-#    apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_offline
-#    lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_offline/
-#    skip obj table: False
-#    skip recipe table: True
-#    skip msg table: True
+nirps ha V0.7.276 online:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
+    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
 
+nirps he V0.7.276 offline:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_offline
+    lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_offline/
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
+
+nirps ha V0.7.276 offline:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_offline
+    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_offline/
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
 
 # -----------------------------------------------------------------------------
 # Header keys
@@ -84,6 +83,10 @@ headers:
       label: Airmass at end
       dtype: float
   CCF:
+    CCF_MASK:
+      key: CCFMASK
+      label: CCF Mask
+      dtype: str
     CCF_MJDMID:
       key: MJDMID
       label: CCF MJD
