@@ -119,8 +119,7 @@ def get_settings(settings: Dict[str, Any],
         param_settings['PASS2'] = os.path.join(working_dir, _PASS_DIR, '2',
                                                cpname)
         param_settings['ITEMS'] = os.path.join(working_dir, cpname, _ITEM_DIR)
-        param_settings['DOWNS'] = os.path.join(working_dir, _OUT_DIR, cpname,
-                                               _DOWN_DIR)
+        param_settings['DOWNS'] = os.path.join(working_dir, cpname, _DOWN_DIR)
         param_settings['OBJ_OUT'] = os.path.join(working_dir, cpname,
                                                  _OBJ_OUT_DIR)
     else:
