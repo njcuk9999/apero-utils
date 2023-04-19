@@ -1063,7 +1063,7 @@ class ObjectData:
             down_descs = ['RDB file']
             # compute the download table
             download_table(down_files, down_descs, down_rel_path,
-                           download_path)
+                           download_path, title='LBL Stats')
             # -----------------------------------------------------------------
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
@@ -1217,14 +1217,11 @@ def objpage_spectrum(page: Any, name: str, ref: str,
     # ------------------------------------------------------------------
     # add stats
     if object_instance.spec_stats_table is not None:
-        # add some stats
-        page.add_sub_sub_section('Spectrum Stats')
         # add the stats table
         page.add_csv_table('', object_instance.spec_stats_table)
     # ------------------------------------------------------------------
     # add download links
     if object_instance.spec_download_table is not None:
-        page.add_sub_sub_section('Spectrum Downloads')
         # add the stats table
         page.add_csv_table('', object_instance.spec_download_table)
 
@@ -1235,11 +1232,12 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
-    # add the section heading
-    page.add_section(name)
     # ------------------------------------------------------------------
     # deal with no spectrum found
     if len(object_instance.lbl_rdb_files) == 0:
+        # add the section heading
+        page.add_section(name)
+        # print that there is no LBL reduction found
         page.add_text('No LBL reduction found')
         return
     # ------------------------------------------------------------------
@@ -1249,7 +1247,7 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # loop around the object+template combinations
     for objcomb in object_instance.lbl_combinations:
         # add subsection for the object+template combination
-        page.add_sub_section(f'{objcomb})')
+        page.add_section(f'LBL ({objcomb})')
         # add the lbl plot
         if object_instance.lbl_plot_path[objcomb] is not None:
             # add the snr plot to the page
@@ -1259,14 +1257,11 @@ def objpage_lbl(page: Any, name: str, ref: str,
         # ------------------------------------------------------------------
         # add stats
         if object_instance.lbl_stats_table[objcomb] is not None:
-            # add some stats
-            page.add_sub_sub_section('LBL Stats')
             # add the stats table
             page.add_csv_table('', object_instance.lbl_stats_table[objcomb])
         # ------------------------------------------------------------------
         # add download links
         if object_instance.lbl_dwn_table is not None:
-            page.add_sub_sub_section('LBL Downloads')
             # add the stats table
             page.add_csv_table('', object_instance.lbl_dwn_table[objcomb])
 
@@ -1297,14 +1292,11 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     # ------------------------------------------------------------------
     # add stats
     if object_instance.ccf_stats_table is not None:
-        # add some stats
-        page.add_sub_sub_section('CCF Stats')
         # add the stats table
         page.add_csv_table('', object_instance.ccf_stats_table)
     # ------------------------------------------------------------------
     # add download links
     if object_instance.ccf_download_table is not None:
-        page.add_sub_sub_section('CCF Downloads')
         # add the stats table
         page.add_csv_table('', object_instance.ccf_download_table)
 
@@ -1312,7 +1304,7 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
 def objpage_timeseries(page: Any, name: str, ref: str,
                        object_instance: ObjectData):
     # add divider
-    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
     # add the section heading
@@ -1323,14 +1315,11 @@ def objpage_timeseries(page: Any, name: str, ref: str,
     # ------------------------------------------------------------------
     # add stats
     if object_instance.time_series_stats_table is not None:
-        # add some stats
-        page.add_sub_sub_section('Time Series Stats')
         # add the stats table
         page.add_csv_table('', object_instance.time_series_stats_table)
     # ------------------------------------------------------------------
     # add download links
     if object_instance.ccf_download_table is not None:
-        page.add_sub_sub_section('Time Series Downloads')
         # add the stats table
         page.add_csv_table('', object_instance.time_series_download_table)
 
@@ -1339,7 +1328,7 @@ def objpage_timeseries(page: Any, name: str, ref: str,
 # Plots, stat tables and download tables
 # =============================================================================
 def download_table(files: List[str], descriptions: List[str],
-                   down_rel_path: str, down_path: str):
+                   down_rel_path: str, down_path: str, title: str):
     """
     Generic download table saving to the item relative path
 
@@ -1381,8 +1370,8 @@ def download_table(files: List[str], descriptions: List[str],
     # loop around files
     for basename in in_paths:
         # add the rdb file
-        down_dict['Description'].append(descs[basename])
-        down_dict['Value'].append(ref_paths[basename])
+        down_dict[title].append(descs[basename])
+        down_dict[''].append(ref_paths[basename])
         # copy the file from in path to out path
         shutil.copy(in_paths[basename], out_paths[basename])
     # --------------------------------------------------------------------------
