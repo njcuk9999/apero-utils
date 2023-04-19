@@ -55,10 +55,20 @@ _PASS_DIR = 'pass'
 # define the column which is the object name
 OBJECT_COLUMN = 'OBJNAME'
 # define the count / file columns
-COUNT_COLS = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p']
+COUNT_COLS = ['RAW FILE  ',
+              'PP FILE   ',
+              'EXT FILE  ',
+              'TCORR FILE',
+              'CCF FILE  ',
+              'POL FILE  ',
+              'e.fits    ',
+              't.fits    ',
+              'v.fits    ',
+              'p.fits    ']
 # define chains (if this number is zero do not count)
-COUNT_CHAINS = [None, 'RAW', 'PP', 'EXT', 'TCORR', 'TCORR', 'PP', 'EXT',
-                'TCORR', 'TCORR']
+COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
+                COUNT_COLS[3], COUNT_COLS[3], COUNT_COLS[1], COUNT_COLS[2],
+                COUNT_COLS[3], COUNT_COLS[3]]
 # define the lbl rdb suffix (lbl or lbl2)
 LBL_SUFFIX = 'lbl'
 # object page styling
@@ -505,21 +515,21 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     # ------------------------------------------------------------------
     # ------------------------------------------------------------------
     # add counting columns to the object table
-    object_table['RAW'] = [0] * len(object_table)
+    object_table[COUNT_COLS[0]] = [0] * len(object_table)
     object_table['LATEST_RAW'] = [' ' * 25] * len(object_table)
-    object_table['PP'] = [0] * len(object_table)
-    object_table['EXT'] = [0] * len(object_table)
-    object_table['TCORR'] = [0] * len(object_table)
-    object_table['CCF'] = [0] * len(object_table)
+    object_table[COUNT_COLS[1]] = [0] * len(object_table)
+    object_table[COUNT_COLS[2]] = [0] * len(object_table)
+    object_table[COUNT_COLS[3]] = [0] * len(object_table)
+    object_table[COUNT_COLS[4]] = [0] * len(object_table)
     # deal with instruments that have polarimetry
     if has_polar:
-        object_table['POL'] = [0] * len(object_table)
-    object_table['e'] = [0] * len(object_table)
-    object_table['t'] = [0] * len(object_table)
-    object_table['v'] = [0] * len(object_table)
+        object_table[COUNT_COLS[5]] = [0] * len(object_table)
+    object_table[COUNT_COLS[6]] = [0] * len(object_table)
+    object_table[COUNT_COLS[7]] = [0] * len(object_table)
+    object_table[COUNT_COLS[8]] = [0] * len(object_table)
     # deal with instruments that have polarimetry
     if has_polar:
-        object_table['p'] = [0] * len(object_table)
+        object_table[COUNT_COLS[9]] = [0] * len(object_table)
     # ------------------------------------------------------------------
     # storage for files for each type
     file_dict = dict()
