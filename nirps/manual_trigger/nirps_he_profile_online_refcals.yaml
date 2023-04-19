@@ -41,7 +41,7 @@ nirps ha V0.7.275 online:
             - OBJ_FP
             - OBJ_DARK
             - OBJ_SKY
-            - TELLURIC_SKY
+            - TELLU_SKY
         # apero template types
         template out types:
             - TELLU_TEMP
