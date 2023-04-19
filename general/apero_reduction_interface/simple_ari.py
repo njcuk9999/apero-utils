@@ -1068,7 +1068,7 @@ class ObjectData:
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
             self.lbl_stats_table[lbl_objtmp] = item_rel_path + stat_base_name
-            self.lbl_dwn_table[lbl_objtmp] = item_rel_path + dwn_base_name
+            self.lbl_dwn_table[lbl_objtmp] = down_rel_path + dwn_base_name
         # ---------------------------------------------------------------------
         # set the lbl combinations
         self.lbl_combinations = lbl_objtmps.keys()
@@ -1371,7 +1371,7 @@ def download_table(files: List[str], descriptions: List[str],
     for basename in in_paths:
         # add the rdb file
         down_dict['Description'].append(descs[basename])
-        down_dict['Value'].append(ref_paths[basename])
+        down_dict['Value'].append(_make_url(basename, ref_paths[basename]))
         # copy the file from in path to out path
         shutil.copy(in_paths[basename], out_paths[basename])
     # --------------------------------------------------------------------------
