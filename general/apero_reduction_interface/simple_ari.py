@@ -308,7 +308,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             if table is not None:
                 # add the csv version of this table
                 table_page.add_csv_table('', f'../{_DATA_DIR}/' +
-                                         table_filename)
+                                         table_filename, cssclass='csvtable2')
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
@@ -1218,12 +1218,14 @@ def objpage_spectrum(page: Any, name: str, ref: str,
     # add stats
     if object_instance.spec_stats_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.spec_stats_table)
+        page.add_csv_table('', object_instance.spec_stats_table,
+                           cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
     if object_instance.spec_download_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.spec_download_table)
+        page.add_csv_table('', object_instance.spec_download_table,
+                           cssclass='csvtable2')
 
 
 def objpage_lbl(page: Any, name: str, ref: str,
@@ -1258,12 +1260,14 @@ def objpage_lbl(page: Any, name: str, ref: str,
         # add stats
         if object_instance.lbl_stats_table[objcomb] is not None:
             # add the stats table
-            page.add_csv_table('', object_instance.lbl_stats_table[objcomb])
+            page.add_csv_table('', object_instance.lbl_stats_table[objcomb],
+                               cssclass='csvtable2')
         # ------------------------------------------------------------------
         # add download links
         if object_instance.lbl_dwn_table is not None:
             # add the stats table
-            page.add_csv_table('', object_instance.lbl_dwn_table[objcomb])
+            page.add_csv_table('', object_instance.lbl_dwn_table[objcomb],
+                               cssclass='csvtable2')
 
 
 def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
@@ -1293,12 +1297,14 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     # add stats
     if object_instance.ccf_stats_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.ccf_stats_table)
+        page.add_csv_table('', object_instance.ccf_stats_table,
+                           cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
     if object_instance.ccf_download_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.ccf_download_table)
+        page.add_csv_table('', object_instance.ccf_download_table,
+                           cssclass='csvtable2')
 
 
 def objpage_timeseries(page: Any, name: str, ref: str,
@@ -1316,12 +1322,14 @@ def objpage_timeseries(page: Any, name: str, ref: str,
     # add stats
     if object_instance.time_series_stats_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.time_series_stats_table)
+        page.add_csv_table('', object_instance.time_series_stats_table,
+                           cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
     if object_instance.ccf_download_table is not None:
         # add the stats table
-        page.add_csv_table('', object_instance.time_series_download_table)
+        page.add_csv_table('', object_instance.time_series_download_table,
+                           cssclass='csvtable2')
 
 
 # =============================================================================

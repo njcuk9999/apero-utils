@@ -55,6 +55,10 @@ body {
     text-shadow: none;
 }
 
+table.csvtable {}
+.csvtable2 {}
+
+
 table.csvtable tr.row-odd {
     background-color: #aabbcc;
     font-size: 0.75em;
@@ -69,6 +73,17 @@ table.csvtable th.head {
     position: sticky;
     top: 0;
 }
+
+table.csvtable2 tr.row-odd {
+    background-color: #aabbcc;
+    font-size: 0.75em;
+}
+
+table.csvtable2 tr.row-even {
+    background-color: #EBEBEB;
+    font-size: 0.75em;
+}
+
 
 /*div.sphinxsidebar {
     max-height: 100%;
