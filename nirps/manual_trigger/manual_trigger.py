@@ -458,7 +458,7 @@ def run_apero_get(settings: Dict[str, Any]):
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=red_template_outtypes,
                        outpath=obj_path, fibers=scifibers,
-                       symlinks=False,
+                       symlinks=red_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # --------------------------------------------------------------
         # Copy to LBL directory
