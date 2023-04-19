@@ -1055,13 +1055,15 @@ class ObjectData:
             # -----------------------------------------------------------------
             # get the download base name
             dwn_base_name = 'lbl_download_' + lbl_objtmp + '.txt'
+            # get the download table path
+            item_path = os.path.join(item_save_path, dwn_base_name)
             # define the download files
             down_files = [lbl_objtmps[lbl_objtmp]]
             # define the download descriptions
             down_descs = ['RDB file']
             # compute the download table
             download_table(down_files, down_descs, item_rel_path,
-                           item_save_path, down_save_path, title='LBL Download')
+                           item_path, down_save_path, title='LBL Download')
             # -----------------------------------------------------------------
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
@@ -1326,15 +1328,17 @@ def objpage_timeseries(page: Any, name: str, ref: str,
 # Plots, stat tables and download tables
 # =============================================================================
 def download_table(files: List[str], descriptions: List[str],
-                   item_rel_path: str, item_path: str, down_path: str,
+                   item_rel_path: str, item_path: str, down_dir: str,
                    title: str):
     """
     Generic download table saving to the item relative path
 
     :param files:
     :param descriptions:
-    :param down_rel_path:
-    :param down_path:
+    :param item_rel_path: the path relative to the page
+    :param item_path: the absolute path to the item csv table file (to save to)
+    :param down_dir: the path to the download directory
+    :param title: the title for the download table
     :return:
     """
     # --------------------------------------------------------------------------
@@ -1346,9 +1350,6 @@ def download_table(files: List[str], descriptions: List[str],
     in_paths = dict()
     # storage for the descriptions
     descs = dict()
-    # get the out dir (item directory)
-    out_dir = os.path.dirname(down_path)
-
     # loop around files and get the paths
     for it, filename in enumerate(files):
         # get the basename
@@ -1358,7 +1359,7 @@ def download_table(files: List[str], descriptions: List[str],
         # get the reference path (for the link)
         ref_paths[basename] = item_rel_path + basename
         # get the outpath
-        out_paths[basename] = os.path.join(out_dir, basename)
+        out_paths[basename] = os.path.join(down_dir, basename)
         # get the descriptions
         descs[basename] = descriptions[it]
     # --------------------------------------------------------------------------
