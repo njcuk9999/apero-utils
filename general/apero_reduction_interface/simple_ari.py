@@ -629,7 +629,7 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
             counts[COUNT_COLS[it]] = count
     # ------------------------------------------------------------------
     # remove rows with no raw entries
-    mask = object_table['RAW'] > 0
+    mask = object_table[COUNT_COLS[0]] > 0
     # apply mask
     object_table = object_table[mask]
     # ------------------------------------------------------------------
@@ -639,7 +639,7 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
         if objname not in file_dict:
             continue
         # deal with objects with no raw files
-        if len(file_dict[objname]['RAW']) == 0:
+        if len(file_dict[objname][COUNT_COLS[0]]) == 0:
             del file_dict[objname]
     # ------------------------------------------------------------------
     # return object table
@@ -915,11 +915,11 @@ class ObjectData:
         # get the object name
         self.objname = objname
         # get the file_dictionary for this object
-        self.raw_files = file_dict[objname].get('RAW', [])
-        self.pp_files = file_dict[objname].get('PP', [])
-        self.ext_files = file_dict[objname].get('EXT', [])
-        self.tcorr_files = file_dict[objname].get('TCORR', [])
-        self.ccf_files = file_dict[objname].get('CCF', [])
+        self.raw_files = file_dict[objname].get(COUNT_COLS[0], [])
+        self.pp_files = file_dict[objname].get(COUNT_COLS[1], [])
+        self.ext_files = file_dict[objname].get(COUNT_COLS[2], [])
+        self.tcorr_files = file_dict[objname].get(COUNT_COLS[3], [])
+        self.ccf_files = file_dict[objname].get(COUNT_COLS[4], [])
         self.lbl_rdb_files = file_dict[objname].get('LBLRDB', [])
         # get the object_table row for this object
         self.object_table = object_table[object_table[OBJECT_COLUMN] == objname]
