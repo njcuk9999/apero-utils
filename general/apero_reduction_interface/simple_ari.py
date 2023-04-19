@@ -149,11 +149,11 @@ def get_settings(settings: Dict[str, Any],
         os.makedirs(param_settings['HTML'])
     if not os.path.exists(param_settings['OUT']):
         os.makedirs(param_settings['OUT'])
-    if not os.path.exists(param_settings['OBJ_OUT']):
+    if profile_name is not None and not os.path.exists(param_settings['OBJ_OUT']):
         os.makedirs(param_settings['OBJ_OUT'])
-    if not os.path.exists(param_settings['ITEMS']):
+    if profile_name is not None and not os.path.exists(param_settings['ITEMS']):
         os.makedirs(param_settings['ITEMS'])
-    if not os.path.exists(param_settings['DOWNS']):
+    if profile_name is not None and not os.path.exists(param_settings['DOWNS']):
         os.makedirs(param_settings['DOWNS'])
     # return all parameter settings
     return param_settings
@@ -190,9 +190,8 @@ def compile_stats(settings: dict, profile: dict, headers: dict) -> dict:
         # add the lbl count
         object_table, filedict = add_lbl_count(profile, object_table, filedict)
         # add the object pages
-        add_obj_pages(settings, profile, headers, object_table, filedict)
-        # remove the temporary object column
-        del object_table['_OBJECT']
+        object_table= add_obj_pages(settings, profile, headers,
+                                    object_table, filedict)
         # add final object table to profile stats
         profile_stats['OBJECT_TABLE'] = object_table
     # ------------------------------------------------------------------
@@ -504,9 +503,6 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     # ------------------------------------------------------------------
     # Deal with object pages
     # ------------------------------------------------------------------
-    # add a temporary column
-    object_table['_OBJECT'] = np.array(object_table[OBJECT_COLUMN])
-    object_table[OBJECT_COLUMN] = [' ' * 255] * len(object_table)
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table['RAW'] = [0] * len(object_table)
@@ -514,11 +510,13 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     object_table['PP'] = [0] * len(object_table)
     object_table['EXT'] = [0] * len(object_table)
     object_table['TCORR'] = [0] * len(object_table)
+    object_table['CCF'] = [0] * len(object_table)
     # deal with instruments that have polarimetry
     if has_polar:
         object_table['POL'] = [0] * len(object_table)
     object_table['e'] = [0] * len(object_table)
     object_table['t'] = [0] * len(object_table)
+    object_table['v'] = [0] * len(object_table)
     # deal with instruments that have polarimetry
     if has_polar:
         object_table['p'] = [0] * len(object_table)
@@ -538,7 +536,7 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     # loop around objects in the object table
     for pos in tqdm(range(len(object_table))):
         # get the object name
-        objname = object_table['_OBJECT'][pos]
+        objname = object_table[OBJECT_COLUMN][pos]
         # set up where condition for raw files
         raw_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
         # setup up where condition for pp files
@@ -839,7 +837,7 @@ def add_lbl_count(profile: dict, object_table: Table,
     wlog(params, '', 'Analysing LBL files')
     # -------------------------------------------------------------------------
     # get object name
-    objnames = np.array(object_table['_OBJECT'])
+    objnames = np.array(object_table[OBJECT_COLUMN])
     # loop around objects
     for pos, objname in tqdm(enumerate(objnames)):
         # for each object find all directories in lbl path that match this
@@ -907,14 +905,14 @@ class ObjectData:
         # get the object name
         self.objname = objname
         # get the file_dictionary for this object
-        self.raw_files = file_dict[objname]['RAW']
-        self.pp_files = file_dict[objname]['PP']
-        self.ext_files = file_dict[objname]['EXT']
-        self.tcorr_files = file_dict[objname]['TCORR']
-        self.ccf_files = file_dict[objname]['CCF']
-        self.lbl_rdb_files = file_dict[objname]['LBLRDB']
+        self.raw_files = file_dict[objname].get('RAW', [])
+        self.pp_files = file_dict[objname].get('PP', [])
+        self.ext_files = file_dict[objname].get('EXT', [])
+        self.tcorr_files = file_dict[objname].get('TCORR', [])
+        self.ccf_files = file_dict[objname].get('CCF', [])
+        self.lbl_rdb_files = file_dict[objname].get('LBLRDB', [])
         # get the object_table row for this object
-        self.object_table = object_table[object_table['_OBJECT'] == objname]
+        self.object_table = object_table[object_table[OBJECT_COLUMN] == objname]
         # ---------------------------------------------------------------------
         # get spectrum output parameters (for page integration)
         self.spec_snr_plot_path = None
@@ -971,22 +969,25 @@ class ObjectData:
         # get an array of length of the files for each key
         for keydict in keys:
             # get key
-            key = keys[keydict]['key']
+            kstore = keys[keydict]
+            dtype = kstore.get('dtype', None)
+            timefmt = kstore.get('timefmt', None)
+            unit = kstore.get('unit', None)
             # deal with no files
             if len(files) == 0:
-                self.header_dict[key] = None
+                self.header_dict[keydict] = None
+            elif dtype == 'float' and timefmt is None and unit is None:
+                self.header_dict[keydict] = np.full(len(files), np.nan)
             else:
-                self.header_dict[key] = np.full(len(files), np.nan)
+                self.header_dict[keydict] = np.array([None]*len(files))
         # loop around files and populate the header_dict
         for pos, filename in enumerate(files):
             header = fits.getheader(filename)
             for keydict in keys:
-                # get key (for header dict)
-                key = keys[keydict]['key']
                 # get value (for header dict)
                 value = _header_value(keys[keydict], header, filename)
                 # set value in header dict
-                self.header_dict[key][pos] = value
+                self.header_dict[keydict][pos] = value
 
     def get_spec_parameters(self):
         pass
@@ -1086,9 +1087,12 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
     from apero.base.base import TQDM as tqdm
     from apero.core import constants
     from apero.core.core import drs_log
+    from apero.core.utils import drs_startup
     from apero.tools.module.documentation import drs_markdown
     # get the parameter dictionary of constants from apero
     params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
     wlog = drs_log.wlog
     # ------------------------------------------------------------------
@@ -1096,24 +1100,30 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
     instrument = settings['INSTRUMENT']
     outdir = os.path.basename(settings['OBJ_OUT'])
     # ------------------------------------------------------------------
+    # copy the object column to array
+    objnames = np.array(object_table[OBJECT_COLUMN])
+    objurls = [' ' * 255] * len(object_table)
     # print progress
-    wlog(params, '', 'Creating object pages')
+    wlog(params, 'info', 'Creating object pages')
     # change the object column to a url
     for it, row in tqdm(enumerate(object_table)):
         # get the object name for this row
-        objname = row['_OBJECT']
+        objname = objnames[it]
+        # print progress
+        msg = f'\tCreating page for {objname} [{it+1} of {len(object_table)}]'
+        margs = [objname, it+1, len(object_table)]
+        wlog(params, '', msg.format(*margs))
         # create the object class
-        object_instance = ObjectData(settings, profile, headers,
+        object_instance = ObjectData(profile, settings, headers,
                                      objname, file_dict, object_table)
         # ---------------------------------------------------------------------
         # populate the header dictionary for this object instance
-        wlog(params, '', f'\tPopulating header dictionary for {objname}')
+        wlog(params, '', f'\t\tPopulating header dictionary')
         object_instance.populate_header_dict()
         # ---------------------------------------------------------------------
         # generate url for object
         object_url = f'{instrument}_{outdir}_{objname}_index'
-        # replace  object name with the object name + object url
-        object_table[OBJECT_COLUMN][it] = _make_url(objname, object_url)
+        objurls[it] =  _make_url(objname, object_url)
         # create ARI object page
         object_page = drs_markdown.MarkDownPage(object_url)
         # get the profile name
@@ -1133,44 +1143,52 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # add the links to the pages
         items = [f'spectrum_objpage_{objname}',
                  f'lbl_objpage_{objname}',
-                 f'ccf_objpage_{objname}', f'timeseries_objpage_{objname}']
+                 f'ccf_objpage_{objname}',
+                 f'timeseries_objpage_{objname}']
         # add table of contents
         object_page.add_table_of_contents(items=items, names=names)
         # ---------------------------------------------------------------------
         # Spectrum section
         # ---------------------------------------------------------------------
         # print progress
-        wlog(params, '', f'\tCreating spectrum section for {objname}')
+        wlog(params, '', f'\t\tCreating spectrum section')
         # add spectrum section
         objpage_spectrum(object_page, names[0], items[0], object_instance)
         # ---------------------------------------------------------------------
         # LBL section
         # ---------------------------------------------------------------------
         # print progress
-        wlog(params, '', f'\tCreating LBL section for {objname}')
+        wlog(params, '', f'\t\tCreating LBL section')
         # add LBL section
         objpage_lbl(object_page, names[1], items[1], object_instance)
         # ---------------------------------------------------------------------
         # CCF section
         # ---------------------------------------------------------------------
         # print progress
-        wlog(params, '', f'\tCreating CCF section for {objname}')
+        wlog(params, '', f'\t\tCreating CCF section')
         # add CCF section
         objpage_ccf(object_page, names[2], items[2], object_instance)
         # ---------------------------------------------------------------------
         # Time series section
         # ---------------------------------------------------------------------
         # print progress
-        wlog(params, '', f'\tCreating time series section for {objname}')
+        wlog(params, '', f'\t\tCreating time series section')
         # add time series section
         objpage_timeseries(object_page, names[3], items[3], object_instance)
         # ---------------------------------------------------------------------
+        # print progress
+        wlog(params, '', f'\t\tWriting to disk')
         # construct a path for the object name
         object_page_path = settings['OBJ_OUT']
         # construct the rst filename
         rst_filename = f'{objname}.rst'
         # save index page
         object_page.write_page(os.path.join(object_page_path, rst_filename))
+        # ---------------------------------------------------------------------
+    # replace object name with the object name + object url
+    object_table[OBJECT_COLUMN] = objurls
+    # return the object table
+    return object_table
 
 
 def objpage_spectrum(page: Any, name: str, ref: str,
@@ -1221,7 +1239,7 @@ def objpage_lbl(page: Any, name: str, ref: str,
     page.add_section(name)
     # ------------------------------------------------------------------
     # deal with no spectrum found
-    if len(object_instance.lbl_combinations) == 0:
+    if len(object_instance.lbl_rdb_files) == 0:
         page.add_text('No LBL reduction found')
         return
     # ------------------------------------------------------------------
@@ -1245,7 +1263,7 @@ def objpage_lbl(page: Any, name: str, ref: str,
             page.add_csv_table('', object_instance.lbl_stats_table[objcomb])
         # ------------------------------------------------------------------
         # add download links
-        if object_instance.spec_download_table is not None:
+        if object_instance.lbl_dwn_table is not None:
             page.add_sub_section('LBL Downloads')
             # add the stats table
             page.add_csv_table('', object_instance.lbl_dwn_table[objcomb])
@@ -1386,7 +1404,7 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
     # setup the figure
     fig, frame = plt.subplots(2, 1, figsize=(12, 6), sharex='all')
     # plot the points
-    frame[0].plot_date(lbl_plot_date, lbl_vrad, marker='.', alpha=0.5,
+    frame[0].plot_date(lbl_plot_date, lbl_vrad, fmt='.', alpha=0.5,
                        color='green', ls='None')
     # plot the error bars
     frame[0].errorbar(lbl_plot_date, lbl_vrad, yerr=lbl_svrad,
@@ -1422,7 +1440,7 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
     frame[0].set(ylabel='Velocity [m/s]')
     # simple plot of the SNR in a sample order. You need to
     # update the relevant ketword for SPIRou
-    frame[1].plot_date(lbl_plot_date, lbl_snr_h, marker='.',
+    frame[1].plot_date(lbl_plot_date, lbl_snr_h, fmt='.',
                        alpha=0.5, color='green', ls='None')
     frame[1].grid(which='both', color='lightgray', linestyle='--')
     frame[1].set(xlabel='Date')
