@@ -1370,13 +1370,17 @@ def download_table(files: List[str], descriptions: List[str],
     # loop around files
     for basename in in_paths:
         # add the rdb file
-        down_dict[title].append(descs[basename])
-        down_dict[''].append(ref_paths[basename])
+        down_dict['Description'].append(descs[basename])
+        down_dict['Value'].append(ref_paths[basename])
         # copy the file from in path to out path
         shutil.copy(in_paths[basename], out_paths[basename])
     # --------------------------------------------------------------------------
+    # change the columns names
+    down_dict2 = dict(title=down_dict['Description'])
+    down_dict2[' '] = down_dict['Value']
+    # --------------------------------------------------------------------------
     # convert to table
-    down_table = Table(down_dict)
+    down_table = Table(down_dict2)
     # write to file as csv file
     down_table.write(down_path, format='ascii.csv', overwrite=True)
 
