@@ -74,6 +74,7 @@ LBL_SUFFIX = 'lbl'
 # object page styling
 DIVIDER_COLOR = '#FFA500'
 DIVIDER_HEIGHT = 6
+PLOT_BACKGROUND_COLOR = '#FEFDE1'
 # column width modifiers
 COL_WIDTH_DICT = dict()
 COL_WIDTH_DICT['MESSAGE'] = 100
@@ -1417,6 +1418,9 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
              plot_path: str, plot_title: str) -> Dict[str, Any]:
     # setup the figure
     fig, frame = plt.subplots(2, 1, figsize=(12, 6), sharex='all')
+    # set background color
+    frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
     # plot the points
     frame[0].plot_date(lbl_plot_date, lbl_vrad, fmt='.', alpha=0.5,
                        color='green', ls='None')
