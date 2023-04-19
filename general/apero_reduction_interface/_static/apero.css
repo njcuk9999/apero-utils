@@ -74,11 +74,11 @@ table.csvtable2 {
 }
 
 table.csvtable2 tr.row-odd {
-    background-color: #F8E7B2;
+    background-color: #FEF0E1;
 }
 
 table.csvtable2 tr.row-even {
-    background-color: #F8F7B2;
+    background-color: #FEFDE1;
 }
 
 

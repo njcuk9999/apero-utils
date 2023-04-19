@@ -1439,14 +1439,14 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
     ypoints = np.array(lbl_vrad[low], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.5, head_length=1.5, alpha=0.5)
+                       color='red', head_width=0.1, head_length=1.5, alpha=0.5)
     # same as above for the high outliers
     high = lbl_vrad > ylim[1]
     xpoints = np.array(lbl_plot_date[high], dtype=float)
     ypoints = np.array(lbl_vrad[high], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.5, head_length=1.5, alpha=0.5)
+                       color='red', head_width=0.1, head_length=1.5, alpha=0.5)
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
