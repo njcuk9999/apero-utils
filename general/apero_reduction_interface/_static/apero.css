@@ -69,8 +69,12 @@ table.csvtable th.head {
     top: 0;
 }
 
+table.csvtable2 {
+    max-width: 100%;
+}
+
 table.csvtable2 tr.row-odd {
-    background-color: #aabbcc;
+    background-color: #CCDDED;
 }
 
 table.csvtable2 tr.row-even {
