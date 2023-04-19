@@ -1194,7 +1194,7 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
 def objpage_spectrum(page: Any, name: str, ref: str,
                      object_instance: ObjectData):
     # add divider
-    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
     # add the section heading
@@ -1218,13 +1218,13 @@ def objpage_spectrum(page: Any, name: str, ref: str,
     # add stats
     if object_instance.spec_stats_table is not None:
         # add some stats
-        page.add_sub_section('Spectrum Stats')
+        page.add_sub_sub_section('Spectrum Stats')
         # add the stats table
         page.add_csv_table('', object_instance.spec_stats_table)
     # ------------------------------------------------------------------
     # add download links
     if object_instance.spec_download_table is not None:
-        page.add_sub_section('Spectrum Downloads')
+        page.add_sub_sub_section('Spectrum Downloads')
         # add the stats table
         page.add_csv_table('', object_instance.spec_download_table)
 
@@ -1232,7 +1232,7 @@ def objpage_spectrum(page: Any, name: str, ref: str,
 def objpage_lbl(page: Any, name: str, ref: str,
                 object_instance: ObjectData):
     # add divider
-    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
     # add the section heading
@@ -1248,6 +1248,8 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # ------------------------------------------------------------------
     # loop around the object+template combinations
     for objcomb in object_instance.lbl_combinations:
+        # add subsection for the object+template combination
+        page.add_sub_section(f'{objcomb})')
         # add the lbl plot
         if object_instance.lbl_plot_path[objcomb] is not None:
             # add the snr plot to the page
@@ -1258,20 +1260,20 @@ def objpage_lbl(page: Any, name: str, ref: str,
         # add stats
         if object_instance.lbl_stats_table[objcomb] is not None:
             # add some stats
-            page.add_sub_section('LBL Stats')
+            page.add_sub_sub_section('LBL Stats')
             # add the stats table
             page.add_csv_table('', object_instance.lbl_stats_table[objcomb])
         # ------------------------------------------------------------------
         # add download links
         if object_instance.lbl_dwn_table is not None:
-            page.add_sub_section('LBL Downloads')
+            page.add_sub_sub_section('LBL Downloads')
             # add the stats table
             page.add_csv_table('', object_instance.lbl_dwn_table[objcomb])
 
 
 def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     # add divider
-    page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
+    # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
     # add the section heading
@@ -1296,13 +1298,13 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     # add stats
     if object_instance.ccf_stats_table is not None:
         # add some stats
-        page.add_sub_section('CCF Stats')
+        page.add_sub_sub_section('CCF Stats')
         # add the stats table
         page.add_csv_table('', object_instance.ccf_stats_table)
     # ------------------------------------------------------------------
     # add download links
     if object_instance.ccf_download_table is not None:
-        page.add_sub_section('CCF Downloads')
+        page.add_sub_sub_section('CCF Downloads')
         # add the stats table
         page.add_csv_table('', object_instance.ccf_download_table)
 
@@ -1322,13 +1324,13 @@ def objpage_timeseries(page: Any, name: str, ref: str,
     # add stats
     if object_instance.time_series_stats_table is not None:
         # add some stats
-        page.add_sub_section('Time Series Stats')
+        page.add_sub_sub_section('Time Series Stats')
         # add the stats table
         page.add_csv_table('', object_instance.time_series_stats_table)
     # ------------------------------------------------------------------
     # add download links
     if object_instance.ccf_download_table is not None:
-        page.add_sub_section('Time Series Downloads')
+        page.add_sub_sub_section('Time Series Downloads')
         # add the stats table
         page.add_csv_table('', object_instance.time_series_download_table)
 
