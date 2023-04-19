@@ -393,7 +393,8 @@ def run_apero_get(settings: Dict[str, Any]):
         scifibers, calfiber = pconst.FIBER_KINDS()
         calfibers = [calfiber]
         # template output types
-        template_outtypes = pdict['get-lbl']['template out types']
+        red_template_outtypes = pdict['get']['template out types']
+        lbl_template_outtypes = pdict['get-lbl']['template out types']
         # get the object dir in the apero reduction path
         red_path = pparams['DRS_DATA_REDUC']
         obj_path = os.path.join(os.path.dirname(red_path), 'objects')
@@ -454,6 +455,11 @@ def run_apero_get(settings: Dict[str, Any]):
                        outtypes=red_outtypes, outpath=obj_path,
                        fibers=scifibers, symlinks=red_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
+        # run apero get for templates (no DPRTYPE as they could be different)
+        apero_get.main(objnames='*', outtypes=red_template_outtypes,
+                       outpath=obj_path, fibers=scifibers,
+                       symlinks=False,
+                       test=settings['TEST'], since=settings['SINCE'])
         # --------------------------------------------------------------
         # Copy to LBL directory
         # --------------------------------------------------------------
@@ -464,7 +470,7 @@ def run_apero_get(settings: Dict[str, Any]):
                        symlinks=lbl_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=template_outtypes,
+        apero_get.main(objnames='*', outtypes=lbl_template_outtypes,
                        outpath=outpath_templates, fibers=scifibers,
                        symlinks=False, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])

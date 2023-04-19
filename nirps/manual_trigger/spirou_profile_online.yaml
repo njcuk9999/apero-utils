@@ -43,6 +43,10 @@ nirps ha V0.7.275 online:
             - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
+        # apero template types
+        template out types:
+            - TELLU_TEMP
+            - TELLU_TEMP_S1DV
         # sym links in apero get
         symlinks: True
         # reset options (if symlinks = True)
