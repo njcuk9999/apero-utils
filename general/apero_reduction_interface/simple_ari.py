@@ -1006,6 +1006,7 @@ class ObjectData:
         item_save_path = self.settings['ITEMS']
         item_rel_path = f'../{_ITEM_DIR}/'
         down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
         # ---------------------------------------------------------------------
         # get the ext h-band key
         ext_h_key = self.headers['LBL']['EXT_H']['key']
@@ -1061,8 +1062,8 @@ class ObjectData:
             # define the download descriptions
             down_descs = ['RDB file']
             # compute the download table
-            download_table(down_files, down_descs, item_rel_path,
-                           item_path, down_save_path, title='LBL Download')
+            download_table(down_files, down_descs, item_path, down_rel_path,
+                           down_save_path, title='LBL Download')
             # -----------------------------------------------------------------
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
@@ -1327,14 +1328,14 @@ def objpage_timeseries(page: Any, name: str, ref: str,
 # Plots, stat tables and download tables
 # =============================================================================
 def download_table(files: List[str], descriptions: List[str],
-                   item_rel_path: str, item_path: str, down_dir: str,
+                   item_path: str, dwn_rel_path: str, down_dir: str,
                    title: str):
     """
     Generic download table saving to the item relative path
 
     :param files:
     :param descriptions:
-    :param item_rel_path: the path relative to the page
+    :param dwn_rel_path: the path of the download relative to the page
     :param item_path: the absolute path to the item csv table file (to save to)
     :param down_dir: the path to the download directory
     :param title: the title for the download table
@@ -1356,7 +1357,7 @@ def download_table(files: List[str], descriptions: List[str],
         # get the in path
         in_paths[basename] = filename
         # get the reference path (for the link)
-        ref_paths[basename] = item_rel_path + basename
+        ref_paths[basename] = dwn_rel_path + basename
         # get the outpath
         out_paths[basename] = os.path.join(down_dir, basename)
         # get the descriptions
