@@ -1398,7 +1398,7 @@ def lbl_plot(lbl_plot_date: np.ndarray, lbl_vrad: np.ndarray,
              lbl_svrad: np.ndarray, lbl_snr_h: np.ndarray,
              plot_path: str, plot_title: str) -> Dict[str, Any]:
     # setup the figure
-    fig, frame = plt.subplots(2, 1, figsize=(12, 6), sharex='all')
+    fig, frame = plt.subplots(2, 1, figsize=(20, 6), sharex='all')
     # plot the points
     frame[0].plot_date(lbl_plot_date, lbl_vrad, fmt='.', alpha=0.5,
                        color='green', ls='None')
@@ -1504,7 +1504,7 @@ def lbl_stats_table(lbl_rjd: np.ndarray, lbl_vrad: np.ndarray,
     stat_dict['Value'].append('{:.2f} m/s'.format(sys_vel))
     # add the Velocity domain considered
     stat_dict['Description'].append('Velocity Domain considered valid')
-    stat_dict['Value'].append('{:.2f} - {:.2f} m/s'.format(*vel_domain))
+    stat_dict['Value'].append('{:.2f} to {:.2f} m/s'.format(*vel_domain))
     # --------------------------------------------------------------------------
     # change the columns names
     stat_dict2 = dict()
