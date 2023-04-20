@@ -1367,7 +1367,7 @@ class ObjectData:
             # get the airmass for this observation directory
             airmass = np.mean(np.append(airmass_start_vec[obs_mask],
                                         airmass_end_vec[obs_mask]))
-            airmass = np.round(airmass, 3)
+            airmass = np.around(airmass, 3)
             # get the mean exposure time
             exptime = np.mean(exptime_vec[obs_mask])
             exptime = np.round(exptime, 3)
