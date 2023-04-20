@@ -1109,8 +1109,8 @@ class ObjectData:
         spec_props['NUM_PP_FILES'] = len(self.pp_files)
         spec_props['NUM_EXT_FILES'] = len(self.ext_files)
         spec_props['NUM_TCORR_FILES'] = len(self.tcorr_files)
-        spec_props['FIRST_RAW'] = self.object_table['FIRST_RAW']
-        spec_props['LAST_RAW'] = self.object_table['LAST_RAW']
+        spec_props['FIRST_RAW'] = Time(self.object_table['FIRST_RAW'])
+        spec_props['LAST_RAW'] = Time(self.object_table['LAST_RAW'])
         spec_props['FIRST_PP'] = Time(np.min(self.header_dict['PP_MJDMID']))
         spec_props['LAST_PP'] = Time(np.max(self.header_dict['PP_MJDMID']))
         spec_props['FIRST_EXT'] = Time(np.min(self.header_dict['EXT_MJDMID']))
