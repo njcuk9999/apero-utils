@@ -1101,7 +1101,7 @@ class ObjectData:
         spec_props['NUM_RAW_FILES'] = len(self.raw_files)
         spec_props['NUM_PP_FILES'] = len(self.pp_files)
         spec_props['NUM_EXT_FILES'] = len(self.ext_files)
-        spec_props['NUM_TCORR_FILES'] len(self.tcorr_files)
+        spec_props['NUM_TCORR_FILES'] = len(self.tcorr_files)
         # -----------------------------------------------------------------
         # plot the figure
         # -----------------------------------------------------------------
