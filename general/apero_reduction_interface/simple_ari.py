@@ -1123,9 +1123,9 @@ class ObjectData:
         spec_stats_table(spec_props, stat_path, title='Spectrum stats')
         # -----------------------------------------------------------------
         # update the paths
-        self.ccf_plot_path = item_rel_path + plot_base_name
-        self.ccf_stats_table = item_rel_path + stat_base_name
-        self.ccf_dwn_table = None
+        self.spec_plot_path = item_rel_path + plot_base_name
+        self.spec_stats_table = item_rel_path + stat_base_name
+        self.spec_dwn_table = None
 
 
     def get_lbl_parameters(self):
