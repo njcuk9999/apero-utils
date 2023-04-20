@@ -1115,8 +1115,8 @@ class ObjectData:
         spec_props['LAST_PP'] = Time(np.max(self.header_dict['PP_MJDMID']))
         spec_props['FIRST_EXT'] = Time(np.min(self.header_dict['EXT_MJDMID']))
         spec_props['LAST_EXT'] = Time(np.max(self.header_dict['EXT_MJDMID']))
-        spec_props['FIRST_TCORR'] = Time(self.header_dict['TCORR_MJDMID'])
-        spec_props['LAST_TCORR'] = Time(self.header_dict['TCORR_MJDMID'])
+        spec_props['FIRST_TCORR'] = Time(np.min(self.header_dict['TCORR_MJDMID']))
+        spec_props['LAST_TCORR'] = Time(np.max(self.header_dict['TCORR_MJDMID']))
         # -----------------------------------------------------------------
         # plot the figure
         # -----------------------------------------------------------------
@@ -1674,14 +1674,14 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     num_tcorr = spec_props['NUM_TCORR_FILES']
     ext_y = spec_props['EXT_Y']
     ext_h = spec_props['EXT_H']
-    first_raw = spec_props['FIRST_RAW']
-    last_raw = spec_props['LAST_RAW']
-    first_pp = spec_props['FIRST_PP']
-    last_pp = spec_props['LAST_PP']
-    first_ext = spec_props['FIRST_EXT']
-    last_ext = spec_props['LAST_EXT']
-    first_tcorr = spec_props['FIRST_TCORR']
-    last_tcorr = spec_props['LAST_TCORR']
+    first_raw = spec_props['FIRST_RAW'].iso
+    last_raw = spec_props['LAST_RAW'].iso
+    first_pp = spec_props['FIRST_PP'].iso
+    last_pp = spec_props['LAST_PP'].iso
+    first_ext = spec_props['FIRST_EXT'].iso
+    last_ext = spec_props['LAST_EXT'].iso
+    first_tcorr = spec_props['FIRST_TCORR'].iso
+    last_tcorr = spec_props['LAST_TCORR'].iso
     # --------------------------------------------------------------------------
     # Calculate stats
     # --------------------------------------------------------------------------
