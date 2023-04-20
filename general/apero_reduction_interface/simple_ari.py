@@ -518,7 +518,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     if gsettings['filter objects']:
         subconditions = []
         for objname in gsettings['objects']:
-            subconditions.append(f'OBJNAME={objname}')
+            subconditions.append(f'OBJNAME="{objname}"')
         condition = ' OR '.join(subconditions)
         condition = f'({condition})'
     else:
