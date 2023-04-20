@@ -1763,7 +1763,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(plot_date[low], dtype=float)
-    x_range = np.nanmax(xpoints) - np.nanmin(xpoints)
+    x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
                        color='red', head_width=0.01*x_range,
@@ -1909,7 +1909,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(mjd.plot_date[low], dtype=float)
-    x_range = np.nanmax(xpoints) - np.nanmin(xpoints)
+    x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
                        color='red', head_width=0.01*x_range,
