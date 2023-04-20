@@ -603,10 +603,13 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
             continue
         # find minimum time value and convert to human time
         first_time = Time(np.min(times), format='mjd')
-        object_table['FIRST_RAW'][pos] = first_time
+        object_table['FIRST_RAW'][pos] = first_time[0]
         # find maximum time value and convert to human time
         last_time = Time(np.max(times), format='mjd')
-        object_table['LAST_RAW'][pos] = last_time
+        object_table['LAST_RAW'][pos] = last_time[0]
+        # get the observation directories
+        obsdirs = indexdbm.get_unique('OBS_DIR', condition=latest_cond)
+        file_dict[objname]['OBS_DIRS'] = obsdirs
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
@@ -1008,6 +1011,8 @@ class ObjectData:
         objmask = object_table[OBJECT_COLUMN] == objname
         # get the object_table row for this object
         self.object_table = object_table[objmask]
+        # get the observation directories for this object
+        self.obs_dirs = file_dict[objname].get('OBS_DIRS', [])
         # ---------------------------------------------------------------------
         # get spectrum output parameters (for page integration)
         self.spec_plot_path = None
@@ -1304,7 +1309,93 @@ class ObjectData:
         self.ccf_dwn_table = None
 
     def get_time_series_parameters(self):
-        pass
+        # don't go here is lbl rdb files are not present
+        if len(self.ext_files) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # -----------------------------------------------------------------
+        # storage for ccf values
+        time_series_props = dict()
+        # get labels
+        snr_y_label = self.headers['EXT']['EXT_Y']['label']
+        snr_h_label = self.headers['EXT']['EXT_H']['label']
+        time_series_props['snr_y_label'] = snr_y_label
+        time_series_props['snr_h_label'] = snr_h_label
+        # get values for use in time series table
+        time_series_props['Observation Directory'] = []
+        time_series_props['First observation'] = []
+        time_series_props['Last observation'] = []
+        time_series_props['Number of observations'] = []
+        time_series_props['Seeing'] = []
+        time_series_props['Airmass'] = []
+        time_series_props['Exposure time'] = []
+        time_series_props[snr_y_label] = []
+        time_series_props[snr_h_label] = []
+        time_series_props['DPRTYPE'] = []
+        # get values from self.header_dict
+        mjd = np.array(self.header_dict['EXT_MJDMID'])
+        seeing_start = np.array(self.header_dict['EXT_SEEING_START'])
+        seeing_end = np.array(self.header_dict['EXT_SEEING_END'])
+        airmass_start = np.array(self.header_dict['EXT_AIRMASS_START'])
+        airmass_end = np.array(self.header_dict['EXT_AIRMASS_END'])
+        exptime = np.array(self.header_dict['EXT_EXPTIME'])
+        snry = np.array(self.header_dict['EXT_Y'])
+        snyh = np.array(self.header_dict['EXT_H'])
+        dprtype = np.array(self.header_dict['EXT_DPRTYPE'])
+        # loop around observation directories
+        for obs_dir in self.obs_dirs:
+            # create a mask for this observation directory
+            obs_mask = self.obs_dirs == obs_dir
+
+            # get the first and last mjd for this observation directory
+            first_mjd = Time(np.min(mjd[obs_mask])).iso
+            last_mjd = Time(np.max(mjd[obs_mask])).iso
+            # get the number of observations for this observation
+            num_obs = np.sum(obs_mask)
+            # get the seeing for this observation directory
+            seeing = np.mean(np.append(seeing_start[obs_mask],
+                                       seeing_end[obs_mask]))
+            # get the airmass for this observation directory
+            airmass = np.mean(np.append(airmass_start[obs_mask],
+                                        airmass_end[obs_mask]))
+            # get the mean exposure time
+            exptime = np.mean(exptime[obs_mask])
+            # get the mean snr_y
+            snry = np.mean(snry[obs_mask])
+            # get the mean snr_h
+            snyh = np.mean(snyh[obs_mask])
+            # get the dprtypes
+            dprtype = ','.join(list(np.unique(dprtype[obs_mask])))
+            # append to the time series properties
+            time_series_props['Observation Directory'].append(obs_dir)
+            time_series_props['First observation'].append(first_mjd)
+            time_series_props['Last observation'].append(last_mjd)
+            time_series_props['Number of observations'].append(num_obs)
+            time_series_props['Seeing'].append(seeing)
+            time_series_props['Airmass'].append(airmass)
+            time_series_props['Exposure time'].append(exptime)
+            time_series_props[snr_y_label].append(snry)
+            time_series_props[snr_h_label].append(snyh)
+            time_series_props['DPRTYPE'].append(dprtype)
+        # -----------------------------------------------------------------
+        # construct the stats
+        # -----------------------------------------------------------------
+        # get the stats base name
+        stat_base_name = 'spec_stat_' + self.objname + '.txt'
+        # get the stat path
+        stat_path = os.path.join(item_save_path, stat_base_name)
+        # compute the stats
+        time_series_stats_table(time_series_props, stat_path)
+        # -----------------------------------------------------------------
+        # update the paths
+        self.time_series_plot_path = None
+        self.time_series_stats_table = item_rel_path + stat_base_name
+        self.time_series_dwn_table = None
 
 
 def add_obj_pages(settings: dict, profile: dict, headers: dict,
@@ -2019,8 +2110,24 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     stat_table.write(stat_path, format='ascii.csv', overwrite=True)
 
 
-def time_series_stats_table():
-    pass
+def time_series_stats_table(time_series_props: Dict[str, Any], stat_path: str):
+    # get parameters from props
+    snr_y_label = time_series_props['snr_y_label']
+    snr_h_label = time_series_props['snr_h_label']
+    # --------------------------------------------------------------------------
+    # construct the stats table
+    # --------------------------------------------------------------------------
+    # columns
+    columns = ['Observation Directory', 'First observation', 'Last observation',
+               'Number of observations', 'Seeing', 'Airmass', 'Exposure time',
+               snr_y_label, snr_h_label, 'DPRTYPE']
+    # --------------------------------------------------------------------------
+    # push columns into table
+    stat_table = Table()
+    for column in columns:
+        stat_table[column] = time_series_props[column]
+    # write to file as csv file
+    stat_table.write(stat_path, format='ascii.csv', overwrite=True)
 
 
 # =============================================================================
