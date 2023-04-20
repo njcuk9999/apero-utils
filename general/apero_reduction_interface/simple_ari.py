@@ -594,22 +594,24 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
             polar_cond = None
             p_cond = None
         # ------------------------------------------------------------------
-        # deal with finding the latest raw file
+        # deal with finding the first and last raw file
         # ------------------------------------------------------------------
-        latest_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
-        times = indexdbm.get_entries('KW_MID_OBS_TIME', condition=latest_cond)
+        times = indexdbm.get_entries('KW_MID_OBS_TIME', condition=raw_cond)
         # if there are no entries we have no raw files for this object
         if len(times) == 0:
             continue
         # find minimum time value and convert to human time
         first_time = Time(np.min(times), format='mjd')
-        object_table['FIRST_RAW'][pos] = first_time[0]
+        object_table['FIRST_RAW'][pos] = first_time
         # find maximum time value and convert to human time
         last_time = Time(np.max(times), format='mjd')
-        object_table['LAST_RAW'][pos] = last_time[0]
+        object_table['LAST_RAW'][pos] = last_time
+        # ------------------------------------------------------------------
+        # deal with getting the observation directories (For EXT files)
+        # ------------------------------------------------------------------
+        obs_dirs = indexdbm.get_entries('KW_MID_OBS_TIME', condition=ext_cond)
         # get the observation directories
-        obsdirs = indexdbm.get_unique('OBS_DIR', condition=latest_cond)
-        file_dict[objname]['OBS_DIRS'] = obsdirs
+        file_dict[objname]['OBS_DIRS'] = obs_dirs
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
@@ -1114,8 +1116,8 @@ class ObjectData:
         spec_props['NUM_PP_FILES'] = len(self.pp_files)
         spec_props['NUM_EXT_FILES'] = len(self.ext_files)
         spec_props['NUM_TCORR_FILES'] = len(self.tcorr_files)
-        spec_props['FIRST_RAW'] = Time(self.object_table['FIRST_RAW'])
-        spec_props['LAST_RAW'] = Time(self.object_table['LAST_RAW'])
+        spec_props['FIRST_RAW'] = Time(self.object_table['FIRST_RAW'][0])
+        spec_props['LAST_RAW'] = Time(self.object_table['LAST_RAW'][0])
         spec_props['FIRST_PP'] = Time(np.min(self.header_dict['PP_MJDMID']))
         spec_props['LAST_PP'] = Time(np.max(self.header_dict['PP_MJDMID']))
         spec_props['FIRST_EXT'] = Time(np.min(self.header_dict['EXT_MJDMID']))
@@ -1338,44 +1340,45 @@ class ObjectData:
         time_series_props[snr_h_label] = []
         time_series_props['DPRTYPE'] = []
         # get values from self.header_dict
-        mjd = np.array(self.header_dict['EXT_MJDMID'])
-        seeing_start = np.array(self.header_dict['EXT_SEEING_START'])
-        seeing_end = np.array(self.header_dict['EXT_SEEING_END'])
-        airmass_start = np.array(self.header_dict['EXT_AIRMASS_START'])
-        airmass_end = np.array(self.header_dict['EXT_AIRMASS_END'])
-        exptime = np.array(self.header_dict['EXT_EXPTIME'])
-        snry = np.array(self.header_dict['EXT_Y'])
-        snyh = np.array(self.header_dict['EXT_H'])
-        dprtype = np.array(self.header_dict['EXT_DPRTYPE'])
+        mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
+        seeing_start_vec = np.array(self.header_dict['EXT_SEEING_START'])
+        seeing_end_vec = np.array(self.header_dict['EXT_SEEING_END'])
+        airmass_start_vec = np.array(self.header_dict['EXT_AIRMASS_START'])
+        airmass_end_vec = np.array(self.header_dict['EXT_AIRMASS_END'])
+        exptime_vec = np.array(self.header_dict['EXT_EXPTIME'])
+        snry_vec = np.array(self.header_dict['EXT_Y'])
+        snyh_vec = np.array(self.header_dict['EXT_H'])
+        dprtype_vec = np.array(self.header_dict['EXT_DPRTYPE'])
+        # get unique object directories (for this object)
+        u_obs_dirs = np.unique(self.obs_dirs)
         # loop around observation directories
-        for obs_dir in self.obs_dirs:
+        for obs_dir in u_obs_dirs:
             # create a mask for this observation directory
             obs_mask = self.obs_dirs == obs_dir
-
             # get the first and last mjd for this observation directory
-            first_mjd = Time(np.min(mjd[obs_mask])).iso
-            last_mjd = Time(np.max(mjd[obs_mask])).iso
+            first_mjd = Time(np.min(mjd_vec[obs_mask])).iso
+            last_mjd = Time(np.max(mjd_vec[obs_mask])).iso
             # get the number of observations for this observation
             num_obs = np.sum(obs_mask)
             # get the seeing for this observation directory
-            seeing = np.mean(np.append(seeing_start[obs_mask],
-                                       seeing_end[obs_mask]))
+            seeing = np.mean(np.append(seeing_start_vec[obs_mask],
+                                       seeing_end_vec[obs_mask]))
             seeing = np.round(seeing, 3)
             # get the airmass for this observation directory
-            airmass = np.mean(np.append(airmass_start[obs_mask],
-                                        airmass_end[obs_mask]))
+            airmass = np.mean(np.append(airmass_start_vec[obs_mask],
+                                        airmass_end_vec[obs_mask]))
             airmass = np.round(airmass, 3)
             # get the mean exposure time
-            exptime = np.mean(exptime[obs_mask])
+            exptime = np.mean(exptime_vec[obs_mask])
             exptime = np.round(exptime, 3)
             # get the mean snr_y
-            snry = np.mean(snry[obs_mask])
+            snry = np.mean(snry_vec[obs_mask])
             snry = np.round(snry, 3)
             # get the mean snr_h
-            snyh = np.mean(snyh[obs_mask])
+            snyh = np.mean(snyh_vec[obs_mask])
             snyh = np.round(snyh, 3)
             # get the dprtypes
-            dprtype = ','.join(list(np.unique(dprtype[obs_mask])))
+            dprtype = ','.join(list(np.unique(dprtype_vec[obs_mask])))
             # append to the time series properties
             time_series_props['Observation Directory'].append(obs_dir)
             time_series_props['First observation'].append(first_mjd)
