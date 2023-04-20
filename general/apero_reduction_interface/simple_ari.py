@@ -331,7 +331,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             # add object table
             table_filename = f'{table_name}.csv'
             table_title = table_name.lower().replace('_', ' ')
-            table_page.add_title(table_title)
+            title = f'APERO reduction {table_title} ({cprofile_name})'
+            table_page.add_title(title)
             # deal with column widths for this file type
             if table is not None:
                 # add the csv version of this table
@@ -966,9 +967,7 @@ def add_lbl_count(profile: dict, object_table: Table,
                     file_dict[objname][lblfilekey][objtmp] = lblspath
     # -------------------------------------------------------------------------
     # add to object table
-    object_table['LBL_TEMPLATES'] = lbl_templates
-    object_table['LBL_SELECT'] = lbl_select
-    object_table['LBL_COUNT'] = lbl_count
+    object_table['LBL'] = lbl_count
     # -------------------------------------------------------------------------
     # return the object table
     return object_table, file_dict
