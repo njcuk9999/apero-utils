@@ -82,21 +82,13 @@ headers:
       key: DPRTYPE
       label: 'DPR TYPE'
       dtype: str
-    EXT_SEEING_START:
+    EXT_SEEING:
       key: HIERARCH ESO TEL AMBI FWHM START
       label: Seeing at start
       dtype: float
-    EXT_SEEING_END:
-      key: HIERARCH ESO TEL AMBI FWHM END
-      label: Seeing at end
-      dtype: float
-    EXT_AIRMASS_START:
+    EXT_AIRMASS:
       key: HIERARCH ESO TEL AIRM START
       label: Airmass at start
-      dtype: float
-    EXT_AIRMASS_END:
-      key: HIERARCH ESO TEL AIRM END
-      label: Airmass at end
       dtype: float
     EXT_EXPTIME:
         key: EXPTIME

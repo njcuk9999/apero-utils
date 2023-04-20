@@ -1420,10 +1420,8 @@ class ObjectData:
         time_series_props[snr_h_label] = []
         # get values from self.header_dict
         mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
-        seeing_start_vec = np.array(self.header_dict['EXT_SEEING_START'])
-        seeing_end_vec = np.array(self.header_dict['EXT_SEEING_END'])
-        airmass_start_vec = np.array(self.header_dict['EXT_AIRMASS_START'])
-        airmass_end_vec = np.array(self.header_dict['EXT_AIRMASS_END'])
+        seeing_vec = np.array(self.header_dict['EXT_SEEING'])
+        airmass_vec = np.array(self.header_dict['EXT_AIRMASS'])
         exptime_vec = np.array(self.header_dict['EXT_EXPTIME'])
         snry_vec = np.array(self.header_dict['EXT_Y'])
         snyh_vec = np.array(self.header_dict['EXT_H'])
@@ -1440,12 +1438,10 @@ class ObjectData:
             # get the number of observations for this observation
             num_obs = np.sum(obs_mask)
             # get the seeing for this observation directory
-            seeing = np.mean(np.append(seeing_start_vec[obs_mask],
-                                       seeing_end_vec[obs_mask]))
+            seeing = np.mean(seeing_vec[obs_mask])
             seeing = np.round(seeing, 3)
             # get the airmass for this observation directory
-            airmass = np.mean(np.append(airmass_start_vec[obs_mask],
-                                        airmass_end_vec[obs_mask]))
+            airmass = np.mean(airmass_vec[obs_mask])
             airmass = np.around(airmass, 3)
             # get the mean exposure time
             exptime = np.mean(exptime_vec[obs_mask])
@@ -2132,7 +2128,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     if has_fit:
         frame[2].fill_between(rv_vec[limmask], y1_2sig[limmask] - fit[limmask],
                               y2_2sig[limmask] - fit[limmask], color='red',
-                              alpha=0.5, label='full envelope')
+                              alpha=0.5, label='2-$\sigma$')
         frame[2].fill_between(rv_vec[limmask], y1_1sig[limmask] - fit[limmask],
                               y2_1sig[limmask] - fit[limmask], color='orange',
                               alpha=0.5, label='1-$\sigma$')
