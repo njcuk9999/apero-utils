@@ -1330,7 +1330,7 @@ class ObjectData:
         time_series_props['Observation Directory'] = []
         time_series_props['First observation'] = []
         time_series_props['Last observation'] = []
-        time_series_props['Number of observations'] = []
+        time_series_props['Number of obs'] = []
         time_series_props['Seeing'] = []
         time_series_props['Airmass'] = []
         time_series_props['Exposure time'] = []
@@ -1360,22 +1360,27 @@ class ObjectData:
             # get the seeing for this observation directory
             seeing = np.mean(np.append(seeing_start[obs_mask],
                                        seeing_end[obs_mask]))
+            seeing = np.round(seeing, 3)
             # get the airmass for this observation directory
             airmass = np.mean(np.append(airmass_start[obs_mask],
                                         airmass_end[obs_mask]))
+            airmass = np.round(airmass, 3)
             # get the mean exposure time
             exptime = np.mean(exptime[obs_mask])
+            exptime = np.round(exptime, 3)
             # get the mean snr_y
             snry = np.mean(snry[obs_mask])
+            snry = np.round(snry, 3)
             # get the mean snr_h
             snyh = np.mean(snyh[obs_mask])
+            snyh = np.round(snyh, 3)
             # get the dprtypes
             dprtype = ','.join(list(np.unique(dprtype[obs_mask])))
             # append to the time series properties
             time_series_props['Observation Directory'].append(obs_dir)
             time_series_props['First observation'].append(first_mjd)
             time_series_props['Last observation'].append(last_mjd)
-            time_series_props['Number of observations'].append(num_obs)
+            time_series_props['Number of obs'].append(num_obs)
             time_series_props['Seeing'].append(seeing)
             time_series_props['Airmass'].append(airmass)
             time_series_props['Exposure time'].append(exptime)
@@ -1386,15 +1391,15 @@ class ObjectData:
         # construct the stats
         # -----------------------------------------------------------------
         # get the stats base name
-        stat_base_name = 'spec_stat_' + self.objname + '.txt'
+        time_series_base_name = 'time_series_stat_' + self.objname + '.txt'
         # get the stat path
-        stat_path = os.path.join(item_save_path, stat_base_name)
+        stat_path = os.path.join(item_save_path, time_series_base_name)
         # compute the stats
         time_series_stats_table(time_series_props, stat_path)
         # -----------------------------------------------------------------
         # update the paths
         self.time_series_plot_path = None
-        self.time_series_stats_table = item_rel_path + stat_base_name
+        self.time_series_stats_table = item_rel_path + time_series_base_name
         self.time_series_dwn_table = None
 
 
