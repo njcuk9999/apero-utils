@@ -60,11 +60,11 @@ headers:
       timefmt: mjd
     EXT_Y:
       key: EXTSN015
-      label: 'SNR[Order 15 (#134 1.082$\mu$m)]'
+      label: 'EXT SNR[Order 15 (#134 1.082$\mu$m)]'
       dtype: float
     EXT_H:
       key: EXTSN060
-      label: 'SNR[Order 60 (#89 1.629$\mu$m)]'
+      label: 'EXT SNR[Order 60 (#89 1.629$\mu$m)]'
       dtype: float
     SEEING_START:
       key: HIERARCH ESO TEL AMBI FWHM START
@@ -110,5 +110,5 @@ headers:
   LBL:
     EXT_H:
       key: EXTSN060
-      label: 'SNR[Order 60 (#89 1.629$\mu$m)]'
+      label: 'EXT SNR[Order 60 (#89 1.629$\mu$m)]'
       dtype: float

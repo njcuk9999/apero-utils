@@ -519,7 +519,6 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     # ------------------------------------------------------------------
     # Deal with object pages
     # ------------------------------------------------------------------
-    # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table[COUNT_COLS[0]] = [0] * len(object_table)
     object_table['LATEST_RAW'] = [' ' * 25] * len(object_table)
@@ -1081,7 +1080,52 @@ class ObjectData:
                 self.header_dict[keydict][pos] = value
 
     def get_spec_parameters(self):
-        pass
+        # don't go here is lbl rdb files are not present
+        if len(self.ext_files) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # -----------------------------------------------------------------
+        # storage for ccf values
+        spec_props = dict()
+        # get values for use in plot
+        spec_props['mjd'] = Time(np.array(self.header_dict['EXT_MJDMID']))
+        spec_props['EXT_Y'] = np.array(self.header_dict['EXT_Y'])
+        spec_props['EXT_H'] = np.array(self.header_dict['EXT_H'])
+        spec_props['EXT_Y_LABEL'] = self.headers['EXT_Y']['label']
+        spec_props['EXT_H_LABEL'] = self.headers['EXT_H']['label']
+        spec_props['NUM_RAW_FILES'] = len(self.raw_files)
+        spec_props['NUM_PP_FILES'] = len(self.pp_files)
+        spec_props['NUM_EXT_FILES'] = len(self.ext_files)
+        spec_props['NUM_TCORR_FILES'] len(self.tcorr_files)
+        # -----------------------------------------------------------------
+        # plot the figure
+        # -----------------------------------------------------------------
+        # get the plot base name
+        plot_base_name = 'spec_plot_' + self.objname + '.png'
+        # get the plot path
+        plot_path = os.path.join(item_save_path, plot_base_name)
+        # plot the lbl figure
+        spec_plot(spec_props, plot_path, plot_title=f'{self.objname}')
+        # -----------------------------------------------------------------
+        # construct the stats
+        # -----------------------------------------------------------------
+        # get the stats base name
+        stat_base_name = 'spec_stat_' + self.objname + '.txt'
+        # get the stat path
+        stat_path = os.path.join(item_save_path, stat_base_name)
+        # compute the stats
+        spec_stats_table(spec_props, stat_path, title='Spectrum stats')
+        # -----------------------------------------------------------------
+        # update the paths
+        self.ccf_plot_path = item_rel_path + plot_base_name
+        self.ccf_stats_table = item_rel_path + stat_base_name
+        self.ccf_dwn_table = None
+
 
     def get_lbl_parameters(self):
         """
@@ -1124,6 +1168,7 @@ class ObjectData:
             lbl_props['svrad'] = np.array(rdb_table['svrad'])
             lbl_props['plot_date'] = np.array(rdb_table['plot_date'])
             lbl_props['snr_h'] = np.array(rdb_table[ext_h_key])
+            lbl_props['SNR_H_LABEL'] = self.headers['LBL']['EXT_H']['label']
             # -----------------------------------------------------------------
             # plot the figure
             # -----------------------------------------------------------------
@@ -1232,7 +1277,7 @@ class ObjectData:
         # construct the stats
         # -----------------------------------------------------------------
         # get the stats base name
-        stat_base_name = 'lbl_stat_' + self.objname + '.txt'
+        stat_base_name = 'ccf_stat_' + self.objname + '.txt'
         # get the stat path
         stat_path = os.path.join(item_save_path, stat_base_name)
         # compute the stats
@@ -1266,6 +1311,9 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
     # get the parameters for lbl website url
     instrument = settings['INSTRUMENT']
     outdir = os.path.basename(settings['OBJ_OUT'])
+    # get the profile name
+    name = profile['profile name']
+    clean_name = settings['CPN']
     # ------------------------------------------------------------------
     # copy the object column to array
     objnames = np.array(object_table[OBJECT_COLUMN])
@@ -1289,12 +1337,10 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         object_instance.populate_header_dict()
         # ---------------------------------------------------------------------
         # generate url for object
-        object_url = f'{instrument}_{outdir}_{objname}_index'
+        object_url = f'{clean_name}_{outdir}_{objname}_index'
         objurls[it] =  _make_url(objname, object_url)
         # create ARI object page
         object_page = drs_markdown.MarkDownPage(object_url)
-        # get the profile name
-        name = profile['profile name']
         # add title
         object_page.add_title(f'{objname} ({name})')
         # ---------------------------------------------------------------------
@@ -1564,12 +1610,99 @@ def download_table(files: List[str], descriptions: List[str],
     down_table.write(item_path, format='ascii.csv', overwrite=True)
 
 
-def spec_plot():
-    pass
+def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
+    # get parameters from props
+    mjd = spec_props['mjd']
+    ext_y = spec_props['EXT_Y']
+    ext_h = spec_props['EXT_H']
+    ext_y_label = spec_props['EXT_Y_LABEL']
+    ext_h_label = spec_props['EXT_H_LABEL']
+    # --------------------------------------------------------------------------
+    # setup the figure
+    fig, frame = plt.subplots(2, 1, figsize=(12, 6))
+    # set background color
+    frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
+    # --------------------------------------------------------------------------
+    # Top plot SNR Y
+    # --------------------------------------------------------------------------
+    # # plot the CCF RV points
+    frame[0].plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
+                       color='green')
+    frame[0].grid(which='both', color='lightgray', ls='--')
+    frame[0].set(xlabel='Date', ylabel=ext_y_label)
+
+    # --------------------------------------------------------------------------
+    # Bottom plot SNR H
+    # --------------------------------------------------------------------------
+    # # plot the CCF RV points
+    frame[1].plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
+                       color='green')
+    frame[1].grid(which='both', color='lightgray', ls='--')
+    frame[1].set(xlabel='Date', ylabel=ext_h_label)
+
+    # --------------------------------------------------------------------------
+    # add title
+    plt.suptitle(plot_title)
+    plt.subplots_adjust(hspace=0.1, left=0.1, right=0.99)
+    # save figure and close the plot
+    plt.savefig(plot_path)
+    plt.close()
 
 
-def spec_stats_table():
-    pass
+def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
+    from apero.core.math import estimate_sigma
+    # get parameters from props
+    num_raw = spec_props['NUM_RAW_FILES']
+    num_pp = spec_props['NUM_PP_FILES']
+    num_ext = spec_props['NUM_EXT_FILES']
+    num_tcorr = spec_props['NUM_TCORR_FILES']
+    ext_y = spec_props['EXT_Y']
+    ext_h = spec_props['EXT_H']
+    # --------------------------------------------------------------------------
+    # Calculate stats
+    # --------------------------------------------------------------------------
+    # average SNR
+    med_snr_y = np.nanmedian(ext_y)
+    med_snr_h = np.nanmedian(ext_h)
+    # RMS of SNR
+    rms_snr_y = estimate_sigma(ext_y)
+    rms_snr_h = estimate_sigma(ext_h)
+    # --------------------------------------------------------------------------
+    # construct the stats table
+    # --------------------------------------------------------------------------
+    # start with a stats dictionary
+    stat_dict = dict(Description=[], Value=[])
+    # add number of raw files
+    stat_dict['Description'].append('Number raw files')
+    stat_dict['Value'].append(num_raw)
+    # add number of pp files
+    stat_dict['Description'].append('Number pp files')
+    stat_dict['Value'].append(num_pp)
+    # add number of ext files
+    stat_dict['Description'].append('Number ext files')
+    stat_dict['Value'].append(num_ext)
+    # add number of tcorr files
+    stat_dict['Description'].append('Number tcorr files')
+    stat_dict['Value'].append(num_tcorr)
+    # add the SNR in Y
+    stat_dict['Description'].append('Median SNR Y')
+    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(med_snr_y, rms_snr_y)
+    stat_dict['Value'].append(value)
+    # add the SNR in H
+    stat_dict['Description'].append('Median SNR H')
+    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(med_snr_h, rms_snr_h)
+    stat_dict['Value'].append(value)
+    # --------------------------------------------------------------------------
+    # change the columns names
+    stat_dict2 = dict()
+    stat_dict2[title] = stat_dict['Description']
+    stat_dict2[' '] = stat_dict['Value']
+    # --------------------------------------------------------------------------
+    # convert to table
+    stat_table = Table(stat_dict2)
+    # write to file as csv file
+    stat_table.write(stat_path, format='ascii.csv', overwrite=True)
 
 
 def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
@@ -1581,6 +1714,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     vrad = lbl_props['vrad']
     svrad = lbl_props['svrad']
     snr_h = lbl_props['snr_h']
+    snr_h_label = lbl_props['SNR_H_LABEL']
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
@@ -1633,7 +1767,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
                        alpha=0.5, color='green', ls='None')
     frame[1].grid(which='both', color='lightgray', linestyle='--')
     frame[1].set(xlabel='Date')
-    frame[1].set(ylabel='EXTSN060')
+    frame[1].set(ylabel=snr_h_label)
     plt.tight_layout()
     # --------------------------------------------------------------------------
     # save figure and close the plot
