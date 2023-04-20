@@ -522,8 +522,8 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table[COUNT_COLS[0]] = [0] * len(object_table)
-    object_table['FIRST_RAW'] = [' ' * 25] * len(object_table)
-    object_table['LAST_RAW'] = [' ' * 25] * len(object_table)
+    object_table['FIRST_RAW'] = [None] * len(object_table)
+    object_table['LAST_RAW'] = [None] * len(object_table)
     object_table[COUNT_COLS[1]] = [0] * len(object_table)
     object_table[COUNT_COLS[2]] = [0] * len(object_table)
     object_table[COUNT_COLS[3]] = [0] * len(object_table)
