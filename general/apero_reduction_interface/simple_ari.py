@@ -1408,9 +1408,9 @@ class ObjectData:
         time_series_props = dict()
         # get labels
         snr_y_label = self.headers['EXT']['EXT_Y']['label']
-        snr_y_label = snr_y_label.replace('$\mu$', ' :math:`\mu`')
+        snr_y_label = snr_y_label.replace('$\mu$', 'u')
         snr_h_label = self.headers['EXT']['EXT_H']['label']
-        snr_h_label = snr_h_label.replace('$\mu$', ' :math:`\mu`')
+        snr_h_label = snr_h_label.replace('$\mu$', 'u')
         time_series_props['snr_y_label'] = snr_y_label
         time_series_props['snr_h_label'] = snr_h_label
         # get values for use in time series table
