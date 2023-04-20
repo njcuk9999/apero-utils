@@ -66,11 +66,11 @@ headers:
       timefmt: mjd
     EXT_Y:
       key: EXTSN015
-      label: 'EXT SNR[Order 15 (#134 1.082$\mu$m)]'
+      label: 'SNR[Order 15 (#134 1.08$\mu$m)]'
       dtype: float
     EXT_H:
       key: EXTSN060
-      label: 'EXT SNR[Order 60 (#89 1.629$\mu$m)]'
+      label: 'SNR[Order 60 (#89 1.63$\mu$m)]'
       dtype: float
     EXT_DPRTYPE:
       key: DPRTYPE
@@ -130,5 +130,5 @@ headers:
   LBL:
     EXT_H:
       key: EXTSN060
-      label: 'EXT SNR[Order 60 (#89 1.629$\mu$m)]'
+      label: 'SNR[Order 60 (#89 1.63$\mu$m)]'
       dtype: float
