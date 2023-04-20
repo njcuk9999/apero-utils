@@ -70,6 +70,10 @@ COUNT_COLS = ['RAW FILE  ',
               'p.fits    ']
 # header cols
 HEADER_COL = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p']
+# time series column names
+TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
+                    'Last obs mid', 'Number of obs', 'Seeing', 'Airmass',
+                    'Mean Exptime', 'Total Exptime', 'DPRTYPEs']
 # define chains (if this number is zero do not count)
 COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], COUNT_COLS[1], COUNT_COLS[2],
@@ -1234,6 +1238,8 @@ class ObjectData:
         self.lbl_combinations = lbl_objtmps.keys()
 
     def get_ccf_parameters(self):
+
+        from apero.core.math import normal_fraction
         # don't go here is lbl rdb files are not present
         if len(self.ccf_files) == 0:
             return
@@ -1272,14 +1278,20 @@ class ObjectData:
             # push into vector
             all_ccf[row] = ccf_row
         # -----------------------------------------------------------------
-        # y1 full is the min of all ccfs
-        ccf_props['y1_full'] = np.nanmin(all_ccf, axis=0)
-        # y2 full is the max of all ccfs
-        ccf_props['y2_full'] = np.nanmax(all_ccf, axis=0)
+        # get the 1 and 2 sigma limits
+        lower_sig1 = 100 * (0.5 - normal_fraction(1)/2)
+        upper_sig1 = 100 * (0.5 + normal_fraction(1)/2)
+        lower_sig2 = 100 * (0.5 - normal_fraction(2)/2)
+        upper_sig2 = 100 * (0.5 + normal_fraction(2)/2)
+        # -----------------------------------------------------------------
         # y1 1sig is the 15th percentile of all ccfs
-        ccf_props['y1_1sig'] = np.nanpercentile(all_ccf, 15, axis=0)
+        ccf_props['y1_1sig'] = np.nanpercentile(all_ccf, lower_sig1, axis=0)
         # y2 1sig is the 84th percentile of all ccfs
-        ccf_props['y2_1sig'] = np.nanpercentile(all_ccf, 84, axis=0)
+        ccf_props['y2_1sig'] = np.nanpercentile(all_ccf, upper_sig1, axis=0)
+        # y1 1sig is the 15th percentile of all ccfs
+        ccf_props['y1_2sig'] = np.nanpercentile(all_ccf, lower_sig2, axis=0)
+        # y2 1sig is the 84th percentile of all ccfs
+        ccf_props['y2_2sig'] = np.nanpercentile(all_ccf, upper_sig2, axis=0)
         # med ccf is the median ccf (50th percentile)
         ccf_props['med_ccf'] = np.nanmedian(all_ccf, axis=0)
         # delete all_ccf to save memeory
@@ -1325,20 +1337,16 @@ class ObjectData:
         time_series_props = dict()
         # get labels
         snr_y_label = self.headers['EXT']['EXT_Y']['label']
+        snr_y_label= snr_y_label.replace('$\mu$', ':math:`\mu')
         snr_h_label = self.headers['EXT']['EXT_H']['label']
+        snr_h_label= snr_h_label.replace('$\mu$', ':math:`\mu')
         time_series_props['snr_y_label'] = snr_y_label
         time_series_props['snr_h_label'] = snr_h_label
         # get values for use in time series table
-        time_series_props['Observation Directory'] = []
-        time_series_props['First observation'] = []
-        time_series_props['Last observation'] = []
-        time_series_props['Number of obs'] = []
-        time_series_props['Seeing'] = []
-        time_series_props['Airmass'] = []
-        time_series_props['Exposure time'] = []
+        for time_series_col in TIME_SERIES_COLS:
+            time_series_props[time_series_col] = []
         time_series_props[snr_y_label] = []
         time_series_props[snr_h_label] = []
-        time_series_props['DPRTYPE'] = []
         # get values from self.header_dict
         mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
         seeing_start_vec = np.array(self.header_dict['EXT_SEEING_START'])
@@ -1371,6 +1379,9 @@ class ObjectData:
             # get the mean exposure time
             exptime = np.mean(exptime_vec[obs_mask])
             exptime = np.round(exptime, 3)
+            # get the total exposure time
+            texptime = np.sum(exptime_vec[obs_mask])
+            texptime = np.round(texptime, 3)
             # get the mean snr_y
             snry = np.mean(snry_vec[obs_mask])
             snry = np.round(snry, 3)
@@ -1380,16 +1391,17 @@ class ObjectData:
             # get the dprtypes
             dprtype = ','.join(list(np.unique(dprtype_vec[obs_mask])))
             # append to the time series properties
-            time_series_props['Observation Directory'].append(obs_dir)
-            time_series_props['First observation'].append(first_mjd)
-            time_series_props['Last observation'].append(last_mjd)
-            time_series_props['Number of obs'].append(num_obs)
-            time_series_props['Seeing'].append(seeing)
-            time_series_props['Airmass'].append(airmass)
-            time_series_props['Exposure time'].append(exptime)
+            time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
+            time_series_props[TIME_SERIES_COLS[1]].append(first_mjd)
+            time_series_props[TIME_SERIES_COLS[2]].append(last_mjd)
+            time_series_props[TIME_SERIES_COLS[3]].append(num_obs)
+            time_series_props[TIME_SERIES_COLS[4]].append(seeing)
+            time_series_props[TIME_SERIES_COLS[5]].append(airmass)
+            time_series_props[TIME_SERIES_COLS[6]].append(exptime)
+            time_series_props[TIME_SERIES_COLS[7]].append(texptime)
             time_series_props[snr_y_label].append(snry)
             time_series_props[snr_h_label].append(snyh)
-            time_series_props['DPRTYPE'].append(dprtype)
+            time_series_props[TIME_SERIES_COLS[8]].append(dprtype)
         # -----------------------------------------------------------------
         # construct the stats
         # -----------------------------------------------------------------
@@ -1970,10 +1982,10 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     vrad = ccf_props['dv']
     svrad = ccf_props['sdv']
     rv_vec = ccf_props['rv_vec']
-    y1_full = ccf_props['y1_full']
-    y2_full = ccf_props['y2_full']
     y1_1sig = ccf_props['y1_1sig']
     y2_1sig = ccf_props['y2_1sig']
+    y1_2sig = ccf_props['y1_2sig']
+    y2_2sig = ccf_props['y2_2sig']
     med_ccf = ccf_props['med_ccf']
     has_fit = ccf_props['has_fit']
     fit = ccf_props['fit']
@@ -2030,10 +2042,10 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # mask by xlim
     limmask = (rv_vec > xlim[0]) & (rv_vec < xlim[1])
 
-    frame[1].fill_between(rv_vec[limmask], y1_full[limmask], y2_full[limmask],
+    frame[1].fill_between(rv_vec[limmask], y1_2sig[limmask], y2_2sig[limmask],
                           color='red', alpha=0.5)
     frame[1].fill_between(rv_vec[limmask], y1_1sig[limmask], y2_1sig[limmask],
-                          color='red', alpha=0.5)
+                          color='orange', alpha=0.5)
     frame[1].plot(rv_vec[limmask], med_ccf[limmask], alpha=1.0, color='black')
     if has_fit:
         frame[1].plot(rv_vec[limmask], fit[limmask], alpha=0.8,
@@ -2047,8 +2059,8 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # Bottom plot median CCF residuals
     # --------------------------------------------------------------------------
     if has_fit:
-        frame[2].fill_between(rv_vec[limmask], y1_full[limmask]-fit[limmask],
-                              y2_full[limmask]-fit[limmask], color='red',
+        frame[2].fill_between(rv_vec[limmask], y1_2sig[limmask]-fit[limmask],
+                              y2_2sig[limmask]-fit[limmask], color='red',
                               alpha=0.5, label='full envelope')
         frame[2].fill_between(rv_vec[limmask], y1_1sig[limmask]-fit[limmask],
                               y2_1sig[limmask]-fit[limmask], color='orange',
@@ -2126,9 +2138,9 @@ def time_series_stats_table(time_series_props: Dict[str, Any], stat_path: str):
     # construct the stats table
     # --------------------------------------------------------------------------
     # columns
-    columns = ['Observation Directory', 'First observation', 'Last observation',
-               'Number of obs', 'Seeing', 'Airmass', 'Exposure time',
-               snr_y_label, snr_h_label, 'DPRTYPE']
+    columns = TIME_SERIES_COLS[0:8]
+    columns += [snr_y_label, snr_h_label]
+    columns += [TIME_SERIES_COLS[8]]
     # --------------------------------------------------------------------------
     # push columns into table
     stat_table = Table()
