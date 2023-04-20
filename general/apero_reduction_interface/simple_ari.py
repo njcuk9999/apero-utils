@@ -1263,7 +1263,7 @@ class ObjectData:
             # loop around the
             for lblfilekey in LBL_STAT_FILES:
                 # construct the spefici obj_template file we are looking for
-                lblsfilet = LBL_STAT_FILES[lblsfile].format(lbl_objtmp)
+                lblsfilet = LBL_STAT_FILES[lblfilekey].format(lbl_objtmp)
                 # check that file is in file_dict
                 if lblsfilet in self.lbl_stat_bnames[lblfilekey]:
                     # find the file in lbl_stat_files
