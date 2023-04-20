@@ -1644,19 +1644,18 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     # setup the figure
     fig, frame = plt.subplots(1, 1, figsize=(12, 6))
     # set background color
-    frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
-    frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame.set_facecolor(PLOT_BACKGROUND_COLOR)
     # --------------------------------------------------------------------------
     # Top plot SNR Y
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
-    frame[0].plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
+    frame.plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
                        label=ext_y_label)
-    frame[0].plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
+    frame.plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
                        label=ext_h_label)
-    frame[0].legend(loc=0)
-    frame[0].grid(which='both', color='lightgray', ls='--')
-    frame[0].set(xlabel='Date', ylabel='EXT SNR')
+    frame.legend(loc=0)
+    frame.grid(which='both', color='lightgray', ls='--')
+    frame.set(xlabel='Date', ylabel='EXT SNR')
     # --------------------------------------------------------------------------
     # add title
     plt.suptitle(plot_title)
