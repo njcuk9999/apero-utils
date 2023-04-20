@@ -1295,7 +1295,7 @@ class ObjectData:
                     down_descs.append(lblfilekey)
             # compute the download table
             download_table(down_files, down_descs, item_path, down_rel_path,
-                           down_save_path, title='LBL Download')
+                           down_save_path, title='LBL Downloads')
             # -----------------------------------------------------------------
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
