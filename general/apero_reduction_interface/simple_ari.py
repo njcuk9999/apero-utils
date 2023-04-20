@@ -609,7 +609,7 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
         # ------------------------------------------------------------------
         # deal with getting the observation directories (For EXT files)
         # ------------------------------------------------------------------
-        obs_dirs = indexdbm.get_entries('KW_MID_OBS_TIME', condition=ext_cond)
+        obs_dirs = indexdbm.get_entries('OBS_DIR', condition=ext_cond)
         # get the observation directories
         file_dict[objname]['OBS_DIRS'] = obs_dirs
         # ------------------------------------------------------------------
@@ -2127,7 +2127,7 @@ def time_series_stats_table(time_series_props: Dict[str, Any], stat_path: str):
     # --------------------------------------------------------------------------
     # columns
     columns = ['Observation Directory', 'First observation', 'Last observation',
-               'Number of observations', 'Seeing', 'Airmass', 'Exposure time',
+               'Number of obs', 'Seeing', 'Airmass', 'Exposure time',
                snr_y_label, snr_h_label, 'DPRTYPE']
     # --------------------------------------------------------------------------
     # push columns into table
