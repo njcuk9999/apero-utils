@@ -601,8 +601,10 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
         if len(times) == 0:
             continue
         # find maximum time value and convert to human time
-        latest_time = Time(np.max(times), format='mjd')
-        object_table['LATEST_RAW'][pos] = latest_time.iso
+        last_time = Time(np.max(times), format='mjd')
+        first_time = Time(np.min(times), format='mjd')
+        object_table['LAST_RAW'][pos] = last_time
+        object_table['FIRST_RAW'][pos] = first_time
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
@@ -1000,8 +1002,10 @@ class ObjectData:
         self.tcorr_files = file_dict[objname].get(COUNT_COLS[3], [])
         self.ccf_files = file_dict[objname].get(COUNT_COLS[4], [])
         self.lbl_rdb_files = file_dict[objname].get('LBLRDB', [])
+        # mask for this object
+        objmask = object_table[OBJECT_COLUMN] == objname
         # get the object_table row for this object
-        self.object_table = object_table[object_table[OBJECT_COLUMN] == objname]
+        self.object_table = object_table[objmask]
         # ---------------------------------------------------------------------
         # get spectrum output parameters (for page integration)
         self.spec_plot_path = None
@@ -1103,6 +1107,14 @@ class ObjectData:
         spec_props['NUM_PP_FILES'] = len(self.pp_files)
         spec_props['NUM_EXT_FILES'] = len(self.ext_files)
         spec_props['NUM_TCORR_FILES'] = len(self.tcorr_files)
+        spec_props['FIRST_RAW'] = self.object_table['FIRST_RAW']
+        spec_props['LAST_RAW'] = self.object_table['LAST_RAW']
+        spec_props['FIRST_PP'] = Time(np.min(self.header_dict['mjd']))
+        spec_props['LAST_PP'] = Time(np.max(self.header_dict['mjd']))
+        spec_props['FIRST_EXT'] = Time(np.min(spec_props['mjd']))
+        spec_props['LAST_EXT'] = Time(np.max(spec_props['mjd']))
+        spec_props['FIRST_TCORR'] = Time(self.header_dict['TCORR_MJD'])
+        spec_props['LAST_TCORR'] = Time(self.header_dict['TCORR_MJD'])
         # -----------------------------------------------------------------
         # plot the figure
         # -----------------------------------------------------------------
@@ -1351,8 +1363,8 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # link back to the table
         # create a table page for this table
         table_ref_name = clean_name.lower() + '_' + TABLE_NAMES[0].lower()
-        table_ref_url = f':ref:`object table <{table_ref_name}>'
-        object_page.add_text(f'Back to the {table_ref_url} ')
+        table_ref_url = _make_url('object table', table_ref_name)
+        object_page.add_text(f'Back to the {table_ref_url}')
         object_page.add_newline()
         # ---------------------------------------------------------------------
         # table of contents
@@ -1360,10 +1372,10 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # Add the names of the sections
         names = ['Spectrum', 'LBL', 'CCF', 'Time series']
         # add the links to the pages
-        items = [f'spectrum_objpage_{objname}',
-                 f'lbl_objpage_{objname}',
-                 f'ccf_objpage_{objname}',
-                 f'timeseries_objpage_{objname}']
+        items = [f'spectrum_{clean_name}_objpage_{objname}',
+                 f'lbl_{clean_name}_objpage_{objname}',
+                 f'ccf_{clean_name}_objpage_{objname}',
+                 f'timeseries_{clean_name}_objpage_{objname}']
         # add table of contents
         object_page.add_table_of_contents(items=items, names=names)
         # ---------------------------------------------------------------------
@@ -1406,6 +1418,9 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # ---------------------------------------------------------------------
     # replace object name with the object name + object url
     object_table[OBJECT_COLUMN] = objurls
+    # remove the FIRST and LAST RAW column
+    object_table.remove_column('FIRST_RAW')
+    object_table.remove_column('LAST_RAW')
     # return the object table
     return object_table
 
@@ -1625,7 +1640,7 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     ext_h_label = spec_props['EXT_H_LABEL']
     # --------------------------------------------------------------------------
     # setup the figure
-    fig, frame = plt.subplots(2, 1, figsize=(12, 6))
+    fig, frame = plt.subplots(1, 1, figsize=(12, 6))
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
@@ -1634,19 +1649,12 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
     frame[0].plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
-                       color='green')
+                       label=ext_y_label)
+    frame[0].plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
+                       label=ext_h_label)
+    frame[0].legend(loc=0)
     frame[0].grid(which='both', color='lightgray', ls='--')
-    frame[0].set(xlabel='Date', ylabel=ext_y_label)
-
-    # --------------------------------------------------------------------------
-    # Bottom plot SNR H
-    # --------------------------------------------------------------------------
-    # # plot the CCF RV points
-    frame[1].plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
-                       color='green')
-    frame[1].grid(which='both', color='lightgray', ls='--')
-    frame[1].set(xlabel='Date', ylabel=ext_h_label)
-
+    frame[0].set(xlabel='Date', ylabel='EXT SNR')
     # --------------------------------------------------------------------------
     # add title
     plt.suptitle(plot_title)
@@ -1665,6 +1673,14 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     num_tcorr = spec_props['NUM_TCORR_FILES']
     ext_y = spec_props['EXT_Y']
     ext_h = spec_props['EXT_H']
+    first_raw = spec_props['FIRST_RAW']
+    last_raw = spec_props['LAST_RAW']
+    first_pp = spec_props['FIRST_PP']
+    last_pp = spec_props['LAST_PP']
+    first_ext = spec_props['FIRST_EXT']
+    last_ext = spec_props['LAST_EXT']
+    first_tcorr = spec_props['FIRST_TCORR']
+    last_tcorr = spec_props['LAST_TCORR']
     # --------------------------------------------------------------------------
     # Calculate stats
     # --------------------------------------------------------------------------
@@ -1680,17 +1696,17 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
     # add number of raw files
-    stat_dict['Description'].append('Number raw files')
-    stat_dict['Value'].append(num_raw)
+    stat_dict['Description'].append('Number raw files [first, last]')
+    stat_dict['Value'].append(f'{num_raw} [{first_raw}, {last_raw}]')
     # add number of pp files
-    stat_dict['Description'].append('Number pp files')
-    stat_dict['Value'].append(num_pp)
+    stat_dict['Description'].append('Number pp files [first, last]')
+    stat_dict['Value'].append(f'{num_pp} [{first_pp}, {last_pp}]')
     # add number of ext files
-    stat_dict['Description'].append('Number ext files')
-    stat_dict['Value'].append(num_ext)
+    stat_dict['Description'].append('Number ext files [first, last]')
+    stat_dict['Value'].append(f'{num_ext} [{first_ext}, {last_ext}]')
     # add number of tcorr files
-    stat_dict['Description'].append('Number tcorr files')
-    stat_dict['Value'].append(num_tcorr)
+    stat_dict['Description'].append('Number tcorr files [first, last]')
+    stat_dict['Value'].append(f'{num_tcorr} [{first_tcorr}, {last_tcorr}]')
     # add the SNR in Y
     stat_dict['Description'].append('Median SNR Y')
     value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(med_snr_y, rms_snr_y)

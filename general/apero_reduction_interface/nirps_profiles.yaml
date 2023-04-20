@@ -52,6 +52,11 @@ nirps ha V0.7.276 offline:
 # -----------------------------------------------------------------------------
 # Header keys
 headers:
+  PP:
+    key: MJDMID
+    label: MJD
+    dtype: float
+    timefmt: mjd
   EXT:
     EXT_MJDMID:
       key: MJDMID
@@ -82,6 +87,11 @@ headers:
       key: HIERARCH ESO TEL AIRM END
       label: Airmass at end
       dtype: float
+  TCORR:
+    key: MJDMID
+    label: MJD
+    dtype: float
+    timefmt: mjd
   CCF:
     CCF_MASK:
       key: CCFMASK
