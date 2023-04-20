@@ -13,11 +13,11 @@ settings:
   # whether to reset the working directory
   reset: True
   # whether to filter by objects
-  filter objects: True
+  filter objects: False
   # objects to filter by
   objects:
     - PROXIMA
-    # - GL699
+    - GL699
 
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)
