@@ -187,7 +187,8 @@ def get_settings(settings: Dict[str, Any],
     return param_settings
 
 
-def compile_stats(settings: dict, profile: dict, headers: dict) -> dict:
+def compile_stats(gsettings: dict, settings: dict, profile: dict,
+                  headers: dict) -> dict:
     """
     Compile the stats for a given profile
 
@@ -214,12 +215,12 @@ def compile_stats(settings: dict, profile: dict, headers: dict) -> dict:
         profile_stats[TABLE_NAMES[0]] = None
     else:
         # get the object table (astropy table)
-        object_table, filedict = compile_apero_object_table()
+        object_table, filedict = compile_apero_object_table(gsettings)
         # add the lbl count
         object_table, filedict = add_lbl_count(profile, object_table, filedict)
         # add the object pages
-        object_table= add_obj_pages(settings, profile, headers,
-                                    object_table, filedict)
+        object_table = add_obj_pages(settings, profile, headers,
+                                     object_table, filedict)
         # add final object table to profile stats
         profile_stats[TABLE_NAMES[0]] = object_table
     # ------------------------------------------------------------------
@@ -480,7 +481,7 @@ def upload_docs(gsettings: dict, settings: dict):
 FileDictReturn = Dict[str, Dict[str, List[str]]]
 
 
-def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
+def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     """
     Compile the apero object table
 
@@ -513,9 +514,17 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     astrodbm = drs_database.AstrometricDatabase(params)
     astrodbm.load_db()
     # ------------------------------------------------------------------
+    # deal with filtering by object
+    if gsettings['filter objects']:
+        cond_objs = ','.join(list(gsettings['objects']))
+        condition = f'OBJNAME={cond_objs}'
+    else:
+        condition = None
+    # ------------------------------------------------------------------
     # log that we are loading
     # get the object table from the astrometric database
-    object_table = astrodbm.get_entries(columns=','.join(ASTROMETRIC_COLUMNS))
+    object_table = astrodbm.get_entries(columns=','.join(ASTROMETRIC_COLUMNS),
+                                        condition=condition)
     # force columns to data types
     for itcol, col in enumerate(object_table):
         object_table[col] = np.array(object_table[col],
@@ -979,6 +988,7 @@ def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
     # return ccf props
     return sfiles
 
+
 def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
     """
     Fit the median CCF in order to plot the graph
@@ -1117,10 +1127,10 @@ class ObjectData:
             elif dtype == 'float' and timefmt is None and unit is None:
                 self.header_dict[keydict] = np.full(len(files), np.nan)
             elif unit is not None:
-                null_list = [np.nan]*len(files)
+                null_list = [np.nan] * len(files)
                 self.header_dict[keydict] = uu.Quantity(null_list, unit)
             else:
-                self.header_dict[keydict] = np.array([None]*len(files))
+                self.header_dict[keydict] = np.array([None] * len(files))
         # loop around files and populate the header_dict
         for pos, filename in enumerate(files):
             header = fits.getheader(filename)
@@ -1184,7 +1194,6 @@ class ObjectData:
         self.spec_plot_path = item_rel_path + plot_base_name
         self.spec_stats_table = item_rel_path + stat_base_name
         self.spec_dwn_table = None
-
 
     def get_lbl_parameters(self):
         """
@@ -1307,11 +1316,11 @@ class ObjectData:
         ccf_props = dict()
         # get values for use in plot
         ccf_props['mjd'] = Time(np.array(self.header_dict['CCF_MJDMID']))
-        dv_vec = self.header_dict['CCF_DV'].to(uu.m/uu.s).value
+        dv_vec = self.header_dict['CCF_DV'].to(uu.m / uu.s).value
         ccf_props['dv'] = np.array(dv_vec)
-        sdv_vec = self.header_dict['CCF_SDV'].to(uu.m/uu.s).value
+        sdv_vec = self.header_dict['CCF_SDV'].to(uu.m / uu.s).value
         ccf_props['sdv'] = np.array(sdv_vec)
-        fwhm_vec = self.header_dict['CCF_FWHM'].to(uu.m/uu.s).value
+        fwhm_vec = self.header_dict['CCF_FWHM'].to(uu.m / uu.s).value
         ccf_props['fwhm'] = np.array(fwhm_vec)
         ccf_props['masks'] = np.array(self.header_dict['CCF_MASK'])
         ccf_props['files'] = np.array(self.ccf_files)
@@ -1335,10 +1344,10 @@ class ObjectData:
             all_ccf[row] = ccf_row
         # -----------------------------------------------------------------
         # get the 1 and 2 sigma limits
-        lower_sig1 = 100 * (0.5 - normal_fraction(1)/2)
-        upper_sig1 = 100 * (0.5 + normal_fraction(1)/2)
-        lower_sig2 = 100 * (0.5 - normal_fraction(2)/2)
-        upper_sig2 = 100 * (0.5 + normal_fraction(2)/2)
+        lower_sig1 = 100 * (0.5 - normal_fraction(1) / 2)
+        upper_sig1 = 100 * (0.5 + normal_fraction(1) / 2)
+        lower_sig2 = 100 * (0.5 - normal_fraction(2) / 2)
+        upper_sig2 = 100 * (0.5 + normal_fraction(2) / 2)
         # -----------------------------------------------------------------
         # y1 1sig is the 15th percentile of all ccfs
         ccf_props['y1_1sig'] = np.nanpercentile(all_ccf, lower_sig1, axis=0)
@@ -1393,9 +1402,9 @@ class ObjectData:
         time_series_props = dict()
         # get labels
         snr_y_label = self.headers['EXT']['EXT_Y']['label']
-        snr_y_label= snr_y_label.replace('$\mu$', ' :math:`\mu`')
+        snr_y_label = snr_y_label.replace('$\mu$', ' :math:`\mu`')
         snr_h_label = self.headers['EXT']['EXT_H']['label']
-        snr_h_label= snr_h_label.replace('$\mu$', ' :math:`\mu`')
+        snr_h_label = snr_h_label.replace('$\mu$', ' :math:`\mu`')
         time_series_props['snr_y_label'] = snr_y_label
         time_series_props['snr_h_label'] = snr_h_label
         # get values for use in time series table
@@ -1506,8 +1515,8 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # get the object name for this row
         objname = objnames[it]
         # print progress
-        msg = f'\tCreating page for {objname} [{it+1} of {len(object_table)}]'
-        margs = [objname, it+1, len(object_table)]
+        msg = f'\tCreating page for {objname} [{it + 1} of {len(object_table)}]'
+        margs = [objname, it + 1, len(object_table)]
         wlog(params, '', msg.format(*margs))
         # create the object class
         object_instance = ObjectData(profile, settings, headers,
@@ -1519,7 +1528,7 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # ---------------------------------------------------------------------
         # generate url for object
         object_url = f'{clean_name}_{outdir}_{objname}_index'
-        objurls[it] =  _make_url(objname, object_url)
+        objurls[it] = _make_url(objname, object_url)
         # create ARI object page
         object_page = drs_markdown.MarkDownPage(object_url)
         # add title
@@ -1527,7 +1536,7 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # ---------------------------------------------------------------------
         # Add basic text
         # construct text to add
-        object_page.add_text(f'This page was last modified: {Time.now()}')
+        object_page.add_text(f'This page was last modified: {Time.now()} (UTC)')
         object_page.add_newline()
         # link back to the table
         # create a table page for this table
@@ -1817,9 +1826,9 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
     frame.plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
-                       label=ext_y_label)
+                    label=ext_y_label)
     frame.plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
-                       label=ext_h_label)
+                    label=ext_h_label)
     frame.legend(loc=0)
     frame.grid(which='both', color='lightgray', ls='--')
     frame.set(xlabel='Date', ylabel='EXT SNR')
@@ -1933,15 +1942,15 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01*x_range,
-                       head_length=0.25*l_arrow, alpha=0.5)
+                       color='red', head_width=0.01 * x_range,
+                       head_length=0.25 * l_arrow, alpha=0.5)
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01*x_range,
-                       head_length=0.25*l_arrow, alpha=0.5)
+                       color='red', head_width=0.01 * x_range,
+                       head_length=0.25 * l_arrow, alpha=0.5)
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
@@ -1975,7 +1984,7 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     rjd = lbl_props['rjd']
     vrad = lbl_props['vrad']
     svrad = lbl_props['svrad']
-    low =lbl_props['low']
+    low = lbl_props['low']
     high = lbl_props['high']
     vel_domain = lbl_props['ylim']
     # --------------------------------------------------------------------------
@@ -2079,15 +2088,15 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01*x_range,
-                       head_length=0.25*l_arrow, alpha=0.5)
+                       color='red', head_width=0.01 * x_range,
+                       head_length=0.25 * l_arrow, alpha=0.5)
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(mjd.plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01*x_range,
-                       head_length=0.25*l_arrow, alpha=0.5)
+                       color='red', head_width=0.01 * x_range,
+                       head_length=0.25 * l_arrow, alpha=0.5)
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].grid(which='both', color='lightgray', ls='--')
@@ -2115,13 +2124,13 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # Bottom plot median CCF residuals
     # --------------------------------------------------------------------------
     if has_fit:
-        frame[2].fill_between(rv_vec[limmask], y1_2sig[limmask]-fit[limmask],
-                              y2_2sig[limmask]-fit[limmask], color='red',
+        frame[2].fill_between(rv_vec[limmask], y1_2sig[limmask] - fit[limmask],
+                              y2_2sig[limmask] - fit[limmask], color='red',
                               alpha=0.5, label='full envelope')
-        frame[2].fill_between(rv_vec[limmask], y1_1sig[limmask]-fit[limmask],
-                              y2_1sig[limmask]-fit[limmask], color='orange',
+        frame[2].fill_between(rv_vec[limmask], y1_1sig[limmask] - fit[limmask],
+                              y2_1sig[limmask] - fit[limmask], color='orange',
                               alpha=0.5, label='1-$\sigma$')
-        frame[2].plot(rv_vec[limmask], med_ccf[limmask]-fit[limmask],
+        frame[2].plot(rv_vec[limmask], med_ccf[limmask] - fit[limmask],
                       alpha=0.8, label='Median residual')
         frame[2].legend(loc=0)
         frame[2].set(xlabel='RV [km/s]', ylabel='Residuals')
@@ -2142,7 +2151,6 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
 
 
 def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
-
     from apero.core.math import estimate_sigma
     # get parameters from props
     vrad = ccf_props['dv']
@@ -2446,21 +2454,21 @@ if __name__ == "__main__":
     # step 1: read the yaml file
     apero_profiles = read_yaml_file(profile_filename)
     # get global settings
-    gsettings = dict(apero_profiles['settings'])
+    ari_gsettings = dict(apero_profiles['settings'])
     header_settings = dict(apero_profiles['headers'])
     del apero_profiles['settings']
     del apero_profiles['headers']
     # deal with a reset
-    if gsettings['reset']:
+    if ari_gsettings['reset']:
         # remove working directory
-        shutil.rmtree(gsettings['working directory'], ignore_errors=True)
+        shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
     # loop around profiles from yaml file
     for apero_profile_name in apero_profiles:
         # sort out settings
-        ari_settings = get_settings(gsettings, apero_profile_name)
+        ari_settings = get_settings(ari_gsettings, apero_profile_name)
         # add profile name to settings
         apero_profiles[apero_profile_name]['profile name'] = apero_profile_name
         # we reprocess if the file does not exist or if REPROCESS is True
@@ -2472,8 +2480,8 @@ if __name__ == "__main__":
             # get profile
             apero_profile = apero_profiles[apero_profile_name]
             # compile stats
-            apero_stats = compile_stats(ari_settings, apero_profile,
-                                        header_settings)
+            apero_stats = compile_stats(ari_gsettings, ari_settings,
+                                        apero_profile, header_settings)
             # add to all_apero_stats
             all_apero_stats[apero_profile_name] = apero_stats
             # -----------------------------------------------------------------
@@ -2491,15 +2499,15 @@ if __name__ == "__main__":
             all_apero_stats[apero_profile_name] = apero_stats
     # ----------------------------------------------------------------------
     # sort out settings
-    ari_settings = get_settings(gsettings)
+    ari_settings = get_settings(ari_gsettings)
     # ----------------------------------------------------------------------
     # step 3: write markdown files
-    write_markdown(gsettings, ari_settings, all_apero_stats)
+    write_markdown(ari_gsettings, ari_settings, all_apero_stats)
     # ----------------------------------------------------------------------
     # step 4: compile sphinx files
     compile_docs(ari_settings)
     # ----------------------------------------------------------------------
     # step 5: upload to hosting
-    upload_docs(gsettings, ari_settings)
+    upload_docs(ari_gsettings, ari_settings)
 
 # =============================================================================

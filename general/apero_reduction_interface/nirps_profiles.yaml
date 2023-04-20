@@ -12,6 +12,11 @@ settings:
     options: ssh -oport=5822
   # whether to reset the working directory
   reset: True
+  # whether to filter by objects
+  filter objects: True
+  # objects to filter by
+  objects:
+    - PROXIMA
 
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)
