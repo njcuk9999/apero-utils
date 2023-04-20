@@ -522,7 +522,8 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
     # ------------------------------------------------------------------
     # add counting columns to the object table
     object_table[COUNT_COLS[0]] = [0] * len(object_table)
-    object_table['LATEST_RAW'] = [' ' * 25] * len(object_table)
+    object_table['FIRST_RAW'] = [' ' * 25] * len(object_table)
+    object_table['LAST_RAW'] = [' ' * 25] * len(object_table)
     object_table[COUNT_COLS[1]] = [0] * len(object_table)
     object_table[COUNT_COLS[2]] = [0] * len(object_table)
     object_table[COUNT_COLS[3]] = [0] * len(object_table)
@@ -600,11 +601,12 @@ def compile_apero_object_table() -> Tuple[Table, FileDictReturn]:
         # if there are no entries we have no raw files for this object
         if len(times) == 0:
             continue
+        # find minimum time value and convert to human time
+        first_time = Time(np.min(times), format='mjd')
+        object_table['FIRST_RAW'][pos] = first_time
         # find maximum time value and convert to human time
         last_time = Time(np.max(times), format='mjd')
-        first_time = Time(np.min(times), format='mjd')
         object_table['LAST_RAW'][pos] = last_time
-        object_table['FIRST_RAW'][pos] = first_time
         # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
