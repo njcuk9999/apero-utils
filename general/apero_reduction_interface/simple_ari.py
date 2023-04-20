@@ -1307,9 +1307,12 @@ class ObjectData:
         ccf_props = dict()
         # get values for use in plot
         ccf_props['mjd'] = Time(np.array(self.header_dict['CCF_MJDMID']))
-        ccf_props['dv'] = np.array(self.header_dict['CCF_DV'].to(uu.m/uu.s))
-        ccf_props['sdv'] = np.array(self.header_dict['CCF_SDV'].to(uu.m/uu.s).value)
-        ccf_props['fwhm'] = np.array(self.header_dict['CCF_FWHM'].to(uu.m/uu.s).value)
+        dv_vec = self.header_dict['CCF_DV'].to(uu.m/uu.s).value
+        ccf_props['dv'] = np.array(dv_vec)
+        sdv_vec = self.header_dict['CCF_SDV'].to(uu.m/uu.s).value
+        ccf_props['sdv'] = np.array(sdv_vec)
+        fwhm_vec = self.header_dict['CCF_FWHM'].to(uu.m/uu.s).value
+        ccf_props['fwhm'] = np.array(fwhm_vec)
         ccf_props['masks'] = np.array(self.header_dict['CCF_MASK'])
         ccf_props['files'] = np.array(self.ccf_files)
         # -----------------------------------------------------------------
