@@ -38,6 +38,8 @@ LOG_COLUMNS = ['SHORTNAME', 'RUNSTRING', 'START_TIME', 'END_TIME',
 HAS_POLAR = dict(SPIROU=True, NIRPS_HE=False, NIRPS_HA=False)
 # define log levels to report
 LOG_LEVELS = ['error', 'warning']
+# list tables to load
+TABLE_NAMES = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
 # define whether to reprocess stats
 REPROCESS = True
 # Define output path
@@ -197,9 +199,9 @@ def compile_stats(settings: dict, profile: dict, headers: dict) -> dict:
     # ------------------------------------------------------------------
     # deal with skipping object table
     if skip_obj_table and os.path.exists(object_table_file):
-        profile_stats['OBJECT_TABLE'] = Table.read(object_table_file)
+        profile_stats[TABLE_NAMES[0]] = Table.read(object_table_file)
     elif skip_obj_table:
-        profile_stats['OBJECT_TABLE'] = None
+        profile_stats[TABLE_NAMES[0]] = None
     else:
         # get the object table (astropy table)
         object_table, filedict = compile_apero_object_table()
@@ -209,25 +211,25 @@ def compile_stats(settings: dict, profile: dict, headers: dict) -> dict:
         object_table= add_obj_pages(settings, profile, headers,
                                     object_table, filedict)
         # add final object table to profile stats
-        profile_stats['OBJECT_TABLE'] = object_table
+        profile_stats[TABLE_NAMES[0]] = object_table
     # ------------------------------------------------------------------
     # deal with skipping recipe table
     if skip_recipe_table and os.path.exists(recipe_table_file):
-        profile_stats['RECIPE_TABLE'] = Table.read(recipe_table_file)
+        profile_stats[TABLE_NAMES[1]] = Table.read(recipe_table_file)
     elif skip_recipe_table:
-        profile_stats['RECIPE_TABLE'] = None
+        profile_stats[TABLE_NAMES[1]] = None
     else:
         # get the recipe log table
-        profile_stats['RECIPE_TABLE'] = compile_apero_recipe_table()
+        profile_stats[TABLE_NAMES[1]] = compile_apero_recipe_table()
     # ------------------------------------------------------------------
     # deal with skipping message table
     if skip_msg_table and os.path.exists(message_table_file):
-        profile_stats['MESSAGE_TABLE'] = Table.read(message_table_file)
+        profile_stats[TABLE_NAMES[2]] = Table.read(message_table_file)
     elif skip_msg_table:
-        profile_stats['MESSAGE_TABLE'] = None
+        profile_stats[TABLE_NAMES[2]] = None
     else:
         # get the message log table
-        profile_stats['MESSAGE_TABLE'] = compile_apero_message_table()
+        profile_stats[TABLE_NAMES[2]] = compile_apero_message_table()
     # ------------------------------------------------------------------
     # return the profile stats
     return profile_stats
@@ -256,8 +258,6 @@ def update_apero_profile(profile: dict):
 
 def write_markdown(gsettings: dict, settings: dict, stats: dict):
     from apero.tools.module.documentation import drs_markdown
-    # list tables to load
-    tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
     # -------------------------------------------------------------------------
     # step 1: write a page with all the different possible profiles in a
     #         sphinx table of contents
@@ -302,6 +302,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         settings = get_settings(gsettings, profile_name)
         # get the reference name
         cprofile_name = settings['CPN']
+        settings['TABLE_REFS'] = dict()
         # create a page
         profile_page = drs_markdown.MarkDownPage(cprofile_name)
         # add title
@@ -309,7 +310,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         # store the reference name for profile page table of contents
         table_files = []
         # loop around tables
-        for table_name in tables:
+        for table_name in TABLE_NAMES:
             # get table
             table = stats[profile_name][table_name]
             # create a table page for this table
@@ -1309,7 +1310,6 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
     wlog = drs_log.wlog
     # ------------------------------------------------------------------
     # get the parameters for lbl website url
-    instrument = settings['INSTRUMENT']
     outdir = os.path.basename(settings['OBJ_OUT'])
     # get the profile name
     name = profile['profile name']
@@ -1321,7 +1321,7 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
     # print progress
     wlog(params, 'info', 'Creating object pages')
     # change the object column to a url
-    for it, row in tqdm(enumerate(object_table)):
+    for it, row in enumerate(object_table):
         # get the object name for this row
         objname = objnames[it]
         # print progress
@@ -1347,6 +1347,12 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
         # Add basic text
         # construct text to add
         object_page.add_text(f'This page was last modified: {Time.now()}')
+        object_page.add_newline()
+        # link back to the table
+        # create a table page for this table
+        table_ref_name = clean_name.lower() + '_' + TABLE_NAMES[0].lower()
+        table_ref_url = f':ref:`object table <{table_ref_name}>'
+        object_page.add_text(f'Back to the {table_ref_url} ')
         object_page.add_newline()
         # ---------------------------------------------------------------------
         # table of contents
