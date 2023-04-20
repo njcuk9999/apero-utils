@@ -1763,19 +1763,18 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(plot_date[low], dtype=float)
-    ypoints = np.array(vrad[low], dtype=float)
+    x_range = np.nanmax(xpoints) - np.nanmin(xpoints)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.1, head_length=0.25*l_arrow,
-                       alpha=0.5)
+                       color='red', head_width=0.01*x_range,
+                       head_length=0.25*l_arrow, alpha=0.5)
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(plot_date[high], dtype=float)
-    ypoints = np.array(vrad[high], dtype=float)
     for ix in range(len(xpoints)):
         frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.1, head_length=0.25*l_arrow,
-                       alpha=0.5)
+                       color='red', head_width=0.01*x_range,
+                       head_length=0.25*l_arrow, alpha=0.5)
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
@@ -1869,8 +1868,8 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
 def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # get parameters from props
     mjd = ccf_props['mjd']
-    dv = ccf_props['dv']
-    sdv = ccf_props['sdv']
+    vrad = ccf_props['dv']
+    svrad = ccf_props['sdv']
     rv_vec = ccf_props['rv_vec']
     y1_full = ccf_props['y1_full']
     y2_full = ccf_props['y2_full']
@@ -1892,11 +1891,38 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # Top plot CCF RV
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
-    frame[0].plot_date(mjd.plot_date, dv, fmt='.', alpha=0.5,
+    frame[0].plot_date(mjd.plot_date, vrad, fmt='.', alpha=0.5,
                        color='green')
     # plot the CCF RV errors
-    frame[0].errorbar(mjd.plot_date, dv, yerr=sdv, fmt='o',
+    frame[0].errorbar(mjd.plot_date, vrad, yerr=svrad, fmt='o',
                       alpha=0.5, color='green')
+    # find percentile cuts that will be expanded by 150% for the ylim
+    pp = np.nanpercentile(vrad, [10, 90])
+    diff = pp[1] - pp[0]
+    central_val = np.nanmean(pp)
+    # used for plotting but also for the flagging of outliers
+    ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
+    # length of the arrow flagging outliers
+    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    # flag the low outliers
+    low = vrad < ylim[0]
+    # get the x and y values of the outliers to be looped over within
+    # the arrow plotting
+    xpoints = np.array(mjd.plot_date[low], dtype=float)
+    x_range = np.nanmax(xpoints) - np.nanmin(xpoints)
+    for ix in range(len(xpoints)):
+        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+                       color='red', head_width=0.01*x_range,
+                       head_length=0.25*l_arrow, alpha=0.5)
+    # same as above for the high outliers
+    high = vrad > ylim[1]
+    xpoints = np.array(mjd.plot_date[high], dtype=float)
+    for ix in range(len(xpoints)):
+        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+                       color='red', head_width=0.01*x_range,
+                       head_length=0.25*l_arrow, alpha=0.5)
+    # setting the plot
+    frame[0].set(ylim=ylim)
     frame[0].grid(which='both', color='lightgray', ls='--')
     frame[0].set(xlabel='Date', ylabel='Velocity [m/s]')
     # --------------------------------------------------------------------------
