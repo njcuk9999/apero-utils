@@ -1096,8 +1096,8 @@ class ObjectData:
         spec_props['mjd'] = Time(np.array(self.header_dict['EXT_MJDMID']))
         spec_props['EXT_Y'] = np.array(self.header_dict['EXT_Y'])
         spec_props['EXT_H'] = np.array(self.header_dict['EXT_H'])
-        spec_props['EXT_Y_LABEL'] = self.headers['EXT_Y']['label']
-        spec_props['EXT_H_LABEL'] = self.headers['EXT_H']['label']
+        spec_props['EXT_Y_LABEL'] = self.headers['EXT']['EXT_Y']['label']
+        spec_props['EXT_H_LABEL'] = self.headers['EXT']['EXT_H']['label']
         spec_props['NUM_RAW_FILES'] = len(self.raw_files)
         spec_props['NUM_PP_FILES'] = len(self.pp_files)
         spec_props['NUM_EXT_FILES'] = len(self.ext_files)
