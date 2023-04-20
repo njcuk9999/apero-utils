@@ -1113,8 +1113,8 @@ class ObjectData:
         spec_props['LAST_RAW'] = self.object_table['LAST_RAW']
         spec_props['FIRST_PP'] = Time(np.min(self.header_dict['PP_MJDMID']))
         spec_props['LAST_PP'] = Time(np.max(self.header_dict['PP_MJDMID']))
-        spec_props['FIRST_EXT'] = Time(np.min(spec_props['EXT_MJDMID']))
-        spec_props['LAST_EXT'] = Time(np.max(spec_props['EXT_MJDMID']))
+        spec_props['FIRST_EXT'] = Time(np.min(self.header_dict['EXT_MJDMID']))
+        spec_props['LAST_EXT'] = Time(np.max(self.header_dict['EXT_MJDMID']))
         spec_props['FIRST_TCORR'] = Time(self.header_dict['TCORR_MJD'])
         spec_props['LAST_TCORR'] = Time(self.header_dict['TCORR_MJD'])
         # -----------------------------------------------------------------
