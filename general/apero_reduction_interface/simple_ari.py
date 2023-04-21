@@ -1890,13 +1890,15 @@ def create_file_list(files: List[str], path: str):
     """
     Writes a list of files to disk
     """
+    # if file exists remove it
+    if os.path.exists(path):
+        os.remove(path)
     # open file
     with open(path, 'w') as filelist:
         # loop around files
         for filename in files:
             # write to file
             filelist.write(filename + '\n')
-
 
 
 def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
