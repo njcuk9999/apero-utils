@@ -2205,9 +2205,9 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     limmask = (rv_vec > xlim[0]) & (rv_vec < xlim[1])
 
     frame[1].fill_between(rv_vec[limmask], y1_2sig[limmask], y2_2sig[limmask],
-                          color='red', alpha=0.5)
+                          color='yellow', alpha=1.0)
     frame[1].fill_between(rv_vec[limmask], y1_1sig[limmask], y2_1sig[limmask],
-                          color='orange', alpha=0.5)
+                          color='red', alpha=0.5)
     frame[1].plot(rv_vec[limmask], med_ccf[limmask], alpha=1.0, color='black')
     if has_fit:
         frame[1].plot(rv_vec[limmask], fit[limmask], alpha=0.8,
@@ -2222,10 +2222,10 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # --------------------------------------------------------------------------
     if has_fit:
         frame[2].fill_between(rv_vec[limmask], y1_2sig[limmask] - fit[limmask],
-                              y2_2sig[limmask] - fit[limmask], color='red',
-                              alpha=0.5, label='2-$\sigma$')
+                              y2_2sig[limmask] - fit[limmask], color='yellow',
+                              alpha=1.0, label='2-$\sigma$')
         frame[2].fill_between(rv_vec[limmask], y1_1sig[limmask] - fit[limmask],
-                              y2_1sig[limmask] - fit[limmask], color='orange',
+                              y2_1sig[limmask] - fit[limmask], color='red',
                               alpha=0.5, label='1-$\sigma$')
         frame[2].plot(rv_vec[limmask], med_ccf[limmask] - fit[limmask],
                       alpha=0.8, label='Median residual')
