@@ -544,6 +544,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # Deal with object pages
     # ------------------------------------------------------------------
     # add counting columns to the object table
+    object_table['DPRTYPES'] = [None] * len(object_table)
     object_table[COUNT_COLS[0]] = [0] * len(object_table)
     object_table['FIRST_RAW'] = [None] * len(object_table)
     object_table['LAST_RAW'] = [None] * len(object_table)
@@ -619,7 +620,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
         # ------------------------------------------------------------------
         # Add a dpr type column
         dprtypes = indexdbm.get_entries('KW_DPRTYPE', condition=ext_cond)
-        file_dict[objname]['DRPTYPEs'] = ','.join(list(np.unique(dprtypes)))
+        object_table['DRPTYPES'][pos] = ','.join(list(np.unique(dprtypes)))
         # ------------------------------------------------------------------
         # deal with finding the first and last raw file
         # ------------------------------------------------------------------
