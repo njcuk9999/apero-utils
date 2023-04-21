@@ -1229,7 +1229,7 @@ class ObjectData:
         # update the paths
         self.spec_plot_path = item_rel_path + plot_base_name
         self.spec_stats_table = item_rel_path + stat_base_name
-        self.spec_dwn_table = None
+        self.spec_dwn_table = item_rel_path + dwn_base_name
 
     def get_lbl_parameters(self):
         """
@@ -1434,7 +1434,7 @@ class ObjectData:
         # update the paths
         self.ccf_plot_path = item_rel_path + plot_base_name
         self.ccf_stats_table = item_rel_path + stat_base_name
-        self.ccf_dwn_table = None
+        self.ccf_dwn_table = item_rel_path + dwn_base_name
 
     def get_time_series_parameters(self):
         # don't go here is lbl rdb files are not present
