@@ -617,6 +617,10 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
             polar_cond = None
             p_cond = None
         # ------------------------------------------------------------------
+        # Add a dpr type column
+        dprtypes = indexdbm.get_entries('KW_DPR_TYPE', condition=ext_cond)
+        file_dict[objname]['DRPTYPEs'] = ','.join(list(np.unique(dprtypes)))
+        # ------------------------------------------------------------------
         # deal with finding the first and last raw file
         # ------------------------------------------------------------------
         times = indexdbm.get_entries('KW_MID_OBS_TIME', condition=raw_cond)
