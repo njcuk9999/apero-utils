@@ -1869,6 +1869,9 @@ def download_table(files: List[str], descriptions: List[str],
         # add the rdb file
         down_dict['Description'].append(descs[basename])
         down_dict['Value'].append(_make_download(basename, ref_paths[basename]))
+        # remove files that exist
+        if os.path.exists(out_paths[basename]):
+            os.remove(out_paths[basename])
         # copy the file from in path to out path
         shutil.copy(in_paths[basename], out_paths[basename])
     # --------------------------------------------------------------------------
