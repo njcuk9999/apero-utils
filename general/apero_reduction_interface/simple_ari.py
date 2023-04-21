@@ -1469,6 +1469,8 @@ class ObjectData:
             time_series_props[time_series_col] = []
         time_series_props[snr_y_label] = []
         time_series_props[snr_h_label] = []
+        time_series_props[ext_col] = []
+        time_series_props[tcorr_col] = []
         # get values from self.header_dict
         mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
         seeing_vec = np.array(self.header_dict['EXT_SEEING'])
