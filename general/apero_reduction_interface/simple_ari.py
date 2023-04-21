@@ -620,7 +620,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
         # ------------------------------------------------------------------
         # Add a dpr type column
         dprtypes = indexdbm.get_entries('KW_DPRTYPE', condition=ext_cond)
-        object_table['DRPTYPES'][pos] = ','.join(list(np.unique(dprtypes)))
+        object_table['DPRTYPES'][pos] = ','.join(list(np.unique(dprtypes)))
         # ------------------------------------------------------------------
         # deal with finding the first and last raw file
         # ------------------------------------------------------------------
