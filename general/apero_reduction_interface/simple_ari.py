@@ -544,7 +544,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # Deal with object pages
     # ------------------------------------------------------------------
     # add counting columns to the object table
-    object_table['DPRTYPES'] = [None] * len(object_table)
+    object_table['DPRTYPES'] = [' '*255] * len(object_table)
     object_table[COUNT_COLS[0]] = [0] * len(object_table)
     object_table['FIRST_RAW'] = [None] * len(object_table)
     object_table['LAST_RAW'] = [None] * len(object_table)
