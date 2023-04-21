@@ -1203,6 +1203,29 @@ class ObjectData:
         # compute the stats
         spec_stats_table(spec_props, stat_path, title='Spectrum stats')
         # -----------------------------------------------------------------
+        # Create the file lists for this object
+        # -----------------------------------------------------------------
+        # construct the save path for ext files
+        ext_file = os.path.join(down_save_path, 'ext_file_list.txt')
+        create_file_list(self.ext_files, ext_file)
+        # construct the save path for the tcorr files
+        tcorr_file = os.path.join(down_save_path, 'tcorr_file_list.txt')
+        create_file_list(self.tcorr_files, tcorr_file)
+        # -----------------------------------------------------------------
+        # construct the download table
+        # -----------------------------------------------------------------
+        # get the download base name
+        dwn_base_name = 'spec_download_' + self.objname + '.txt'
+        # get the download table path
+        item_path = os.path.join(item_save_path, dwn_base_name)
+        # define the download files
+        down_files = [ext_file, tcorr_file]
+        # define the download descriptions
+        down_descs = ['Extracted 2D spectra', 'Telluric corrected 2D spectra']
+        # compute the download table
+        download_table(down_files, down_descs, item_path, down_rel_path,
+                       down_save_path, title='Spectrum Downloads')
+        # -----------------------------------------------------------------
         # update the paths
         self.spec_plot_path = item_rel_path + plot_base_name
         self.spec_stats_table = item_rel_path + stat_base_name
@@ -1388,6 +1411,26 @@ class ObjectData:
         # compute the stats
         ccf_stats_table(ccf_props, stat_path, title='CCF stats')
         # -----------------------------------------------------------------
+        # Create the file lists for this object
+        # -----------------------------------------------------------------
+        # construct the save path for ccf files
+        ccf_file = os.path.join(down_save_path, 'ccf_file_list.txt')
+        create_file_list(self.ccf_files, ccf_file)
+        # -----------------------------------------------------------------
+        # construct the download table
+        # -----------------------------------------------------------------
+        # get the download base name
+        dwn_base_name = 'ccf_download_' + self.objname + '.txt'
+        # get the download table path
+        item_path = os.path.join(item_save_path, dwn_base_name)
+        # define the download files
+        down_files = [ccf_file]
+        # define the download descriptions
+        down_descs = ['CCF Table']
+        # compute the download table
+        download_table(down_files, down_descs, item_path, down_rel_path,
+                       down_save_path, title='CCF Downloads')
+        # -----------------------------------------------------------------
         # update the paths
         self.ccf_plot_path = item_rel_path + plot_base_name
         self.ccf_stats_table = item_rel_path + stat_base_name
@@ -1411,8 +1454,16 @@ class ObjectData:
         snr_y_label = snr_y_label.replace('$\mu$', 'u')
         snr_h_label = self.headers['EXT']['EXT_H']['label']
         snr_h_label = snr_h_label.replace('$\mu$', 'u')
-        time_series_props['snr_y_label'] = snr_y_label
-        time_series_props['snr_h_label'] = snr_h_label
+        ext_col = 'ext_files'
+        tcorr_col = 'tcorr_files'
+        # ---------------------------------------------------------------------
+        # construct the stats table
+        # ---------------------------------------------------------------------
+        # columns
+        time_series_props['columns'] = TIME_SERIES_COLS[0:8]
+        time_series_props['columns'] += [snr_y_label, snr_h_label]
+        time_series_props['columns'] += [TIME_SERIES_COLS[8]]
+        time_series_props['columns'] += [ext_col, tcorr_col]
         # get values for use in time series table
         for time_series_col in TIME_SERIES_COLS:
             time_series_props[time_series_col] = []
@@ -1436,27 +1487,46 @@ class ObjectData:
             first_mjd = Time(np.min(mjd_vec[obs_mask])).iso
             last_mjd = Time(np.max(mjd_vec[obs_mask])).iso
             # get the number of observations for this observation
-            num_obs = np.sum(obs_mask)
+            num_obs = str(np.sum(obs_mask))
             # get the seeing for this observation directory
             seeing = np.mean(seeing_vec[obs_mask])
-            seeing = np.round(seeing, 3)
+            seeing = '{:.3f}'.format(seeing)
             # get the airmass for this observation directory
             airmass = np.mean(airmass_vec[obs_mask])
-            airmass = np.around(airmass, 3)
+            airmass = '{:.3f}'.format(airmass)
             # get the mean exposure time
             exptime = np.mean(exptime_vec[obs_mask])
-            exptime = np.round(exptime, 3)
+            exptime =  '{:.3f}'.format(exptime)
             # get the total exposure time
             texptime = np.sum(exptime_vec[obs_mask])
-            texptime = np.round(texptime, 3)
+            texptime = '{:.3f}'.format(texptime)
             # get the mean snr_y
             snry = np.mean(snry_vec[obs_mask])
-            snry = np.round(snry, 3)
+            snry = '{:.3f}'.format(snry)
             # get the mean snr_h
             snyh = np.mean(snyh_vec[obs_mask])
-            snyh = np.round(snyh, 3)
+            snyh = '{:.3f}'.format(snyh)
             # get the dprtypes
             dprtype = ','.join(list(np.unique(dprtype_vec[obs_mask])))
+            # -----------------------------------------------------------------
+            # Create the ext and tellu for this object
+            # -----------------------------------------------------------------
+            # -----------------------------------------------------------------
+            # Create the file lists for this object
+            # -----------------------------------------------------------------
+            # construct the save path for ext files
+            ext_file = f'ext_file_list_{obs_dir}_{self.objname}.txt'
+            ext_path = os.path.join(down_save_path, ext_file)
+            create_file_list(self.ext_files, ext_path)
+            ext_download = _make_download('[download]', ext_path)
+            ext_value = f'{len(self.ext_files)} {ext_download}'
+            # construct the save path for the tcorr files
+            tcorr_file = f'tcorr_file_list_{obs_dir}_{self.objname}.txt'
+            tcorr_path = os.path.join(down_save_path, tcorr_file)
+            create_file_list(self.tcorr_files, tcorr_path)
+            tcorr_download = _make_download('[download]', tcorr_path)
+            tcorr_value = f'{len(self.tcorr_files)} {tcorr_download}'
+            # -----------------------------------------------------------------
             # append to the time series properties
             time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
             time_series_props[TIME_SERIES_COLS[1]].append(first_mjd)
@@ -1469,6 +1539,8 @@ class ObjectData:
             time_series_props[snr_y_label].append(snry)
             time_series_props[snr_h_label].append(snyh)
             time_series_props[TIME_SERIES_COLS[8]].append(dprtype)
+            time_series_props[ext_col].append(ext_value)
+            time_series_props[tcorr_col].append(tcorr_value)
         # -----------------------------------------------------------------
         # construct the stats
         # -----------------------------------------------------------------
@@ -1809,6 +1881,19 @@ def download_table(files: List[str], descriptions: List[str],
     down_table = Table(down_dict2)
     # write to file as csv file
     down_table.write(item_path, format='ascii.csv', overwrite=True)
+
+
+def create_file_list(files: List[str], path: str):
+    """
+    Writes a list of files to disk
+    """
+    # open file
+    with open(path, 'w') as filelist:
+        # loop around files
+        for filename in files:
+            # write to file
+            filelist.write(filename + '\n')
+
 
 
 def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
@@ -2198,15 +2283,7 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
 
 def time_series_stats_table(time_series_props: Dict[str, Any], stat_path: str):
     # get parameters from props
-    snr_y_label = time_series_props['snr_y_label']
-    snr_h_label = time_series_props['snr_h_label']
-    # --------------------------------------------------------------------------
-    # construct the stats table
-    # --------------------------------------------------------------------------
-    # columns
-    columns = TIME_SERIES_COLS[0:8]
-    columns += [snr_y_label, snr_h_label]
-    columns += [TIME_SERIES_COLS[8]]
+    columns = time_series_props['columns']
     # --------------------------------------------------------------------------
     # push columns into table
     stat_table = Table()
