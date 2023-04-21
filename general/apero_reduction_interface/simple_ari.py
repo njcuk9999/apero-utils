@@ -1513,21 +1513,25 @@ class ObjectData:
             # -----------------------------------------------------------------
             # Create the ext and tellu for this object
             # -----------------------------------------------------------------
+            ext_files = np.array(self.ext_files)[obs_mask]
+            tcorr_files = np.array(self.tcorr_files)[obs_mask]
             # -----------------------------------------------------------------
             # Create the file lists for this object
             # -----------------------------------------------------------------
             # construct the save path for ext files
             ext_file = f'ext_file_list_{obs_dir}_{self.objname}.txt'
             ext_path = os.path.join(down_save_path, ext_file)
-            create_file_list(self.ext_files, ext_path)
-            ext_download = _make_download('[download]', ext_path)
-            ext_value = f'{len(self.ext_files)} {ext_download}'
+            ext_rel_path = os.path.join(down_rel_path, ext_file)
+            create_file_list(ext_files, ext_path)
+            ext_download = _make_download('[download]', ext_rel_path)
+            ext_value = f'{len(ext_files)} {ext_download}'
             # construct the save path for the tcorr files
             tcorr_file = f'tcorr_file_list_{obs_dir}_{self.objname}.txt'
             tcorr_path = os.path.join(down_save_path, tcorr_file)
-            create_file_list(self.tcorr_files, tcorr_path)
-            tcorr_download = _make_download('[download]', tcorr_path)
-            tcorr_value = f'{len(self.tcorr_files)} {tcorr_download}'
+            tcorr_rel_path = os.path.join(down_rel_path, tcorr_file)
+            create_file_list(tcorr_files, tcorr_path)
+            tcorr_download = _make_download('[download]', tcorr_rel_path)
+            tcorr_value = f'{len(tcorr_files)} {tcorr_download}'
             # -----------------------------------------------------------------
             # append to the time series properties
             time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
