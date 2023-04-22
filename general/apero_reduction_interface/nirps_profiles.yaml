@@ -118,7 +118,7 @@ headers:
     CCF_SDV:
       key: DVRMS_CC
       label: CCF RV Error
-      unit: km/s
+      unit: m/s
       dtype: float
     CCF_FWHM:
       key: CCFMFWHM
