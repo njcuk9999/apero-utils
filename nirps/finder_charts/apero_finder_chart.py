@@ -1,13 +1,25 @@
 import argparse
-from typing import Any
+from typing import Dict, List, Tuple
+from dateutil.parser import parse
 
+import matplotlib.pyplot as plt
+import numpy as np
+from astropy import units as uu
+from astropy.coordinates import SkyCoord, Distance
 from astropy.table import Table
+from astropy.time import Time
+from astroquery.utils.tap.core import TapPlus
+from astropy.visualization import ImageNormalize
+from astropy.visualization import ZScaleInterval, SqrtStretch
+from astropy.wcs import WCS
+from photutils.datasets import make_gaussian_sources_image
+from photutils.psf import IntegratedGaussianPRF
 
 from apero import lang
 from apero.core import constants
 from apero.core.utils import drs_startup
 from apero.core.core import drs_log
-from apero.tools.module.database import manage_databases
+from apero.core.core import drs_database
 
 
 # =============================================================================
@@ -15,6 +27,38 @@ from apero.tools.module.database import manage_databases
 # =============================================================================
 # get WLOG
 WLOG = drs_log.wlog
+# columns
+ASTROM_COLS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'PMRA', 'PMDE', 'PLX', 'RV',
+               'EPOCH']
+# List of surveys to plot
+SURVEYS = dict()
+SURVEYS['DSS'] = ['DSS']
+SURVEYS['2MASS'] = ['2MASS-J', '2MASS-H', '2MASS-K']
+# define the time in years before and after "obs date" to plot trail for
+DTMIN = -30
+DTMAX = 30
+DTVAL = 10
+# Define the thumbnail image size
+RADIUS = 5 * uu.arcmin
+
+# URL for Gaia
+GAIA_URL = 'https://gea.esac.esa.int/tap-server/tap'
+# noinspection SqlNoDataSourceInspection,SqlDialectInspection
+GAIA_QUERY = """
+SELECT
+   source_id,ra,dec,parallax,pmra,pmdec,phot_g_mean_mag,phot_rp_mean_mag,
+   phot_bp_mean_mag, phot_g_mean_flux, phot_rp_mean_flux, phot_bp_mean_flux
+   FROM gaiadr3.gaia_source
+   WHERE 
+      1=CONTAINS(POINT('ICRS', ra, dec),
+                 CIRCLE('ICRS', {ra}, {dec}, {radius}))
+"""
+GAIA_EPOCH = 2016.0
+# URL for 2MASS
+TWOMASS_URL = ''
+# URL for 2MASS+Gaia crossmatch
+GAIA_TWOMASS_URL = 'https://gaia.obspm.fr/tap-server/tap'
+
 
 # =============================================================================
 # Define functions
@@ -27,59 +71,214 @@ def get_args():
     """
     parser = argparse.ArgumentParser(description='Rene\'s magic trigger')
     # add obs dir
-    parser.add_argument('objname', type=str, default='*',
-                        help='The object name')
-    parser.add_argument('--date', type=str, default='*',
+    parser.add_argument('objname', type=str, help='The object name')
+    parser.add_argument('--date', type=str, default='None',
                         help='The date of observation')
     # load arguments with parser
     args = parser.parse_args()
+    # deal with date
+    if args.date == 'None':
+        args.date = Time.now()
+    else:
+        try:
+            args.date = Time(parse(args.date))
+        except Exception as _:
+            raise ValueError(f'Cannot parse --date={args.date}')
     # return arguments
     return args
 
 
-def find_objname(pconst: Any, objname: str, full_table: Table) -> str:
-    """
-    Find the object name in the object table (from OBJNAME or ORIGINAL_NAME
-    or ALIASES column)
-
-    :param objname:
-    :param full_table:
-    :return:
-    """
-    # clean the input objname
-    cobjname = pconst.DRS_OBJ_NAME(objname)
-    # -------------------------------------------------------------------------
-    # if objname in OBJNAME column return the objname - no need to find it
-    if cobjname in full_table['OBJNAME']:
-        return cobjname
-    # -------------------------------------------------------------------------
-    # deal with a null object (should not continue)
-    if cobjname == 'Null':
-        WLOG(params, 'error', 'Object not found')
-        return ''
-    # -------------------------------------------------------------------------
-    # assume we have not found our object name
-    found = False
-    # get aliases
-    aliases = full_table['ALIASES']
-    # set row to zero as a place holder
-    row = 0
-    # loop around each row in the table
-    for row in range(len(aliases)):
-        # loop around aliases until we find the alias
-        for alias in aliases[row].split('|'):
-            if pconst.DRS_OBJ_NAME(alias) == cobjname:
-                found = True
-                break
-        # stop looping if we have found our object
-        if found:
-            break
-    # get the cobjname for this target if found
-    if found:
-        return full_table['OBJNAME'][row]
+def propagate_coords(objdata, obs_time: Time):
+    # deal with distance
+    if objdata['PLX'] == 0:
+        distance = None
     else:
-        WLOG(params, 'error', 'Cannot find object')
-        return ''
+        distance = Distance(parallax=objdata['PLX'] * uu.mas)
+    # need to propagate ra and dec to J2000
+    coords = SkyCoord(ra=objdata['RA_DEG'] * uu.deg,
+                      dec=objdata['DEC_DEG'] * uu.deg,
+                      distance=distance,
+                      pm_ra_cosdec=objdata['PMRA'] * uu.mas / uu.yr,
+                      pm_dec=objdata['PMDE'] * uu.mas / uu.yr,
+                      obstime=Time(objdata['EPOCH'], format='jd'))
+    # work out the delta time between epoch and J2000.0
+    jepoch = Time(objdata['EPOCH'], format='jd')
+    delta_time = (obs_time.jd - jepoch.jd) * uu.day
+    # get a list of times to work out the coordiantes at
+    delta_times = delta_time + np.arange(DTMIN, DTMAX+1, DTVAL) * uu.year
+    # get the coordinates
+    new_coords = coords.apply_space_motion(dt=delta_times)
+    new_times = jepoch + delta_times
+    # center the image on the current coordinates
+    curr_coords = coords.apply_space_motion(dt=delta_time)
+    curr_time = obs_time
+    # return some stuff
+    return new_coords, new_times, curr_coords, curr_time
+
+
+# def get_image_data(center: SkyCoord) -> Dict[str, list]:
+#
+#     image_dict = dict()
+#     # get the image data
+#     for survey_list in SURVEYS:
+#         for survey in SURVEYS[survey_list]:
+#             print(f'\tGetting {survey} image data')
+#             image_list = SkyView.get_images(position=center, survey=survey,
+#                                             width=IMAGE_SIZE, height=IMAGE_SIZE,
+#                                             coordinates='J2000')
+#             # apply to image dictionary
+#             if survey_list not in image_dict:
+#                 image_dict[survey_list] = [image_list[0][0]]
+#             else:
+#                 image_dict[survey_list].append(image_list[0][0])
+#
+#
+#     return image_dict
+
+
+
+class Source:
+    def __init__(self, gaia_id, skycoord: SkyCoord,
+                 magnitudes: Dict[str, float],
+                 fluxes: Dict[str, float]):
+        self.gaia_id = gaia_id
+        self.skycoord = skycoord
+        self.magnitudes = magnitudes
+        self.fluxes = fluxes
+
+
+def setup_wcs(image_shape, cent_coords, pixel_scale):
+    # need to set up a wcs
+    naxis2, naxis1 = image_shape
+    pix_scale = pixel_scale.to(uu.deg/uu.pixel).value
+    wcs = WCS(naxis=2)
+    wcs.wcs.crpix = [naxis1 / 2, naxis2 / 2]
+    wcs.wcs.cdelt = np.array([-pix_scale, pix_scale])
+    wcs.wcs.crval = [cent_coords.ra.deg, cent_coords.dec.deg]
+    wcs.wcs.ctype = ["RA---TAN", "DEC--TAN"]
+    return wcs
+
+def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
+    # define the gaia Tap instance
+    gaia = TapPlus(url=GAIA_URL)
+    # launch the query
+    job = gaia.launch_job(GAIA_QUERY.format(ra=coords.ra.deg,
+                                            dec=coords.dec.deg,
+                                            radius=RADIUS.to(uu.deg).value))
+    # get the query results
+    table = job.get_results()
+    # get the gaia time
+    gaia_time = Time(GAIA_EPOCH, format='decimalyear')
+    # storage for sources
+    sources = []
+    # get parallax mask
+    parallax_mask = table['parallax'].mask
+    # -------------------------------------------------------------------------
+    # get all stars in the region where they would be now
+    for row in range(len(table)):
+        # get table row
+        table_row = table[row]
+        # deal with distances
+        if parallax_mask[row]:
+            distance = None
+        elif table_row['parallax'] <= 0:
+            distance = None
+        else:
+            distance = Distance(parallax=table_row['parallax'] * uu.mas)
+        # need to propagate ra and dec to J2000
+        coords = SkyCoord(ra=table_row['ra'] * uu.deg,
+                          dec=table_row['dec'] * uu.deg,
+                          distance=distance,
+                          pm_ra_cosdec=table_row['pmra'] * uu.mas / uu.yr,
+                          pm_dec=table_row['pmdec'] * uu.mas / uu.yr,
+                          obstime=gaia_time)
+        # work out the delta time between epoch and J2000.0
+        delta_time = (obstime.jd - gaia_time.jd) * uu.day
+        # center the image on the current coordinates
+        curr_coords = coords.apply_space_motion(dt=delta_time)
+
+        # get magnitudes
+        magnitudes = dict()
+        magnitudes['G'] = table_row['phot_g_mean_mag']
+        magnitudes['Rp'] = table_row['phot_rp_mean_mag']
+        magnitudes['Bp'] = table_row['phot_bp_mean_mag']
+        fluxes = dict()
+        fluxes['G'] = table_row['phot_g_mean_flux']
+        fluxes['Rp'] = table_row['phot_rp_mean_flux']
+        fluxes['Bp'] = table_row['phot_bp_mean_flux']
+        # add source
+        source = Source(table_row['source_id'], curr_coords, magnitudes,
+                        fluxes)
+        # append source to sources
+        sources.append(source)
+    # -------------------------------------------------------------------------
+    return sources
+
+
+# def seed_map(image_shape: Tuple[int, int], cent_coords: SkyCoord,
+#              sources: List[Source], band: str, sigma_psf: float,
+#              pixel_scale: uu.Quantity):
+#
+#     # create a WCS object
+#     print('Settings up WCS')
+#     wcs = setup_wcs(image_shape, cent_coords, pixel_scale)
+#     # storage for all sources
+#     source_dict = dict(flux=[], x_mean=[], y_mean=[], x_stddev=[], y_stddev=[],
+#                        theta=[], id=[])
+#     # loop around sources
+#     for it, source in enumerate(sources):
+#         source_dict['flux'].append(source.fluxes[band])
+#         # find the x and y pixel coordinates of the source
+#         x_source, y_source = wcs.all_world2pix(source.skycoord.ra.deg,
+#                                                source.skycoord.dec.deg, 0)
+#         source_dict['x_mean'].append(x_source)
+#         source_dict['y_mean'].append(y_source)
+#         source_dict['x_stddev'].append(sigma_psf)
+#         source_dict['y_stddev'].append(sigma_psf)
+#         source_dict['theta'].append(0)
+#         source_dict['id'].append(it + 1)
+#     # convert dictionary to table
+#     source_table = Table(source_dict)
+#     # create image
+#     print('\tAdding sources to image...')
+#     image = make_gaussian_sources_image(image_shape, source_table)
+#     # return the image
+#     return image, wcs
+
+
+def seed_map(image_shape: Tuple[int, int], cent_coords: SkyCoord,
+             sources: List[Source], band: str, sigma_psf: float,
+             pixel_scale: uu.Quantity):
+
+    # create a WCS object
+    print('Settings up WCS')
+    wcs = setup_wcs(image_shape, cent_coords, pixel_scale)
+    # find the x and y pixel coordinates of the source
+    x_cent, y_cent = wcs.all_world2pix(cent_coords.ra.deg,
+                                       cent_coords.dec.deg, 0)
+
+    # TODO: Can and should be replaced with the actual PSF model
+    #       psfmodel = to_griddedpsfmodel(hdu, ext=0)
+    psfmodel = IntegratedGaussianPRF(sigma=sigma_psf, x_0=x_cent, y_0=y_cent)
+
+    image = np.zeros(image_shape)
+    # create image
+    print('\tAdding sources to image...')
+    # loop around sources
+    for it, source in enumerate(sources):
+        print('\t\tAdding source {0} of {1}'.format(it + 1, len(sources)))
+        flux = source.fluxes[band]
+        # find the x and y pixel coordinates of the source
+        x_source, y_source = wcs.all_world2pix(source.skycoord.ra.deg,
+                                               source.skycoord.dec.deg, 0)
+
+        y, x = np.mgrid[0:image_shape[0], 0:image_shape[1]]
+
+        image[y, x] += psfmodel.evaluate(x=x, y=y, flux=flux,
+                                         x_0=x_source, y_0=y_source,
+                                         sigma=sigma_psf)
+    # return the image
+    return image, wcs
 
 
 # =============================================================================
@@ -91,9 +290,113 @@ if __name__ == '__main__':
     pconst = constants.pload()
     # Get the text types
     textentry = lang.textentry
+    # load arguments
+    args = get_args()
     # set apero pid
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
-    # get the object database (combined with pending + user table)
-    maintable = manage_databases.get_object_database(params, log=True)
+    # -------------------------------------------------------------------------
+    # print progress
+    print('Getting object from database')
+    # load object database
+    objdbm = drs_database.AstrometricDatabase(params)
+    objdbm.load_db()
+    # get the clean / alias-safe version of the object name
+    objname, _ = objdbm.find_objname(pconst, args.objname)
+    # get the data for this object
+    objdata = objdbm.get_entries(','.join(ASTROM_COLS),
+                                 condition=f'OBJNAME="{objname}"').iloc[0]
+    # -------------------------------------------------------------------------
+    print('Progating coords')
+    pout = propagate_coords(objdata, args.date)
+    all_coords, all_times, obs_coords, obs_time = pout
+    # -------------------------------------------------------------------------
+    print('Getting Gaia sources for this region')
+    # get all Gaia data around the current coordinates
+    gaia_sources = get_gaia_sources(obs_coords, obs_time)
+    # -------------------------------------------------------------------------
+    # TODO: Get 2mass mags for this gaia sources (or all available)
+    # -------------------------------------------------------------------------
 
-    print(maintable)
+    print('Seeding image')
+    # TODO: Need these to simulate the image at specific band
+    psf = 1.5
+    pixel_scale = 0.1 * uu.arcsec / uu.pixel
+    # seed sources onto map
+    seed_image, wcs = seed_map((1024, 1024), obs_coords, gaia_sources, 'G',
+                               psf, pixel_scale)
+
+
+    # get the extent of the image
+    extent = [wcs.wcs.crval[0] - wcs.wcs.cdelt[0] * seed_image.shape[1] / 2,
+              wcs.wcs.crval[0] + wcs.wcs.cdelt[0] * seed_image.shape[1] / 2,
+              wcs.wcs.crval[1] - wcs.wcs.cdelt[1] * seed_image.shape[0] / 2,
+              wcs.wcs.crval[1] + wcs.wcs.cdelt[1] * seed_image.shape[0] / 2]
+
+    # remove extreme values
+    low_lim, high_lim = np.percentile(seed_image, [0.5, 99.5])
+    seed_image[seed_image < low_lim] = low_lim
+    seed_image[seed_image > high_lim] = high_lim
+
+    plt.imshow(seed_image, origin='lower', extent=extent, cmap='gist_heat')
+    plt.show()
+
+    # -------------------------------------------------------------------------
+    # plot figure
+    # -------------------------------------------------------------------------
+
+    # for survey in image_dict:
+    #
+    #     if len(image_dict[survey]) == 3:
+    #         red_im = image_dict[survey][2].data
+    #         green_im = image_dict[survey][1].data
+    #         blue_im = image_dict[survey][0].data
+    #         image = make_rdb(red_im, green_im, blue_im)
+    #         wcs_header = WCS(image_dict[survey][0].header)
+    #         cmap = 'gist_heat'
+    #
+    #     elif len(image_dict[survey]) == 1:
+    #         stretch = SqrtStretch() + ZScaleInterval()
+    #         image = stretch(image_dict[survey][0].data)
+    #         wcs_header = WCS(image_dict[survey][0].header)
+    #         cmap = 'gray'
+    #     else:
+    #         raise ValueError('Too many images')
+    #
+    #     # get the extent of the image
+    #     extent = [wcs_header.wcs.crval[0] - wcs_header.wcs.cdelt[0] * image.shape[1] / 2,
+    #               wcs_header.wcs.crval[0] + wcs_header.wcs.cdelt[0] * image.shape[1] / 2,
+    #               wcs_header.wcs.crval[1] - wcs_header.wcs.cdelt[1] * image.shape[0] / 2,
+    #               wcs_header.wcs.crval[1] + wcs_header.wcs.cdelt[1] * image.shape[0] / 2]
+    #
+    #     plt.close()
+    #     fig = plt.figure()
+    #     frames = [plt.subplot(121, projection=wcs_header),
+    #               plt.subplot(122, projection=wcs_header)]
+    #
+    #     im = frames[0].imshow(image, origin='lower', extent=extent)
+    #     im = frames[1].imshow(image, origin='lower', extent=extent)
+    #
+    #     # plot the trail
+    #     frames[1].plot(all_coords.ra, all_coords.dec, color='yellow', ls='-',
+    #                    marker='|', lw=2)
+    #     # plot the year labels
+    #     for i, coord in enumerate(all_coords):
+    #         frames[1].text(coord.ra.value, coord.dec.value,
+    #                        f'{all_times[i].decimalyear:.1f}', color='yellow')
+    #
+    #     # plot the current position as an open blue circle
+    #     frames[0].plot(now_coords.ra, now_coords.dec, marker='o',
+    #                 color='yellow', ms=20, mfc='none')
+    #     frames[1].plot(now_coords.ra, now_coords.dec, marker='o',
+    #                 color='yellow', ms=20, mfc='none')
+    #
+    #     for frame in frames:
+    #         frame.set(xlabel='RA', ylabel='DEC')
+    #         frame.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    #         frame.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
+    #
+    #     plt.show(block=True)
+
+
+
+
