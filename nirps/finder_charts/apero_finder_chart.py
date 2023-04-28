@@ -35,12 +35,14 @@ SURVEYS = dict()
 SURVEYS['DSS'] = ['DSS']
 SURVEYS['2MASS'] = ['2MASS-J', '2MASS-H', '2MASS-K']
 # define the time in years before and after "obs date" to plot trail for
-DTMIN = -30
-DTMAX = 30
-DTVAL = 10
+DTMIN = -5
+DTMAX = 5
+DTVAL = 1
 # Define the thumbnail image size
 RADIUS = 5 * uu.arcmin
-
+# TODO: Need these to simulate the image at specific band
+psf = 1.5
+pixel_scale = 0.1 * uu.arcsec / uu.pixel
 # URL for Gaia
 GAIA_URL = 'https://gea.esac.esa.int/tap-server/tap'
 # noinspection SqlNoDataSourceInspection,SqlDialectInspection
@@ -136,7 +138,6 @@ def propagate_coords(objdata, obs_time: Time):
 #     return image_dict
 
 
-
 class Source:
     def __init__(self, gaia_id, skycoord: SkyCoord,
                  magnitudes: Dict[str, float],
@@ -215,37 +216,6 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
     return sources
 
 
-# def seed_map(image_shape: Tuple[int, int], cent_coords: SkyCoord,
-#              sources: List[Source], band: str, sigma_psf: float,
-#              pixel_scale: uu.Quantity):
-#
-#     # create a WCS object
-#     print('Settings up WCS')
-#     wcs = setup_wcs(image_shape, cent_coords, pixel_scale)
-#     # storage for all sources
-#     source_dict = dict(flux=[], x_mean=[], y_mean=[], x_stddev=[], y_stddev=[],
-#                        theta=[], id=[])
-#     # loop around sources
-#     for it, source in enumerate(sources):
-#         source_dict['flux'].append(source.fluxes[band])
-#         # find the x and y pixel coordinates of the source
-#         x_source, y_source = wcs.all_world2pix(source.skycoord.ra.deg,
-#                                                source.skycoord.dec.deg, 0)
-#         source_dict['x_mean'].append(x_source)
-#         source_dict['y_mean'].append(y_source)
-#         source_dict['x_stddev'].append(sigma_psf)
-#         source_dict['y_stddev'].append(sigma_psf)
-#         source_dict['theta'].append(0)
-#         source_dict['id'].append(it + 1)
-#     # convert dictionary to table
-#     source_table = Table(source_dict)
-#     # create image
-#     print('\tAdding sources to image...')
-#     image = make_gaussian_sources_image(image_shape, source_table)
-#     # return the image
-#     return image, wcs
-
-
 def seed_map(image_shape: Tuple[int, int], cent_coords: SkyCoord,
              sources: List[Source], band: str, sigma_psf: float,
              pixel_scale: uu.Quantity):
@@ -316,86 +286,43 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     # TODO: Get 2mass mags for this gaia sources (or all available)
     # -------------------------------------------------------------------------
-
     print('Seeding image')
-    # TODO: Need these to simulate the image at specific band
-    psf = 1.5
-    pixel_scale = 0.1 * uu.arcsec / uu.pixel
     # seed sources onto map
     seed_image, wcs = seed_map((1024, 1024), obs_coords, gaia_sources, 'G',
                                psf, pixel_scale)
 
-
+    # -------------------------------------------------------------------------
+    # plot figure
+    # -------------------------------------------------------------------------
     # get the extent of the image
     extent = [wcs.wcs.crval[0] - wcs.wcs.cdelt[0] * seed_image.shape[1] / 2,
               wcs.wcs.crval[0] + wcs.wcs.cdelt[0] * seed_image.shape[1] / 2,
               wcs.wcs.crval[1] - wcs.wcs.cdelt[1] * seed_image.shape[0] / 2,
               wcs.wcs.crval[1] + wcs.wcs.cdelt[1] * seed_image.shape[0] / 2]
 
-    # remove extreme values
-    low_lim, high_lim = np.percentile(seed_image, [0.5, 99.5])
-    seed_image[seed_image < low_lim] = low_lim
-    seed_image[seed_image > high_lim] = high_lim
+    fig = plt.figure()
+    frame = plt.subplot(111, projection=wcs)
 
-    plt.imshow(seed_image, origin='lower', extent=extent, cmap='gist_heat')
+    norm = ImageNormalize(seed_image, stretch=LinearStretch())
+    frame.imshow(seed_image, origin='lower', extent=extent, cmap='gist_heat',
+                 norm=norm)
+
+    # plot the trail
+    frame.plot(all_coords.ra, all_coords.dec, color='yellow', ls='-',
+                   marker='|', lw=2)
+    # plot the year labels
+    for i, coord in enumerate(all_coords):
+        frame.text(coord.ra.value, coord.dec.value,
+                       f'{all_times[i].decimalyear:.1f}', color='yellow')
+
+    # plot the current position as an open blue circle
+    frame.plot(obs_coords.ra, obs_coords.dec, marker='o',
+                color='yellow', ms=20, mfc='none')
+    frame.plot(obs_coords.ra, obs_coords.dec, marker='o',
+                color='yellow', ms=20, mfc='none')
+
+
     plt.show()
-
-    # -------------------------------------------------------------------------
-    # plot figure
-    # -------------------------------------------------------------------------
-
-    # for survey in image_dict:
-    #
-    #     if len(image_dict[survey]) == 3:
-    #         red_im = image_dict[survey][2].data
-    #         green_im = image_dict[survey][1].data
-    #         blue_im = image_dict[survey][0].data
-    #         image = make_rdb(red_im, green_im, blue_im)
-    #         wcs_header = WCS(image_dict[survey][0].header)
-    #         cmap = 'gist_heat'
-    #
-    #     elif len(image_dict[survey]) == 1:
-    #         stretch = SqrtStretch() + ZScaleInterval()
-    #         image = stretch(image_dict[survey][0].data)
-    #         wcs_header = WCS(image_dict[survey][0].header)
-    #         cmap = 'gray'
-    #     else:
-    #         raise ValueError('Too many images')
-    #
-    #     # get the extent of the image
-    #     extent = [wcs_header.wcs.crval[0] - wcs_header.wcs.cdelt[0] * image.shape[1] / 2,
-    #               wcs_header.wcs.crval[0] + wcs_header.wcs.cdelt[0] * image.shape[1] / 2,
-    #               wcs_header.wcs.crval[1] - wcs_header.wcs.cdelt[1] * image.shape[0] / 2,
-    #               wcs_header.wcs.crval[1] + wcs_header.wcs.cdelt[1] * image.shape[0] / 2]
-    #
-    #     plt.close()
-    #     fig = plt.figure()
-    #     frames = [plt.subplot(121, projection=wcs_header),
-    #               plt.subplot(122, projection=wcs_header)]
-    #
-    #     im = frames[0].imshow(image, origin='lower', extent=extent)
-    #     im = frames[1].imshow(image, origin='lower', extent=extent)
-    #
-    #     # plot the trail
-    #     frames[1].plot(all_coords.ra, all_coords.dec, color='yellow', ls='-',
-    #                    marker='|', lw=2)
-    #     # plot the year labels
-    #     for i, coord in enumerate(all_coords):
-    #         frames[1].text(coord.ra.value, coord.dec.value,
-    #                        f'{all_times[i].decimalyear:.1f}', color='yellow')
-    #
-    #     # plot the current position as an open blue circle
-    #     frames[0].plot(now_coords.ra, now_coords.dec, marker='o',
-    #                 color='yellow', ms=20, mfc='none')
-    #     frames[1].plot(now_coords.ra, now_coords.dec, marker='o',
-    #                 color='yellow', ms=20, mfc='none')
-    #
-    #     for frame in frames:
-    #         frame.set(xlabel='RA', ylabel='DEC')
-    #         frame.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    #         frame.yaxis.set_major_formatter(FormatStrFormatter('%.2f'))
-    #
-    #     plt.show(block=True)
 
 
 
