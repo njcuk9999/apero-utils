@@ -1,26 +1,23 @@
 import argparse
 from typing import Dict, List, Tuple
-from dateutil.parser import parse
+import warnings
 
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance
-from astropy.table import Table
 from astropy.time import Time
-from astroquery.utils.tap.core import TapPlus
-from astropy.visualization import ImageNormalize
-from astropy.visualization import ZScaleInterval, SqrtStretch
+from astropy.visualization import ImageNormalize, LinearStretch
 from astropy.wcs import WCS
-from photutils.datasets import make_gaussian_sources_image
+from astroquery.utils.tap.core import TapPlus
+from dateutil.parser import parse
 from photutils.psf import IntegratedGaussianPRF
 
 from apero import lang
 from apero.core import constants
-from apero.core.utils import drs_startup
-from apero.core.core import drs_log
 from apero.core.core import drs_database
-
+from apero.core.core import drs_log
+from apero.core.utils import drs_startup
 
 # =============================================================================
 # Define variables
@@ -41,8 +38,9 @@ DTVAL = 1
 # Define the thumbnail image size
 RADIUS = 5 * uu.arcmin
 # TODO: Need these to simulate the image at specific band
-psf = 1.5
-pixel_scale = 0.1 * uu.arcsec / uu.pixel
+PSF = 1.5
+PIXEL_SCALE = 0.1 * uu.arcsec / uu.pixel
+IMAGE_SIZE = (512, 512)
 # URL for Gaia
 GAIA_URL = 'https://gea.esac.esa.int/tap-server/tap'
 # noinspection SqlNoDataSourceInspection,SqlDialectInspection
@@ -80,12 +78,15 @@ def get_args():
     args = parser.parse_args()
     # deal with date
     if args.date == 'None':
-        args.date = Time.now()
+        date = Time.now()
     else:
         try:
-            args.date = Time(parse(args.date))
+            date = Time(parse(str(args.date)))
         except Exception as _:
             raise ValueError(f'Cannot parse --date={args.date}')
+
+    args.date = date
+
     # return arguments
     return args
 
@@ -107,35 +108,16 @@ def propagate_coords(objdata, obs_time: Time):
     jepoch = Time(objdata['EPOCH'], format='jd')
     delta_time = (obs_time.jd - jepoch.jd) * uu.day
     # get a list of times to work out the coordiantes at
-    delta_times = delta_time + np.arange(DTMIN, DTMAX+1, DTVAL) * uu.year
+    delta_times = delta_time + np.arange(DTMIN, DTMAX + 1, DTVAL) * uu.year
     # get the coordinates
-    new_coords = coords.apply_space_motion(dt=delta_times)
-    new_times = jepoch + delta_times
-    # center the image on the current coordinates
-    curr_coords = coords.apply_space_motion(dt=delta_time)
-    curr_time = obs_time
+    with warnings.catch_warnings(record=True) as _:
+        new_coords = coords.apply_space_motion(dt=delta_times)
+        new_times = jepoch + delta_times
+        # center the image on the current coordinates
+        curr_coords = coords.apply_space_motion(dt=delta_time)
+        curr_time = obs_time
     # return some stuff
     return new_coords, new_times, curr_coords, curr_time
-
-
-# def get_image_data(center: SkyCoord) -> Dict[str, list]:
-#
-#     image_dict = dict()
-#     # get the image data
-#     for survey_list in SURVEYS:
-#         for survey in SURVEYS[survey_list]:
-#             print(f'\tGetting {survey} image data')
-#             image_list = SkyView.get_images(position=center, survey=survey,
-#                                             width=IMAGE_SIZE, height=IMAGE_SIZE,
-#                                             coordinates='J2000')
-#             # apply to image dictionary
-#             if survey_list not in image_dict:
-#                 image_dict[survey_list] = [image_list[0][0]]
-#             else:
-#                 image_dict[survey_list].append(image_list[0][0])
-#
-#
-#     return image_dict
 
 
 class Source:
@@ -148,16 +130,18 @@ class Source:
         self.fluxes = fluxes
 
 
+# noinspection PyUnresolvedReferences
 def setup_wcs(image_shape, cent_coords, pixel_scale):
     # need to set up a wcs
     naxis2, naxis1 = image_shape
-    pix_scale = pixel_scale.to(uu.deg/uu.pixel).value
+    pix_scale = pixel_scale.to(uu.deg / uu.pixel).value
     wcs = WCS(naxis=2)
     wcs.wcs.crpix = [naxis1 / 2, naxis2 / 2]
     wcs.wcs.cdelt = np.array([-pix_scale, pix_scale])
     wcs.wcs.crval = [cent_coords.ra.deg, cent_coords.dec.deg]
     wcs.wcs.ctype = ["RA---TAN", "DEC--TAN"]
     return wcs
+
 
 def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
     # define the gaia Tap instance
@@ -196,7 +180,8 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
         # work out the delta time between epoch and J2000.0
         delta_time = (obstime.jd - gaia_time.jd) * uu.day
         # center the image on the current coordinates
-        curr_coords = coords.apply_space_motion(dt=delta_time)
+        with warnings.catch_warnings(record=True) as _:
+            curr_coords = coords.apply_space_motion(dt=delta_time)
 
         # get magnitudes
         magnitudes = dict()
@@ -219,7 +204,6 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
 def seed_map(image_shape: Tuple[int, int], cent_coords: SkyCoord,
              sources: List[Source], band: str, sigma_psf: float,
              pixel_scale: uu.Quantity):
-
     # create a WCS object
     print('Settings up WCS')
     wcs = setup_wcs(image_shape, cent_coords, pixel_scale)
@@ -249,6 +233,27 @@ def seed_map(image_shape: Tuple[int, int], cent_coords: SkyCoord,
                                          sigma=sigma_psf)
     # return the image
     return image, wcs
+
+
+def out_of_bounds(frame, coord):
+    xlims = frame.get_xlim()
+    ylims = frame.get_ylim()
+
+    lims = [xlims, ylims]
+    values = [coord.ra.value, coord.dec.value]
+
+    for value, lim in zip(values, lims):
+        if lim[0] > lim[1]:
+            if value < lim[1]:
+                return True
+            if value > lim[0]:
+                return True
+        else:
+            if value < lim[0]:
+                return True
+            if value > lim[1]:
+                return True
+    return False
 
 
 # =============================================================================
@@ -286,10 +291,12 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     # TODO: Get 2mass mags for this gaia sources (or all available)
     # -------------------------------------------------------------------------
+
     print('Seeding image')
+
     # seed sources onto map
-    seed_image, wcs = seed_map((1024, 1024), obs_coords, gaia_sources, 'G',
-                               psf, pixel_scale)
+    seed_image, wcs = seed_map(IMAGE_SIZE, obs_coords, gaia_sources, 'G',
+                               PSF, PIXEL_SCALE)
 
     # -------------------------------------------------------------------------
     # plot figure
@@ -299,31 +306,38 @@ if __name__ == '__main__':
               wcs.wcs.crval[0] + wcs.wcs.cdelt[0] * seed_image.shape[1] / 2,
               wcs.wcs.crval[1] - wcs.wcs.cdelt[1] * seed_image.shape[0] / 2,
               wcs.wcs.crval[1] + wcs.wcs.cdelt[1] * seed_image.shape[0] / 2]
+    dra = extent[1] - extent[0]
+    ddec = extent[3] - extent[2]
 
+    # remove extreme values
+    low_lim, high_lim = np.percentile(seed_image, [0.5, 99.5])
+    seed_image[seed_image < low_lim] = low_lim
+    seed_image[seed_image > high_lim] = high_lim
+
+    plt.close()
     fig = plt.figure()
     frame = plt.subplot(111, projection=wcs)
 
-    norm = ImageNormalize(seed_image, stretch=LinearStretch())
-    frame.imshow(seed_image, origin='lower', extent=extent, cmap='gist_heat',
-                 norm=norm)
-
+    frame.imshow(seed_image, origin='lower', extent=extent, cmap='gist_heat')
+    frame.set(xlabel='RA', ylabel='DEC', xlim=extent[:2], ylim=extent[2:],
+              title=f'{objname} ({obs_time.datetime.strftime("%Y-%m-%d")})')
     # plot the trail
     frame.plot(all_coords.ra, all_coords.dec, color='yellow', ls='-',
-                   marker='|', lw=2)
+               marker='+', lw=2, markersize=10)
     # plot the year labels
-    for i, coord in enumerate(all_coords):
-        frame.text(coord.ra.value, coord.dec.value,
-                       f'{all_times[i].decimalyear:.1f}', color='yellow')
+    for it, coord in enumerate(all_coords):
+        # check whether text is out of bounds
+        if out_of_bounds(frame, coord):
+            continue
+        # text is offset by 1% of the ra range
+        frame.text(coord.ra.value + 0.01 * dra, coord.dec.value,
+                   f'{all_times[it].decimalyear:.1f}', color='yellow')
 
     # plot the current position as an open blue circle
     frame.plot(obs_coords.ra, obs_coords.dec, marker='o',
-                color='yellow', ms=20, mfc='none')
-    frame.plot(obs_coords.ra, obs_coords.dec, marker='o',
-                color='yellow', ms=20, mfc='none')
+               color='yellow', ms=20, mfc='none')
 
 
     plt.show()
-
-
 
 
