@@ -1,17 +1,18 @@
 import argparse
-from typing import Dict, List, Tuple
 import warnings
+from typing import Dict, List
 
 import matplotlib.pyplot as plt
 import numpy as np
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance
 from astropy.time import Time
-from astropy.visualization import ImageNormalize, LinearStretch
+from astropy.visualization.wcsaxes import WCSAxes
 from astropy.wcs import WCS
 from astroquery.utils.tap.core import TapPlus
 from dateutil.parser import parse
-from photutils.psf import IntegratedGaussianPRF
+from matplotlib.transforms import Affine2D
+from tqdm import tqdm
 
 from apero import lang
 from apero.core import constants
@@ -35,12 +36,23 @@ SURVEYS['2MASS'] = ['2MASS-J', '2MASS-H', '2MASS-K']
 DTMIN = -5
 DTMAX = 5
 DTVAL = 1
-# Define the thumbnail image size
-RADIUS = 5 * uu.arcmin
-# TODO: Need these to simulate the image at specific band
-PSF = 1.5
-PIXEL_SCALE = 0.1 * uu.arcsec / uu.pixel
-IMAGE_SIZE = (512, 512)
+# FIELD OF VIEW
+FIELD_OF_VIEW = 2 * uu.arcmin
+# RADIUS
+RADIUS = FIELD_OF_VIEW / np.sqrt(2)
+# PIXEL SCALE
+PIXEL_SCALE = 0.3 * uu.arcsec / uu.pixel
+# FWHM
+FWHM = 1.0 * uu.arcsec
+
+# Transform the image
+TRANSFORM_ROTATE = 45 * uu.deg
+
+# 1-sigma magnitude limit G
+SIGMA_LIMIT = dict()
+SIGMA_LIMIT['G'] = 22
+SIGMA_LIMIT['J'] = 17
+
 # URL for Gaia
 GAIA_URL = 'https://gea.esac.esa.int/tap-server/tap'
 # noinspection SqlNoDataSourceInspection,SqlDialectInspection
@@ -120,16 +132,6 @@ def propagate_coords(objdata, obs_time: Time):
     return new_coords, new_times, curr_coords, curr_time
 
 
-class Source:
-    def __init__(self, gaia_id, skycoord: SkyCoord,
-                 magnitudes: Dict[str, float],
-                 fluxes: Dict[str, float]):
-        self.gaia_id = gaia_id
-        self.skycoord = skycoord
-        self.magnitudes = magnitudes
-        self.fluxes = fluxes
-
-
 # noinspection PyUnresolvedReferences
 def setup_wcs(image_shape, cent_coords, pixel_scale):
     # need to set up a wcs
@@ -143,7 +145,7 @@ def setup_wcs(image_shape, cent_coords, pixel_scale):
     return wcs
 
 
-def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
+def get_gaia_sources(coords: SkyCoord, obstime: Time) -> Dict[str, List[float]]:
     # define the gaia Tap instance
     gaia = TapPlus(url=GAIA_URL)
     # launch the query
@@ -155,7 +157,13 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
     # get the gaia time
     gaia_time = Time(GAIA_EPOCH, format='decimalyear')
     # storage for sources
-    sources = []
+    sources = dict()
+    sources['ra'] = []
+    sources['dec'] = []
+    sources['G'] = []
+    sources['Rp'] = []
+    sources['Bp'] = []
+    sources['J'] = []
     # get parallax mask
     parallax_mask = table['parallax'].mask
     # -------------------------------------------------------------------------
@@ -183,56 +191,22 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> List[Source]:
         with warnings.catch_warnings(record=True) as _:
             curr_coords = coords.apply_space_motion(dt=delta_time)
 
-        # get magnitudes
-        magnitudes = dict()
-        magnitudes['G'] = table_row['phot_g_mean_mag']
-        magnitudes['Rp'] = table_row['phot_rp_mean_mag']
-        magnitudes['Bp'] = table_row['phot_bp_mean_mag']
-        fluxes = dict()
-        fluxes['G'] = table_row['phot_g_mean_flux']
-        fluxes['Rp'] = table_row['phot_rp_mean_flux']
-        fluxes['Bp'] = table_row['phot_bp_mean_flux']
-        # add source
-        source = Source(table_row['source_id'], curr_coords, magnitudes,
-                        fluxes)
-        # append source to sources
-        sources.append(source)
+        sources['ra'].append(curr_coords.ra.deg)
+        sources['dec'].append(curr_coords.dec.deg)
+        sources['G'].append(table_row['phot_g_mean_mag'])
+        sources['Rp'].append(table_row['phot_rp_mean_mag'])
+        sources['Bp'].append(table_row['phot_bp_mean_mag'])
+        sources['J'].append(np.nan)
+    # -------------------------------------------------------------------------
+    # convert all to numpy arrays
+    sources['ra'] = np.array(sources['ra'])
+    sources['dec'] = np.array(sources['dec'])
+    sources['G'] = np.array(sources['G'])
+    sources['Rp'] = np.array(sources['Rp'])
+    sources['Bp'] = np.array(sources['Bp'])
+    sources['J'] = np.array(sources['J'])
     # -------------------------------------------------------------------------
     return sources
-
-
-def seed_map(image_shape: Tuple[int, int], cent_coords: SkyCoord,
-             sources: List[Source], band: str, sigma_psf: float,
-             pixel_scale: uu.Quantity):
-    # create a WCS object
-    print('Settings up WCS')
-    wcs = setup_wcs(image_shape, cent_coords, pixel_scale)
-    # find the x and y pixel coordinates of the source
-    x_cent, y_cent = wcs.all_world2pix(cent_coords.ra.deg,
-                                       cent_coords.dec.deg, 0)
-
-    # TODO: Can and should be replaced with the actual PSF model
-    #       psfmodel = to_griddedpsfmodel(hdu, ext=0)
-    psfmodel = IntegratedGaussianPRF(sigma=sigma_psf, x_0=x_cent, y_0=y_cent)
-
-    image = np.zeros(image_shape)
-    # create image
-    print('\tAdding sources to image...')
-    # loop around sources
-    for it, source in enumerate(sources):
-        print('\t\tAdding source {0} of {1}'.format(it + 1, len(sources)))
-        flux = source.fluxes[band]
-        # find the x and y pixel coordinates of the source
-        x_source, y_source = wcs.all_world2pix(source.skycoord.ra.deg,
-                                               source.skycoord.dec.deg, 0)
-
-        y, x = np.mgrid[0:image_shape[0], 0:image_shape[1]]
-
-        image[y, x] += psfmodel.evaluate(x=x, y=y, flux=flux,
-                                         x_0=x_source, y_0=y_source,
-                                         sigma=sigma_psf)
-    # return the image
-    return image, wcs
 
 
 def out_of_bounds(frame, coord):
@@ -290,40 +264,76 @@ if __name__ == '__main__':
     gaia_sources = get_gaia_sources(obs_coords, obs_time)
     # -------------------------------------------------------------------------
     # TODO: Get 2mass mags for this gaia sources (or all available)
+    #   Put all sources not in 2mass at mag limit
     # -------------------------------------------------------------------------
-
     print('Seeding image')
 
-    # seed sources onto map
-    seed_image, wcs = seed_map(IMAGE_SIZE, obs_coords, gaia_sources, 'G',
-                               PSF, PIXEL_SCALE)
+    # number of pixels in each direction
+    npixel = int(FIELD_OF_VIEW.to(uu.deg) // (PIXEL_SCALE*uu.pixel).to(uu.deg))
+
+
+    wcs = setup_wcs((npixel, npixel), obs_coords, PIXEL_SCALE)
+
+    image = np.random.normal(size=(npixel, npixel), scale = 1.0, loc = 0)
+
+    nsig_psf = np.array(10**((SIGMA_LIMIT['G'] - gaia_sources['G']) / 2.5))
+
+    # convert all coords to pixel coords
+    x_sources, y_sources = wcs.all_world2pix(gaia_sources['ra'],
+                                             gaia_sources['dec'], 0)
+    # create a grid of all pixels
+    y, x = np.mgrid[0:npixel, 0:npixel]
+
+    ew = FWHM.value / (2 * np.sqrt(2 * np.log(2)))
+
+    for i in tqdm(range(len(x_sources))):
+        # core of PSF
+        image += nsig_psf[i] * np.exp(-((x - x_sources[i]) ** 2 + (y - y_sources[i]) ** 2) / (2 * ew ** 2))
+        # halo of PSF
+        image += nsig_psf[i] * np.exp(-((x - x_sources[i]) ** 2 + (y - y_sources[i]) ** 2) / (2 * (ew * 2) ** 2)) * 1e-3
+        # spike in y
+        image += nsig_psf[i] * np.exp(-np.abs((x - x_sources[i]) ** 2 + 0.1 * np.abs(y - y_sources[i]) ** 2) / (2 * ew ** 2)) * 1e-2
+        # spike in x
+        image += nsig_psf[i] * np.exp(-(0.1 * np.abs(x - x_sources[i]) ** 2 + np.abs(y - y_sources[i]) ** 2) / (2 * ew ** 2)) * 1e-2
 
     # -------------------------------------------------------------------------
     # plot figure
     # -------------------------------------------------------------------------
     # get the extent of the image
-    extent = [wcs.wcs.crval[0] - wcs.wcs.cdelt[0] * seed_image.shape[1] / 2,
-              wcs.wcs.crval[0] + wcs.wcs.cdelt[0] * seed_image.shape[1] / 2,
-              wcs.wcs.crval[1] - wcs.wcs.cdelt[1] * seed_image.shape[0] / 2,
-              wcs.wcs.crval[1] + wcs.wcs.cdelt[1] * seed_image.shape[0] / 2]
+    extent = [wcs.wcs.crval[0] - wcs.wcs.cdelt[0] * image.shape[1] / 2,
+              wcs.wcs.crval[0] + wcs.wcs.cdelt[0] * image.shape[1] / 2,
+              wcs.wcs.crval[1] - wcs.wcs.cdelt[1] * image.shape[0] / 2,
+              wcs.wcs.crval[1] + wcs.wcs.cdelt[1] * image.shape[0] / 2]
     dra = extent[1] - extent[0]
     ddec = extent[3] - extent[2]
 
-    # remove extreme values
-    low_lim, high_lim = np.percentile(seed_image, [0.5, 99.5])
-    seed_image[seed_image < low_lim] = low_lim
-    seed_image[seed_image > high_lim] = high_lim
+
+
+    transform = Affine2D()
+    transform.rotate(TRANSFORM_ROTATE.to(uu.rad).value)
+
+    # Set up metadata dictionary
+    coord_meta = {}
+    coord_meta['name'] = 'ra', 'dec'
+    coord_meta['type'] = 'longitude', 'latitude'
+    coord_meta['wrap'] = 180, None
+    coord_meta['unit'] = uu.deg, uu.deg
+    coord_meta['format_unit'] = None, None
 
     plt.close()
     fig = plt.figure()
-    frame = plt.subplot(111, projection=wcs)
+    # frame = WCSAxes(fig, extent, aspect='equal',
+    #                 transform=transform, coord_meta=coord_meta)
+    # fig.add_axes(frame)
+    frame = plt.subplot(projection=wcs)
 
-    frame.imshow(seed_image, origin='lower', extent=extent, cmap='gist_heat')
-    frame.set(xlabel='RA', ylabel='DEC', xlim=extent[:2], ylim=extent[2:],
-              title=f'{objname} ({obs_time.datetime.strftime("%Y-%m-%d")})')
+
+    frame.imshow(image, origin='lower', vmin=-3, vmax=20,
+                 extent=extent, cmap='gist_heat')
+
     # plot the trail
-    frame.plot(all_coords.ra, all_coords.dec, color='yellow', ls='-',
-               marker='+', lw=2, markersize=10)
+    frame.plot(all_coords.ra, all_coords.dec, color='yellow', ls='None',
+               marker='+', lw=2, markersize=10, alpha=0.5)
     # plot the year labels
     for it, coord in enumerate(all_coords):
         # check whether text is out of bounds
@@ -331,13 +341,20 @@ if __name__ == '__main__':
             continue
         # text is offset by 1% of the ra range
         frame.text(coord.ra.value + 0.01 * dra, coord.dec.value,
-                   f'{all_times[it].decimalyear:.1f}', color='yellow')
+                   f'{all_times[it].decimalyear:.1f}', color='yellow', alpha=0.5,
+                   horizontalalignment='left', verticalalignment='center',)
 
     # plot the current position as an open blue circle
     frame.plot(obs_coords.ra, obs_coords.dec, marker='o',
                color='yellow', ms=20, mfc='none')
-
+    # plot a grid in white
+    frame.grid(color='white', ls='--', lw=1, alpha=0.5)
 
     plt.show()
+
+
+
+
+    stop
 
 
