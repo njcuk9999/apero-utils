@@ -293,6 +293,13 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     index_page.add_newline()
     index_page.add_text('Please select a reduction')
     index_page.add_newline()
+    index_page.add_text('Please note: Your object may be under another '
+                        'name. Please check `here <https://docs.google.com/'
+                        'spreadsheets/d/'
+                        '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
+                        'edit?usp=sharing>`_, the name displayed in ARI will '
+                        'be the first column [OBJNAME]')
+    index_page.add_newline()
     index_page.add_text('If you believe you should have the username/password '
                         'please contact neil.james.cook@gmail.com')
     index_page.add_newline()
