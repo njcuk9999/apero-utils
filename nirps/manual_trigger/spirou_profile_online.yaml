@@ -1,13 +1,13 @@
-nirps ha V0.7.275 online:
+spirou V0.7.282 online:
     # general settings
     general:
         # directory where raw data is downloaded
         raw dir: /spirou/cfht_nights/common/raw
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/spirou/apero-settings/spirou_07276_online
+        apero profile: /cosmos99/spirou/apero-settings/spirou_07282_online
         # directory where lbl files are processed
-        lbl path: /cosmos99/spirou/lbl-data/spirou_07276_online/
+        lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # apero_processing settings
