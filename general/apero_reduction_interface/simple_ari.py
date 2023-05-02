@@ -1910,6 +1910,8 @@ def create_file_list(files: List[str], path: str):
     # if file exists remove it
     if os.path.exists(path):
         os.remove(path)
+    # sort files alphabetically
+    files = np.sort(files)
     # open file
     with open(path, 'w') as filelist:
         # loop around files
