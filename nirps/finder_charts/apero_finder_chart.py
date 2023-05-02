@@ -193,6 +193,8 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> Dict[str, List[float]]:
     sources['J'] = []
     sources['H'] = []
     sources['K'] = []
+    sources['ra_gaia'] = []
+    sources['dec_gaia'] = []
     sources['pmra'] = []
     sources['pmdec'] = []
     sources['parallax'] = []
@@ -235,10 +237,11 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> Dict[str, List[float]]:
         sources['J'].append(np.nan)
         sources['H'].append(np.nan)
         sources['K'].append(np.nan)
+        sources['ra_gaia'].append(table_row['ra'])
+        sources['dec_gaia'].append(table_row['dec'])
         sources['pmra'].append(table_row['pmra'])
         sources['pmdec'].append(table_row['pmdec'])
         sources['parallax'].append(plx)
-
     # -------------------------------------------------------------------------
     # convert all to numpy arrays
     sources['gaia_id'] = np.array(sources['gaia_id'])
@@ -254,7 +257,7 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time) -> Dict[str, List[float]]:
     return sources
 
 
-def get_2mass_jdate(gaia_sources):
+def get_2mass_field(obs_coords, obs_time):
     """
     We don't know the epoch of the 2MASS data, so we need to get the epoch
     for the field
@@ -263,28 +266,15 @@ def get_2mass_jdate(gaia_sources):
     """
     # define the gaia Tap instance
     tmass = TapPlus(url=TMASS_URL)
-    # get the gaia time
-    gaia_time = Time(GAIA_EPOCH, format='decimalyear')
     # get the 2MASS time
     tmass_time = Time(TMASS_EPOCH, format='decimalyear')
-
-    # deal with distances
-    if np.isnan(gaia_sources['parallax'][0]):
-        distance = None
-    else:
-        distance = Distance(parallax=gaia_sources['parallax'][0] * uu.mas)
-    # need to get the gaia coords again
-    gaia_coords = SkyCoord(ra=gaia_sources['ra'][0] * uu.deg,
-                           dec=gaia_sources['dec'][0] * uu.deg,
-                           distance=distance,
-                           pm_ra_cosdec=gaia_sources['pmra'][0] * uu.mas / uu.yr,
-                           pm_dec=gaia_sources['pmdec'][0] * uu.mas / uu.yr,
-                           obstime=gaia_time, frame='icrs')
     # work out the delta time between 2mass and Gaia
-    delta_time_2mass = (tmass_time.jd - gaia_time.jd) * uu.day
+    delta_time_2mass = (tmass_time.jd - obs_time.jd) * uu.day
+    # need to get the observation coords again (as a copy)
+    obs_coords = SkyCoord(obs_coords)
     # get the 2mass coords at the 2mass epoch
     with warnings.catch_warnings(record=True) as _:
-        tmass_coords = gaia_coords.apply_space_motion(dt=delta_time_2mass)
+        tmass_coords = obs_coords.apply_space_motion(dt=delta_time_2mass)
     # launch the query
     job0 = tmass.launch_job(TMASS_QUERY.format(TMASS_COLS=TMASS_COLS,
                                                ra=tmass_coords.ra.deg,
@@ -303,32 +293,36 @@ def get_2mass_jdate(gaia_sources):
     mean_jdate = np.mean(table0['jdate'])
     # make this a time
     jdate_time = Time(mean_jdate, format='jd')
-    return jdate_time
+    return jdate_time, table0
 
 
-def get_2mass_sources(gaia_sources):
+def get_2mass_sources(gaia_sources, obs_coords, obs_time):
     """
     for each source in gaia sources cross match with the 2mass/Gaia catalog
 
     :param gaia_sources:
     :return:
     """
-    # define the gaia Tap instance
-    tmass = TapPlus(url=TMASS_URL)
     # get the mean jdate for the field
-    jdate_time = get_2mass_jdate(gaia_sources)
+    jdate_time, tmass_table = get_2mass_field(obs_coords, obs_time)
+    # get all 2MASS coords
+    tmass_coords = SkyCoord(ra=tmass_table['ra'],  dec=tmass_table['dec'],
+                            distance=None, pm_ra_cosdec=None, pm_dec=None,
+                            obstime=jdate_time, frame='icrs')
     # get the gaia time
     gaia_time = Time(GAIA_EPOCH, format='decimalyear')
+
+    # TODO: This does not work - no sources matching to 2 arc sec
     # loop around objects
-    for row in tqdm(range(len(gaia_sources['coords_tmass']))):
+    for row in tqdm(range(len(gaia_sources['parallax']))):
         # deal with distances
         if np.isnan(gaia_sources['parallax'][row]):
             distance = None
         else:
             distance = Distance(parallax=gaia_sources['parallax'][row] * uu.mas)
         # need to get the gaia coords again
-        gaia_coords = SkyCoord(ra=gaia_sources['ra'][row] * uu.deg,
-                               dec=gaia_sources['dec'][row] * uu.deg,
+        gaia_coords = SkyCoord(ra=gaia_sources['ra_gaia'][row] * uu.deg,
+                               dec=gaia_sources['dec_gaia'][row] * uu.deg,
                                distance=distance,
                                pm_ra_cosdec=gaia_sources['pmra'][row] * uu.mas / uu.yr,
                                pm_dec=gaia_sources['pmdec'][row] * uu.mas / uu.yr,
@@ -338,25 +332,20 @@ def get_2mass_sources(gaia_sources):
         # get the 2mass coords at the 2mass epoch
         with warnings.catch_warnings(record=True) as _:
             jdate_coords = gaia_coords.apply_space_motion(dt=delta_time_jdate)
-        # launch the query
-        job = tmass.launch_job(TMASS_QUERY.format(TMASS_COLS=TMASS_COLS,
-                                                  ra=jdate_coords.ra.deg,
-                                                  dec=jdate_coords.dec.deg,
-                                                  radius=100*TMASS_RADIUS.to(uu.deg).value))
-        # get the query results
-        table = job.get_results()
+        # Need to find the closest sources in 2MASS to the jdate coords
+        separation = jdate_coords.separation(tmass_coords)
+        # find the closest source
+        closest = np.argmin(separation)
         # if there is no match then we set the value to the sigma limit
-        if len(table) == 0:
+        if separation[closest] > TMASS_RADIUS:
             jmag = SIGMA_LIMIT['J'] + MAG_LIMIT
             hmag = SIGMA_LIMIT['H'] + MAG_LIMIT
             kmag = SIGMA_LIMIT['K'] + MAG_LIMIT
         else:
-            for it, col in enumerate(TMASS_COLS.split(',')):
-                table[col] = table[f'col_{it}']
-                del table[f'col_{it}']
-            jmag = table['j_m'][0]
-            hmag = table['h_m'][0]
-            kmag = table['ks_m'][0]
+            # get the magnitudes
+            jmag = tmass_table['j_m'][closest]
+            hmag = tmass_table['h_m'][closest]
+            kmag = tmass_table['k_m'][closest]
 
         gaia_sources['J'][row] = jmag
         gaia_sources['H'][row] = hmag
@@ -539,7 +528,7 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     # Get the 2MASS source for each Gaia source
     print('Getting 2MASS sources for this region')
-    gaia_sources = get_2mass_sources(gaia_sources)
+    gaia_sources = get_2mass_sources(gaia_sources, obs_coords, obs_time)
     # -------------------------------------------------------------------------
     print('Seeding Gaia image')
     image1, wcs1 = seed_image(gaia_sources, PIXEL_SCALE['G'],
