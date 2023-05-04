@@ -90,13 +90,6 @@ FLIP_X = True
 FLIP_Y = False
 
 
-
-# Transform the image
-TRANSFORM_ROTATE = dict()
-TRANSFORM_ROTATE['G'] = 0 * uu.deg
-TRANSFORM_ROTATE['J'] = 0 * uu.deg
-FLIP_X = False
-
 # -----------------------------------------------------------------------------
 # Gaia specific
 # -----------------------------------------------------------------------------
@@ -178,10 +171,11 @@ def propagate_coords(objdata, obs_time: Time):
                       pm_dec=objdata['PMDE'] * uu.mas / uu.yr,
                       obstime=Time(objdata['EPOCH'], format='jd'))
     # work out the delta time between epoch and J2000.0
-    jepoch = Time(objdata['EPOCH'], format='jd')
-    delta_time = (obs_time.jd - jepoch.jd) * uu.day
-    # get a list of times to work out the coordiantes at
-    delta_times = delta_time + np.arange(DTMIN, DTMAX + 1, DTVAL) * uu.year
+    with warnings.catch_warnings(record=True) as _:
+        jepoch = Time(objdata['EPOCH'], format='jd')
+        delta_time = (obs_time.jd - jepoch.jd) * uu.day
+        # get a list of times to work out the coordiantes at
+        delta_times = delta_time + np.arange(DTMIN, DTMAX + 1, DTVAL) * uu.year
     # get the coordinates
     with warnings.catch_warnings(record=True) as _:
         new_coords = coords.apply_space_motion(dt=delta_times)
@@ -194,18 +188,19 @@ def propagate_coords(objdata, obs_time: Time):
 
 
 # noinspection PyUnresolvedReferences
-def setup_wcs(image_shape, cent_coords, pixel_scale, rotation):
+def setup_wcs(image_shape, cent_coords, pixel_scale, rotation,
+              flip_x, flip_y):
     # need to set up a wcs
     naxis2, naxis1 = image_shape
     pix_scale = pixel_scale.to(uu.deg / uu.pixel).value
     wcs = WCS(naxis=2)
     wcs.wcs.crpix = [naxis1 / 2, naxis2 / 2]
 
-    if FLIP_Y and FLIP_X:
+    if flip_y and flip_x:
         wcs.wcs.cdelt = np.array([pix_scale, -pix_scale])
-    elif FLIP_X:
+    elif flip_x:
         wcs.wcs.cdelt = np.array([pix_scale, pix_scale])
-    elif FLIP_Y:
+    elif flip_y:
         wcs.wcs.cdelt = np.array([pix_scale, -pix_scale])
     else:
         wcs.wcs.cdelt = np.array([-pix_scale, pix_scale])
@@ -222,7 +217,8 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time, radius) -> Dict[str, List[
     # get the gaia time
     gaia_time = Time(GAIA_EPOCH, format='decimalyear')
     # work out the delta time between epoch and J2000.0
-    delta_time_now = (obstime.jd - gaia_time.jd) * uu.day
+    with warnings.catch_warnings(record=True) as _:
+        delta_time_now = (obstime.jd - gaia_time.jd) * uu.day
     # modify radius to catch all sources
     search = abs(delta_time_now * MAX_PM).to(uu.deg)
     radius = radius.to(uu.deg) + search
@@ -333,7 +329,8 @@ def get_2mass_field(obs_coords, obs_time, radius):
     # get the 2MASS time
     tmass_time = Time(TMASS_EPOCH, format='decimalyear')
     # work out the delta time between 2mass and Gaia
-    delta_time_2mass = (tmass_time.jd - obs_time.jd) * uu.day
+    with warnings.catch_warnings(record=True) as _:
+        delta_time_2mass = (tmass_time.jd - obs_time.jd) * uu.day
     # need to get the observation coords again (as a copy)
     obs_coords = SkyCoord(obs_coords)
     # get the 2mass coords at the 2mass epoch
@@ -395,7 +392,8 @@ def get_2mass_sources(gaia_sources, obs_coords, obs_time, radius):
                                pm_dec=gaia_sources['pmdec'][row] * uu.mas / uu.yr,
                                obstime=gaia_time, frame='icrs')
         # work out the delta time between 2mass and Gaia
-        delta_time_jdate = (jdate_time.jd - gaia_time.jd) * uu.day
+        with warnings.catch_warnings(record=True) as _:
+            delta_time_jdate = (jdate_time.jd - gaia_time.jd) * uu.day
         # get the 2mass coords at the 2mass epoch
         with warnings.catch_warnings(record=True) as _:
             jdate_coords = gaia_coords.apply_space_motion(dt=delta_time_jdate)
@@ -424,13 +422,17 @@ def get_2mass_sources(gaia_sources, obs_coords, obs_time, radius):
 
 
 def seed_image(gaia_sources, pixel_scale, obs_coords, fwhm, field_of_view,
-               sigma_limit, band, rotation):
+               sigma_limit, band, rotation, flip_x, flip_y):
+    """
+    Create the image WCS and seed all gaia soirces for band at their co
+    """
     # number of pixels in each direction
     npixel = int(field_of_view.to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
 
     fwhm_pix = fwhm.to(uu.arcsec) / (pixel_scale  * uu.pixel).to(uu.arcsec)
 
-    wcs = setup_wcs((npixel, npixel), obs_coords, pixel_scale, rotation)
+    wcs = setup_wcs((npixel, npixel), obs_coords, pixel_scale, rotation,
+                    flip_x, flip_y)
 
     image = np.random.normal(size=(npixel, npixel), scale=1.0, loc=0)
 
@@ -474,98 +476,38 @@ def seed_image(gaia_sources, pixel_scale, obs_coords, fwhm, field_of_view,
     return image, wcs
 
 
-def plot_map(frame, image, wcs, obs_coords, all_coords, title):
-    cos_dec = np.cos(wcs.wcs.crval[1] * uu.deg).value
-    size_x = wcs.wcs.cdelt[0] * image.shape[1] / (2 * cos_dec)
-    size_y = wcs.wcs.cdelt[1] * image.shape[0] / 2
-    # get the extent of the image
-    if FLIP_X and FLIP_Y:
-        extent = [wcs.wcs.crval[0] - size_x,
-                  wcs.wcs.crval[0] + size_x,
-                  wcs.wcs.crval[1] - size_y,
-                  wcs.wcs.crval[1] + size_y]
-    elif FLIP_X:
-        extent = [wcs.wcs.crval[0] + size_x,
-                  wcs.wcs.crval[0] - size_x,
-                  wcs.wcs.crval[1] - size_y,
-                  wcs.wcs.crval[1] + size_y]
-    elif FLIP_Y:
-        extent = [wcs.wcs.crval[0] - size_x,
-                  wcs.wcs.crval[0] + size_x,
-                  wcs.wcs.crval[1] - size_y,
-                  wcs.wcs.crval[1] + size_y]
-    else:
-        extent = [wcs.wcs.crval[0] - size_x,
-                  wcs.wcs.crval[0] + size_x,
-                  wcs.wcs.crval[1] - size_y,
-                  wcs.wcs.crval[1] + size_y]
-    dra = extent[1] - extent[0]
-    ddec = extent[3] - extent[2]
-
-    frame.imshow(image, origin='lower', vmin=np.arcsinh(-3),
-                 vmax=np.arcsinh(20),
-                 cmap='gist_heat', extent=extent, interpolation='nearest',
-                 transform=frame.get_transform('world'))
-
-    # plot the trail
-    frame.plot(all_coords.ra.deg, all_coords.dec.deg, color='yellow', ls='None',
-               marker='+', lw=2, markersize=10, alpha=0.5,
-               transform=frame.get_transform('world'))
-    # plot the year labels
-    for it, coord in enumerate(all_coords):
-        # check whether text is out of bounds
-        if out_of_bounds(extent, coord):
-            continue
-        # text is offset by 1% of the ra range
-        frame.text(coord.ra.deg + 0.05 * dra, coord.dec.deg + 0.05 * ddec,
-                   f'{all_times[it].decimalyear:.1f}', color='yellow',
-                   alpha=0.5,
-                   horizontalalignment='left', verticalalignment='center',
-                   transform=frame.get_transform('world'))
-
-    # plot the current position as an open blue circle
-    frame.plot(obs_coords.ra.deg, obs_coords.dec.deg, marker='o',
-               color='yellow', ms=20, mfc='none',
-               transform=frame.get_transform('world'))
-
-    # plot a grid in white
-    frame.grid(color='white', ls='--', lw=1, alpha=0.5)
-    # set labels
-    frame.set(xlabel='RA', ylabel='Dec', title=title)
-
-    return frame
-
-
-def plot_map1(frame, image, wcs, obs_coords, all_coords, title,
+def plot_map1(frame, image, wcs, obs_coords, title,
               field_of_view):
     # plot image
     frame.imshow(image, origin='lower', vmin=np.arcsinh(-3),
                  vmax=np.arcsinh(200),
                  cmap='gist_heat', interpolation='nearest')
+    # pick a color for the annotations
+    color = 'cyan'
     # -------------------------------------------------------------------------
     # plot trail
     # -------------------------------------------------------------------------
-    x_all_pix, y_all_pix = wcs.all_world2pix(all_coords.ra.value,
-                                             all_coords.dec.value, 0)
-
-    extent = [0, image.shape[0], 0, image.shape[1]]
-    dx = extent[1] - extent[0]
-    dy = extent[3] - extent[2]
-    # plot the year labels
-    for it, coord in enumerate(all_coords):
-        # check whether text is out of bounds
-        if out_of_bounds(extent, x_all_pix[it], y_all_pix[it]):
-            continue
-
-        # text is offset by 1% of the ra range
-        frame.text(float(x_all_pix[it] + 0.05 * dx),
-                   float(y_all_pix[it] + 0.05 * dy),
-                   f'{all_times[it].decimalyear:.1f}', color='yellow',
-                   alpha=0.5,
-                   horizontalalignment='left', verticalalignment='center')
-
-        frame.plot(x_all_pix[it], y_all_pix[it], color='y', ms=10, marker='+',
-                   ls='None', alpha=0.5)
+    # x_all_pix, y_all_pix = wcs.all_world2pix(all_coords.ra.value,
+    #                                          all_coords.dec.value, 0)
+    #
+    # extent = [0, image.shape[0], 0, image.shape[1]]
+    # dx = extent[1] - extent[0]
+    # dy = extent[3] - extent[2]
+    # # plot the year labels
+    # for it, coord in enumerate(all_coords):
+    #     # check whether text is out of bounds
+    #     if out_of_bounds(extent, x_all_pix[it], y_all_pix[it]):
+    #         continue
+    #
+    #     # text is offset by 1% of the ra range
+    #     frame.text(float(x_all_pix[it] + 0.05 * dx),
+    #                float(y_all_pix[it] + 0.05 * dy),
+    #                f'{all_times[it].decimalyear:.1f}', color='yellow',
+    #                alpha=0.5,
+    #                horizontalalignment='left', verticalalignment='center')
+    #
+    #     frame.plot(x_all_pix[it], y_all_pix[it], color='y', ms=10, marker='+',
+    #                ls='None', alpha=0.5)
 
     # -------------------------------------------------------------------------
     # plot current position
@@ -574,23 +516,28 @@ def plot_map1(frame, image, wcs, obs_coords, all_coords, title,
                                                obs_coords.dec.value, 0)
 
     frame.plot(x_curr_pix, y_curr_pix, marker='o',
-               color='yellow', ms=30, mfc='none')
+               color=color, ms=30, mfc='none')
+    frame.plot(x_curr_pix, y_curr_pix, marker='+',
+               color=color, ms=30, mfc='none')
     # -------------------------------------------------------------------------
     # plot compass
     # -------------------------------------------------------------------------
     x_comp0 = 0.9 * image.shape[0]
     y_comp0 = 0.1 * image.shape[0]
-
+    # convert compass center to ra/dec from pixel space
     ra_comp, dec_comp = wcs.all_pix2world(x_comp0, y_comp0, 0)
-    ra_comp_e = ra_comp + field_of_view.to(uu.deg).value / 10
-    dec_comp_n = dec_comp + field_of_view.to(uu.deg).value / 10
-
+    # get the cos(dec) term
+    cos_dec = np.cos(dec_comp * uu.deg)
+    # get the compas
+    ra_comp_e = ra_comp + (field_of_view.to(uu.deg).value/10) / cos_dec
+    dec_comp_n = dec_comp + field_of_view.to(uu.deg).value/10
+    # convert back to pixel space
     x_comp, y_comp = wcs.all_world2pix(ra_comp, dec_comp, 0)
     x_comp_e, y_comp_e = wcs.all_world2pix(ra_comp_e, dec_comp, 0)
     x_comp_n, y_comp_n = wcs.all_world2pix(ra_comp, dec_comp_n, 0)
-
-    kwargs = dict(ha='center', va='center', color='white',
-                  arrowprops=dict(arrowstyle='<-', color='white',
+    # plot the compass
+    kwargs = dict(ha='center', va='center', color=color,
+                  arrowprops=dict(arrowstyle='<-', color=color,
                                   shrinkA=0.0, shrinkB=0.0))
     frame.annotate('N', (x_comp, y_comp), (x_comp_n, y_comp_n), **kwargs)
     frame.annotate('E', (x_comp, y_comp), (x_comp_e, y_comp_e), **kwargs)
@@ -609,10 +556,10 @@ def plot_map1(frame, image, wcs, obs_coords, all_coords, title,
     patch = FancyArrowPatch((x_scale_px, y_scale_px),
                             (x_scale_px + length, y_scale_px),
                             arrowstyle='-', shrinkA=0.0, shrinkB=0.0,
-                            capstyle='round', color='white', linewidth=2)
+                            capstyle='round', color=color, linewidth=2)
     frame.text(x_stext_px, y_stext_px,
                f'{COMPASS_SIZE.value:g} {COMPASS_SIZE.unit:unicode}',
-               ha='center', va='bottom', color='white')
+               ha='center', va='bottom', color=color)
     frame.add_patch(patch)
 
     # -------------------------------------------------------------------------
@@ -624,7 +571,7 @@ def plot_map1(frame, image, wcs, obs_coords, all_coords, title,
     # -------------------------------------------------------------------------
     # add title
     # -------------------------------------------------------------------------
-    frame.set(title=title)
+    frame.set_title(title, y=1.0, pad=-14, color=color)
 
 
 def out_of_bounds(extent, x, y):
@@ -679,41 +626,68 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     # get all Gaia data around the current coordinates
     print('Getting Gaia sources for this region')
+    # TODO: Deal with >2000 sources
     gaia_sources = get_gaia_sources(obs_coords, obs_time,
                                     radius=RADIUS['G'])
     # -------------------------------------------------------------------------
     # Get the 2MASS source for each Gaia source
     print('Getting 2MASS sources for this region')
+    # TODO: Deal with >2000 sources
     gaia_sources = get_2mass_sources(gaia_sources, obs_coords, obs_time,
                                      radius=RADIUS['J'])
 
 
     # -------------------------------------------------------------------------
-    # seed images
-    print('Seeding Gaia image')
-    image1, wcs1 = seed_image(gaia_sources, PIXEL_SCALE['G'],
-                              obs_coords, FWHM['G'], FIELD_OF_VIEW['G'],
-                              SIGMA_LIMIT['G'], band='G',
-                              rotation=TRANSFORM_ROTATE['G'].to(uu.deg))
-    print('Seeding 2MASS image')
-    image2, wcs2 = seed_image(gaia_sources, PIXEL_SCALE['J'],
-                              obs_coords, FWHM['J'], FIELD_OF_VIEW['J'],
-                              SIGMA_LIMIT['J'], band='J',
-                              rotation=TRANSFORM_ROTATE['J'].to(uu.deg))
+    # seed Gaia images
+    # -------------------------------------------------------------------------
+    kwargs_gaia = dict(pixel_scale=PIXEL_SCALE['G'], obs_coords=obs_coords,
+                        fwhm=FWHM['G'], field_of_view=FIELD_OF_VIEW['G'],
+                        sigma_limit=SIGMA_LIMIT['G'], band='G', )
+    print('\nSeeding Gaia image')
+    image1, wcs1 = seed_image(gaia_sources, flip_x=FLIP_X, flip_y=FLIP_Y,
+                              rotation=TRANSFORM_ROTATE['G'].to(uu.deg),
+                              **kwargs_gaia)
+
+    print('\nSeeding Gaia image (no rotation)')
+    image3, wcs3 = seed_image(gaia_sources, flip_x=False, flip_y=False,
+                              rotation=0 * uu.deg, **kwargs_gaia)
+    # -------------------------------------------------------------------------
+    # seed 2MASS images
+    # -------------------------------------------------------------------------
+    kwargs_tmass = dict(pixel_scale=PIXEL_SCALE['J'], obs_coords=obs_coords,
+                        fwhm=FWHM['J'], field_of_view=FIELD_OF_VIEW['J'],
+                        sigma_limit=SIGMA_LIMIT['J'], band='J',)
+    print('\nSeeding 2MASS image')
+    image2, wcs2 = seed_image(gaia_sources, flip_x=FLIP_X, flip_y=FLIP_Y,
+                              rotation=TRANSFORM_ROTATE['J'].to(uu.deg),
+                              **kwargs_tmass)
+
+    print('\nSeeding 2MASS image (no rotation)')
+    image4, wcs4 = seed_image(gaia_sources, flip_x=False, flip_y=False,
+                              rotation=0*uu.deg, **kwargs_tmass)
 
     # -------------------------------------------------------------------------
     # plot figure
     # -------------------------------------------------------------------------
 
-    fig, frames = plt.subplots(ncols=2, nrows=1, figsize=(16, 8))
+    fig, frames = plt.subplots(ncols=2, nrows=2, figsize=(16, 16))
     # plot the gaia map
     # noinspection PyTypeChecker
-    frame11 = plot_map1(frames[0], image1, wcs1, obs_coords, all_coords,
+    frame11 = plot_map1(frames[0][0], image1, wcs1, obs_coords,
                         'Gaia', FIELD_OF_VIEW['G'])
     # plot the 2mass map
     # noinspection PyTypeChecker
-    frame12 = plot_map1(frames[1], image2, wcs2, obs_coords, all_coords,
+    frame12 = plot_map1(frames[0][1], image2, wcs2, obs_coords,
                         '2MASS', FIELD_OF_VIEW['J'])
+
+    # noinspection PyTypeChecker
+    frame21 = plot_map1(frames[1][0], image3, wcs3, obs_coords,
+                        'Gaia [No rotation]', FIELD_OF_VIEW['G'])
+    # plot the 2mass map
+    # noinspection PyTypeChecker
+    frame22 = plot_map1(frames[1][1], image4, wcs4, obs_coords,
+                        '2MASS [No rotation]', FIELD_OF_VIEW['J'])
+
     # -------------------------------------------------------------------------
     # add title
     # -------------------------------------------------------------------------
@@ -727,6 +701,7 @@ if __name__ == '__main__':
              f'Jmag: {gaia_sources["J"][closest]:.2f}   ')
     plt.suptitle(title)
 
+    plt.subplots_adjust(top=0.9)
 
     plt.show()
     plt.close()
