@@ -25,14 +25,14 @@ settings:
 spirou V0.7.275 full:
   apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
   lbl path: /space/spirou/LBL/SPIROU07275
-  skip obj table: True
+  skip obj table: False
   skip recipe table: True
   skip msg table: True
 
 spirou V0.7.275 mini run 2 (jupiter):
   apero profile: /cosmos99/apero-data/drs-settings/minidata2_07254
   lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter
-  skip obj table: True
+  skip obj table: False
   skip recipe table: True
   skip msg table: True
 
