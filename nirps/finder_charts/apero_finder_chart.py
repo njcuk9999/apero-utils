@@ -1,31 +1,25 @@
 import argparse
 import warnings
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch
 import numpy as np
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance
+from astropy.table import Table
 from astropy.time import Time
 from astropy.wcs import WCS
 from astroquery.utils.tap.core import TapPlus
 from dateutil.parser import parse
-from scipy.optimize import minimize_scalar
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.patches import FancyArrowPatch
+from matplotlib.patches import Rectangle
 from tqdm import tqdm
-
-from apero import lang
-from apero.core import constants
-from apero.core.core import drs_database
-from apero.core.core import drs_log
-from apero.core.utils import drs_startup
 
 # =============================================================================
 # Define variables
 # =============================================================================
-# get WLOG
-WLOG = drs_log.wlog
-# columns
+# columns in the apero astrometric database
 ASTROM_COLS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'PMRA', 'PMDE', 'PLX', 'RV',
                'EPOCH']
 # -----------------------------------------------------------------------------
@@ -69,7 +63,6 @@ TRANSFORM_ROTATE = dict()
 TRANSFORM_ROTATE['G'] = 90 * uu.deg - 37.4 * uu.deg
 TRANSFORM_ROTATE['J'] = 90 * uu.deg - 37.4 * uu.deg
 
-
 # FWHM
 FWHM = dict()
 FWHM['G'] = 2.0 * uu.arcsec
@@ -90,7 +83,6 @@ COMPASS_SIZE = 10 * uu.arcsec
 FLIP_X = True
 # FLIP Y
 FLIP_Y = True
-
 
 # -----------------------------------------------------------------------------
 # Gaia specific
@@ -126,6 +118,11 @@ WHERE
 TMASS_COLS = 'ra,dec,j_m,h_m,k_m,jdate'
 # CROSSMATCH RADIUS (SHOULD BE SMALL)
 TMASS_RADIUS = 2 * uu.arcsec
+# -----------------------------------------------------------------------------
+# Other Surveys
+# -----------------------------------------------------------------------------
+# Define the epoch for SIMBAD
+SIMBAD_EPOCH = 2000.0
 
 
 # =============================================================================
@@ -142,8 +139,32 @@ def get_args():
     parser.add_argument('objname', type=str, help='The object name')
     parser.add_argument('--date', type=str, default='None',
                         help='The date of observation')
+    parser.add_argument('--apero', action='store_true', default=False,
+                        help='Use apero to get the object information')
+    parser.add_argument('--simbad', action='store_true', default=False,
+                        help='Use simbad to get the object information')
+    parser.add_argument('--ra', type=float, default='None',
+                        help='The RA of the object (if not using apero/simbad)'
+                             ' [deg]')
+    parser.add_argument('--dec', type=float, default='None',
+                        help='The DEC of the object (if not using apero/simbad)'
+                             ' [deg]')
+    parser.add_argument('--pmra', type=float, default='None',
+                        help='The proper motion in RA of the object (if not '
+                             'using apero/simbad) [mas/yr]')
+    parser.add_argument('--pmdec', type=float, default='None',
+                        help='The proper motion in DEC of the object (if not '
+                             'using apero/simbad) [mas/yr]')
+    parser.add_argument('--plx', type=float, default='None',
+                        help='The parallax of the object (if not using '
+                             'apero/simbad) [mas]')
+    parser.add_argument('--epoch', type=float, default='None',
+                        help='The epoch of the object (if not using '
+                             'apero/simbad) [decimalyear]')
+    # -------------------------------------------------------------------------
     # load arguments with parser
     args = parser.parse_args()
+    # -------------------------------------------------------------------------
     # deal with date
     if args.date == 'None':
         date = Time.now()
@@ -152,14 +173,23 @@ def get_args():
             date = Time(parse(str(args.date)))
         except Exception as _:
             raise ValueError(f'Cannot parse --date={args.date}')
-
+    # update the date parameter
     args.date = date
+    # deal with epoch
+    if args.epoch not in ['', None, 'None', 'Null']:
+        try:
+            epoch = Time(args.epoch, format='decimalyear')
+        except Exception as _:
+            raise ValueError(f'Cannot parse --epoch={args.epoch}')
+        # update the epoch value
+        args.epoch = epoch
 
     # return arguments
     return args
 
 
-def propagate_coords(objdata, obs_time: Time):
+def propagate_coords(objdata: Dict[str, Any], obs_time: Time
+                     ) -> Tuple[SkyCoord, Time]:
     # deal with distance
     if objdata['PLX'] == 0:
         distance = None
@@ -176,22 +206,19 @@ def propagate_coords(objdata, obs_time: Time):
     with warnings.catch_warnings(record=True) as _:
         jepoch = Time(objdata['EPOCH'], format='jd')
         delta_time = (obs_time.jd - jepoch.jd) * uu.day
-        # get a list of times to work out the coordiantes at
-        delta_times = delta_time + np.arange(DTMIN, DTMAX + 1, DTVAL) * uu.year
     # get the coordinates
     with warnings.catch_warnings(record=True) as _:
-        new_coords = coords.apply_space_motion(dt=delta_times)
-        new_times = jepoch + delta_times
         # center the image on the current coordinates
         curr_coords = coords.apply_space_motion(dt=delta_time)
         curr_time = obs_time
     # return some stuff
-    return new_coords, new_times, curr_coords, curr_time
+    return curr_coords, curr_time
 
 
 # noinspection PyUnresolvedReferences
-def setup_wcs(image_shape, cent_coords, pixel_scale, rotation,
-              flip_x, flip_y):
+def setup_wcs(image_shape: Tuple[int, int], cent_coords: SkyCoord,
+              pixel_scale: uu.Quantity, rotation: uu.Quantity,
+              flip_x: bool, flip_y: bool) -> WCS:
     # need to set up a wcs
     naxis2, naxis1 = image_shape
     pix_scale = pixel_scale.to(uu.deg / uu.pixel).value
@@ -215,7 +242,8 @@ def setup_wcs(image_shape, cent_coords, pixel_scale, rotation,
     return wcs
 
 
-def get_gaia_sources(coords: SkyCoord, obstime: Time, radius) -> Dict[str, List[float]]:
+def get_gaia_sources(coords: SkyCoord, obstime: Time, radius: uu.Quantity
+                     ) -> Dict[str, List[float]]:
     # get the gaia time
     gaia_time = Time(GAIA_EPOCH, format='decimalyear')
     # work out the delta time between epoch and J2000.0
@@ -319,11 +347,17 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time, radius) -> Dict[str, List[
     return sources
 
 
-def get_2mass_field(obs_coords, obs_time, radius):
+def get_2mass_field(obs_coords: SkyCoord, obs_time: Time,
+                    radius: uu.Quantity) -> Tuple[Time, Table]:
     """
     We don't know the epoch of the 2MASS data, so we need to get the epoch
     for the field
-    :param gaia_sources:
+
+    :param obs_coords: SkyCoord, the coordinates of the observation
+    :param obs_time: Time, the time of the observation
+    :param radius: Quantity, the radius of the search (should be at least
+                   field_of_view / sqrt(2) in size so full image is filled
+                   with sources
     :return:
     """
     # define the gaia Tap instance
@@ -363,11 +397,18 @@ def get_2mass_field(obs_coords, obs_time, radius):
     return jdate_time, table0
 
 
-def get_2mass_sources(gaia_sources, obs_coords, obs_time, radius):
+def get_2mass_sources(gaia_sources: Dict[str, List[float]],
+                      obs_coords: SkyCoord, obs_time: Time,
+                      radius: uu.Quantity):
     """
     for each source in gaia sources cross match with the 2mass/Gaia catalog
 
-    :param gaia_sources:
+    :param gaia_sources: Dict, the gaia sources
+    :param obs_coords: SkyCoord, the coordinates of the observation
+    :param obs_time: Time, the time of the observation
+    :param radius: Quantity, the radius of the search (should be at least
+                   field_of_view / sqrt(2) in size so full image is filled
+                   with sources
     :return:
     """
     # get the mean jdate for the field
@@ -435,7 +476,7 @@ def seed_image(gaia_sources, pixel_scale, obs_coords, fwhm, field_of_view,
     # number of pixels in each direction
     npixel = int(field_of_view.to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
 
-    fwhm_pix = fwhm.to(uu.arcsec) / (pixel_scale  * uu.pixel).to(uu.arcsec)
+    fwhm_pix = fwhm.to(uu.arcsec) / (pixel_scale * uu.pixel).to(uu.arcsec)
 
     wcs = setup_wcs((npixel, npixel), obs_coords, pixel_scale, rotation,
                     flip_x, flip_y)
@@ -483,7 +524,7 @@ def seed_image(gaia_sources, pixel_scale, obs_coords, fwhm, field_of_view,
 
 
 def plot_map1(frame, image, wcs, obs_coords, title,
-              field_of_view):
+              field_of_view, pixel_scale, scale_factor):
     # plot image
     frame.imshow(image, origin='lower', vmin=np.arcsinh(-3),
                  vmax=np.arcsinh(200),
@@ -535,8 +576,9 @@ def plot_map1(frame, image, wcs, obs_coords, title,
     # get the cos(dec) term
     cos_dec = np.cos(dec_comp * uu.deg)
     # get the compas
-    ra_comp_e = ra_comp + (field_of_view.to(uu.deg).value/10) / cos_dec
-    dec_comp_n = dec_comp + field_of_view.to(uu.deg).value/10
+    length_world = field_of_view * scale_factor
+    ra_comp_e = ra_comp + (length_world.to(uu.deg).value / 10) / cos_dec
+    dec_comp_n = dec_comp + length_world.to(uu.deg).value / 10
     # convert back to pixel space
     x_comp, y_comp = wcs.all_world2pix(ra_comp, dec_comp, 0)
     x_comp_e, y_comp_e = wcs.all_world2pix(ra_comp_e, dec_comp, 0)
@@ -575,6 +617,20 @@ def plot_map1(frame, image, wcs, obs_coords, title,
     frame.set_yticks([])
 
     # -------------------------------------------------------------------------
+    # Add rectangle for the real field of view
+    # -------------------------------------------------------------------------
+    # number of pixels in each direction
+    npixel = int(field_of_view.to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
+    # the recetangle should be centered on the center of the image
+    center_x, center_y = image.shape[1] // 2, image.shape[0] // 2
+    # we need to bottom left corner of the rectangle
+    x0, y0 = center_x - npixel // 2, center_y - npixel // 2
+    # plot a rectangle
+    rect = Rectangle((x0, y0), npixel, npixel, linewidth=2, edgecolor=color,
+                     facecolor='none', ls='--')
+    frame.add_patch(rect)
+
+    # -------------------------------------------------------------------------
     # add title
     # -------------------------------------------------------------------------
     frame.set_title(title, y=1.0, pad=-14, color=color)
@@ -601,17 +657,18 @@ def out_of_bounds(extent, x, y):
     return False
 
 
-# =============================================================================
-# Start of code
-# =============================================================================
-if __name__ == '__main__':
+def from_apero(objname: str) -> Dict[str, any]:
+    try:
+        from apero.core import constants
+        from apero.core.core import drs_database
+        from apero.core.core import drs_log
+        from apero.core.utils import drs_startup
+    except ImportError:
+        emsg = 'Cannot use APERO. Please install it to use --apero'
+        raise ImportError(emsg)
     # get the parameter dictionary of constants from apero
     params = constants.load()
     pconst = constants.pload()
-    # Get the text types
-    textentry = lang.textentry
-    # load arguments
-    args = get_args()
     # set apero pid
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # -------------------------------------------------------------------------
@@ -621,14 +678,100 @@ if __name__ == '__main__':
     objdbm = drs_database.AstrometricDatabase(params)
     objdbm.load_db()
     # get the clean / alias-safe version of the object name
-    objname, _ = objdbm.find_objname(pconst, args.objname)
+    objname, _ = objdbm.find_objname(pconst, objname)
     # get the data for this object
     objdata = objdbm.get_entries(','.join(ASTROM_COLS),
                                  condition=f'OBJNAME="{objname}"').iloc[0]
     # -------------------------------------------------------------------------
+    # convert objdata to object dictionary for use in main
+    objdict = dict()
+    # get the object name
+    objdict['OBJNAME'] = objdata['OBJNAME']
+    # get the object ra and dec
+    objdict['RA_DEG'] = objdata['RA_DEG']
+    objdict['DEC_DEG'] = objdata['DEC_DEG']
+    # get the object epoch (jd)
+    objdict['EPOCH'] = objdata['EPOCH']
+    # get the object parallax
+    objdict['PLX'] = objdata['PLX']
+    # get the object proper motion
+    objdict['PMRA'] = objdata['PMRA']
+    objdict['PMDE'] = objdata['PMDE']
+    # return the object dictionary
+    return objdict
+
+
+def from_cmd_args(args: Any) -> Dict[str, Any]:
+    """
+    Take parameters directly from the command line arguments
+    """
+    # set up the objdict for return
+    objdict = dict()
+
+    keys = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'EPOCH', 'PLX', 'PMRA', 'PMDE']
+    values = [args.objname, args.ra, args.dec, args.epoch, args.plx,
+              args.pmra, args.pmde]
+    # loop around keys and values and populate object dictionary
+    for key, value in zip(keys, values):
+        # check for null value
+        if value in [None, '', 'None', 'Null']:
+            raise ValueError(f'Parameter {key} is None. Must be set if not '
+                             f'using apero or simbad')
+        objdict[key] = value
+    # return objdict
+    return objdict
+
+
+def from_simbad(objname: str) -> Dict[str, Any]:
+    """
+    Resolve an object using simbad
+    """
+    from astroquery.simbad import Simbad
+    # get the simbad table
+    table = Simbad.query_object(objname)
+    # deal with an empty table
+    if table is None or len(table) == 0:
+        raise ValueError(f'Object name {objname} could not be resolved in '
+                         f'SIMBAD')
+    # set up the objdict for return
+    objdict = dict()
+    # get the object name
+    objdict['OBJNAME'] = table['MAIN_ID'][0].decode('utf-8')
+    # get the object ra and dec
+    objdict['RA_DEG'] = table['RA'][0]
+    objdict['DEC_DEG'] = table['DEC'][0]
+    # get the object epoch (jd)
+    objdict['EPOCH'] = Time(SIMBAD_EPOCH).jd
+    # get the object parallax
+    objdict['PLX'] = table['PLX_VALUE'][0]
+    # get the object proper motion
+    objdict['PMRA'] = table['PMRA'][0]
+    objdict['PMDE'] = table['PMDEC'][0]
+    # return the object dictionary
+    return objdict
+
+
+def main(objname: str, date: Time, objdict: Dict[str, Any]):
+    """
+    Using an object name, an astropy time and a dictionary of the target
+    object parameters create the finder chart for the object
+
+    :param objname: str, the name of the object
+    :param date: Time, the time of the observation
+    :param objdict: Dict[str, Any], the dictionary of object parameters
+
+    Object dictionary must contain the following:
+        - OBJNAME: str, the name of the object
+        - RA_DEG: float, the right ascension of the object (degrees)
+        - DEC_DEG: float, the declination of the object (degrees)
+        - EPOCH: float, the epoch of the object (jd)
+        - PLX: float, the parallax of the object (mas)
+        - PMRA: float, the proper motion in right ascension (mas/yr)
+        - PMDE: float, the proper motion in declination (mas/yr)
+
+    """
     print('Progating coords')
-    pout = propagate_coords(objdata, args.date)
-    all_coords, all_times, obs_coords, obs_time = pout
+    obs_coords, obs_time = propagate_coords(objdict, date)
     # -------------------------------------------------------------------------
     # get all Gaia data around the current coordinates
     print('Getting Gaia sources for this region')
@@ -641,15 +784,13 @@ if __name__ == '__main__':
     # TODO: Deal with >2000 sources
     gaia_sources = get_2mass_sources(gaia_sources, obs_coords, obs_time,
                                      radius=RADIUS['J'])
-
-
     # -------------------------------------------------------------------------
     # seed Gaia images
     # -------------------------------------------------------------------------
     kwargs_gaia = dict(pixel_scale=PIXEL_SCALE['G'], obs_coords=obs_coords,
-                        fwhm=FWHM['G'], field_of_view=FIELD_OF_VIEW['G'],
-                        sigma_limit=SIGMA_LIMIT['G'], band='G',
-                        scale_factor=SCALE_FACTOR)
+                       fwhm=FWHM['G'], field_of_view=FIELD_OF_VIEW['G'],
+                       sigma_limit=SIGMA_LIMIT['G'], band='G',
+                       scale_factor=SCALE_FACTOR)
     print('\nSeeding Gaia image')
     image1, wcs1 = seed_image(gaia_sources, flip_x=FLIP_X, flip_y=FLIP_Y,
                               rotation=TRANSFORM_ROTATE['G'].to(uu.deg),
@@ -672,29 +813,37 @@ if __name__ == '__main__':
 
     print('\nSeeding 2MASS image (no rotation)')
     image4, wcs4 = seed_image(gaia_sources, flip_x=False, flip_y=False,
-                              rotation=0*uu.deg, **kwargs_tmass)
+                              rotation=0 * uu.deg, **kwargs_tmass)
 
     # -------------------------------------------------------------------------
-    # plot figure
+    # plot figures
     # -------------------------------------------------------------------------
-
-    fig, frames = plt.subplots(ncols=2, nrows=2, figsize=(16, 16))
+    fig1, frame1 = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
+    fig2, frame2 = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
+    fig3, frame3 = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
+    fig4, frame4 = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
     # plot the gaia map
     # noinspection PyTypeChecker
-    frame11 = plot_map1(frames[0][0], image1, wcs1, obs_coords,
-                        'Gaia', FIELD_OF_VIEW['G'])
+    plot_map1(frame1, image1, wcs1, obs_coords,
+              'Gaia', FIELD_OF_VIEW['G'], PIXEL_SCALE['G'],
+              scale_factor=SCALE_FACTOR)
     # plot the 2mass map
     # noinspection PyTypeChecker
-    frame12 = plot_map1(frames[0][1], image2, wcs2, obs_coords,
-                        '2MASS', FIELD_OF_VIEW['J'])
+    plot_map1(frame2, image2, wcs2, obs_coords,
+              '2MASS', FIELD_OF_VIEW['J'], PIXEL_SCALE['J'],
+              scale_factor=SCALE_FACTOR)
 
     # noinspection PyTypeChecker
-    frame21 = plot_map1(frames[1][0], image3, wcs3, obs_coords,
-                        'Gaia [No rotation]', FIELD_OF_VIEW['G'])
+    plot_map1(frame3, image3, wcs3, obs_coords,
+              'Gaia [No rotation]', FIELD_OF_VIEW['G'],
+              PIXEL_SCALE['G'],
+              scale_factor=SCALE_FACTOR)
     # plot the 2mass map
     # noinspection PyTypeChecker
-    frame22 = plot_map1(frames[1][1], image4, wcs4, obs_coords,
-                        '2MASS [No rotation]', FIELD_OF_VIEW['J'])
+    plot_map1(frame4, image4, wcs4, obs_coords,
+              '2MASS [No rotation]', FIELD_OF_VIEW['J'],
+              PIXEL_SCALE['J'],
+              scale_factor=SCALE_FACTOR)
 
     # -------------------------------------------------------------------------
     # add title
@@ -707,9 +856,39 @@ if __name__ == '__main__':
              f'Dec: {obs_coords.dec.to_string(uu.deg, sep=":")}   \n'
              f'Gmag: {gaia_sources["G"][closest]:.2f}   '
              f'Jmag: {gaia_sources["J"][closest]:.2f}   ')
-    plt.suptitle(title)
+    fig1.suptitle(title)
+    fig2.suptitle(title)
+    fig3.suptitle(title)
+    fig4.suptitle(title)
 
-    plt.subplots_adjust(top=0.9)
+    with PdfPages(f'NIRPS_finder_{objname}.pdf') as pp:
+        fig1.savefig(pp, format='pdf')
+        fig2.savefig(pp, format='pdf')
+        fig3.savefig(pp, format='pdf')
+        fig4.savefig(pp, format='pdf')
 
-    plt.show()
     plt.close()
+
+
+# =============================================================================
+# Start of code
+# =============================================================================
+if __name__ == '__main__':
+
+    # load arguments
+    cmd_args = get_args()
+    # get stuff from apero (not required but more useful)
+    if cmd_args.apero:
+        _objdict = from_apero(cmd_args.objname)
+    # get stuff from simbad
+    elif cmd_args.simbad:
+        _objdict = from_simbad(cmd_args.objname)
+    # else we get the object dictionary from the cmd_args
+    else:
+        _objdict = from_cmd_args(cmd_args)
+    # run the main code
+    main(cmd_args.objname, cmd_args.date, objdict=_objdict)
+
+# =============================================================================
+# End of code
+# =============================================================================
