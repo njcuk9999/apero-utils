@@ -38,6 +38,8 @@ DTVAL = 3
 FIELD_OF_VIEW = dict()
 FIELD_OF_VIEW['G'] = 77.6 * uu.arcsec
 FIELD_OF_VIEW['J'] = 77.6 * uu.arcsec
+# SCALE FACTOR (size to be plotted to compared to field of view)
+SCALE_FACTOR = 1.5
 # RADIUS
 RADIUS = dict()
 RADIUS['G'] = FIELD_OF_VIEW['G'] / np.sqrt(2)
@@ -87,7 +89,7 @@ COMPASS_SIZE = 10 * uu.arcsec
 # FLIP X
 FLIP_X = True
 # FLIP Y
-FLIP_Y = False
+FLIP_Y = True
 
 
 # -----------------------------------------------------------------------------
@@ -422,10 +424,14 @@ def get_2mass_sources(gaia_sources, obs_coords, obs_time, radius):
 
 
 def seed_image(gaia_sources, pixel_scale, obs_coords, fwhm, field_of_view,
-               sigma_limit, band, rotation, flip_x, flip_y):
+               sigma_limit, band, rotation, flip_x, flip_y, scale_factor):
     """
     Create the image WCS and seed all gaia soirces for band at their co
     """
+    # plot out to the scale factor
+    # TODO: fix this
+    field_of_view = field_of_view * scale_factor
+
     # number of pixels in each direction
     npixel = int(field_of_view.to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
 
@@ -642,7 +648,8 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     kwargs_gaia = dict(pixel_scale=PIXEL_SCALE['G'], obs_coords=obs_coords,
                         fwhm=FWHM['G'], field_of_view=FIELD_OF_VIEW['G'],
-                        sigma_limit=SIGMA_LIMIT['G'], band='G', )
+                        sigma_limit=SIGMA_LIMIT['G'], band='G',
+                        scale_factor=SCALE_FACTOR)
     print('\nSeeding Gaia image')
     image1, wcs1 = seed_image(gaia_sources, flip_x=FLIP_X, flip_y=FLIP_Y,
                               rotation=TRANSFORM_ROTATE['G'].to(uu.deg),
@@ -656,7 +663,8 @@ if __name__ == '__main__':
     # -------------------------------------------------------------------------
     kwargs_tmass = dict(pixel_scale=PIXEL_SCALE['J'], obs_coords=obs_coords,
                         fwhm=FWHM['J'], field_of_view=FIELD_OF_VIEW['J'],
-                        sigma_limit=SIGMA_LIMIT['J'], band='J',)
+                        sigma_limit=SIGMA_LIMIT['J'], band='J',
+                        scale_factor=SCALE_FACTOR)
     print('\nSeeding 2MASS image')
     image2, wcs2 = seed_image(gaia_sources, flip_x=FLIP_X, flip_y=FLIP_Y,
                               rotation=TRANSFORM_ROTATE['J'].to(uu.deg),
