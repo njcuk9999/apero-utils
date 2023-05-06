@@ -143,22 +143,22 @@ def get_args():
                         help='Use apero to get the object information')
     parser.add_argument('--simbad', action='store_true', default=False,
                         help='Use simbad to get the object information')
-    parser.add_argument('--ra', type=float, default='None',
+    parser.add_argument('--ra', type=float, default=np.nan,
                         help='The RA of the object (if not using apero/simbad)'
                              ' [deg]')
-    parser.add_argument('--dec', type=float, default='None',
+    parser.add_argument('--dec', type=float, default=np.nan,
                         help='The DEC of the object (if not using apero/simbad)'
                              ' [deg]')
-    parser.add_argument('--pmra', type=float, default='None',
+    parser.add_argument('--pmra', type=float, default=np.nan,
                         help='The proper motion in RA of the object (if not '
                              'using apero/simbad) [mas/yr]')
-    parser.add_argument('--pmdec', type=float, default='None',
+    parser.add_argument('--pmdec', type=float, default=np.nan,
                         help='The proper motion in DEC of the object (if not '
                              'using apero/simbad) [mas/yr]')
-    parser.add_argument('--plx', type=float, default='None',
+    parser.add_argument('--plx', type=float, default=np.nan,
                         help='The parallax of the object (if not using '
                              'apero/simbad) [mas]')
-    parser.add_argument('--epoch', type=float, default='None',
+    parser.add_argument('--epoch', type=float, default=np.nan,
                         help='The epoch of the object (if not using '
                              'apero/simbad) [decimalyear]')
     # -------------------------------------------------------------------------
@@ -176,7 +176,7 @@ def get_args():
     # update the date parameter
     args.date = date
     # deal with epoch
-    if args.epoch not in ['', None, 'None', 'Null']:
+    if not np.isnan(args.epoch):
         try:
             epoch = Time(args.epoch, format='decimalyear')
         except Exception as _:
@@ -681,7 +681,13 @@ def from_apero(objname: str) -> Dict[str, any]:
     objname, _ = objdbm.find_objname(pconst, objname)
     # get the data for this object
     objdata = objdbm.get_entries(','.join(ASTROM_COLS),
-                                 condition=f'OBJNAME="{objname}"').iloc[0]
+                                 condition=f'OBJNAME="{objname}"')
+    # deal with no data found
+    if len(objdata) == 0:
+        raise ValueError(f'No object found with name {objname}')
+    # otherwise use first entry
+    else:
+        objdata = objdata.iloc[0]
     # -------------------------------------------------------------------------
     # convert objdata to object dictionary for use in main
     objdict = dict()
@@ -714,7 +720,7 @@ def from_cmd_args(args: Any) -> Dict[str, Any]:
     # loop around keys and values and populate object dictionary
     for key, value in zip(keys, values):
         # check for null value
-        if value in [None, '', 'None', 'Null']:
+        if np.isnan(value):
             raise ValueError(f'Parameter {key} is None. Must be set if not '
                              f'using apero or simbad')
         objdict[key] = value
@@ -770,7 +776,7 @@ def main(objname: str, date: Time, objdict: Dict[str, Any]):
         - PMDE: float, the proper motion in declination (mas/yr)
 
     """
-    print('Progating coords')
+    print(f'Propagating coords to {date.iso}')
     obs_coords, obs_time = propagate_coords(objdict, date)
     # -------------------------------------------------------------------------
     # get all Gaia data around the current coordinates
@@ -877,17 +883,35 @@ if __name__ == '__main__':
 
     # load arguments
     cmd_args = get_args()
-    # get stuff from apero (not required but more useful)
-    if cmd_args.apero:
-        _objdict = from_apero(cmd_args.objname)
-    # get stuff from simbad
-    elif cmd_args.simbad:
-        _objdict = from_simbad(cmd_args.objname)
+    # if using apero or simbad can do multiple objects at once
+    if cmd_args.apero or cmd_args.simbad:
+        objnames = cmd_args.objname.split(',')
+        # loop around objnames
+        for objname in objnames:
+            # print progress
+            print('\n' + '=' * 50)
+            print('Running NIRPS finder for object: {0}'.format(objname))
+            print('=' * 50 + '\n')
+            # get stuff from apero (not required but more useful)
+            if cmd_args.apero:
+                _objdict = from_apero(objname)
+                # run the main code
+                main(objname, cmd_args.date, objdict=_objdict)
+            # get stuff from simbad
+            elif cmd_args.simbad:
+                _objdict = from_simbad(objname)
+                # run the main code
+                main(objname, cmd_args.date, objdict=_objdict)
     # else we get the object dictionary from the cmd_args
     else:
+        # print progress
+        print('\n' + '=' * 50)
+        print('Running NIRPS finder for object: {0}'.format(cmd_args.objname))
+        print('=' * 50 + '\n')
+        # get stuff from command line
         _objdict = from_cmd_args(cmd_args)
-    # run the main code
-    main(cmd_args.objname, cmd_args.date, objdict=_objdict)
+        # run the main code
+        main(cmd_args.objname, cmd_args.date, objdict=_objdict)
 
 # =============================================================================
 # End of code
