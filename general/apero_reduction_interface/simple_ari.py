@@ -1708,6 +1708,9 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     if len(object_table) == 0:
         # print progress
         wlog(params, '', 'No objects found in object table')
+        # remove the FIRST and LAST RAW column
+        object_table.remove_column('FIRST_RAW')
+        object_table.remove_column('LAST_RAW')
         # return empty table
         return object_table
     # ------------------------------------------------------------------
