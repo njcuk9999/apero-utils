@@ -1704,6 +1704,13 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # get WLOG
     wlog = drs_log.wlog
     # ------------------------------------------------------------------
+    # deal with no entries in object table
+    if len(object_table) == 0:
+        # print progress
+        wlog(params, '', 'No objects found in object table')
+        # return empty table
+        return object_table
+    # ------------------------------------------------------------------
     # print progress
     wlog(params, 'info', 'Creating object pages')
     # set up the arguments for the multiprocessing
