@@ -1709,15 +1709,14 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     import multiprocessing
     pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
     # use a Manager to create a shared dictionary to collect results
-    manager = multiprocessing.Manager()
-    results_dict = manager.dict()
+    results_dict = dict()
     # change the object column to a url
     for it, row in enumerate(object_table):
         # combine arguments
         itargs = [it] + args[1:]
         # run the pool
         results = pool.apply_async(add_obj_page, args=itargs)
-        # push result to results storage
+        # push result to result storage
         results_dict[it] = results
     # Wait for all jobs to finish
     pool.close()
