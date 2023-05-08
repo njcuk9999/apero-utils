@@ -1591,7 +1591,7 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     # set apero pid
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
-    wlog = drs_log.wlog
+    # wlog = drs_log.wlog
     # ------------------------------------------------------------------
     # get the parameters for lbl website url
     outdir = os.path.basename(settings['OBJ_OUT'])
@@ -1602,13 +1602,13 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     # print progress
     msg = f'\tCreating page for {objname} [{it + 1} of {len(object_table)}]'
     margs = [objname, it + 1, len(object_table)]
-    wlog(params, '', msg.format(*margs))
+    # wlog(params, '', msg.format(*margs))
     # create the object class
     object_instance = ObjectData(profile, settings, headers,
                                  objname, file_dict, object_table)
     # ---------------------------------------------------------------------
     # populate the header dictionary for this object instance
-    wlog(params, '', f'\t\tPopulating header dictionary')
+    # wlog(params, '', f'\t\tPopulating header dictionary')
     object_instance.populate_header_dict()
     # ---------------------------------------------------------------------
     # generate url for object
@@ -1645,33 +1645,33 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     # Spectrum section
     # ---------------------------------------------------------------------
     # print progress
-    wlog(params, '', f'\t\tCreating spectrum section')
+    # wlog(params, '', f'\t\tCreating spectrum section')
     # add spectrum section
     objpage_spectrum(object_page, names[0], items[0], object_instance)
     # ---------------------------------------------------------------------
     # LBL section
     # ---------------------------------------------------------------------
     # print progress
-    wlog(params, '', f'\t\tCreating LBL section')
+    # wlog(params, '', f'\t\tCreating LBL section')
     # add LBL section
     objpage_lbl(object_page, names[1], items[1], object_instance)
     # ---------------------------------------------------------------------
     # CCF section
     # ---------------------------------------------------------------------
     # print progress
-    wlog(params, '', f'\t\tCreating CCF section')
+    # wlog(params, '', f'\t\tCreating CCF section')
     # add CCF section
     objpage_ccf(object_page, names[2], items[2], object_instance)
     # ---------------------------------------------------------------------
     # Time series section
     # ---------------------------------------------------------------------
     # print progress
-    wlog(params, '', f'\t\tCreating time series section')
+    # wlog(params, '', f'\t\tCreating time series section')
     # add time series section
     objpage_timeseries(object_page, names[3], items[3], object_instance)
     # ---------------------------------------------------------------------
     # print progress
-    wlog(params, '', f'\t\tWriting to disk')
+    # wlog(params, '', f'\t\tWriting to disk')
     # construct a path for the object name
     object_page_path = settings['OBJ_OUT']
     # construct the rst filename
@@ -1933,7 +1933,7 @@ def download_table(files: List[str], descriptions: List[str],
     # construct the stats table
     # --------------------------------------------------------------------------
     # start with a download dictionary
-    down_dict = dict(Description=[], Value=[], LastModified=[])
+    down_dict = dict(Description=[], Value=[], Uploaded=[])
     # loop around files
     for basename in in_paths:
         # add the rdb file
