@@ -1865,6 +1865,8 @@ def download_table(files: List[str], descriptions: List[str],
     in_paths = dict()
     # storage for the descriptions
     descs = dict()
+    # storage of the last modified times
+    last_modified = dict()
     # loop around files and get the paths
     for it, filename in enumerate(files):
         # get the basename
@@ -1877,16 +1879,20 @@ def download_table(files: List[str], descriptions: List[str],
         out_paths[basename] = os.path.join(down_dir, basename)
         # get the descriptions
         descs[basename] = descriptions[it]
+        # get the last modified time of the filename
+        last_mod = Time(os.path.getmtime(filename), format='unix').iso
+        last_modified[basename] = last_mod
     # --------------------------------------------------------------------------
     # construct the stats table
     # --------------------------------------------------------------------------
     # start with a download dictionary
-    down_dict = dict(Description=[], Value=[])
+    down_dict = dict(Description=[], Value=[], LastModified=[])
     # loop around files
     for basename in in_paths:
         # add the rdb file
         down_dict['Description'].append(descs[basename])
         down_dict['Value'].append(_make_download(basename, ref_paths[basename]))
+        down_dict['LastModified'].append(last_modified[basename])
         # copy the file from in path to out path
         #   if file is already here then don't copy
         if in_paths[basename] != out_paths[basename]:
@@ -1896,6 +1902,7 @@ def download_table(files: List[str], descriptions: List[str],
     down_dict2 = dict()
     down_dict2[title] = down_dict['Description']
     down_dict2[' '] = down_dict['Value']
+    down_dict2['Last Modified'] = down_dict['LastModified']
     # --------------------------------------------------------------------------
     # convert to table
     down_table = Table(down_dict2)
