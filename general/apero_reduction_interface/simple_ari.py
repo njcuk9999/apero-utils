@@ -1591,7 +1591,7 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     # set apero pid
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
-    # wlog = drs_log.wlog
+    wlog = drs_log.wlog
     # ------------------------------------------------------------------
     # get the parameters for lbl website url
     outdir = os.path.basename(settings['OBJ_OUT'])
@@ -1602,7 +1602,7 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     # print progress
     msg = f'\tCreating page for {objname} [{it + 1} of {len(object_table)}]'
     margs = [objname, it + 1, len(object_table)]
-    # wlog(params, '', msg.format(*margs))
+    wlog(params, '', msg.format(*margs))
     # create the object class
     object_instance = ObjectData(profile, settings, headers,
                                  objname, file_dict, object_table)
@@ -2242,7 +2242,10 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     diff = pp[1] - pp[0]
     central_val = np.nanmean(pp)
     # used for plotting but also for the flagging of outliers
-    ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
+    if diff == 0:
+        ylim = [0, 1]
+    else:
+        ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
     l_arrow = (ylim[1] - ylim[0]) / 10.0
     # flag the low outliers
