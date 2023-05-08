@@ -219,7 +219,7 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
         # add the lbl count
         object_table, filedict = add_lbl_count(profile, object_table, filedict)
         # add the object pages
-        object_table = add_obj_pages(settings, profile, headers,
+        object_table = add_obj_pages(gsettings, settings, profile, headers,
                                      object_table, filedict)
         # add final object table to profile stats
         profile_stats[TABLE_NAMES[0]] = object_table
@@ -1686,8 +1686,9 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     return rprops
 
 
-def add_obj_pages(settings: dict, profile: dict, headers: dict,
-                  object_table: Table, file_dict: FileDictReturn):
+def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
+                  headers: dict, object_table: Table,
+                  file_dict: FileDictReturn) -> Table:
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
@@ -1700,16 +1701,13 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
     # get WLOG
     wlog = drs_log.wlog
     # ------------------------------------------------------------------
-    # copy the object column to array
-    objurls = [' ' * 255] * len(object_table)
     # print progress
     wlog(params, 'info', 'Creating object pages')
-
+    # set up the arguments for the multiprocessing
     args = [0, profile, settings, headers, object_table, file_dict]
 
-
     import multiprocessing
-    pool = multiprocessing.Pool(processes=settings['N_CORES'])
+    pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
     # store results
     results = []
     # change the object column to a url
