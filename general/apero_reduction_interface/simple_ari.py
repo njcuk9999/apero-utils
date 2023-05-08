@@ -1708,33 +1708,27 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
 
     import multiprocessing
     pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
-    # store results
-    results = []
+    # use a Manager to create a shared dictionary to collect results
+    manager = multiprocessing.Manager()
+    results_dict = manager.dict()
     # change the object column to a url
     for it, row in enumerate(object_table):
         # combine arguments
         itargs = [it] + args[1:]
         # run the pool
-        result = pool.apply_async(add_obj_page, args=itargs)
+        results = pool.apply_async(add_obj_page, args=itargs)
         # push result to results storage
-        results.append(result)
+        results_dict[it] = results
     # Wait for all jobs to finish
     pool.close()
     pool.join()
     # -------------------------------------------------------------------------
-    # push the dictionary into a single dictionary
-    rprops = dict()
-    # loop around results
-    for result in results:
-        # get the result dictionary and feed into rprops
-        for key in result.get().keys():
-            if key in rprops:
-                rprops[key].append(rprops)
-            else:
-                rprops[key] = [rprops]
+    # Use a dictionary comprehension to extract trhe results from each
+    # async results object
+    nprops = {key: result.get() for key, result in results_dict.items()}
     # -------------------------------------------------------------------------
     # replace object name with the object name + object url
-    object_table[OBJECT_COLUMN] = rprops['OBJURL']
+    object_table[OBJECT_COLUMN] = nprops['OBJURL']
     # remove the FIRST and LAST RAW column
     object_table.remove_column('FIRST_RAW')
     object_table.remove_column('LAST_RAW')
@@ -1927,8 +1921,11 @@ def download_table(files: List[str], descriptions: List[str],
         # get the descriptions
         descs[basename] = descriptions[it]
         # get the last modified time of the filename
-        last_mod = Time(os.path.getmtime(filename), format='unix').iso
-        last_modified[basename] = last_mod
+        if os.path.exists(filename):
+            last_mod = Time(os.path.getmtime(filename), format='unix').iso
+            last_modified[basename] = last_mod
+        else:
+            last_modified[basename] = 'N/A'
     # --------------------------------------------------------------------------
     # construct the stats table
     # --------------------------------------------------------------------------
