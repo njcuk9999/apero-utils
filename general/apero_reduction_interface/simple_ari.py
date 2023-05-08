@@ -692,6 +692,10 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
         if len(file_dict[objname][COUNT_COLS[0]]) == 0:
             del file_dict[objname]
     # ------------------------------------------------------------------
+    # sort object table by object column name
+    sortmask = np.argsort(object_table[OBJECT_COLUMN])
+    object_table = object_table[sortmask]
+    # ------------------------------------------------------------------
     # return object table
     return object_table, file_dict
 
