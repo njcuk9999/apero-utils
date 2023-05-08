@@ -1575,11 +1575,13 @@ class ObjectData:
         self.time_series_dwn_table = None
 
 
-def add_obj_pages(settings: dict, profile: dict, headers: dict,
-                  object_table: Table, file_dict: FileDictReturn):
+def add_obj_page(it: int, profile: dict, settings: dict,
+                 headers, object_table: Table,
+                 file_dict: FileDictReturn) -> Dict[str, Any]:
+    # get the object name for this row
+    objname = object_table[OBJECT_COLUMN][it]
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
-    from apero.base.base import TQDM as tqdm
     from apero.core import constants
     from apero.core.core import drs_log
     from apero.core.utils import drs_startup
@@ -1597,97 +1599,144 @@ def add_obj_pages(settings: dict, profile: dict, headers: dict,
     name = profile['profile name']
     clean_name = settings['CPN']
     # ------------------------------------------------------------------
+    # print progress
+    msg = f'\tCreating page for {objname} [{it + 1} of {len(object_table)}]'
+    margs = [objname, it + 1, len(object_table)]
+    wlog(params, '', msg.format(*margs))
+    # create the object class
+    object_instance = ObjectData(profile, settings, headers,
+                                 objname, file_dict, object_table)
+    # ---------------------------------------------------------------------
+    # populate the header dictionary for this object instance
+    wlog(params, '', f'\t\tPopulating header dictionary')
+    object_instance.populate_header_dict()
+    # ---------------------------------------------------------------------
+    # generate url for object
+    object_url = f'{clean_name}_{outdir}_{objname}_index'
+    obj_url = _make_url(objname, object_url)
+    # create ARI object page
+    object_page = drs_markdown.MarkDownPage(object_url)
+    # add title
+    object_page.add_title(f'{objname} ({name})')
+    # ---------------------------------------------------------------------
+    # Add basic text
+    # construct text to add
+    object_page.add_text(f'This page was last modified: {Time.now()} (UTC)')
+    object_page.add_newline()
+    # link back to the table
+    # create a table page for this table
+    table_ref_name = clean_name.lower() + '_' + TABLE_NAMES[0].lower()
+    table_ref_url = _make_url('object table', table_ref_name)
+    object_page.add_text(f'Back to the {table_ref_url}')
+    object_page.add_newline()
+    # ---------------------------------------------------------------------
+    # table of contents
+    # ---------------------------------------------------------------------
+    # Add the names of the sections
+    names = ['Spectrum', 'LBL', 'CCF', 'Time series']
+    # add the links to the pages
+    items = [f'spectrum_{clean_name}_objpage_{objname}',
+             f'lbl_{clean_name}_objpage_{objname}',
+             f'ccf_{clean_name}_objpage_{objname}',
+             f'timeseries_{clean_name}_objpage_{objname}']
+    # add table of contents
+    object_page.add_table_of_contents(items=items, names=names)
+    # ---------------------------------------------------------------------
+    # Spectrum section
+    # ---------------------------------------------------------------------
+    # print progress
+    wlog(params, '', f'\t\tCreating spectrum section')
+    # add spectrum section
+    objpage_spectrum(object_page, names[0], items[0], object_instance)
+    # ---------------------------------------------------------------------
+    # LBL section
+    # ---------------------------------------------------------------------
+    # print progress
+    wlog(params, '', f'\t\tCreating LBL section')
+    # add LBL section
+    objpage_lbl(object_page, names[1], items[1], object_instance)
+    # ---------------------------------------------------------------------
+    # CCF section
+    # ---------------------------------------------------------------------
+    # print progress
+    wlog(params, '', f'\t\tCreating CCF section')
+    # add CCF section
+    objpage_ccf(object_page, names[2], items[2], object_instance)
+    # ---------------------------------------------------------------------
+    # Time series section
+    # ---------------------------------------------------------------------
+    # print progress
+    wlog(params, '', f'\t\tCreating time series section')
+    # add time series section
+    objpage_timeseries(object_page, names[3], items[3], object_instance)
+    # ---------------------------------------------------------------------
+    # print progress
+    wlog(params, '', f'\t\tWriting to disk')
+    # construct a path for the object name
+    object_page_path = settings['OBJ_OUT']
+    # construct the rst filename
+    rst_filename = f'{objname}.rst'
+    # save index page
+    object_page.write_page(os.path.join(object_page_path, rst_filename))
+
+    # return dictioanry of properties
+    rprops = dict()
+    rprops['OBJURL'] = obj_url
+    # things to return
+    return rprops
+
+
+def add_obj_pages(settings: dict, profile: dict, headers: dict,
+                  object_table: Table, file_dict: FileDictReturn):
+    # must import here (so that os.environ is set)
+    # noinspection PyPep8Naming
+    from apero.core import constants
+    from apero.core.core import drs_log
+    from apero.core.utils import drs_startup
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
+    # get WLOG
+    wlog = drs_log.wlog
+    # ------------------------------------------------------------------
     # copy the object column to array
-    objnames = np.array(object_table[OBJECT_COLUMN])
     objurls = [' ' * 255] * len(object_table)
     # print progress
     wlog(params, 'info', 'Creating object pages')
+
+    args = [0, profile, settings, headers, object_table, file_dict]
+
+
+    import multiprocessing
+    pool = multiprocessing.Pool(processes=settings['N_CORES'])
+    # store results
+    results = []
     # change the object column to a url
     for it, row in enumerate(object_table):
-        # get the object name for this row
-        objname = objnames[it]
-        # print progress
-        msg = f'\tCreating page for {objname} [{it + 1} of {len(object_table)}]'
-        margs = [objname, it + 1, len(object_table)]
-        wlog(params, '', msg.format(*margs))
-        # create the object class
-        object_instance = ObjectData(profile, settings, headers,
-                                     objname, file_dict, object_table)
-        # ---------------------------------------------------------------------
-        # populate the header dictionary for this object instance
-        wlog(params, '', f'\t\tPopulating header dictionary')
-        object_instance.populate_header_dict()
-        # ---------------------------------------------------------------------
-        # generate url for object
-        object_url = f'{clean_name}_{outdir}_{objname}_index'
-        objurls[it] = _make_url(objname, object_url)
-        # create ARI object page
-        object_page = drs_markdown.MarkDownPage(object_url)
-        # add title
-        object_page.add_title(f'{objname} ({name})')
-        # ---------------------------------------------------------------------
-        # Add basic text
-        # construct text to add
-        object_page.add_text(f'This page was last modified: {Time.now()} (UTC)')
-        object_page.add_newline()
-        # link back to the table
-        # create a table page for this table
-        table_ref_name = clean_name.lower() + '_' + TABLE_NAMES[0].lower()
-        table_ref_url = _make_url('object table', table_ref_name)
-        object_page.add_text(f'Back to the {table_ref_url}')
-        object_page.add_newline()
-        # ---------------------------------------------------------------------
-        # table of contents
-        # ---------------------------------------------------------------------
-        # Add the names of the sections
-        names = ['Spectrum', 'LBL', 'CCF', 'Time series']
-        # add the links to the pages
-        items = [f'spectrum_{clean_name}_objpage_{objname}',
-                 f'lbl_{clean_name}_objpage_{objname}',
-                 f'ccf_{clean_name}_objpage_{objname}',
-                 f'timeseries_{clean_name}_objpage_{objname}']
-        # add table of contents
-        object_page.add_table_of_contents(items=items, names=names)
-        # ---------------------------------------------------------------------
-        # Spectrum section
-        # ---------------------------------------------------------------------
-        # print progress
-        wlog(params, '', f'\t\tCreating spectrum section')
-        # add spectrum section
-        objpage_spectrum(object_page, names[0], items[0], object_instance)
-        # ---------------------------------------------------------------------
-        # LBL section
-        # ---------------------------------------------------------------------
-        # print progress
-        wlog(params, '', f'\t\tCreating LBL section')
-        # add LBL section
-        objpage_lbl(object_page, names[1], items[1], object_instance)
-        # ---------------------------------------------------------------------
-        # CCF section
-        # ---------------------------------------------------------------------
-        # print progress
-        wlog(params, '', f'\t\tCreating CCF section')
-        # add CCF section
-        objpage_ccf(object_page, names[2], items[2], object_instance)
-        # ---------------------------------------------------------------------
-        # Time series section
-        # ---------------------------------------------------------------------
-        # print progress
-        wlog(params, '', f'\t\tCreating time series section')
-        # add time series section
-        objpage_timeseries(object_page, names[3], items[3], object_instance)
-        # ---------------------------------------------------------------------
-        # print progress
-        wlog(params, '', f'\t\tWriting to disk')
-        # construct a path for the object name
-        object_page_path = settings['OBJ_OUT']
-        # construct the rst filename
-        rst_filename = f'{objname}.rst'
-        # save index page
-        object_page.write_page(os.path.join(object_page_path, rst_filename))
-        # ---------------------------------------------------------------------
+        # combine arguments
+        itargs = [it] + args[1:]
+        # run the pool
+        result = pool.apply_async(add_obj_page, args=itargs)
+        # push result to results storage
+        results.append(result)
+    # Wait for all jobs to finish
+    pool.close()
+    pool.join()
+    # -------------------------------------------------------------------------
+    # push the dictionary into a single dictionary
+    rprops = dict()
+    # loop around results
+    for result in results:
+        # get the result dictionary and feed into rprops
+        for key in result.get().keys():
+            if key in rprops:
+                rprops[key].append(rprops)
+            else:
+                rprops[key] = [rprops]
+    # -------------------------------------------------------------------------
     # replace object name with the object name + object url
-    object_table[OBJECT_COLUMN] = objurls
+    object_table[OBJECT_COLUMN] = rprops['OBJURL']
     # remove the FIRST and LAST RAW column
     object_table.remove_column('FIRST_RAW')
     object_table.remove_column('LAST_RAW')
@@ -1892,7 +1941,7 @@ def download_table(files: List[str], descriptions: List[str],
         # add the rdb file
         down_dict['Description'].append(descs[basename])
         down_dict['Value'].append(_make_download(basename, ref_paths[basename]))
-        down_dict['LastModified'].append(last_modified[basename])
+        down_dict['Uploaded'].append(last_modified[basename])
         # copy the file from in path to out path
         #   if file is already here then don't copy
         if in_paths[basename] != out_paths[basename]:
@@ -1901,8 +1950,8 @@ def download_table(files: List[str], descriptions: List[str],
     # change the columns names
     down_dict2 = dict()
     down_dict2[title] = down_dict['Description']
-    down_dict2[' '] = down_dict['Value']
-    down_dict2['Last Modified'] = down_dict['LastModified']
+    down_dict2['File URL'] = down_dict['Value']
+    down_dict2['Uploaded'] = down_dict['Uploaded']
     # --------------------------------------------------------------------------
     # convert to table
     down_table = Table(down_dict2)
