@@ -1218,10 +1218,12 @@ class ObjectData:
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ext files
-        ext_file = os.path.join(down_save_path, 'ext_file_list.txt')
+        ext_file = os.path.join(down_save_path,
+                                f'ext_{self.objname}_file_list.txt')
         create_file_list(self.ext_files, ext_file)
         # construct the save path for the tcorr files
-        tcorr_file = os.path.join(down_save_path, 'tcorr_file_list.txt')
+        tcorr_file = os.path.join(down_save_path,
+                                  f'tcorr_{self.objname}_file_list.txt')
         create_file_list(self.tcorr_files, tcorr_file)
         # -----------------------------------------------------------------
         # construct the download table
@@ -1426,7 +1428,8 @@ class ObjectData:
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ccf files
-        ccf_file = os.path.join(down_save_path, 'ccf_file_list.txt')
+        ccf_file = os.path.join(down_save_path,
+                                f'ccf_{self.objname}_file_list.txt')
         create_file_list(self.ccf_files, ccf_file)
         # -----------------------------------------------------------------
         # construct the download table
@@ -1678,7 +1681,7 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     rst_filename = f'{objname}.rst'
     # save index page
     object_page.write_page(os.path.join(object_page_path, rst_filename))
-
+    # ---------------------------------------------------------------------
     # return dictioanry of properties
     rprops = dict()
     rprops['OBJURL'] = obj_url
@@ -1959,7 +1962,10 @@ def create_file_list(files: List[str], path: str):
     """
     # if file exists remove it
     if os.path.exists(path):
-        os.remove(path)
+        try:
+            os.remove(path)
+        except Exception as _:
+            pass
     # sort files alphabetically
     files = np.sort(files)
     # open file
