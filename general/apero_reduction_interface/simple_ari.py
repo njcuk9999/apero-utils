@@ -1725,12 +1725,24 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     pool.close()
     pool.join()
     # -------------------------------------------------------------------------
-    # Use a dictionary comprehension to extract trhe results from each
-    # async results object
-    nprops = {key: result.get() for key, result in results_dict.items()}
+    # print progress
+    wlog(params, 'info', 'Propagating results from page creation...')
+    # Use the iterator keys to populate our final dictionary
+    rprops = dict()
+    # loop around keys
+    for it in range(len(object_table)):
+        # get the result for this iteration
+        result = results_dict[it].get()
+        # loop around keys in the result dictionary's dictionary
+        for key in results_dict[it].get():
+            # we assume all dictionarys have the same keys
+            if key in rprops:
+                rprops[key].append(result[key])
+            else:
+                rprops[key] = [result[key]]
     # -------------------------------------------------------------------------
     # replace object name with the object name + object url
-    object_table[OBJECT_COLUMN] = nprops['OBJURL']
+    object_table[OBJECT_COLUMN] = rprops['OBJURL']
     # remove the FIRST and LAST RAW column
     object_table.remove_column('FIRST_RAW')
     object_table.remove_column('LAST_RAW')
