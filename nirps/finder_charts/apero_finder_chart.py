@@ -60,8 +60,8 @@ PIXEL_SCALE['J'] = 0.1514 * uu.arcsec / uu.pixel
 
 # Transform the image
 TRANSFORM_ROTATE = dict()
-TRANSFORM_ROTATE['G'] = 90 * uu.deg - 37.4 * uu.deg
-TRANSFORM_ROTATE['J'] = 90 * uu.deg - 37.4 * uu.deg
+TRANSFORM_ROTATE['G'] = 180 * uu.deg + 90 * uu.deg - 37.4 * uu.deg
+TRANSFORM_ROTATE['J'] = 180 * uu.deg + 90 * uu.deg - 37.4 * uu.deg
 
 # FWHM
 FWHM = dict()
@@ -69,7 +69,7 @@ FWHM['G'] = 2.0 * uu.arcsec
 FWHM['J'] = 2.0 * uu.arcsec
 # 1-sigma magnitude limit G
 SIGMA_LIMIT = dict()
-SIGMA_LIMIT['G'] = 22
+SIGMA_LIMIT['G'] = 20
 SIGMA_LIMIT['J'] = 17
 SIGMA_LIMIT['H'] = 17
 SIGMA_LIMIT['K'] = 17
@@ -77,12 +77,14 @@ SIGMA_LIMIT['K'] = 17
 MAG_LIMIT = -1
 # max proper motion to search for
 MAX_PM = 11 * uu.arcsec / uu.year
+# scale bar size
+SCALE_SIZE = 10 * uu.arcsec
 # compass size
-COMPASS_SIZE = 10 * uu.arcsec
+COMPASS_FRAC = 0.075
 # FLIP X
 FLIP_X = True
 # FLIP Y
-FLIP_Y = True
+FLIP_Y = False
 
 # -----------------------------------------------------------------------------
 # Gaia specific
@@ -255,12 +257,23 @@ def get_gaia_sources(coords: SkyCoord, obstime: Time, radius: uu.Quantity
     # -------------------------------------------------------------------------
     # define the gaia Tap instance
     gaia = TapPlus(url=GAIA_URL)
+
+    gaia_query = GAIA_QUERY.format(ra=coords.ra.deg, dec=coords.dec.deg,
+                                   radius=radius.to(uu.deg).value)
     # launch the query
-    job = gaia.launch_job(GAIA_QUERY.format(ra=coords.ra.deg,
-                                            dec=coords.dec.deg,
-                                            radius=radius.to(uu.deg).value))
+    job = gaia.launch_job(gaia_query)
     # get the query results
     table = job.get_results()
+    # delete job
+    del job
+    # deal with query being exactly 2000 (the max size)
+    if len(table) == 2000:
+        print('Too many sources. Launching job asyncronously. Please wait...')
+        job = gaia.launch_job_async(gaia_query)
+        # get the query results
+        table = job.get_results()
+        # delete job
+        del job
     # -------------------------------------------------------------------------
     # storage for sources
     sources = dict()
@@ -376,13 +389,27 @@ def get_2mass_field(obs_coords: SkyCoord, obs_time: Time,
     # modify radius to catch all sources
     search = abs(delta_time_2mass * MAX_PM).to(uu.deg)
     radius = radius.to(uu.deg) + search
+
+    # get 2MASS query
+    tmass_query = TMASS_QUERY.format(TMASS_COLS=TMASS_COLS,
+                                     ra=tmass_coords.ra.deg,
+                                     dec=tmass_coords.dec.deg,
+                                     radius=radius.value)
     # launch the query
-    job0 = tmass.launch_job(TMASS_QUERY.format(TMASS_COLS=TMASS_COLS,
-                                               ra=tmass_coords.ra.deg,
-                                               dec=tmass_coords.dec.deg,
-                                               radius=radius.value))
+    job0 = tmass.launch_job(tmass_query)
     # get the query results
     table0 = job0.get_results()
+    # delete job0
+    del job0
+    # deal with query being exactly 2000 (the max size)
+    if len(table0) == 2000:
+        print('Too many sources. Launching job asyncronously. Please wait...')
+        job0 = tmass.launch_job_async(tmass_query)
+        # get the query results
+        table0 = job0.get_results()
+        # delete job0
+        del job0
+    # -------------------------------------------------------------------------
     if len(table0) == 0:
         raise ValueError('No sources found in 2MASS catalog')
     else:
@@ -577,8 +604,8 @@ def plot_map1(frame, image, wcs, obs_coords, title,
     cos_dec = np.cos(dec_comp * uu.deg)
     # get the compas
     length_world = field_of_view * scale_factor
-    ra_comp_e = ra_comp + (length_world.to(uu.deg).value / 10) / cos_dec
-    dec_comp_n = dec_comp + length_world.to(uu.deg).value / 10
+    ra_comp_e = ra_comp + (length_world.to(uu.deg).value*COMPASS_FRAC)/cos_dec
+    dec_comp_n = dec_comp + length_world.to(uu.deg).value*COMPASS_FRAC
     # convert back to pixel space
     x_comp, y_comp = wcs.all_world2pix(ra_comp, dec_comp, 0)
     x_comp_e, y_comp_e = wcs.all_world2pix(ra_comp_e, dec_comp, 0)
@@ -594,7 +621,7 @@ def plot_map1(frame, image, wcs, obs_coords, title,
     # plot scale bar
     # -------------------------------------------------------------------------
     # get the length of the scale in pixels
-    length = (COMPASS_SIZE / PIXEL_SCALE['G']).value
+    length = (SCALE_SIZE / PIXEL_SCALE['G']).value
 
     x_scale_px = 0.1 * image.shape[0]
     y_scale_px = 0.1 * image.shape[1]
@@ -606,7 +633,7 @@ def plot_map1(frame, image, wcs, obs_coords, title,
                             arrowstyle='-', shrinkA=0.0, shrinkB=0.0,
                             capstyle='round', color=color, linewidth=2)
     frame.text(x_stext_px, y_stext_px,
-               f'{COMPASS_SIZE.value:g} {COMPASS_SIZE.unit:unicode}',
+               f'{SCALE_SIZE.value:g} {SCALE_SIZE.unit:unicode}',
                ha='center', va='bottom', color=color)
     frame.add_patch(patch)
 
