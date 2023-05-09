@@ -325,6 +325,22 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         profile_page = drs_markdown.MarkDownPage(cprofile_name)
         # add title
         profile_page.add_title(profile_name)
+        # -----------------------------------------------------------------
+        # Add basic text
+        # construct text to add
+        table_page.add_text(f'This is the APERO Reduction Interface (ARI) '
+                            f'for the reduction: {cprofile_name}')
+        table_page.add_newline()
+        table_page.add_text('Please note: Your object may be under another '
+                            'name. Please check `here <https://docs.google.com/'
+                            'spreadsheets/d/'
+                            '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
+                            'edit?usp=sharing>`_, the name displayed in ARI will '
+                            'be the first column [OBJNAME]')
+        table_page.add_newline()
+        table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
+        table_page.add_newline()
+        # -----------------------------------------------------------------
         # store the reference name for profile page table of contents
         table_files = []
         # loop around tables
@@ -340,6 +356,21 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             table_title = table_name.lower().replace('_', ' ')
             title = f'APERO reduction {table_title} ({cprofile_name})'
             table_page.add_title(title)
+            # -----------------------------------------------------------------
+            # Add basic text
+            # construct text to add
+            table_page.add_text(f'This is the APERO Reduction Interface (ARI) '
+                                f'for the reduction: {cprofile_name}')
+            table_page.add_newline()
+            table_page.add_text('Please note: Your object may be under another '
+                                'name. Please check `here <https://docs.google.com/'
+                                'spreadsheets/d/'
+                                '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
+                                'edit?usp=sharing>`_, the name displayed in ARI will '
+                                'be the first column [OBJNAME]')
+            table_page.add_newline()
+            table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
+            table_page.add_newline()
             # deal with column widths for this file type
             if table is not None:
                 # add the csv version of this table
