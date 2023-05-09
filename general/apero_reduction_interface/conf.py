@@ -22,7 +22,7 @@ copyright = '2023, Neil Cook'
 author = 'Neil Cook'
 
 # The full version, including alpha/beta/rc tags
-release = '0.7.275'
+release = '0.7.282'
 
 # -- General configuration ---------------------------------------------------
 
@@ -62,7 +62,7 @@ user_agent = 'Mozilla/5.0 (X11; Linux x86_64; rv:25.0) Gecko/20100101 Firefox/25
 
 html_theme_options = {
     # Disable showing the sidebar. Defaults to 'false'
-    'nosidebar': True,
+    'nosidebar': False,
     # set the max body width
     'body_max_width': 'none',
 }

@@ -328,18 +328,18 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         # -----------------------------------------------------------------
         # Add basic text
         # construct text to add
-        table_page.add_text(f'This is the APERO Reduction Interface (ARI) '
+        profile_page.add_text(f'This is the APERO Reduction Interface (ARI) '
                             f'for the reduction: {cprofile_name}')
-        table_page.add_newline()
-        table_page.add_text('Please note: Your object may be under another '
+        profile_page.add_newline()
+        profile_page.add_text('Please note: Your object may be under another '
                             'name. Please check `here <https://docs.google.com/'
                             'spreadsheets/d/'
                             '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
                             'edit?usp=sharing>`_, the name displayed in ARI will '
                             'be the first column [OBJNAME]')
-        table_page.add_newline()
-        table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
-        table_page.add_newline()
+        profile_page.add_newline()
+        profile_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
+        profile_page.add_newline()
         # -----------------------------------------------------------------
         # store the reference name for profile page table of contents
         table_files = []
