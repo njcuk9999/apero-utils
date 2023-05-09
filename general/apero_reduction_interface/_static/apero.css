@@ -18,7 +18,7 @@ body {
 .wy-nav-content {
     /* max-width: none; */
     height: 100%;
-    margin: auto;
+    margin: none;
 }
 
 .pageheader {

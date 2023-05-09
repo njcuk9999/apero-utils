@@ -435,6 +435,8 @@ def compile_docs(settings: dict):
     # copy the static directory as well
     shutil.copytree(__file__.replace('simple_ari.py', '_static'),
                     os.path.join(settings['WORKING'], '_static'))
+    shutil.copytree(__file__.replace('simple_ari.py', '_templates'),
+                    os.path.join(settings['WORKING'], '_templates'))
     # ------------------------------------------------------------------
     # get current directory
     cwd = os.getcwd()
