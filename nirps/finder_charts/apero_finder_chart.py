@@ -1,4 +1,5 @@
 import argparse
+import os
 import warnings
 from typing import Any, Dict, List, Tuple
 
@@ -135,6 +136,9 @@ def get_args():
     parser.add_argument('objname', type=str, help='The object name')
     parser.add_argument('--date', type=str, default='None',
                         help='The date of observation')
+    parser.add_argument('--directory', type=str, default='.',
+                        help='The directory to save finding chart pdfs to.'
+                             'Defaults to current directory.')
     parser.add_argument('--apero', action='store_true', default=False,
                         help='Use apero to get the object information')
     parser.add_argument('--simbad', action='store_true', default=False,
@@ -779,7 +783,8 @@ def from_simbad(objname: str) -> Dict[str, Any]:
     return objdict
 
 
-def main(objname: str, date: Time, objdict: Dict[str, Any]):
+def main(objname: str, date: Time, objdict: Dict[str, Any],
+         directory: str):
     """
     Using an object name, an astropy time and a dictionary of the target
     object parameters create the finder chart for the object
@@ -787,6 +792,7 @@ def main(objname: str, date: Time, objdict: Dict[str, Any]):
     :param objname: str, the name of the object
     :param date: Time, the time of the observation
     :param objdict: Dict[str, Any], the dictionary of object parameters
+    :param directory: Directory to save finding charts to
 
     Object dictionary must contain the following:
         - OBJNAME: str, the name of the object
@@ -890,13 +896,23 @@ def main(objname: str, date: Time, objdict: Dict[str, Any]):
     fig2.suptitle(title)
     fig3.suptitle(title)
     fig4.suptitle(title)
-
-    with PdfPages(f'NIRPS_finder_{objname}.pdf') as pp:
+    # strtime
+    strtime = f'{date.datetime.year}_{date.datetime.month}'
+    # create directory
+    save_directory = os.path.join(directory, objname)
+    if not os.path.exists(save_directory):
+        os.makedirs(save_directory)
+    # construct filename
+    save_filename = f'APERO_finder_chart_{objname}_{strtime}.pdf'
+    # construct absolute path
+    abspath = os.path.join(save_directory, save_filename)
+    # write pdf pages
+    with PdfPages(abspath) as pp:
         fig1.savefig(pp, format='pdf')
         fig2.savefig(pp, format='pdf')
         fig3.savefig(pp, format='pdf')
         fig4.savefig(pp, format='pdf')
-
+    # close plot
     plt.close()
 
 
@@ -920,12 +936,14 @@ if __name__ == '__main__':
             if cmd_args.apero:
                 _objdict = from_apero(objname)
                 # run the main code
-                main(objname, cmd_args.date, objdict=_objdict)
+                main(objname, cmd_args.date, objdict=_objdict,
+                     directory=cmd_args.directory)
             # get stuff from simbad
             elif cmd_args.simbad:
                 _objdict = from_simbad(objname)
                 # run the main code
-                main(objname, cmd_args.date, objdict=_objdict)
+                main(objname, cmd_args.date, objdict=_objdict,
+                     directory=cmd_args.directory)
     # else we get the object dictionary from the cmd_args
     else:
         # print progress
@@ -935,7 +953,8 @@ if __name__ == '__main__':
         # get stuff from command line
         _objdict = from_cmd_args(cmd_args)
         # run the main code
-        main(cmd_args.objname, cmd_args.date, objdict=_objdict)
+        main(cmd_args.objname, cmd_args.date, objdict=_objdict,
+                     directory=cmd_args.directory)
 
 # =============================================================================
 # End of code

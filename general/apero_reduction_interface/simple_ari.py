@@ -51,6 +51,7 @@ _HTML_DIR = '_build/html'
 _OUT_DIR = 'output'
 _ITEM_DIR = 'items'
 _DOWN_DIR = 'downloads'
+_OBJ_INDEX_DIR = 'objindex'
 # Define output object data dir
 _OBJ_OUT_DIR = 'objects'
 # define path to local htpasswd file
@@ -83,7 +84,8 @@ COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], None, None]
 # define which columns to remove to final table
-REMOVE_COLS = ['EXT_S1D_V', 'SC1D_V_FILE']
+REMOVE_COLS = ['FIRST_RAW', 'LAST_RAW', 'EXT_S1D_V', 'SC1D_V_FILE']
+
 # define the lbl rdb suffix (lbl or lbl2)
 LBL_SUFFIX = 'lbl'
 # define the LBL stat dir (inside the lbl directory)
@@ -168,6 +170,11 @@ def get_settings(settings: Dict[str, Any],
     # set the global paths for sphinx
     param_settings['HTML'] = os.path.join(working_dir, _HTML_DIR)
     param_settings['OUT'] = os.path.join(working_dir, _OUT_DIR)
+    param_settings['OBJ_INDEX'] = os.path.join(working_dir, _OBJ_INDEX_DIR)
+    param_settings['OBJ_INDEX_ITEM'] = os.path.join(param_settings['OBJ_INDEX'],
+                                                    _ITEM_DIR)
+    param_settings['OBJ_INDEX_DOWN'] = os.path.join(param_settings['OBJ_INDEX'],
+                                                    _DOWN_DIR)
     # get params from apero
     param_settings['INSTRUMENT'] = settings['instrument']
     # make sure directories exist
@@ -189,6 +196,12 @@ def get_settings(settings: Dict[str, Any],
         os.makedirs(param_settings['ITEMS'])
     if profile_name is not None and not os.path.exists(param_settings['DOWNS']):
         os.makedirs(param_settings['DOWNS'])
+    if not os.path.exists(param_settings['OBJ_INDEX']):
+        os.makedirs(param_settings['OBJ_INDEX'])
+    if not os.path.exists(param_settings['OBJ_INDEX_ITEM']):
+        os.makedirs(param_settings['OBJ_INDEX_ITEM'])
+    if not os.path.exists(param_settings['OBJ_INDEX_DOWN']):
+        os.makedirs(param_settings['OBJ_INDEX_DOWN'])
     # return all parameter settings
     return param_settings
 
@@ -206,6 +219,8 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     """
     # set up storage for the output dictionary
     profile_stats = dict()
+    profile_stats['TABLES'] = dict()
+    profile_stats['OPROPS'] = dict()
     # deal with updating the path (as DRS_UCONFIG) from apero profile
     update_apero_profile(profile)
     # get paths to tables
@@ -219,37 +234,39 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # ------------------------------------------------------------------
     # deal with skipping object table
     if skip_obj_table and os.path.exists(object_table_file):
-        profile_stats[TABLE_NAMES[0]] = Table.read(object_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[0]] = Table.read(object_table_file)
     elif skip_obj_table:
-        profile_stats[TABLE_NAMES[0]] = None
+        profile_stats['TABLES'][TABLE_NAMES[0]] = None
     else:
         # get the object table (astropy table)
         object_table, filedict = compile_apero_object_table(gsettings)
         # add the lbl count
         object_table, filedict = add_lbl_count(profile, object_table, filedict)
         # add the object pages
-        object_table = add_obj_pages(gsettings, settings, profile, headers,
-                                     object_table, filedict)
+        add_out = add_obj_pages(gsettings, settings, profile, headers,
+                                object_table, filedict)
+        object_table, oprops_dict = add_out
         # add final object table to profile stats
-        profile_stats[TABLE_NAMES[0]] = object_table
+        profile_stats['TABLES'][TABLE_NAMES[0]] = object_table
+        profile_stats['OPROPS'] = oprops_dict
     # ------------------------------------------------------------------
     # deal with skipping recipe table
     if skip_recipe_table and os.path.exists(recipe_table_file):
-        profile_stats[TABLE_NAMES[1]] = Table.read(recipe_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[1]] = Table.read(recipe_table_file)
     elif skip_recipe_table:
-        profile_stats[TABLE_NAMES[1]] = None
+        profile_stats['TABLES'][TABLE_NAMES[1]] = None
     else:
         # get the recipe log table
-        profile_stats[TABLE_NAMES[1]] = compile_apero_recipe_table()
+        profile_stats['TABLES'][TABLE_NAMES[1]] = compile_apero_recipe_table()
     # ------------------------------------------------------------------
     # deal with skipping message table
     if skip_msg_table and os.path.exists(message_table_file):
-        profile_stats[TABLE_NAMES[2]] = Table.read(message_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[2]] = Table.read(message_table_file)
     elif skip_msg_table:
-        profile_stats[TABLE_NAMES[2]] = None
+        profile_stats['TABLES'][TABLE_NAMES[2]] = None
     else:
         # get the message log table
-        profile_stats[TABLE_NAMES[2]] = compile_apero_message_table()
+        profile_stats['TABLES'][TABLE_NAMES[2]] = compile_apero_message_table()
     # ------------------------------------------------------------------
     # return the profile stats
     return profile_stats
@@ -274,6 +291,134 @@ def update_apero_profile(profile: dict):
     param_functions.CONFIG_CACHE = dict()
     # make sure parameters is reloaded (and not cached)
     _ = constants.load(cache=False)
+
+
+
+# TODO: move below
+def find_finder_charts(path: str, objname: str):
+    """
+    Find finder charts for this object
+    :param path:
+    :param objname:
+    :return:
+    """
+    # expected directory name
+    expected_dir = os.path.join(path, objname)
+
+    if not os.path.exists(expected_dir):
+        return []
+
+
+def make_finder_download_table(entry, objname, item_save_path, item_rel_path,
+                               down_save_path, down_rel_path):
+    # get the download base name
+    dwn_base_name = f'finder_download_{objname}.txt'
+    # get the download table path
+    item_path = os.path.join(item_save_path, dwn_base_name)
+    # compute the download table
+    download_table(entry['find_files'], entry['find_descs'],
+                   item_path, down_rel_path,
+                   down_save_path, title='Finder charts')
+    return item_rel_path + dwn_base_name
+
+def compile_obj_index_page(gsettings: dict, settings: dict,
+                           oprops: Dict[str, Any]):
+    from apero.tools.module.documentation import drs_markdown
+    # generate place to save figures
+    item_save_path = settings['OBJ_INDEX_ITEM']
+    item_rel_path = f'../{_ITEM_DIR}/'
+    down_save_path = settings['OBJ_INDEX_DOWN']
+    down_rel_path = f'../{_DOWN_DIR}/'
+    # -------------------------------------------------------------------------
+    # create a dictionary of dictionary to fill in the object sections
+    objdict = dict()
+    # loop around objects and create a section for each
+    for objname in objdict:
+        entry = dict()
+        entry['profile_items'] = []
+        entry['profile_names'] = []
+        entry['find_descs'] = []
+        # ---------------------------------------------------------------------
+        # add profile reference links for this object
+        # ---------------------------------------------------------------------
+        for apero_profile_name in oprops:
+            # look in this profile
+            oprops_profile = oprops[apero_profile_name]
+            # see if this object was reduced by this profile
+            if objname in oprops_profile['OBJNAME']:
+                # find where the object name is in the list
+                pos = list(oprops_profile['OBJNAME']).index(objname)
+                # get the obj page ref for this position
+                pageref = oprops_profile['OBJPAGEREF'][pos]
+                # add to entry
+                entry['profile_items'].append(pageref)
+                entry['profile_names'].append(apero_profile_name)
+        # ---------------------------------------------------------------------
+        # find finder charts
+        # ---------------------------------------------------------------------
+        if gsettings['find directory'] not in [None, 'None', 'Null', '']:
+            # get find directory
+            find_path = gsettings['find directory']
+            # look for objname in this directory
+            entry['find_descs'] = find_finder_charts(find_path, objname)
+        # ---------------------------------------------------------------------
+        # generate finder chart download table
+        # ---------------------------------------------------------------------
+        if len(entry['find_files']) > 0:
+            # make download table and store table to add
+            fd_args = [entry, objname, item_save_path, item_rel_path,
+                       down_save_path, down_rel_path]
+            entry['find_table'] = make_finder_download_table(*fd_args)
+        # deal with no finder charts
+        else:
+            entry['find_table'] = None
+        # ---------------------------------------------------------------------
+        # add to stroage
+        objdict[objname] = entry
+    # -------------------------------------------------------------------------
+    # create ARI index page
+    obj_index_page = drs_markdown.MarkDownPage('object_index')
+    # add title
+    obj_index_page.add_title('APERO Reduction Interface (ARI)')
+    # -------------------------------------------------------------------------
+    # Add basic text
+    # construct text to add
+    obj_index_page.add_text('Object Index')
+    obj_index_page.add_newline()
+    obj_index_page.add_text('Object by object index. '
+                        'Links to all profiles and finding charts')
+    obj_index_page.add_newline()
+    # -------------------------------------------------------------------------
+    # loop around objects and create a section for each
+    for objname in objdict:
+        # get this iterations entry
+        entry = objdict[objname]
+        # add reference to this section
+        obj_index_page.add_reference(f'indexing_{objname}')
+        # add section
+        obj_index_page.add_section(objname)
+        # add table of contents
+        if len(entry['profile_items']) > 0:
+            obj_index_page.add_newline()
+            obj_index_page.add_table_of_contents(items=entry['profile_items'],
+                                                 names=entry['profile_names'])
+        else:
+            obj_index_page.add_newline()
+            obj_index_page.add_text('Currently not reduced under any profile')
+        # add the finder chart table
+        if entry['find_table'] is not None:
+            obj_index_page.add_newline()
+            # add the finder chart table
+            obj_index_page.add_csv_table('', entry['find_table'],
+                                         cssclass='csvtable2')
+        else:
+            obj_index_page.add_newline()
+            obj_index_page.add_text('Currently no finder chart')
+        obj_index_page.add_newline()
+    # -------------------------------------------------------------------------
+    # save index page
+    obj_index_file = os.path.join(settings['WORKING'], 'obj_index.rst')
+    obj_index_page.write_page(obj_index_file)
 
 
 def write_markdown(gsettings: dict, settings: dict, stats: dict):
@@ -317,6 +462,14 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     # -------------------------------------------------------------------------
     # add table of contents
     index_page.add_table_of_contents(profile_files)
+    # -------------------------------------------------------------------------
+    index_page.add_section('Objects index')
+    index_page.add_newline()
+    index_page.add_text('Object by object index. '
+                        'Links to all profiles and finding charts')
+    index_page.add_newline()
+    index_page.add_reference('object_index')
+    # -------------------------------------------------------------------------
     # save index page
     index_page.write_page(os.path.join(settings['WORKING'], 'index.rst'))
     # -------------------------------------------------------------------------
@@ -1247,6 +1400,7 @@ class ObjectData:
         spec_props = dict()
         # ---------------------------------------------------------------------
         # object properties
+        spec_props['COORD_URL'] = f'indexing_{self.objname}'
         spec_props['RA'] = self.object_table['RA_DEG'][0]
         spec_props['Dec'] = self.object_table['DEC_DEG'][0]
         spec_props['Teff'] = self.object_table['TEFF'][0]
@@ -1843,14 +1997,16 @@ def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
     # ---------------------------------------------------------------------
     # return dictioanry of properties
     rprops = dict()
+    rprops['OBJNAME'] = objname
     rprops['OBJURL'] = obj_url
+    rprops['OBJPAGEREF'] = object_url
     # things to return
     return rprops
 
 
 def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
                   headers: dict, object_table: Table,
-                  file_dict: FileDictReturn) -> Table:
+                  file_dict: FileDictReturn) -> Tuple[Table, Dict[str, Any]]:
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
@@ -1862,17 +2018,18 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
     wlog = drs_log.wlog
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # deal with no entries in object table
     if len(object_table) == 0:
         # print progress
         wlog(params, '', 'No objects found in object table')
-        # remove the FIRST and LAST RAW column
-        object_table.remove_column('FIRST_RAW')
-        object_table.remove_column('LAST_RAW')
+        # remove the columns we don't want in the final table
+        for remove_col in REMOVE_COLS:
+            if remove_col in object_table:
+                object_table.remove_columns(remove_col)
         # return empty table
-        return object_table
-    # ------------------------------------------------------------------
+        return object_table, dict()
+    # -------------------------------------------------------------------------
     # print progress
     wlog(params, 'info', 'Creating object pages')
     # set up the arguments for the multiprocessing
@@ -1925,11 +2082,12 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # -------------------------------------------------------------------------
     # replace object name with the object name + object url
     object_table[OBJECT_COLUMN] = rprops['OBJURL']
-    # remove the FIRST and LAST RAW column
-    object_table.remove_column('FIRST_RAW')
-    object_table.remove_column('LAST_RAW')
+    # remove the columns we don't want in the final table
+    for remove_col in REMOVE_COLS:
+        if remove_col in object_table:
+            object_table.remove_columns(remove_col)
     # return the object table
-    return object_table
+    return object_table, rprops
 
 
 def objpage_spectrum(page: Any, name: str, ref: str,
@@ -2278,6 +2436,7 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     last_ext = spec_props['LAST_EXT'].iso
     first_tcorr = spec_props['FIRST_TCORR'].iso
     last_tcorr = spec_props['LAST_TCORR'].iso
+    coord_url = spec_props['COORD_URL']
     ra, dec = spec_props['RA'], spec_props['Dec']
     teff, spt = spec_props['Teff'], spec_props['Spectral Type']
     dprtypes = spec_props['DPRTYPES']
@@ -2296,7 +2455,7 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
     # Add RA and Dec
-    stat_dict['Description'].append('Coordinates')
+    stat_dict['Description'].append(_make_url('Coordinates', coord_url))
     stat_dict['Value'].append('{0}, {1}'.format(ra, dec))
     # Add Teff
     stat_dict['Description'].append('Teff')
@@ -2716,11 +2875,11 @@ def save_stats(settings: dict, stats: dict):
     # loop around tables and load them
     for table_name in tables:
         # deal with no table
-        if stats[table_name] is None:
+        if stats['TABLES'][table_name] is None:
             continue
         # otherwise we assume it is an astropy table
         else:
-            table = stats[table_name]
+            table = stats['TABLES'][table_name]
         # construct filename for table
         table_filename = f'{table_name}.fits'
         # construct full path
@@ -2742,6 +2901,8 @@ def load_stats(settings: dict) -> dict:
     """
     # set up storage for the output dictionary
     profile_stats = dict()
+    profile_stats['TABLES'] = dict()
+    profile_stats['OPROPS'] = dict()
     # list tables to load
     tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
     # loop around tables and load them
@@ -2752,10 +2913,10 @@ def load_stats(settings: dict) -> dict:
         table_path = os.path.join(settings['DATA'], table_filename)
         # might not be on disk
         if not os.path.exists(table_path):
-            profile_stats[table_name] = None
+            profile_stats['TABLES'][table_name] = None
             continue
         # load the table
-        profile_stats[table_name] = Table.read(table_path)
+        profile_stats['TABLES'][table_name] = Table.read(table_path)
     # return the profile stats
     return profile_stats
 
@@ -2951,6 +3112,7 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
+    all_apero_oprops = dict()
     # loop around profiles from yaml file
     for apero_profile_name in apero_profiles:
         # sort out settings
@@ -2969,7 +3131,8 @@ if __name__ == "__main__":
             apero_stats = compile_stats(ari_gsettings, ari_settings,
                                         apero_profile, header_settings)
             # add to all_apero_stats
-            all_apero_stats[apero_profile_name] = apero_stats
+            all_apero_stats[apero_profile_name] = apero_stats['TABLE']
+            all_apero_oprops[apero_profile_name] = apero_stats['OPROPS']
             # -----------------------------------------------------------------
             # Save stats to disk
             save_stats(ari_settings, apero_stats)
@@ -2982,18 +3145,22 @@ if __name__ == "__main__":
             # load stats
             apero_stats = load_stats(ari_settings)
             # add to all_apero_stats
-            all_apero_stats[apero_profile_name] = apero_stats
+            all_apero_stats[apero_profile_name] = apero_stats['TABLE']
+            all_apero_oprops[apero_profile_name] = apero_stats['OPROPS']
     # ----------------------------------------------------------------------
     # sort out settings
     ari_settings = get_settings(ari_gsettings)
     # ----------------------------------------------------------------------
-    # step 3: write markdown files
+    # write object index page
+    compile_obj_index_page(ari_gsettings, ari_settings, all_apero_oprops)
+    # ----------------------------------------------------------------------
+    # step 4: write markdown files
     write_markdown(ari_gsettings, ari_settings, all_apero_stats)
     # ----------------------------------------------------------------------
-    # step 4: compile sphinx files
+    # step 5: compile sphinx files
     compile_docs(ari_settings)
     # ----------------------------------------------------------------------
-    # step 5: upload to hosting
+    # step 6: upload to hosting
     upload_docs(ari_gsettings, ari_settings)
 
 # =============================================================================
