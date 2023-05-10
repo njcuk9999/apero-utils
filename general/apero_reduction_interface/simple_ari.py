@@ -294,33 +294,6 @@ def update_apero_profile(profile: dict):
 
 
 
-# TODO: move below
-def find_finder_charts(path: str, objname: str):
-    """
-    Find finder charts for this object
-    :param path:
-    :param objname:
-    :return:
-    """
-    # expected directory name
-    expected_dir = os.path.join(path, objname)
-
-    if not os.path.exists(expected_dir):
-        return []
-
-
-def make_finder_download_table(entry, objname, item_save_path, item_rel_path,
-                               down_save_path, down_rel_path):
-    # get the download base name
-    dwn_base_name = f'finder_download_{objname}.txt'
-    # get the download table path
-    item_path = os.path.join(item_save_path, dwn_base_name)
-    # compute the download table
-    download_table(entry['find_files'], entry['find_descs'],
-                   item_path, down_rel_path,
-                   down_save_path, title='Finder charts')
-    return item_rel_path + dwn_base_name
-
 def compile_obj_index_page(gsettings: dict, settings: dict,
                            oprops: Dict[str, Any]):
     from apero.tools.module.documentation import drs_markdown
@@ -2826,6 +2799,49 @@ def time_series_stats_table(time_series_props: Dict[str, Any], stat_path: str):
         stat_table[column] = time_series_props[column]
     # write to file as csv file
     stat_table.write(stat_path, format='ascii.csv', overwrite=True)
+
+
+# =============================================================================
+# Object index functions
+# =============================================================================
+def find_finder_charts(path: str, objname: str) -> List[str]:
+    """
+    Find finder charts for this object
+    :param path:
+    :param objname:
+    :return:
+    """
+    # expected directory name
+    expected_dir = os.path.join(path, objname)
+    # deal with no directory --> no finder files
+    if not os.path.exists(expected_dir):
+        return []
+    # storage for list of files
+    list_of_files = []
+    # loop around filenames
+    for filename in os.listdir(expected_dir):
+        # only include APERO finder charts
+        if not filename.startswith('APERO_finder_chart_'):
+            continue
+        # only include pdf files
+        if not filename.endswith('.pdf'):
+            continue
+        list_of_files.append(filename)
+    # return the list of files
+    return list_of_files
+
+
+def make_finder_download_table(entry, objname, item_save_path, item_rel_path,
+                               down_save_path, down_rel_path):
+    # get the download base name
+    dwn_base_name = f'finder_download_{objname}.txt'
+    # get the download table path
+    item_path = os.path.join(item_save_path, dwn_base_name)
+    # compute the download table
+    download_table(entry['find_files'], entry['find_descs'],
+                   item_path, down_rel_path,
+                   down_save_path, title='Finder charts')
+    return item_rel_path + dwn_base_name
 
 
 # =============================================================================
