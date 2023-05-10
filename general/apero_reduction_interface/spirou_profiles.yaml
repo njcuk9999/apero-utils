@@ -6,6 +6,12 @@ settings:
   working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
   # number of cores to use in multiprocessing steps
   N_CORES: 20
+  # Spectrum wavelength ranges in nm
+  # TODO: Adjust these values for SPIROU
+  SpecWave:
+    - (1268, 1274)
+    - (1575, 1580)
+    - (1666, 1668)
   # SSH PATH to copy the website to
   ssh:
     directory: /export/www/home/cook/www/apero-drs/
@@ -25,6 +31,7 @@ settings:
 #     skip recipe table: bool: if True, skip making the recipe table
 #     skip msg table: bool: if True, skip making the msg table
 spirou V0.7.275 full:
+  # TODO: Update these for cosmos99
   apero profile: /cosmos99/apero-data/drs-settings/setup_spirou_stable_07
   lbl path: /space/spirou/LBL/SPIROU07275
   skip obj table: False
@@ -32,6 +39,7 @@ spirou V0.7.275 full:
   skip msg table: True
 
 spirou V0.7.275 mini run 2 (jupiter):
+  # TODO: Update these for cosmos99
   apero profile: /cosmos99/apero-data/drs-settings/minidata2_07254
   lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter
   skip obj table: False

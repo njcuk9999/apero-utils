@@ -67,17 +67,23 @@ COUNT_COLS = ['RAW FILE  ',
               'e.fits    ',
               't.fits    ',
               'v.fits    ',
-              'p.fits    ']
+              'p.fits    ',
+              'EXT_S1D_V ',
+              'SC1D_V_FILE']
+
 # header cols
-HEADER_COL = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p']
+HEADER_COL = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p',
+              None, None]
 # time series column names
 TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
                     'Last obs mid', 'Number of obs', 'Seeing', 'Airmass',
-                    'Mean Exptime', 'Total Exptime', 'DPRTYPEs']
+                    'Mean Exptime', 'Total Exptime', 'DPRTYPEs', None, None]
 # define chains (if this number is zero do not count)
 COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], COUNT_COLS[1], COUNT_COLS[2],
-                COUNT_COLS[3], COUNT_COLS[3]]
+                COUNT_COLS[3], COUNT_COLS[3], None, None]
+# define which columns to remove to final table
+REMOVE_COLS = ['EXT_S1D_V', 'SC1D_V_FILE']
 # define the lbl rdb suffix (lbl or lbl2)
 LBL_SUFFIX = 'lbl'
 # define the LBL stat dir (inside the lbl directory)
@@ -601,6 +607,9 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # deal with instruments that have polarimetry
     if has_polar:
         object_table[COUNT_COLS[9]] = [0] * len(object_table)
+    # Add s1d columns (these will be removed later)
+    object_table[COUNT_COLS[10]] = [0] * len(object_table)
+    object_table[COUNT_COLS[11]] = [0] * len(object_table)
     # ------------------------------------------------------------------
     # storage for files for each type
     file_dict = dict()
@@ -658,6 +667,15 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
             polar_cond = None
             p_cond = None
         # ------------------------------------------------------------------
+        # add s1d columns
+        # TODO: Get KW_OUTPUT from file definitions + deal with QC
+        s1d_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
+                    f'AND KW_OUTPUT="EXT_S1D_V" '
+                    f'AND KW_FIBER="{science_fiber}"')
+        sc1d_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
+                     f'AND KW_OUTPUT="SC1D_V_FILE" '
+                     f'AND KW_FIBER="{science_fiber}"')
+        # ------------------------------------------------------------------
         # Add a dpr type column
         dprtypes = indexdbm.get_entries('KW_DPRTYPE', condition=ext_cond)
         object_table['DPRTYPES'][pos] = ','.join(list(np.unique(dprtypes)))
@@ -684,7 +702,8 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
         conditions = [raw_cond, pp_cond, ext_cond, tcorr_cond, ccf_cond,
-                      polar_cond, e_cond, t_cond, v_cond, p_cond]
+                      polar_cond, e_cond, t_cond, v_cond, p_cond, s1d_cond,
+                      sc1d_cond]
         # storage of count (for chains
         counts = dict()
         # loop around conditions
@@ -1110,6 +1129,8 @@ class ObjectData:
         self.ext_files = file_dict[objname].get(COUNT_COLS[2], [])
         self.tcorr_files = file_dict[objname].get(COUNT_COLS[3], [])
         self.ccf_files = file_dict[objname].get(COUNT_COLS[4], [])
+        self.s1d_files = file_dict[objname].get(COUNT_COLS[10], [])
+        self.sc1d_files = file_dict[objname].get(COUNT_COLS[11], [])
         self.lbl_rdb_files = file_dict[objname].get('LBLRDB', [])
         # add the lbl stat files into a dictionary
         self.lbl_stat_files = dict()
@@ -1152,7 +1173,7 @@ class ObjectData:
         # file lists to match COUNT COLS
         self.file_lists = [self.raw_files, self.pp_files, self.ext_files,
                            self.tcorr_files, self.ccf_files, None, None,
-                           None, None, None]
+                           None, None, None, None, None]
 
     def populate_header_dict(self):
         """
@@ -1233,6 +1254,31 @@ class ObjectData:
         spec_props['LAST_EXT'] = Time(np.max(self.header_dict['EXT_MJDMID']))
         spec_props['FIRST_TCORR'] = Time(np.min(self.header_dict['TCORR_MJDMID']))
         spec_props['LAST_TCORR'] = Time(np.max(self.header_dict['TCORR_MJDMID']))
+        # -----------------------------------------------------------------
+        # Find the highest SNR spectrum in H
+        pos = np.argmax(spec_props['EXT_H'])
+        # get the extracted spectrum for the spectrum with the highest SNR
+        ext_table = Table.read(self.s1d_files[pos], ext=1)
+        # get the telluric corrected spectrum for the spectrum with the
+        # highest SNR
+        tcorr_table = Table.read(self.sc1d_files[pos], ext=1)
+        # get wavelength masks for plotting
+        wavemap = ext_table['Wavelength']
+        limits = self.settings['SpecWave']
+        wavemask1 = (limits[0][0] > wavemap) & (wavemap < limits[0][1])
+        wavemask2 = (limits[1][0] > wavemap) & (wavemap < limits[1][1])
+        wavemask3 = (limits[2][0] > wavemap) & (wavemap < limits[2][1])
+        # push into spec_props
+        spec_props['WAVE'] = np.array(ext_table['wavelength'])
+        spec_props['EXT_SPEC'] = np.array(ext_table['flux'])
+        spec_props['EXT_SPEC_ERR'] =np.array(ext_table['eflux'])
+        spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
+        spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
+        spec_props['WAVEMASK1'] = wavemask1
+        spec_props['WAVEMASK2'] = wavemask2
+        spec_props['WAVEMASK3'] = wavemask3
+        spec_props['MAX_SNR'] = spec_props['EXT_H'][pos]
+        spec_props['MAX_FILE'] = self.raw_files[pos]
         # -----------------------------------------------------------------
         # plot the figure
         # -----------------------------------------------------------------
@@ -2042,22 +2088,65 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     ext_h = spec_props['EXT_H']
     ext_y_label = spec_props['EXT_Y_LABEL']
     ext_h_label = spec_props['EXT_H_LABEL']
+    wavemap = spec_props['WAVE']
+    ext_spec = spec_props['EXT_SPEC']
+    tcorr_spec = spec_props['TCORR_SPEC']
+    wavemask1 = spec_props['WAVEMASK1']
+    wavemask2 = spec_props['WAVEMASK2']
+    wavemask3 = spec_props['WAVEMASK3']
+    max_file = spec_props['MAX_FILE']
+    max_snr = spec_props['MAX_SNR']
     # --------------------------------------------------------------------------
     # setup the figure
-    fig, frame = plt.subplots(1, 1, figsize=(12, 6))
+    plt.figure(figsize=(12, 9))
+    frame0 = plt.subplot2grid((3, 3), (0, 0), colspan=3, rowspan=1)
+    frame1a = plt.subplot2grid((3, 3), (1, 0), colspan=1, rowspan=1)
+    frame1b = plt.subplot2grid((3, 3), (1, 1), colspan=1, rowspan=1)
+    frame1c = plt.subplot2grid((3, 3), (1, 2), colspan=1, rowspan=1)
+    frame2 = plt.subplot2grid((3, 3), (2, 0), colspan=3, rowspan=1)
     # set background color
-    frame.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame0.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame1a.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame1b.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame1c.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame2.set_facecolor(PLOT_BACKGROUND_COLOR)
     # --------------------------------------------------------------------------
-    # Top plot SNR Y
+    # Top plot - full spectra + tcorr
+    # --------------------------------------------------------------------------
+    title = f'File: {max_file} {ext_h_label}={max_snr}'
+    frame0.plot(wavemap, ext_spec/np.nanmedian(ext_spec),
+                color='k', label='Extracted Spectrum')
+    frame0.plot(wavemap, tcorr_spec/np.nanmedian(tcorr_spec),
+                color='r', label='Telluric Corrected')
+    frame0.set(xlabel='Wavelength [nm]', ylabel='Normalized Flux')
+    frame0.legend(loc=0)
+    frame0.set(title=title)
+    # --------------------------------------------------------------------------
+    # Middle plots - Y, J, H spectra + tcorr
+    # --------------------------------------------------------------------------
+    masks = [wavemask1, wavemask2, wavemask3]
+    frames = [frame1a, frame1b, frame1c]
+    # loop around masks and frames and plot the middle plots
+    for mask, frame in zip(masks, frames):
+        frame.plot(wavemap[mask],
+                   ext_spec[mask]/np.nanmedian(ext_spec[mask]),
+                   color='k', label='Extracted Spectrum')
+        frame.plot(wavemap[mask],
+                   tcorr_spec[mask]/np.nanmedian(tcorr_spec[mask]),
+                   color='r', label='Telluric Corrected')
+        frame.set(xlabel='Wavelength [nm]', ylabel='Normalized Flux')
+        frame.legend(loc=0)
+    # --------------------------------------------------------------------------
+    # Bottom plot SNR Y
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
-    frame.plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
+    frame2.plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
                     label=ext_y_label)
-    frame.plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
+    frame2.plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
                     label=ext_h_label)
-    frame.legend(loc=0)
-    frame.grid(which='both', color='lightgray', ls='--')
-    frame.set(xlabel='Date', ylabel='EXT SNR')
+    frame2.legend(loc=0)
+    frame2.grid(which='both', color='lightgray', ls='--')
+    frame2.set(xlabel='Date', ylabel='EXT SNR')
     # --------------------------------------------------------------------------
     # add title
     plt.suptitle(plot_title)
@@ -2284,11 +2373,12 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     ylim = ccf_props['ylim']
     # --------------------------------------------------------------------------
     # setup the figure
-    fig, frame = plt.subplots(3, 1, figsize=(12, 9))
+    fig, frame = plt.subplots(4, 1, figsize=(12, 12))
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[2].set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame[3].set_facecolor(PLOT_BACKGROUND_COLOR)
     # --------------------------------------------------------------------------
     # Top plot CCF RV
     # --------------------------------------------------------------------------
@@ -2350,7 +2440,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     frame[1].grid(which='both', color='lightgray', ls='--')
 
     # --------------------------------------------------------------------------
-    # Bottom plot median CCF residuals
+    # Middle plot median CCF residuals
     # --------------------------------------------------------------------------
     if has_fit:
         frame[2].fill_between(rv_vec[limmask], y1_2sig[limmask] - fit[limmask],
@@ -2362,7 +2452,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
         frame[2].plot(rv_vec[limmask], med_ccf[limmask] - fit[limmask],
                       alpha=0.8, label='Median residual')
         frame[2].legend(loc=0)
-        frame[2].set(xlabel='RV [km/s]', ylabel='Residuals')
+        frame[2].set(xlabel='RV [km/s]', ylabel='Residuals [to fit]')
     else:
         frame[2].text(0.5, 0.5, 'No fit to CCF possible',
                       horizontalalignment='center')
@@ -2370,6 +2460,29 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
         frame[2].set(xlim=[0, 1], ylim=[0, 1], xlabel='RV [km/s]',
                      ylabel='Residuals')
     frame[2].grid(which='both', color='lightgray', ls='--')
+    # --------------------------------------------------------------------------
+    # Bottom plot median CCF residuals
+    # --------------------------------------------------------------------------
+    if has_fit:
+        frame[3].fill_between(rv_vec[limmask],
+                              y1_2sig[limmask] - med_ccf[limmask],
+                              y2_2sig[limmask] - med_ccf[limmask], color='orange',
+                              alpha=0.5, label='2-$\sigma$')
+        frame[3].fill_between(rv_vec[limmask],
+                              y1_1sig[limmask] - med_ccf[limmask],
+                              y2_1sig[limmask] - med_ccf[limmask], color='red',
+                              alpha=0.5, label='1-$\sigma$')
+        frame[3].plot(rv_vec[limmask], med_ccf[limmask] - med_ccf[limmask],
+                      alpha=0.8, label='Median residual')
+        frame[3].legend(loc=0)
+        frame[3].set(xlabel='RV [km/s]', ylabel='Residuals [To Median]')
+    else:
+        frame[3].text(0.5, 0.5, 'No fit to CCF possible',
+                      horizontalalignment='center')
+        frame[3].legend(loc=0)
+        frame[3].set(xlim=[0, 1], ylim=[0, 1], xlabel='RV [km/s]',
+                     ylabel='Residuals [To Median]')
+    frame[3].grid(which='both', color='lightgray', ls='--')
     # --------------------------------------------------------------------------
     # add title
     plt.suptitle(plot_title)
