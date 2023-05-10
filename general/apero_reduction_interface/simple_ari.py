@@ -198,7 +198,10 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     """
     Compile the stats for a given profile
 
+    :param gsettings: dict, global settings
+    :param settings: dict, profile settings
     :param profile: dict, the profile to compile stats for
+    :param headers: dict, header keys
     :return: dict, the stats for the profile
     """
     # set up storage for the output dictionary
@@ -335,14 +338,14 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         # Add basic text
         # construct text to add
         profile_page.add_text(f'This is the APERO Reduction Interface (ARI) '
-                            f'for the reduction: {cprofile_name}')
+                              f'for the reduction: {cprofile_name}')
         profile_page.add_newline()
         profile_page.add_text('Please note: Your object may be under another '
-                            'name. Please check `here <https://docs.google.com/'
-                            'spreadsheets/d/'
-                            '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
-                            'edit?usp=sharing>`_, the name displayed in ARI will '
-                            'be the first column [OBJNAME]')
+                              'name. Please check `here <https://docs.google.com/'
+                              'spreadsheets/d/'
+                              '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
+                              'edit?usp=sharing>`_, the name displayed in ARI will '
+                              'be the first column [OBJNAME]')
         profile_page.add_newline()
         profile_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
         profile_page.add_newline()
@@ -481,6 +484,7 @@ def upload_docs(gsettings: dict, settings: dict):
     """
     Upload the documentation to the web server
 
+    :param gsettings: dict, global settings
     :param settings: dict, the settings for the documentation
 
     :return:
@@ -590,7 +594,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # Deal with object pages
     # ------------------------------------------------------------------
     # add counting columns to the object table
-    object_table['DPRTYPES'] = [' '*255] * len(object_table)
+    object_table['DPRTYPES'] = [' ' * 255] * len(object_table)
     object_table[COUNT_COLS[0]] = [0] * len(object_table)
     object_table['FIRST_RAW'] = [None] * len(object_table)
     object_table['LAST_RAW'] = [None] * len(object_table)
@@ -886,6 +890,7 @@ def compile_apero_message_table() -> Table:
                 shortname = raw_id
                 # -------------------------------------------------------------
                 # check to see whether '[' and ']' are in raw_msg
+                # noinspection PyBroadException
                 try:
                     # get the code (we assume code is before the first "]")
                     code = raw_msg.split(']')[0].split('[')[1]
@@ -1092,7 +1097,9 @@ def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
     dc0 = 1.0
     guess = [-amp0, pos0, sig0, dc0]
     # try to fit the median ccf
+    # noinspection PyBroadException
     try:
+        # noinspection PyTupleAssignmentBalance
         coeffs, _ = curve_fit(gauss_function, rv_vec, med_ccf, p0=guess)
         fit = gauss_function(rv_vec, *coeffs)
         xlim = [coeffs[1] - coeffs[2] * 20, coeffs[1] + coeffs[2] * 20]
@@ -1119,7 +1126,7 @@ def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
 # Functions for making object pages
 # =============================================================================
 class ObjectData:
-    def __init__(self, profile, settings, headers,
+    def __init__(self, profile, gsettings, settings, headers,
                  objname, file_dict, object_table):
         # get the object name
         self.objname = objname
@@ -1160,10 +1167,12 @@ class ObjectData:
         self.ccf_stats_table = None
         self.ccf_dwn_table = None
         # get time series output parameters (for page integration)
+        self.time_series_plot_path = None
         self.time_series_stats_table = None
         self.time_series_dwn_table = None
         # ---------------------------------------------------------------------
         # misc (save for use throughout)
+        self.gsettings = gsettings
         self.settings = settings
         self.profile = profile
         self.headers = headers
@@ -1233,13 +1242,22 @@ class ObjectData:
         item_rel_path = f'../{_ITEM_DIR}/'
         down_save_path = self.settings['DOWNS']
         down_rel_path = f'../{_DOWN_DIR}/'
-        # -----------------------------------------------------------------
-        # storage for ccf values
+        # ---------------------------------------------------------------------
+        # storage for spectrum values
         spec_props = dict()
+        # ---------------------------------------------------------------------
+        # object properties
+        spec_props['RA'] = self.object_table['RA_DEG'][0]
+        spec_props['Dec'] = self.object_table['DEC_DEG'][0]
+        spec_props['Teff'] = self.object_table['DEC_DEG'][0]
+        spec_props['Spectral Type'] = self.object_table['SP_TYPE'][0]
+        spec_props['DPRTYPES'] = self.object_table['DPRTYPES'][0]
+        # ---------------------------------------------------------------------
         # get values for use in plot
         spec_props['mjd'] = Time(np.array(self.header_dict['EXT_MJDMID']))
         spec_props['EXT_Y'] = np.array(self.header_dict['EXT_Y'])
-        spec_props['EXT_H'] = np.array(self.header_dict['EXT_H'])
+        ext_h = np.array(self.header_dict['EXT_H'])
+        spec_props['EXT_H'] = ext_h
         spec_props['EXT_Y_LABEL'] = self.headers['EXT']['EXT_Y']['label']
         spec_props['EXT_H_LABEL'] = self.headers['EXT']['EXT_H']['label']
         spec_props['NUM_RAW_FILES'] = len(self.raw_files)
@@ -1255,30 +1273,78 @@ class ObjectData:
         spec_props['FIRST_TCORR'] = Time(np.min(self.header_dict['TCORR_MJDMID']))
         spec_props['LAST_TCORR'] = Time(np.max(self.header_dict['TCORR_MJDMID']))
         # -----------------------------------------------------------------
-        # Find the highest SNR spectrum in H
-        pos = np.argmax(spec_props['EXT_H'])
+        # we have to match files (as ext_files, tcorr_files and raw_files may
+        #   be different lengths)
+        matched = False
+        # get the median snr
+        med_snr = np.nanmedian(ext_h)
+        n_ext_h = abs(ext_h - med_snr)
+        # sort all snr by closest to the median
+        all_snr_pos = list(np.argsort(n_ext_h))
+        # set these up
+        pos_ext, pos_raw, pos_tcorr = None, None, None
+        file_ext = 'NoFile'
+        # loop until we match
+        while not matched and len(all_snr_pos) > 0:
+            # Find the closest to the median
+            pos_ext = all_snr_pos[0]
+            # set the filename
+            file_ext = self.ext_files[pos_ext]
+            # Find the matching raw file
+            pos_raw = _match_file(reffile=file_ext, files=self.raw_files)
+            pos_tcorr = _match_file(reffile=file_ext, files=self.tcorr_files)
+            # we only stop is a match is found
+            if pos_raw is not None and pos_tcorr is not None:
+                matched = True
+            else:
+                all_snr_pos = all_snr_pos[1:]
+        # ---------------------------------------------------------------------
+        # deal with case we have no matching raw file we have a big problem
+        #   extracted file cannot exist without a raw file
+        if pos_raw is None:
+            raise ValueError(f'No raw file matching {file_ext}. '
+                             f'This should not be possible')
+        # ---------------------------------------------------------------------
         # get the extracted spectrum for the spectrum with the highest SNR
-        ext_table = Table.read(self.s1d_files[pos], ext=1)
-        # get the telluric corrected spectrum for the spectrum with the
-        # highest SNR
-        tcorr_table = Table.read(self.sc1d_files[pos], ext=1)
+        ext_table = Table.read(self.s1d_files[pos_ext], hdu=1)
         # get wavelength masks for plotting
-        wavemap = ext_table['Wavelength']
-        limits = self.settings['SpecWave']
-        wavemask1 = (limits[0][0] > wavemap) & (wavemap < limits[0][1])
-        wavemask2 = (limits[1][0] > wavemap) & (wavemap < limits[1][1])
-        wavemask3 = (limits[2][0] > wavemap) & (wavemap < limits[2][1])
+        wavemap = ext_table['wavelength']
+        limits = self.gsettings['SpecWave']
+        wavemask0 = (wavemap > limits['limit0'][0])
+        wavemask0 &= (wavemap < limits['limit0'][1])
+        wavemask1 = (wavemap > limits['limit1'][0])
+        wavemask1 &= (wavemap < limits['limit1'][1])
+        wavemask2 = (wavemap > limits['limit2'][0])
+        wavemask2 &= (wavemap < limits['limit2'][1])
+        wavemask3 = (wavemap > limits['limit3'][0])
+        wavemask3 &= (wavemap < limits['limit3'][1])
+        # ---------------------------------------------------------------------
         # push into spec_props
         spec_props['WAVE'] = np.array(ext_table['wavelength'])
         spec_props['EXT_SPEC'] = np.array(ext_table['flux'])
-        spec_props['EXT_SPEC_ERR'] =np.array(ext_table['eflux'])
-        spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
-        spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
+        spec_props['EXT_SPEC_ERR'] = np.array(ext_table['eflux'])
+        spec_props['WAVEMASK0'] = wavemask0
         spec_props['WAVEMASK1'] = wavemask1
         spec_props['WAVEMASK2'] = wavemask2
         spec_props['WAVEMASK3'] = wavemask3
-        spec_props['MAX_SNR'] = spec_props['EXT_H'][pos]
-        spec_props['MAX_FILE'] = self.raw_files[pos]
+        spec_props['WAVELIM0'] = limits['limit0']
+        spec_props['WAVELIM1'] = limits['limit1']
+        spec_props['WAVELIM2'] = limits['limit2']
+        spec_props['WAVELIM3'] = limits['limit3']
+        spec_props['MAX_SNR'] = np.round(spec_props['EXT_H'][pos_ext], 2)
+        spec_props['MAX_FILE'] = os.path.basename(self.raw_files[pos_raw])
+        # ---------------------------------------------------------------------
+        # deal with having telluric file
+        if pos_tcorr is not None:
+            # get the telluric corrected spectrum for the spectrum with the
+            # highest SNR
+            tcorr_table = Table.read(self.sc1d_files[pos_tcorr], hdu=1)
+            # push into spec_props
+            spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
+            spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
+        else:
+            spec_props['TCORR_SPEC'] = None
+            spec_props['TCORR_SPEC_ERR'] = None
         # -----------------------------------------------------------------
         # plot the figure
         # -----------------------------------------------------------------
@@ -1296,18 +1362,26 @@ class ObjectData:
         # get the stat path
         stat_path = os.path.join(item_save_path, stat_base_name)
         # compute the stats
-        spec_stats_table(spec_props, stat_path, title='Spectrum stats')
+        spec_stats_table(spec_props, stat_path, title='Spectrum Information')
         # -----------------------------------------------------------------
         # Create the file lists for this object
         # -----------------------------------------------------------------
-        # construct the save path for ext files
-        ext_file = os.path.join(down_save_path,
-                                f'ext_{self.objname}_file_list.txt')
-        create_file_list(self.ext_files, ext_file)
-        # construct the save path for the tcorr files
-        tcorr_file = os.path.join(down_save_path,
-                                  f'tcorr_{self.objname}_file_list.txt')
-        create_file_list(self.tcorr_files, tcorr_file)
+        # construct the save path for ext files (2D)
+        ext2d_file = os.path.join(down_save_path,
+                                f'ext2d_{self.objname}_file_list.txt')
+        create_file_list(self.ext_files, ext2d_file)
+        # construct the save path for ext files (1D)
+        ext1d_file = os.path.join(down_save_path,
+                                f'ext1d_{self.objname}_file_list.txt')
+        create_file_list(self.s1d_files, ext1d_file)
+        # construct the save path for the tcorr files (2D)
+        tcorr2d_file = os.path.join(down_save_path,
+                                  f'tcorr2d_{self.objname}_file_list.txt')
+        create_file_list(self.tcorr_files, tcorr2d_file)
+        # construct the save path for the tcorr files (1D)
+        tcorr1d_file = os.path.join(down_save_path,
+                                  f'tcorr1d_{self.objname}_file_list.txt')
+        create_file_list(self.sc1d_files, tcorr1d_file)
         # -----------------------------------------------------------------
         # construct the download table
         # -----------------------------------------------------------------
@@ -1316,9 +1390,11 @@ class ObjectData:
         # get the download table path
         item_path = os.path.join(item_save_path, dwn_base_name)
         # define the download files
-        down_files = [ext_file, tcorr_file]
+        down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file]
         # define the download descriptions
-        down_descs = ['Extracted 2D spectra', 'Telluric corrected 2D spectra']
+        down_descs = ['Extracted 2D spectra', 'Extracted 1D spectra',
+                      'Telluric corrected 2D spectra',
+                      'Telluric corrected 1D spectra']
         # compute the download table
         download_table(down_files, down_descs, item_path, down_rel_path,
                        down_save_path, title='Spectrum Downloads')
@@ -1549,9 +1625,9 @@ class ObjectData:
         time_series_props = dict()
         # get labels
         snr_y_label = self.headers['EXT']['EXT_Y']['label']
-        snr_y_label = snr_y_label.replace('$\mu$', 'u')
+        snr_y_label = snr_y_label.replace(r'$\mu$', 'u')
         snr_h_label = self.headers['EXT']['EXT_H']['label']
-        snr_h_label = snr_h_label.replace('$\mu$', 'u')
+        snr_h_label = snr_h_label.replace(r'$\mu$', 'u')
         ext_col = 'ext_files'
         tcorr_col = 'tcorr_files'
         # ---------------------------------------------------------------------
@@ -1596,7 +1672,7 @@ class ObjectData:
             airmass = '{:.3f}'.format(airmass)
             # get the mean exposure time
             exptime = np.mean(exptime_vec[obs_mask])
-            exptime =  '{:.3f}'.format(exptime)
+            exptime = '{:.3f}'.format(exptime)
             # get the total exposure time
             texptime = np.sum(exptime_vec[obs_mask])
             texptime = '{:.3f}'.format(texptime)
@@ -1661,7 +1737,7 @@ class ObjectData:
         self.time_series_dwn_table = None
 
 
-def add_obj_page(it: int, profile: dict, settings: dict,
+def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
                  headers, object_table: Table,
                  file_dict: FileDictReturn) -> Dict[str, Any]:
     # get the object name for this row
@@ -1690,7 +1766,7 @@ def add_obj_page(it: int, profile: dict, settings: dict,
     margs = [objname, it + 1, len(object_table)]
     wlog(params, '', msg.format(*margs))
     # create the object class
-    object_instance = ObjectData(profile, settings, headers,
+    object_instance = ObjectData(profile, gsettings, settings, headers,
                                  objname, file_dict, object_table)
     # ---------------------------------------------------------------------
     # populate the header dictionary for this object instance
@@ -1800,23 +1876,36 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # print progress
     wlog(params, 'info', 'Creating object pages')
     # set up the arguments for the multiprocessing
-    args = [0, profile, settings, headers, object_table, file_dict]
-
-    import multiprocessing
-    pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
-    # use a Manager to create a shared dictionary to collect results
+    args = [0, profile, gsettings, settings, headers, object_table, file_dict]
+    # get the number of cores
+    n_cores = gsettings['N_CORES']
+    # storage for results
     results_dict = dict()
-    # change the object column to a url
-    for it, row in enumerate(object_table):
-        # combine arguments
-        itargs = [it] + args[1:]
-        # run the pool
-        results = pool.apply_async(add_obj_page, args=itargs)
-        # push result to result storage
-        results_dict[it] = results
-    # Wait for all jobs to finish
-    pool.close()
-    pool.join()
+    # deal with running on a single core
+    if n_cores == 1:
+        # change the object column to a url
+        for it, row in enumerate(object_table):
+            # combine arguments
+            itargs = [it] + args[1:]
+            # run the pool
+            results = add_obj_page(*itargs)
+            # push result to result storage
+            results_dict[it] = results
+    elif n_cores > 1:
+        import multiprocessing
+        pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
+        # use a Manager to create a shared dictionary to collect results
+        # change the object column to a url
+        for it, row in enumerate(object_table):
+            # combine arguments
+            itargs = [it] + args[1:]
+            # run the pool
+            results = pool.apply_async(add_obj_page, args=itargs)
+            # push result to result storage
+            results_dict[it] = results
+        # Wait for all jobs to finish
+        pool.close()
+        pool.join()
     # -------------------------------------------------------------------------
     # print progress
     wlog(params, 'info', 'Propagating results from page creation...')
@@ -2067,6 +2156,7 @@ def create_file_list(files: List[str], path: str):
     """
     # if file exists remove it
     if os.path.exists(path):
+        # noinspection PyBroadException
         try:
             os.remove(path)
         except Exception as _:
@@ -2091,66 +2181,81 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     wavemap = spec_props['WAVE']
     ext_spec = spec_props['EXT_SPEC']
     tcorr_spec = spec_props['TCORR_SPEC']
+    wavemask0 = spec_props['WAVEMASK0']
     wavemask1 = spec_props['WAVEMASK1']
     wavemask2 = spec_props['WAVEMASK2']
     wavemask3 = spec_props['WAVEMASK3']
     max_file = spec_props['MAX_FILE']
     max_snr = spec_props['MAX_SNR']
+    wavelim0 = spec_props['WAVELIM0']
+    wavelim1 = spec_props['WAVELIM1']
+    wavelim2 = spec_props['WAVELIM2']
+    wavelim3 = spec_props['WAVELIM3']
     # --------------------------------------------------------------------------
     # setup the figure
-    plt.figure(figsize=(12, 9))
+    plt.figure(figsize=(12, 12))
     frame0 = plt.subplot2grid((3, 3), (0, 0), colspan=3, rowspan=1)
-    frame1a = plt.subplot2grid((3, 3), (1, 0), colspan=1, rowspan=1)
-    frame1b = plt.subplot2grid((3, 3), (1, 1), colspan=1, rowspan=1)
-    frame1c = plt.subplot2grid((3, 3), (1, 2), colspan=1, rowspan=1)
-    frame2 = plt.subplot2grid((3, 3), (2, 0), colspan=3, rowspan=1)
+    frame1 = plt.subplot2grid((3, 3), (1, 0), colspan=3, rowspan=1)
+    frame2a = plt.subplot2grid((3, 3), (2, 0), colspan=1, rowspan=1)
+    frame2b = plt.subplot2grid((3, 3), (2, 1), colspan=1, rowspan=1)
+    frame2c = plt.subplot2grid((3, 3), (2, 2), colspan=1, rowspan=1)
+
     # set background color
     frame0.set_facecolor(PLOT_BACKGROUND_COLOR)
-    frame1a.set_facecolor(PLOT_BACKGROUND_COLOR)
-    frame1b.set_facecolor(PLOT_BACKGROUND_COLOR)
-    frame1c.set_facecolor(PLOT_BACKGROUND_COLOR)
-    frame2.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame1.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame2a.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame2b.set_facecolor(PLOT_BACKGROUND_COLOR)
+    frame2c.set_facecolor(PLOT_BACKGROUND_COLOR)
     # --------------------------------------------------------------------------
-    # Top plot - full spectra + tcorr
-    # --------------------------------------------------------------------------
-    title = f'File: {max_file} {ext_h_label}={max_snr}'
-    frame0.plot(wavemap, ext_spec/np.nanmedian(ext_spec),
-                color='k', label='Extracted Spectrum')
-    frame0.plot(wavemap, tcorr_spec/np.nanmedian(tcorr_spec),
-                color='r', label='Telluric Corrected')
-    frame0.set(xlabel='Wavelength [nm]', ylabel='Normalized Flux')
-    frame0.legend(loc=0)
-    frame0.set(title=title)
-    # --------------------------------------------------------------------------
-    # Middle plots - Y, J, H spectra + tcorr
-    # --------------------------------------------------------------------------
-    masks = [wavemask1, wavemask2, wavemask3]
-    frames = [frame1a, frame1b, frame1c]
-    # loop around masks and frames and plot the middle plots
-    for mask, frame in zip(masks, frames):
-        frame.plot(wavemap[mask],
-                   ext_spec[mask]/np.nanmedian(ext_spec[mask]),
-                   color='k', label='Extracted Spectrum')
-        frame.plot(wavemap[mask],
-                   tcorr_spec[mask]/np.nanmedian(tcorr_spec[mask]),
-                   color='r', label='Telluric Corrected')
-        frame.set(xlabel='Wavelength [nm]', ylabel='Normalized Flux')
-        frame.legend(loc=0)
-    # --------------------------------------------------------------------------
-    # Bottom plot SNR Y
+    # Top plot SNR Y
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
-    frame2.plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
-                    label=ext_y_label)
-    frame2.plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
-                    label=ext_h_label)
-    frame2.legend(loc=0)
-    frame2.grid(which='both', color='lightgray', ls='--')
-    frame2.set(xlabel='Date', ylabel='EXT SNR')
+    frame0.plot_date(mjd.plot_date, ext_y, fmt='.', alpha=0.5,
+                     label=ext_y_label)
+    frame0.plot_date(mjd.plot_date, ext_h, fmt='.', alpha=0.5,
+                     label=ext_h_label)
+    frame0.legend(loc=0, ncol=2)
+    frame0.grid(which='both', color='lightgray', ls='--')
+    frame0.set(xlabel='Date', ylabel='EXT SNR')
+
+    # --------------------------------------------------------------------------
+    # Middle plot - full spectra + tcorr
+    # --------------------------------------------------------------------------
+    title = (f'Spectrum closest to Median {ext_h_label}'
+             f'     SNR:{max_snr}     File: {max_file}')
+
+    frame1.plot(wavemap[wavemask0], ext_spec[wavemask0],
+                color='k', label='Extracted Spectrum', lw=0.5)
+    frame1.plot(wavemap[wavemask0], tcorr_spec[wavemask0],
+                color='r', label='Telluric Corrected', lw=0.5)
+    frame1.set(xlabel='Wavelength [nm]', ylabel='Flux', xlim=wavelim0)
+    frame1.set_title(title, fontsize=10)
+    frame1.legend(loc=0, ncol=2)
+    frame1.grid(which='both', color='lightgray', ls='--')
+    # --------------------------------------------------------------------------
+    # Bottom plots - Y, J, H spectra + tcorr
+    # --------------------------------------------------------------------------
+    masks = [wavemask1, wavemask2, wavemask3]
+    frames = [frame2a, frame2b, frame2c]
+    limits = [wavelim1, wavelim2, wavelim3]
+    # loop around masks and frames and plot the middle plots
+    for it in range(len(masks)):
+        frame, mask, wavelim = frames[it], masks[it], limits[it]
+        frame.plot(wavemap[mask], ext_spec[mask],
+                   color='k', label='Extracted Spectrum', lw=0.5)
+        frame.plot(wavemap[mask], tcorr_spec[mask],
+                   color='r', label='Telluric Corrected', lw=0.5)
+        if it == 0:
+            frame.set_ylabel('Flux')
+        frame.set(xlabel='Wavelength [nm]', xlim=wavelim)
+        frame.set_title(f'Zoom {it+1}', fontsize=10)
+        frame.grid(which='both', color='lightgray', ls='--')
+
     # --------------------------------------------------------------------------
     # add title
     plt.suptitle(plot_title)
-    plt.subplots_adjust(hspace=0.1, left=0.1, right=0.99)
+    plt.subplots_adjust(bottom=0.05, left=0.06, right=0.99, hspace=0.3,
+                        top=0.95)
     # save figure and close the plot
     plt.savefig(plot_path)
     plt.close()
@@ -2173,6 +2278,9 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     last_ext = spec_props['LAST_EXT'].iso
     first_tcorr = spec_props['FIRST_TCORR'].iso
     last_tcorr = spec_props['LAST_TCORR'].iso
+    ra, dec = spec_props['RA'], spec_props['Dec']
+    teff, spt = spec_props['Teff'], spec_props['Spectral Type']
+    dprtypes = spec_props['DPRTYPES']
     # --------------------------------------------------------------------------
     # Calculate stats
     # --------------------------------------------------------------------------
@@ -2187,6 +2295,18 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     # --------------------------------------------------------------------------
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
+    # Add RA and Dec
+    stat_dict['Description'].append('Coordinates')
+    stat_dict['Value'].append('{0}, {1}'.format(ra, dec))
+    # Add Teff
+    stat_dict['Description'].append('Teff')
+    stat_dict['Value'].append(teff)
+    # Add Spectral type
+    stat_dict['Description'].append('Spectral Type')
+    stat_dict['Value'].append(spt)
+    # Add dprtypes
+    stat_dict['Description'].append('DPRTYPES')
+    stat_dict['Value'].append(','.join(dprtypes))
     # add number of raw files
     stat_dict['Description'].append('Number raw files [first, last]')
     stat_dict['Value'].append(f'{num_raw} [{first_raw}, {last_raw}]')
@@ -2201,11 +2321,11 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{num_tcorr} [{first_tcorr}, {last_tcorr}]')
     # add the SNR in Y
     stat_dict['Description'].append('Median SNR Y')
-    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(med_snr_y, rms_snr_y)
+    value = r'{:.2f} :math:`\pm` {:.2f}'.format(med_snr_y, rms_snr_y)
     stat_dict['Value'].append(value)
     # add the SNR in H
     stat_dict['Description'].append('Median SNR H')
-    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(med_snr_h, rms_snr_h)
+    value = r'{:.2f} :math:`\pm` {:.2f}'.format(med_snr_h, rms_snr_h)
     stat_dict['Value'].append(value)
     # --------------------------------------------------------------------------
     # change the columns names
@@ -2370,7 +2490,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     has_fit = ccf_props['has_fit']
     fit = ccf_props['fit']
     xlim = ccf_props['xlim']
-    ylim = ccf_props['ylim']
+    # ylim = ccf_props['ylim']
     # --------------------------------------------------------------------------
     # setup the figure
     fig, frame = plt.subplots(4, 1, figsize=(12, 12))
@@ -2427,9 +2547,9 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     limmask = (rv_vec > xlim[0]) & (rv_vec < xlim[1])
 
     frame[1].fill_between(rv_vec[limmask], y1_2sig[limmask], y2_2sig[limmask],
-                          color='orange', alpha=0.5)
+                          color='orange', alpha=0.4)
     frame[1].fill_between(rv_vec[limmask], y1_1sig[limmask], y2_1sig[limmask],
-                          color='red', alpha=0.5)
+                          color='red', alpha=0.4)
     frame[1].plot(rv_vec[limmask], med_ccf[limmask], alpha=1.0, color='black')
     if has_fit:
         frame[1].plot(rv_vec[limmask], fit[limmask], alpha=0.8,
@@ -2445,18 +2565,18 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     if has_fit:
         frame[2].fill_between(rv_vec[limmask], y1_2sig[limmask] - fit[limmask],
                               y2_2sig[limmask] - fit[limmask], color='orange',
-                              alpha=0.5, label='2-$\sigma$')
+                              alpha=0.4, label=r'2-$\sigma$')
         frame[2].fill_between(rv_vec[limmask], y1_1sig[limmask] - fit[limmask],
                               y2_1sig[limmask] - fit[limmask], color='red',
-                              alpha=0.5, label='1-$\sigma$')
+                              alpha=0.4, label=r'1-$\sigma$')
         frame[2].plot(rv_vec[limmask], med_ccf[limmask] - fit[limmask],
                       alpha=0.8, label='Median residual')
-        frame[2].legend(loc=0)
+        frame[2].legend(loc=0, ncol=3)
         frame[2].set(xlabel='RV [km/s]', ylabel='Residuals [to fit]')
     else:
         frame[2].text(0.5, 0.5, 'No fit to CCF possible',
                       horizontalalignment='center')
-        frame[2].legend(loc=0)
+        frame[2].legend(loc=0, ncol=3)
         frame[2].set(xlim=[0, 1], ylim=[0, 1], xlabel='RV [km/s]',
                      ylabel='Residuals')
     frame[2].grid(which='both', color='lightgray', ls='--')
@@ -2467,26 +2587,27 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
         frame[3].fill_between(rv_vec[limmask],
                               y1_2sig[limmask] - med_ccf[limmask],
                               y2_2sig[limmask] - med_ccf[limmask], color='orange',
-                              alpha=0.5, label='2-$\sigma$')
+                              alpha=0.4, label=r'2-$\sigma$')
         frame[3].fill_between(rv_vec[limmask],
                               y1_1sig[limmask] - med_ccf[limmask],
                               y2_1sig[limmask] - med_ccf[limmask], color='red',
-                              alpha=0.5, label='1-$\sigma$')
+                              alpha=0.4, label=r'1-$\sigma$')
         frame[3].plot(rv_vec[limmask], med_ccf[limmask] - med_ccf[limmask],
                       alpha=0.8, label='Median residual')
-        frame[3].legend(loc=0)
+        frame[3].legend(loc=0, ncol=3)
         frame[3].set(xlabel='RV [km/s]', ylabel='Residuals [To Median]')
     else:
         frame[3].text(0.5, 0.5, 'No fit to CCF possible',
                       horizontalalignment='center')
-        frame[3].legend(loc=0)
+        frame[3].legend(loc=0, ncol=3)
         frame[3].set(xlim=[0, 1], ylim=[0, 1], xlabel='RV [km/s]',
                      ylabel='Residuals [To Median]')
     frame[3].grid(which='both', color='lightgray', ls='--')
     # --------------------------------------------------------------------------
     # add title
     plt.suptitle(plot_title)
-    plt.subplots_adjust(hspace=0.1, left=0.1, right=0.99)
+    plt.subplots_adjust(hspace=0.2, left=0.1, right=0.99, bottom=0.05,
+                        top=0.95)
     # save figure and close the plot
     plt.savefig(plot_path)
     plt.close()
@@ -2515,11 +2636,11 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict = dict(Description=[], Value=[])
     # add systemic velocity
     stat_dict['Description'].append('CCF systemic velocity')
-    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(sys_vel, err_sys_vel)
+    value = r'{:.2f} :math:`\pm` {:.2f} m/s'.format(sys_vel, err_sys_vel)
     stat_dict['Value'].append(value)
     # add fwhm
     stat_dict['Description'].append('CCF FWHM')
-    value = '{:.2f} :math:`\pm` {:.2f} m/s'.format(ccf_fwhm, err_ccf_fwhm)
+    value = r'{:.2f} :math:`\pm` {:.2f} m/s'.format(ccf_fwhm, err_ccf_fwhm)
     stat_dict['Value'].append(value)
     # add number of files
     stat_dict['Description'].append('Number of CCF files')
@@ -2639,16 +2760,16 @@ def load_stats(settings: dict) -> dict:
     return profile_stats
 
 
-def read_yaml_file(profile_filename: str) -> dict:
+def read_yaml_file(pfilename: str) -> dict:
     """
     Read the yaml file  for the list of profiles using pyyaml
 
-    :param profile_filename: str, the filename of the yaml file
+    :param pfilename: str, the filename of the yaml file
 
     :return:
     """
     # read the yaml file "profiles.yaml" for the list of profiles using pyyaml
-    with open(profile_filename, 'r') as stream:
+    with open(pfilename, 'r') as stream:
         # try to load the yaml file
         try:
             profiles = yaml.safe_load(stream)
@@ -2773,6 +2894,37 @@ def _header_value(keydict: Dict[str, str], header: fits.Header,
     # -------------------------------------------------------------------------
     # return the raw value
     return rawvalue
+
+
+def _match_file(reffile: str, files: List[str]):
+    """
+    Using a ref file split at the _pp level and try to locate the position
+    of this file in the files list
+
+    If ref file does not have _pp we assume it is a raw file and just remove
+    the .fits and search based on this
+
+    :param reffile: str,
+    :param files:
+    :return:
+    """
+    # force ref to be a basename
+    refbasename = os.path.basename(reffile)
+    # get the search string
+    if '_pp' not in refbasename:
+        searchstr = refbasename.split('.fits')[0]
+    else:
+        searchstr = refbasename.split('_pp')[0]
+
+    # look for each string in list (correct entry should start with it)
+    for it, filename in enumerate(files):
+        # get basename of filename
+        basename = os.path.basename(filename)
+        # search for the string, if we find it we can stop here
+        if basename.startswith(searchstr):
+            return it
+    # if we get to here we did not find the string - return None
+    return None
 
 
 # =============================================================================

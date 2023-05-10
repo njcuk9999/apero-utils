@@ -5,12 +5,21 @@ settings:
   # Working directory: where to store the website data
   working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
   # number of cores to use in multiprocessing steps
-  N_CORES: 20
+  N_CORES: 1
   # Spectrum wavelength ranges in nm
   SpecWave:
-    - (1268, 1274)
-    - (1575, 1580)
-    - (1666, 1668)
+    limit0:
+      - 985
+      - 1810
+    limit1:
+      - 1226
+      - 1231
+    limit2:
+      - 1575
+      - 1580
+    limit3:
+      - 1666
+      - 1668
   # SSH PATH to copy the website to
   ssh:
     directory: /export/www/home/cook/www/apero-drs/

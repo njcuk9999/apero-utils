@@ -9,9 +9,15 @@ settings:
   # Spectrum wavelength ranges in nm
   # TODO: Adjust these values for SPIROU
   SpecWave:
-    - (1268, 1274)
-    - (1575, 1580)
-    - (1666, 1668)
+    limit1:
+      - 1268
+      - 1274
+    limit2:
+      - 1575
+      - 1580
+    limit3:
+      - 1666
+      - 1668
   # SSH PATH to copy the website to
   ssh:
     directory: /export/www/home/cook/www/apero-drs/
