@@ -1249,7 +1249,7 @@ class ObjectData:
         # object properties
         spec_props['RA'] = self.object_table['RA_DEG'][0]
         spec_props['Dec'] = self.object_table['DEC_DEG'][0]
-        spec_props['Teff'] = self.object_table['DEC_DEG'][0]
+        spec_props['Teff'] = self.object_table['TEFF'][0]
         spec_props['Spectral Type'] = self.object_table['SP_TYPE'][0]
         spec_props['DPRTYPES'] = self.object_table['DPRTYPES'][0]
         # ---------------------------------------------------------------------
@@ -2306,7 +2306,7 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(spt)
     # Add dprtypes
     stat_dict['Description'].append('DPRTYPES')
-    stat_dict['Value'].append(','.join(dprtypes))
+    stat_dict['Value'].append(dprtypes)
     # add number of raw files
     stat_dict['Description'].append('Number raw files [first, last]')
     stat_dict['Value'].append(f'{num_raw} [{first_raw}, {last_raw}]')
