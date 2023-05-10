@@ -30,38 +30,28 @@ DTVAL = 3
 # -----------------------------------------------------------------------------
 # FIELD OF VIEW
 FIELD_OF_VIEW = dict()
-FIELD_OF_VIEW['G'] = 77.6 * uu.arcsec
-FIELD_OF_VIEW['J'] = 77.6 * uu.arcsec
+FIELD_OF_VIEW['G'] = np.array([77.6, 77.6]) * uu.arcsec
+FIELD_OF_VIEW['J'] = np.array([18.2, 22.8]) * uu.arcsec
 # SCALE FACTOR (size to be plotted to compared to field of view)
-SCALE_FACTOR = 1.5
+SCALE_FACTOR = dict()
+SCALE_FACTOR['G'] = np.array([1.5, 1.5])
+# scale to match G
+SCALE_FACTOR['J'] = SCALE_FACTOR['G'] * (FIELD_OF_VIEW['G']/FIELD_OF_VIEW['J'])
+
+
 # RADIUS
 RADIUS = dict()
-RADIUS['G'] = FIELD_OF_VIEW['G'] / np.sqrt(2)
-RADIUS['J'] = FIELD_OF_VIEW['J'] / np.sqrt(2)
+RADIUS['G'] = np.max(SCALE_FACTOR['G'] * FIELD_OF_VIEW['G'] / np.sqrt(2))
+RADIUS['J'] = np.max(SCALE_FACTOR['J'] * FIELD_OF_VIEW['J'] / np.sqrt(2))
 # PIXEL SCALE
 PIXEL_SCALE = dict()
 PIXEL_SCALE['G'] = 0.1514 * uu.arcsec / uu.pixel
 PIXEL_SCALE['J'] = 0.1514 * uu.arcsec / uu.pixel
 
-#
-# #FIELD OF VIEW
-# FIELD_OF_VIEW = dict()
-# FIELD_OF_VIEW['G'] = 2 * uu.arcmin
-# FIELD_OF_VIEW['J'] = 2 * uu.arcmin
-# # RADIUS
-# RADIUS = dict()
-# RADIUS['G'] = FIELD_OF_VIEW['G'] / np.sqrt(2)
-# RADIUS['J'] = FIELD_OF_VIEW['J'] / np.sqrt(2)
-# # PIXEL SCALE
-# PIXEL_SCALE = dict()
-# PIXEL_SCALE['G'] = 0.3 * uu.arcsec / uu.pixel
-# PIXEL_SCALE['J'] = 0.3 * uu.arcsec / uu.pixel
-
-
 # Transform the image
 TRANSFORM_ROTATE = dict()
 TRANSFORM_ROTATE['G'] = 180 * uu.deg + 90 * uu.deg - 37.4 * uu.deg
-TRANSFORM_ROTATE['J'] = 180 * uu.deg + 90 * uu.deg - 37.4 * uu.deg
+TRANSFORM_ROTATE['J'] = 180 * uu.deg + 90 * uu.deg - 37.4 * uu.deg + 90 * uu.deg
 
 # FWHM
 FWHM = dict()
@@ -82,9 +72,13 @@ SCALE_SIZE = 10 * uu.arcsec
 # compass size
 COMPASS_FRAC = 0.075
 # FLIP X
-FLIP_X = True
+FLIP_X = dict()
+FLIP_X['G'] = True
+FLIP_X['J'] = True
 # FLIP Y
-FLIP_Y = False
+FLIP_Y = dict()
+FLIP_Y['G'] = False
+FLIP_Y['J'] = False
 
 # -----------------------------------------------------------------------------
 # Gaia specific
@@ -497,18 +491,18 @@ def seed_image(gaia_sources, pixel_scale, obs_coords, fwhm, field_of_view,
     Create the image WCS and seed all gaia soirces for band at their co
     """
     # plot out to the scale factor
-    # TODO: fix this
     field_of_view = field_of_view * scale_factor
 
     # number of pixels in each direction
-    npixel = int(field_of_view.to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
+    npixel_x = int(field_of_view[0].to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
+    npixel_y = int(field_of_view[1].to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
 
     fwhm_pix = fwhm.to(uu.arcsec) / (pixel_scale * uu.pixel).to(uu.arcsec)
 
-    wcs = setup_wcs((npixel, npixel), obs_coords, pixel_scale, rotation,
+    wcs = setup_wcs((npixel_y, npixel_x), obs_coords, pixel_scale, rotation,
                     flip_x, flip_y)
 
-    image = np.random.normal(size=(npixel, npixel), scale=1.0, loc=0)
+    image = np.random.normal(size=(npixel_y, npixel_x), scale=1.0, loc=0)
 
     nsig_psf = np.array(10 ** ((sigma_limit - gaia_sources[band]) / 2.5))
 
@@ -516,7 +510,7 @@ def seed_image(gaia_sources, pixel_scale, obs_coords, fwhm, field_of_view,
     x_sources, y_sources = wcs.all_world2pix(gaia_sources['ra'],
                                              gaia_sources['dec'], 0)
     # create a grid of all pixels
-    y, x = np.mgrid[0:npixel, 0:npixel]
+    y, x = np.mgrid[0:npixel_y, 0:npixel_x]
     # get the width of the PSF from the fwhm
     ew = fwhm_pix.value / (2 * np.sqrt(2 * np.log(2)))
     # loop around all sources
@@ -604,8 +598,8 @@ def plot_map1(frame, image, wcs, obs_coords, title,
     cos_dec = np.cos(dec_comp * uu.deg)
     # get the compas
     length_world = field_of_view * scale_factor
-    ra_comp_e = ra_comp + (length_world.to(uu.deg).value*COMPASS_FRAC)/cos_dec
-    dec_comp_n = dec_comp + length_world.to(uu.deg).value*COMPASS_FRAC
+    ra_comp_e = ra_comp + (length_world[0].to(uu.deg).value*COMPASS_FRAC)/cos_dec
+    dec_comp_n = dec_comp + length_world[1].to(uu.deg).value*COMPASS_FRAC
     # convert back to pixel space
     x_comp, y_comp = wcs.all_world2pix(ra_comp, dec_comp, 0)
     x_comp_e, y_comp_e = wcs.all_world2pix(ra_comp_e, dec_comp, 0)
@@ -647,13 +641,14 @@ def plot_map1(frame, image, wcs, obs_coords, title,
     # Add rectangle for the real field of view
     # -------------------------------------------------------------------------
     # number of pixels in each direction
-    npixel = int(field_of_view.to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
+    npixel_x = int(field_of_view[0].to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
+    npixel_y = int(field_of_view[1].to(uu.deg) // (pixel_scale * uu.pixel).to(uu.deg))
     # the recetangle should be centered on the center of the image
     center_x, center_y = image.shape[1] // 2, image.shape[0] // 2
     # we need to bottom left corner of the rectangle
-    x0, y0 = center_x - npixel // 2, center_y - npixel // 2
+    x0, y0 = center_x - npixel_x // 2, center_y - npixel_y // 2
     # plot a rectangle
-    rect = Rectangle((x0, y0), npixel, npixel, linewidth=2, edgecolor=color,
+    rect = Rectangle((x0, y0), npixel_x, npixel_y, linewidth=2, edgecolor=color,
                      facecolor='none', ls='--')
     frame.add_patch(rect)
 
@@ -823,9 +818,10 @@ def main(objname: str, date: Time, objdict: Dict[str, Any]):
     kwargs_gaia = dict(pixel_scale=PIXEL_SCALE['G'], obs_coords=obs_coords,
                        fwhm=FWHM['G'], field_of_view=FIELD_OF_VIEW['G'],
                        sigma_limit=SIGMA_LIMIT['G'], band='G',
-                       scale_factor=SCALE_FACTOR)
+                       scale_factor=SCALE_FACTOR['G'])
     print('\nSeeding Gaia image')
-    image1, wcs1 = seed_image(gaia_sources, flip_x=FLIP_X, flip_y=FLIP_Y,
+    image1, wcs1 = seed_image(gaia_sources,
+                              flip_x=FLIP_X['G'], flip_y=FLIP_Y['G'],
                               rotation=TRANSFORM_ROTATE['G'].to(uu.deg),
                               **kwargs_gaia)
 
@@ -838,9 +834,10 @@ def main(objname: str, date: Time, objdict: Dict[str, Any]):
     kwargs_tmass = dict(pixel_scale=PIXEL_SCALE['J'], obs_coords=obs_coords,
                         fwhm=FWHM['J'], field_of_view=FIELD_OF_VIEW['J'],
                         sigma_limit=SIGMA_LIMIT['J'], band='J',
-                        scale_factor=SCALE_FACTOR)
+                        scale_factor=SCALE_FACTOR['J'])
     print('\nSeeding 2MASS image')
-    image2, wcs2 = seed_image(gaia_sources, flip_x=FLIP_X, flip_y=FLIP_Y,
+    image2, wcs2 = seed_image(gaia_sources,
+                              flip_x=FLIP_X['J'], flip_y=FLIP_Y['J'],
                               rotation=TRANSFORM_ROTATE['J'].to(uu.deg),
                               **kwargs_tmass)
 
@@ -859,24 +856,24 @@ def main(objname: str, date: Time, objdict: Dict[str, Any]):
     # noinspection PyTypeChecker
     plot_map1(frame1, image1, wcs1, obs_coords,
               'Gaia', FIELD_OF_VIEW['G'], PIXEL_SCALE['G'],
-              scale_factor=SCALE_FACTOR)
+              scale_factor=SCALE_FACTOR['G'])
     # plot the 2mass map
     # noinspection PyTypeChecker
     plot_map1(frame2, image2, wcs2, obs_coords,
               '2MASS', FIELD_OF_VIEW['J'], PIXEL_SCALE['J'],
-              scale_factor=SCALE_FACTOR)
+              scale_factor=SCALE_FACTOR['J'])
 
     # noinspection PyTypeChecker
     plot_map1(frame3, image3, wcs3, obs_coords,
               'Gaia [No rotation]', FIELD_OF_VIEW['G'],
               PIXEL_SCALE['G'],
-              scale_factor=SCALE_FACTOR)
+              scale_factor=SCALE_FACTOR['G'])
     # plot the 2mass map
     # noinspection PyTypeChecker
     plot_map1(frame4, image4, wcs4, obs_coords,
               '2MASS [No rotation]', FIELD_OF_VIEW['J'],
               PIXEL_SCALE['J'],
-              scale_factor=SCALE_FACTOR)
+              scale_factor=SCALE_FACTOR['J'])
 
     # -------------------------------------------------------------------------
     # add title
