@@ -5,7 +5,7 @@ settings:
   # Working directory: where to store the website data
   working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
   # number of cores to use in multiprocessing steps
-  N_CORES: 1
+  N_CORES: 20
   # Spectrum wavelength ranges in nm
   SpecWave:
     limit0:
