@@ -29,7 +29,7 @@ from scipy.optimize import curve_fit
 # Define variables
 # =============================================================================
 # debug mode (one object, one core)
-DEBUG = True
+DEBUG = False
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
@@ -399,7 +399,6 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
         if len(entry['profile_items']) > 0:
             obj_index_page.add_newline()
             obj_index_page.add_table_of_contents(items=entry['profile_items'],
-                                                 names=entry['profile_names'],
                                                  sectionname=None)
         else:
             obj_index_page.add_newline()
@@ -467,8 +466,11 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     index_page.add_text('Object by object index. '
                         'Links to all profiles and finding charts')
     index_page.add_newline()
-    index_page.add_table_of_contents(items=['object_index'],
-                                     names=['Object index page'])
+    index_page.add_text('Please note this includes objects not currently '
+                        'observed.')
+    index_page.add_newline()
+    index_page.add_table_of_contents(items=['obj_index.rst'],
+                                     sectionname=None)
     # -------------------------------------------------------------------------
     # save index page
     index_page.write_page(os.path.join(settings['WORKING'], 'index.rst'))
@@ -534,7 +536,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
             table_page.add_newline()
             # deal with column widths for this file type
-            if table is not None:
+            if table is not None and len(table) > 0:
                 # add the csv version of this table
                 table_page.add_csv_table('', f'../{_DATA_DIR}/' +
                                          table_filename, cssclass='csvtable2')
@@ -1992,14 +1994,16 @@ def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
     object_page_path = settings['OBJ_OUT']
     # construct the rst filename
     rst_filename = f'{objname}.rst'
-    # save index page
+    # save object page
     object_page.write_page(os.path.join(object_page_path, rst_filename))
+    # get ref path
+    obj_ref_page = os.path.join('.', clean_name, _OBJ_OUT_DIR, rst_filename)
     # ---------------------------------------------------------------------
     # return dictioanry of properties
     rprops = dict()
     rprops['OBJNAME'] = objname
     rprops['OBJURL'] = obj_url
-    rprops['OBJPAGEREF'] = object_url
+    rprops['OBJPAGEREF'] = obj_ref_page
     # things to return
     return rprops
 
@@ -3235,25 +3239,25 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # write object index page
     print('=' * 50)
-    print('\n\nCompling object index page...')
+    print('Compling object index page...')
     print('=' * 50)
     compile_obj_index_page(ari_gsettings, ari_settings, all_apero_oprops)
     # ----------------------------------------------------------------------
     # step 4: write markdown files
     print('=' * 50)
-    print('\n\nWriting markdown files...')
+    print('Writing markdown files...')
     print('=' * 50)
     write_markdown(ari_gsettings, ari_settings, all_apero_stats)
     # ----------------------------------------------------------------------
     # step 5: compile sphinx files
     print('=' * 50)
-    print('\n\nCompiling docs...')
+    print('Compiling docs...')
     print('=' * 50)
     compile_docs(ari_settings)
     # ----------------------------------------------------------------------
     # step 6: upload to hosting
     print('=' * 50)
-    print('\n\nUploading docs...')
+    print('Uploading docs...')
     print('=' * 50)
     upload_docs(ari_gsettings, ari_settings)
 
