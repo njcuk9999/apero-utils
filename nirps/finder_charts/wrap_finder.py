@@ -72,7 +72,7 @@ def main():
     # get all objects
     object_table = objdbm.get_entries('*')
     # loop around objnames
-    for it, objname in object_table['OBJNAME']:
+    for it, objname in enumerate(object_table['OBJNAME']):
         # get the objdict
         objdict = from_apero(it, object_table)
         # print progress

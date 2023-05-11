@@ -28,6 +28,8 @@ from scipy.optimize import curve_fit
 # =============================================================================
 # Define variables
 # =============================================================================
+# debug mode (one object, one core)
+DEBUG = True
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
@@ -297,19 +299,34 @@ def update_apero_profile(profile: dict):
 def compile_obj_index_page(gsettings: dict, settings: dict,
                            oprops: Dict[str, Any]):
     from apero.tools.module.documentation import drs_markdown
+    from apero.core import constants
+    from apero.core.core import drs_database
+    from apero.core.utils import drs_startup
+    from apero.base.base import TQDM as tqdm
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
+    # print progress
     # generate place to save figures
     item_save_path = settings['OBJ_INDEX_ITEM']
-    item_rel_path = f'../{_ITEM_DIR}/'
+    item_rel_path = f'{_OBJ_INDEX_DIR}/{_ITEM_DIR}/'
     down_save_path = settings['OBJ_INDEX_DOWN']
-    down_rel_path = f'../{_DOWN_DIR}/'
+    down_rel_path = f'{_OBJ_INDEX_DIR}/{_DOWN_DIR}/'
     # -------------------------------------------------------------------------
-    # create a dictionary of dictionary to fill in the object sections
+    # load object database
+    objdbm = drs_database.AstrometricDatabase(params)
+    objdbm.load_db()
+    # get all objects
+    objnames = objdbm.get_entries('OBJNAME')
+    # storage for outputs
     objdict = dict()
     # loop around objects and create a section for each
-    for objname in objdict:
+    for objname in tqdm(objnames):
         entry = dict()
         entry['profile_items'] = []
         entry['profile_names'] = []
+        entry['find_files'] = []
         entry['find_descs'] = []
         # ---------------------------------------------------------------------
         # add profile reference links for this object
@@ -317,6 +334,9 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
         for apero_profile_name in oprops:
             # look in this profile
             oprops_profile = oprops[apero_profile_name]
+            # deal with no reduction for this profile
+            if len(oprops_profile) == 0:
+                continue
             # see if this object was reduced by this profile
             if objname in oprops_profile['OBJNAME']:
                 # find where the object name is in the list
@@ -333,7 +353,11 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
             # get find directory
             find_path = gsettings['find directory']
             # look for objname in this directory
-            entry['find_descs'] = find_finder_charts(find_path, objname)
+            find_files, find_descs = find_finder_charts(find_path, objname)
+            # push to entry
+            entry['find_files'] = find_files
+            entry['find_descs'] = find_descs
+
         # ---------------------------------------------------------------------
         # generate finder chart download table
         # ---------------------------------------------------------------------
@@ -352,7 +376,8 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
     # create ARI index page
     obj_index_page = drs_markdown.MarkDownPage('object_index')
     # add title
-    obj_index_page.add_title('APERO Reduction Interface (ARI)')
+    obj_index_page.add_title('APERO Reduction Interface (ARI) '
+                             'Object Index Page')
     # -------------------------------------------------------------------------
     # Add basic text
     # construct text to add
@@ -374,7 +399,8 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
         if len(entry['profile_items']) > 0:
             obj_index_page.add_newline()
             obj_index_page.add_table_of_contents(items=entry['profile_items'],
-                                                 names=entry['profile_names'])
+                                                 names=entry['profile_names'],
+                                                 sectionname=None)
         else:
             obj_index_page.add_newline()
             obj_index_page.add_text('Currently not reduced under any profile')
@@ -441,7 +467,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     index_page.add_text('Object by object index. '
                         'Links to all profiles and finding charts')
     index_page.add_newline()
-    index_page.add_reference('object_index')
+    index_page.add_table_of_contents(items=['object_index'],
+                                     names=['Object index page'])
     # -------------------------------------------------------------------------
     # save index page
     index_page.write_page(os.path.join(settings['WORKING'], 'index.rst'))
@@ -1998,7 +2025,7 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
         wlog(params, '', 'No objects found in object table')
         # remove the columns we don't want in the final table
         for remove_col in REMOVE_COLS:
-            if remove_col in object_table:
+            if remove_col in object_table.columns:
                 object_table.remove_columns(remove_col)
         # return empty table
         return object_table, dict()
@@ -2010,9 +2037,12 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # get the number of cores
     n_cores = gsettings['N_CORES']
     # storage for results
-    results_dict = dict()
+    rprops = dict()
+    # -------------------------------------------------------------------------
     # deal with running on a single core
     if n_cores == 1:
+        # storage for results
+        results_dict = dict()
         # change the object column to a url
         for it, row in enumerate(object_table):
             # combine arguments
@@ -2021,9 +2051,27 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             results = add_obj_page(*itargs)
             # push result to result storage
             results_dict[it] = results
+        # print progress
+        wlog(params, 'info', 'Propagating results from page creation...')
+        # Use the iterator keys to populate our final dictionary
+        rprops = dict()
+        # loop around keys
+        for it in range(len(object_table)):
+            # get the result for this iteration
+            result = results_dict[it]
+            # loop around keys in the result dictionary's dictionary
+            for key in result:
+                # we assume all dictionarys have the same keys
+                if key in rprops:
+                    rprops[key].append(result[key])
+                else:
+                    rprops[key] = [result[key]]
+    # -------------------------------------------------------------------------
     elif n_cores > 1:
         import multiprocessing
         pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
+        # storage for results
+        results_dict = dict()
         # use a Manager to create a shared dictionary to collect results
         # change the object column to a url
         for it, row in enumerate(object_table):
@@ -2036,28 +2084,27 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
         # Wait for all jobs to finish
         pool.close()
         pool.join()
-    # -------------------------------------------------------------------------
-    # print progress
-    wlog(params, 'info', 'Propagating results from page creation...')
-    # Use the iterator keys to populate our final dictionary
-    rprops = dict()
-    # loop around keys
-    for it in range(len(object_table)):
-        # get the result for this iteration
-        result = results_dict[it].get()
-        # loop around keys in the result dictionary's dictionary
-        for key in results_dict[it].get():
-            # we assume all dictionarys have the same keys
-            if key in rprops:
-                rprops[key].append(result[key])
-            else:
-                rprops[key] = [result[key]]
+        # print progress
+        wlog(params, 'info', 'Propagating results from page creation...')
+        # Use the iterator keys to populate our final dictionary
+        rprops = dict()
+        # loop around keys
+        for it in range(len(object_table)):
+            # get the result for this iteration
+            result = results_dict[it].get()
+            # loop around keys in the result dictionary's dictionary
+            for key in result:
+                # we assume all dictionarys have the same keys
+                if key in rprops:
+                    rprops[key].append(result[key])
+                else:
+                    rprops[key] = [result[key]]
     # -------------------------------------------------------------------------
     # replace object name with the object name + object url
     object_table[OBJECT_COLUMN] = rprops['OBJURL']
     # remove the columns we don't want in the final table
     for remove_col in REMOVE_COLS:
-        if remove_col in object_table:
+        if remove_col in object_table.colnames:
             object_table.remove_columns(remove_col)
     # return the object table
     return object_table, rprops
@@ -2201,7 +2248,7 @@ def objpage_timeseries(page: Any, name: str, ref: str,
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
-    if object_instance.ccf_dwn_table is not None:
+    if object_instance.time_series_dwn_table is not None:
         # add the stats table
         page.add_csv_table('', object_instance.time_series_dwn_table,
                            cssclass='csvtable2')
@@ -2357,8 +2404,9 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
 
     frame1.plot(wavemap[wavemask0], ext_spec[wavemask0],
                 color='k', label='Extracted Spectrum', lw=0.5)
-    frame1.plot(wavemap[wavemask0], tcorr_spec[wavemask0],
-                color='r', label='Telluric Corrected', lw=0.5)
+    if tcorr_spec is not None:
+        frame1.plot(wavemap[wavemask0], tcorr_spec[wavemask0],
+                    color='r', label='Telluric Corrected', lw=0.5)
     frame1.set(xlabel='Wavelength [nm]', ylabel='Flux', xlim=wavelim0)
     frame1.set_title(title, fontsize=10)
     frame1.legend(loc=0, ncol=2)
@@ -2374,8 +2422,10 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
         frame, mask, wavelim = frames[it], masks[it], limits[it]
         frame.plot(wavemap[mask], ext_spec[mask],
                    color='k', label='Extracted Spectrum', lw=0.5)
-        frame.plot(wavemap[mask], tcorr_spec[mask],
-                   color='r', label='Telluric Corrected', lw=0.5)
+        if tcorr_spec is not None:
+            frame.plot(wavemap[mask], tcorr_spec[mask],
+                       color='r', label='Telluric Corrected', lw=0.5)
+            frame.set_ylim((0, 1.5 * np.nanmedian(tcorr_spec[mask])))
         if it == 0:
             frame.set_ylabel('Flux')
         frame.set(xlabel='Wavelength [nm]', xlim=wavelim)
@@ -2804,20 +2854,21 @@ def time_series_stats_table(time_series_props: Dict[str, Any], stat_path: str):
 # =============================================================================
 # Object index functions
 # =============================================================================
-def find_finder_charts(path: str, objname: str) -> List[str]:
+def find_finder_charts(path: str, objname: str) -> Tuple[List[str], List[str]]:
     """
     Find finder charts for this object
-    :param path:
-    :param objname:
+    :param path: str, the path to the finder charts directory
+    :param objname: str, the object name to locate
     :return:
     """
     # expected directory name
     expected_dir = os.path.join(path, objname)
     # deal with no directory --> no finder files
     if not os.path.exists(expected_dir):
-        return []
+        return [], []
     # storage for list of files
     list_of_files = []
+    list_of_descs = []
     # loop around filenames
     for filename in os.listdir(expected_dir):
         # only include APERO finder charts
@@ -2826,9 +2877,15 @@ def find_finder_charts(path: str, objname: str) -> List[str]:
         # only include pdf files
         if not filename.endswith('.pdf'):
             continue
-        list_of_files.append(filename)
+        # get the finder desc
+        description = filename.split(objname)[-1]
+        description = description.strip('_')
+        description = description.replace('_', '-').replace('.pdf', '')
+        # append to list
+        list_of_files.append(os.path.join(expected_dir, filename))
+        list_of_descs.append(description)
     # return the list of files
-    return list_of_files
+    return list_of_files, list_of_descs
 
 
 def make_finder_download_table(entry, objname, item_save_path, item_rel_path,
@@ -2847,6 +2904,13 @@ def make_finder_download_table(entry, objname, item_save_path, item_rel_path,
 # =============================================================================
 # Worker functions
 # =============================================================================
+def debug_mode(gsettings: dict):
+    # switch off some options in debug mode
+    if DEBUG:
+        gsettings['N_CORES'] = 1
+        gsettings['filter objects'] = True
+    return gsettings
+
 def split_line(parts, rawstring):
     # store list of variables
     variables = []
@@ -3125,6 +3189,8 @@ if __name__ == "__main__":
     if ari_gsettings['reset']:
         # remove working directory
         shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
+    # deal with debug mode
+    ari_gsettings = debug_mode(ari_gsettings)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
@@ -3147,7 +3213,7 @@ if __name__ == "__main__":
             apero_stats = compile_stats(ari_gsettings, ari_settings,
                                         apero_profile, header_settings)
             # add to all_apero_stats
-            all_apero_stats[apero_profile_name] = apero_stats['TABLE']
+            all_apero_stats[apero_profile_name] = apero_stats['TABLES']
             all_apero_oprops[apero_profile_name] = apero_stats['OPROPS']
             # -----------------------------------------------------------------
             # Save stats to disk
@@ -3161,22 +3227,34 @@ if __name__ == "__main__":
             # load stats
             apero_stats = load_stats(ari_settings)
             # add to all_apero_stats
-            all_apero_stats[apero_profile_name] = apero_stats['TABLE']
+            all_apero_stats[apero_profile_name] = apero_stats['TABLES']
             all_apero_oprops[apero_profile_name] = apero_stats['OPROPS']
     # ----------------------------------------------------------------------
     # sort out settings
     ari_settings = get_settings(ari_gsettings)
     # ----------------------------------------------------------------------
     # write object index page
+    print('=' * 50)
+    print('\n\nCompling object index page...')
+    print('=' * 50)
     compile_obj_index_page(ari_gsettings, ari_settings, all_apero_oprops)
     # ----------------------------------------------------------------------
     # step 4: write markdown files
+    print('=' * 50)
+    print('\n\nWriting markdown files...')
+    print('=' * 50)
     write_markdown(ari_gsettings, ari_settings, all_apero_stats)
     # ----------------------------------------------------------------------
     # step 5: compile sphinx files
+    print('=' * 50)
+    print('\n\nCompiling docs...')
+    print('=' * 50)
     compile_docs(ari_settings)
     # ----------------------------------------------------------------------
     # step 6: upload to hosting
+    print('=' * 50)
+    print('\n\nUploading docs...')
+    print('=' * 50)
     upload_docs(ari_gsettings, ari_settings)
 
 # =============================================================================
