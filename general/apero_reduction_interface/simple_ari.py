@@ -2538,7 +2538,7 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     # Add RA and Dec
     stat_dict['Description'].append('Coordinates')
     coordstr = _make_url('[FINDER CHART]', coord_url)
-    stat_dict['Value'].append(f'({ra},{dec})......{coordstr}')
+    stat_dict['Value'].append(f'({ra},{dec})..... {coordstr}')
     # Add Teff
     stat_dict['Description'].append('Teff')
     stat_dict['Value'].append(teff)
