@@ -5,6 +5,7 @@ from typing import Any, Dict, List, Tuple
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 from astropy import units as uu
 from astropy.coordinates import SkyCoord, Distance
 from astropy.table import Table
@@ -191,7 +192,7 @@ def get_args():
 def propagate_coords(objdata: Dict[str, Any], obs_time: Time
                      ) -> Tuple[SkyCoord, Time]:
     # deal with distance
-    if objdata['PLX'] == 0:
+    if objdata['PLX'] <= 0:
         distance = None
     else:
         distance = Distance(parallax=objdata['PLX'] * uu.mas)
@@ -783,6 +784,58 @@ def from_simbad(objname: str) -> Dict[str, Any]:
     return objdict
 
 
+def from_apero_objtable(it: int, object_table: pd.DataFrame) -> Dict[str, Any]:
+    """
+    Create a objdict for use in apero_finder_chart.main() from this row of the
+    full object table
+
+    :param it: int, the row of the table to create dictionary for
+    :param object_table: astropy.Table, the full object database table
+
+    :return: Dict, the objdict ofr use in apero_finder_chart.main()
+    """
+    # get the row from the object_table
+    objdata = object_table.iloc[it]
+    # set up the storage
+    objdict = dict()
+    # get the object name
+    objdict['OBJNAME'] = objdata['OBJNAME']
+    # get the object ra and dec
+    objdict['RA_DEG'] = objdata['RA_DEG']
+    objdict['DEC_DEG'] = objdata['DEC_DEG']
+    # get the object epoch (jd)
+    objdict['EPOCH'] = objdata['EPOCH']
+    # get the object parallax
+    objdict['PLX'] = objdata['PLX']
+    # get the object proper motion
+    objdict['PMRA'] = objdata['PMRA']
+    objdict['PMDE'] = objdata['PMDE']
+    # return the object dictionary
+    return objdict
+
+
+def construct_savepath(directory: str, date: Time, objname: str) -> str:
+    """
+    Get the pdf savepath
+    :param directory:
+    :param date:
+    :param objname:
+    :return:
+    """
+    # strtime
+    strtime = f'{date.datetime.year}_{date.datetime.month}'
+    # create directory
+    save_directory = os.path.join(directory, objname)
+    if not os.path.exists(save_directory):
+        os.makedirs(save_directory)
+    # construct filename
+    save_filename = f'APERO_finder_chart_{objname}_{strtime}.pdf'
+    # construct absolute path
+    abspath = os.path.join(save_directory, save_filename)
+    # return the absolute path
+    return abspath
+
+
 def main(objname: str, date: Time, objdict: Dict[str, Any],
          directory: str):
     """
@@ -896,16 +949,8 @@ def main(objname: str, date: Time, objdict: Dict[str, Any],
     fig2.suptitle(title)
     fig3.suptitle(title)
     fig4.suptitle(title)
-    # strtime
-    strtime = f'{date.datetime.year}_{date.datetime.month}'
-    # create directory
-    save_directory = os.path.join(directory, objname)
-    if not os.path.exists(save_directory):
-        os.makedirs(save_directory)
-    # construct filename
-    save_filename = f'APERO_finder_chart_{objname}_{strtime}.pdf'
     # construct absolute path
-    abspath = os.path.join(save_directory, save_filename)
+    abspath = construct_savepath(directory, date, objname)
     # write pdf pages
     with PdfPages(abspath) as pp:
         fig1.savefig(pp, format='pdf')

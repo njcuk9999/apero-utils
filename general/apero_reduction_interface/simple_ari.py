@@ -18,6 +18,7 @@ from typing import Any, Dict, List, Tuple, Union
 
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import yaml
 from astropy.table import Table
 from astropy.time import Time
@@ -71,7 +72,7 @@ COUNT_COLS = ['RAW FILE  ',
               't.fits    ',
               'v.fits    ',
               'p.fits    ',
-              'EXT_S1D_V ',
+              'EXT_S1D_V',
               'SC1D_V_FILE']
 
 # header cols
@@ -79,7 +80,8 @@ HEADER_COL = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p',
               None, None]
 # time series column names
 TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
-                    'Last obs mid', 'Number of obs', 'Seeing', 'Airmass',
+                    'Last obs mid', 'Number of ext', 'Number of tcorr',
+                    'Seeing', 'Airmass',
                     'Mean Exptime', 'Total Exptime', 'DPRTYPEs', None, None]
 # define chains (if this number is zero do not count)
 COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
@@ -742,6 +744,9 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # get the index database from file index database
     indexdbm = drs_database.FileIndexDatabase(params)
     indexdbm.load_db()
+    # get the log database
+    logdbm = drs_database.LogDatabase(params)
+    logdbm.load_db()
     # ------------------------------------------------------------------
     # convert pandas dataframe to astropy table
     object_table = Table.from_pandas(object_table)
@@ -852,12 +857,6 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
         last_time = Time(np.max(times), format='mjd')
         object_table['LAST_RAW'][pos] = last_time
         # ------------------------------------------------------------------
-        # deal with getting the observation directories (For EXT files)
-        # ------------------------------------------------------------------
-        obs_dirs = indexdbm.get_entries('OBS_DIR', condition=ext_cond)
-        # get the observation directories
-        file_dict[objname]['OBS_DIRS'] = obs_dirs
-        # ------------------------------------------------------------------
         # run counting conditions using indexdbm
         # ------------------------------------------------------------------
         conditions = [raw_cond, pp_cond, ext_cond, tcorr_cond, ccf_cond,
@@ -879,11 +878,27 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
                     counts[COUNT_COLS[it]] = 0
                     continue
             # get the files
-            files = indexdbm.get_entries('ABSPATH', condition=condition)
+            table = indexdbm.get_entries('ABSPATH,OBS_DIR,KW_PID',
+                                         condition=condition)
+            if 'RAW' not in COUNT_COLS[it]:
+                # get a mask of rows that passed QC (based on PID)
+                mask = _filter_pids(table, logdbm)
+                # get the files that passed and those that didn't pass
+                files = np.array(table['ABSPATH'])[mask]
+                failed_files = np.array(table['ABSPATH'])[~mask]
+                obs_dirs = np.array(table['OBS_DIR'][mask])
+            else:
+                files = np.array(table['ABSPATH'])
+                failed_files = np.array([])
+                obs_dirs = np.array(table['OBS_DIR'])
             # get the count
             count = len(files)
             # append to files
             file_dict[objname][COUNT_COLS[it]] = files
+            # append to FAILED files
+            file_dict[objname][f'FAILED_{COUNT_COLS[it]}'] = failed_files
+            # append to OBSDIRS
+            file_dict[objname][f'OBSDIR_{COUNT_COLS[it]}'] = obs_dirs
             # add to object table
             object_table[COUNT_COLS[it]][pos] = count
             # set counts
@@ -1286,14 +1301,19 @@ class ObjectData:
         # get the object name
         self.objname = objname
         # get the file_dictionary for this object
-        self.raw_files = file_dict[objname].get(COUNT_COLS[0], [])
-        self.pp_files = file_dict[objname].get(COUNT_COLS[1], [])
-        self.ext_files = file_dict[objname].get(COUNT_COLS[2], [])
-        self.tcorr_files = file_dict[objname].get(COUNT_COLS[3], [])
-        self.ccf_files = file_dict[objname].get(COUNT_COLS[4], [])
-        self.s1d_files = file_dict[objname].get(COUNT_COLS[10], [])
-        self.sc1d_files = file_dict[objname].get(COUNT_COLS[11], [])
-        self.lbl_rdb_files = file_dict[objname].get('LBLRDB', [])
+        obj_fdict = file_dict[objname]
+        self.raw_files = obj_fdict.get(COUNT_COLS[0], [])
+        self.pp_files = obj_fdict.get(COUNT_COLS[1], [])
+        self.pp_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[1]}', [])
+        self.ext_files = obj_fdict.get(COUNT_COLS[2], [])
+        self.ext_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[2]}', [])
+        self.tcorr_files = obj_fdict.get(COUNT_COLS[3], [])
+        self.tcorr_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[3]}', [])
+        self.ccf_files = obj_fdict.get(COUNT_COLS[4], [])
+        self.ccf_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[4]}', [])
+        self.s1d_files = obj_fdict.get(COUNT_COLS[10], [])
+        self.sc1d_files = obj_fdict.get(COUNT_COLS[11], [])
+        self.lbl_rdb_files = obj_fdict.get('LBLRDB', [])
         # add the lbl stat files into a dictionary
         self.lbl_stat_files = dict()
         # loop around lbl stats files and load lblfilekey dict in
@@ -1306,7 +1326,8 @@ class ObjectData:
         # get the object_table row for this object
         self.object_table = object_table[objmask]
         # get the observation directories for this object
-        self.obs_dirs = file_dict[objname].get('OBS_DIRS', [])
+        self.obs_dirs_ext = file_dict[objname].get(f'OBSDIR_{COUNT_COLS[2]}', [])
+        self.obs_dirs_tcorr = file_dict[objname].get(f'OBSDIR_{COUNT_COLS[3]}', [])
         # ---------------------------------------------------------------------
         # get spectrum output parameters (for page integration)
         self.spec_plot_path = None
@@ -1409,10 +1430,12 @@ class ObjectData:
         spec_props['Spectral Type'] = self.object_table['SP_TYPE'][0]
         spec_props['DPRTYPES'] = self.object_table['DPRTYPES'][0]
         # ---------------------------------------------------------------------
+        # header dict alias
+        hdict = self.header_dict
         # get values for use in plot
-        spec_props['mjd'] = Time(np.array(self.header_dict['EXT_MJDMID']))
-        spec_props['EXT_Y'] = np.array(self.header_dict['EXT_Y'])
-        ext_h = np.array(self.header_dict['EXT_H'])
+        spec_props['mjd'] = Time(np.array(hdict['EXT_MJDMID']))
+        spec_props['EXT_Y'] = np.array(hdict['EXT_Y'])
+        ext_h = np.array(hdict['EXT_H'])
         spec_props['EXT_H'] = ext_h
         spec_props['EXT_Y_LABEL'] = self.headers['EXT']['EXT_Y']['label']
         spec_props['EXT_H_LABEL'] = self.headers['EXT']['EXT_H']['label']
@@ -1420,14 +1443,34 @@ class ObjectData:
         spec_props['NUM_PP_FILES'] = len(self.pp_files)
         spec_props['NUM_EXT_FILES'] = len(self.ext_files)
         spec_props['NUM_TCORR_FILES'] = len(self.tcorr_files)
-        spec_props['FIRST_RAW'] = Time(self.object_table['FIRST_RAW'][0])
-        spec_props['LAST_RAW'] = Time(self.object_table['LAST_RAW'][0])
-        spec_props['FIRST_PP'] = Time(np.min(self.header_dict['PP_MJDMID']))
-        spec_props['LAST_PP'] = Time(np.max(self.header_dict['PP_MJDMID']))
-        spec_props['FIRST_EXT'] = Time(np.min(self.header_dict['EXT_MJDMID']))
-        spec_props['LAST_EXT'] = Time(np.max(self.header_dict['EXT_MJDMID']))
-        spec_props['FIRST_TCORR'] = Time(np.min(self.header_dict['TCORR_MJDMID']))
-        spec_props['LAST_TCORR'] = Time(np.max(self.header_dict['TCORR_MJDMID']))
+
+        spec_props['NUM_PP_FILES_FAIL'] = len(self.pp_files_qc)
+        spec_props['NUM_EXT_FILES_FAIL'] = len(self.ext_files_qc)
+        spec_props['NUM_TCORR_FILES_FAIL'] = len(self.tcorr_files_qc)
+
+        spec_props['FIRST_RAW'] = Time(self.object_table['FIRST_RAW'][0]).iso
+        spec_props['LAST_RAW'] = Time(self.object_table['LAST_RAW'][0]).iso
+        # Add first / last pp files
+        if len(self.pp_files) > 0:
+            spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
+            spec_props['LAST_PP'] = Time(np.max(hdict['PP_MJDMID'])).iso
+        else:
+            spec_props['FIRST_PP'] = None
+            spec_props['LAST_PP'] = None
+        # Add first / last ext files
+        if len(self.ext_files) > 0:
+            spec_props['FIRST_EXT'] = Time(np.min(hdict['EXT_MJDMID'])).iso
+            spec_props['LAST_EXT'] = Time(np.max(hdict['EXT_MJDMID'])).iso
+        else:
+            spec_props['FIRST_EXT'] = None
+            spec_props['LAST_EXT'] = None
+        # Add first / last tcorr files
+        if len(self.tcorr_files) > 0:
+            spec_props['FIRST_TCORR'] = Time(np.min(hdict['TCORR_MJDMID'])).iso
+            spec_props['LAST_TCORR'] = Time(np.max(hdict['TCORR_MJDMID'])).iso
+        else:
+            spec_props['FIRST_TCORR'] = None
+            spec_props['LAST_TCORR'] = None
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
@@ -1682,6 +1725,7 @@ class ObjectData:
         ccf_props['fwhm'] = np.array(fwhm_vec)
         ccf_props['masks'] = np.array(self.header_dict['CCF_MASK'])
         ccf_props['files'] = np.array(self.ccf_files)
+        ccf_props['files_failed'] = np.array(self.ccf_files_qc)
         # -----------------------------------------------------------------
         # select ccf files to use
         select_files = choose_ccf_files(ccf_props)
@@ -1790,9 +1834,9 @@ class ObjectData:
         # construct the stats table
         # ---------------------------------------------------------------------
         # columns
-        time_series_props['columns'] = TIME_SERIES_COLS[0:8]
+        time_series_props['columns'] = TIME_SERIES_COLS[0:9]
         time_series_props['columns'] += [snr_y_label, snr_h_label]
-        time_series_props['columns'] += [TIME_SERIES_COLS[8]]
+        time_series_props['columns'] += [TIME_SERIES_COLS[9]]
         time_series_props['columns'] += [ext_col, tcorr_col]
         # get values for use in time series table
         for time_series_col in TIME_SERIES_COLS:
@@ -1810,41 +1854,43 @@ class ObjectData:
         snyh_vec = np.array(self.header_dict['EXT_H'])
         dprtype_vec = np.array(self.header_dict['EXT_DPRTYPE'])
         # get unique object directories (for this object)
-        u_obs_dirs = np.unique(self.obs_dirs)
+        u_obs_dirs = np.unique(self.obs_dirs_ext)
         # loop around observation directories
         for obs_dir in u_obs_dirs:
             # create a mask for this observation directory
-            obs_mask = self.obs_dirs == obs_dir
+            obs_mask_ext = self.obs_dirs_ext == obs_dir
+            obs_mask_tcorr = self.obs_dirs_tcorr == obs_dir
             # get the first and last mjd for this observation directory
-            first_mjd = Time(np.min(mjd_vec[obs_mask])).iso
-            last_mjd = Time(np.max(mjd_vec[obs_mask])).iso
+            first_mjd = Time(np.min(mjd_vec[obs_mask_ext])).iso
+            last_mjd = Time(np.max(mjd_vec[obs_mask_ext])).iso
             # get the number of observations for this observation
-            num_obs = str(np.sum(obs_mask))
+            num_obs_ext= str(np.sum(obs_mask_ext))
+            num_obs_tcorr = str(np.sum(obs_mask_tcorr))
             # get the seeing for this observation directory
-            seeing = np.mean(seeing_vec[obs_mask])
+            seeing = np.mean(seeing_vec[obs_mask_ext])
             seeing = '{:.3f}'.format(seeing)
             # get the airmass for this observation directory
-            airmass = np.mean(airmass_vec[obs_mask])
+            airmass = np.mean(airmass_vec[obs_mask_ext])
             airmass = '{:.3f}'.format(airmass)
             # get the mean exposure time
-            exptime = np.mean(exptime_vec[obs_mask])
+            exptime = np.mean(exptime_vec[obs_mask_ext])
             exptime = '{:.3f}'.format(exptime)
             # get the total exposure time
-            texptime = np.sum(exptime_vec[obs_mask])
+            texptime = np.sum(exptime_vec[obs_mask_ext])
             texptime = '{:.3f}'.format(texptime)
             # get the mean snr_y
-            snry = np.mean(snry_vec[obs_mask])
+            snry = np.mean(snry_vec[obs_mask_ext])
             snry = '{:.3f}'.format(snry)
             # get the mean snr_h
-            snyh = np.mean(snyh_vec[obs_mask])
+            snyh = np.mean(snyh_vec[obs_mask_ext])
             snyh = '{:.3f}'.format(snyh)
             # get the dprtypes
-            dprtype = ','.join(list(np.unique(dprtype_vec[obs_mask])))
+            dprtype = ','.join(list(np.unique(dprtype_vec[obs_mask_ext])))
             # -----------------------------------------------------------------
             # Create the ext and tellu for this object
             # -----------------------------------------------------------------
-            ext_files = np.array(self.ext_files)[obs_mask]
-            tcorr_files = np.array(self.tcorr_files)[obs_mask]
+            ext_files = np.array(self.ext_files)[obs_mask_ext]
+            tcorr_files = np.array(self.tcorr_files)[obs_mask_tcorr]
             # -----------------------------------------------------------------
             # Create the file lists for this object
             # -----------------------------------------------------------------
@@ -1867,14 +1913,15 @@ class ObjectData:
             time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
             time_series_props[TIME_SERIES_COLS[1]].append(first_mjd)
             time_series_props[TIME_SERIES_COLS[2]].append(last_mjd)
-            time_series_props[TIME_SERIES_COLS[3]].append(num_obs)
-            time_series_props[TIME_SERIES_COLS[4]].append(seeing)
-            time_series_props[TIME_SERIES_COLS[5]].append(airmass)
-            time_series_props[TIME_SERIES_COLS[6]].append(exptime)
-            time_series_props[TIME_SERIES_COLS[7]].append(texptime)
+            time_series_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
+            time_series_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
+            time_series_props[TIME_SERIES_COLS[5]].append(seeing)
+            time_series_props[TIME_SERIES_COLS[6]].append(airmass)
+            time_series_props[TIME_SERIES_COLS[7]].append(exptime)
+            time_series_props[TIME_SERIES_COLS[8]].append(texptime)
             time_series_props[snr_y_label].append(snry)
             time_series_props[snr_h_label].append(snyh)
-            time_series_props[TIME_SERIES_COLS[8]].append(dprtype)
+            time_series_props[TIME_SERIES_COLS[9]].append(dprtype)
             time_series_props[ext_col].append(ext_value)
             time_series_props[tcorr_col].append(tcorr_value)
         # -----------------------------------------------------------------
@@ -1959,6 +2006,7 @@ def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
              f'timeseries_{clean_name}_objpage_{objname}']
     # add table of contents
     object_page.add_table_of_contents(items=items, names=names)
+    object_page.add_newline(nlines=3)
     # ---------------------------------------------------------------------
     # Spectrum section
     # ---------------------------------------------------------------------
@@ -2411,6 +2459,7 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     if tcorr_spec is not None:
         frame1.plot(wavemap[wavemask0], tcorr_spec[wavemask0],
                     color='r', label='Telluric Corrected', lw=0.5)
+        frame1.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec, 90)))
     frame1.set(xlabel='Wavelength [nm]', ylabel='Flux', xlim=wavelim0)
     frame1.set_title(title, fontsize=10)
     frame1.legend(loc=0, ncol=2)
@@ -2429,7 +2478,7 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
         if tcorr_spec is not None:
             frame.plot(wavemap[mask], tcorr_spec[mask],
                        color='r', label='Telluric Corrected', lw=0.5)
-            frame.set_ylim((0, 1.5 * np.nanmedian(tcorr_spec[mask])))
+            frame.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec[mask], 90)))
         if it == 0:
             frame.set_ylabel('Flux')
         frame.set(xlabel='Wavelength [nm]', xlim=wavelim)
@@ -2453,16 +2502,21 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     num_pp = spec_props['NUM_PP_FILES']
     num_ext = spec_props['NUM_EXT_FILES']
     num_tcorr = spec_props['NUM_TCORR_FILES']
+
+    num_pp_qc = spec_props['NUM_PP_FILES_FAIL']
+    num_ext_qc = spec_props['NUM_EXT_FILES_FAIL']
+    num_tcorr_qc =spec_props['NUM_TCORR_FILES_FAIL']
+
     ext_y = spec_props['EXT_Y']
     ext_h = spec_props['EXT_H']
-    first_raw = spec_props['FIRST_RAW'].iso
-    last_raw = spec_props['LAST_RAW'].iso
-    first_pp = spec_props['FIRST_PP'].iso
-    last_pp = spec_props['LAST_PP'].iso
-    first_ext = spec_props['FIRST_EXT'].iso
-    last_ext = spec_props['LAST_EXT'].iso
-    first_tcorr = spec_props['FIRST_TCORR'].iso
-    last_tcorr = spec_props['LAST_TCORR'].iso
+    first_raw = spec_props['FIRST_RAW']
+    last_raw = spec_props['LAST_RAW']
+    first_pp = spec_props['FIRST_PP']
+    last_pp = spec_props['LAST_PP']
+    first_ext = spec_props['FIRST_EXT']
+    last_ext = spec_props['LAST_EXT']
+    first_tcorr = spec_props['FIRST_TCORR']
+    last_tcorr = spec_props['LAST_TCORR']
     coord_url = spec_props['COORD_URL']
     ra, dec = spec_props['RA'], spec_props['Dec']
     teff, spt = spec_props['Teff'], spec_props['Spectral Type']
@@ -2482,8 +2536,9 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
     # Add RA and Dec
-    stat_dict['Description'].append(_make_url('Coordinates', coord_url))
-    stat_dict['Value'].append('{0}, {1}'.format(ra, dec))
+    stat_dict['Description'].append('Coordinates')
+    coordstr = _make_url('[FINDER CHART]', coord_url)
+    stat_dict['Value'].append(f'({ra},{dec})......{coordstr}')
     # Add Teff
     stat_dict['Description'].append('Teff')
     stat_dict['Value'].append(teff)
@@ -2493,18 +2548,59 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     # Add dprtypes
     stat_dict['Description'].append('DPRTYPES')
     stat_dict['Value'].append(dprtypes)
+    # -------------------------------------------------------------------------
     # add number of raw files
-    stat_dict['Description'].append('Number raw files [first, last]')
-    stat_dict['Value'].append(f'{num_raw} [{first_raw}, {last_raw}]')
+    # -------------------------------------------------------------------------
+    stat_dict['Description'].append('Total number raw files')
+    stat_dict['Value'].append(f'{num_raw}')
+    stat_dict['Description'].append('First raw files')
+    stat_dict['Value'].append(f'{first_raw}')
+    stat_dict['Description'].append('Last raw files')
+    stat_dict['Value'].append(f'{last_raw}')
+
+    # -------------------------------------------------------------------------
     # add number of pp files
-    stat_dict['Description'].append('Number pp files [first, last]')
-    stat_dict['Value'].append(f'{num_pp} [{first_pp}, {last_pp}]')
+    # -------------------------------------------------------------------------
+    stat_dict['Description'].append('Total number PP files')
+    stat_dict['Value'].append(f'{num_pp+num_pp_qc}')
+    stat_dict['Description'].append('Number PP files passed QC')
+    stat_dict['Value'].append(f'{num_pp}')
+    stat_dict['Description'].append('Number PP files failed QC')
+    stat_dict['Value'].append(f'{num_pp_qc}')
+    stat_dict['Description'].append('First pp file')
+    stat_dict['Value'].append(f'{first_pp}')
+    stat_dict['Description'].append('Last pp file')
+    stat_dict['Value'].append(f'{last_pp}')
+
+    # -------------------------------------------------------------------------
     # add number of ext files
-    stat_dict['Description'].append('Number ext files [first, last]')
-    stat_dict['Value'].append(f'{num_ext} [{first_ext}, {last_ext}]')
+    # -------------------------------------------------------------------------
+    stat_dict['Description'].append('Total number ext files')
+    stat_dict['Value'].append(f'{num_ext+num_ext_qc}')
+    stat_dict['Description'].append('Number ext files passed QC')
+    stat_dict['Value'].append(f'{num_ext}')
+    stat_dict['Description'].append('Number ext files failed QC')
+    stat_dict['Value'].append(f'{num_ext_qc}')
+    stat_dict['Description'].append('First ext file')
+    stat_dict['Value'].append(f'{first_ext}')
+    stat_dict['Description'].append('Last ext file')
+    stat_dict['Value'].append(f'{last_ext}')
+
+    # -------------------------------------------------------------------------
     # add number of tcorr files
-    stat_dict['Description'].append('Number tcorr files [first, last]')
-    stat_dict['Value'].append(f'{num_tcorr} [{first_tcorr}, {last_tcorr}]')
+    # -------------------------------------------------------------------------
+    stat_dict['Description'].append('Total number tcorr files')
+    stat_dict['Value'].append(f'{num_tcorr+num_tcorr_qc}')
+    stat_dict['Description'].append('Number tcorr files passed QC')
+    stat_dict['Value'].append(f'{num_tcorr}')
+    stat_dict['Description'].append('Number tcorr files failed QC')
+    stat_dict['Value'].append(f'{num_tcorr_qc}')
+    stat_dict['Description'].append('First tcorr file')
+    stat_dict['Value'].append(f'{first_tcorr}')
+    stat_dict['Description'].append('Last tcorr file')
+    stat_dict['Value'].append(f'{last_tcorr}')
+
+    # -------------------------------------------------------------------------
     # add the SNR in Y
     stat_dict['Description'].append('Median SNR Y')
     value = r'{:.2f} :math:`\pm` {:.2f}'.format(med_snr_y, rms_snr_y)
@@ -2804,6 +2900,8 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     # get parameters from props
     vrad = ccf_props['dv']
     fwhm = ccf_props['fwhm']
+    num_ccf = len(ccf_props['files'])
+    num_ccf_qc = len(ccf_props['files_failed'])
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -2829,8 +2927,14 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     value = r'{:.2f} :math:`\pm` {:.2f} m/s'.format(ccf_fwhm, err_ccf_fwhm)
     stat_dict['Value'].append(value)
     # add number of files
-    stat_dict['Description'].append('Number of CCF files')
-    stat_dict['Value'].append(len(ccf_props['files']))
+    stat_dict['Description'].append('Number of CCF files Total')
+    stat_dict['Value'].append(num_ccf + num_ccf_qc)
+    # add number of files
+    stat_dict['Description'].append('Number of CCF passed QC')
+    stat_dict['Value'].append(num_ccf)
+    # add number of ccf files failed
+    stat_dict['Description'].append('Number CCF files failed QC')
+    stat_dict['Value'].append(num_ccf_qc)
     # --------------------------------------------------------------------------
     # change the columns names
     stat_dict2 = dict()
@@ -2914,6 +3018,7 @@ def debug_mode(gsettings: dict):
         gsettings['N_CORES'] = 1
         gsettings['filter objects'] = True
     return gsettings
+
 
 def split_line(parts, rawstring):
     # store list of variables
@@ -3170,6 +3275,47 @@ def _match_file(reffile: str, files: List[str]):
             return it
     # if we get to here we did not find the string - return None
     return None
+
+
+def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
+    """
+    Filter file index database by pid to find those that passed
+
+    :param findex_table: Table, the file index database
+    :param logdbm: the drs_database.LogDatabase instance
+
+    :return: numpy 1D array, a True/False mask the same length as findex_table
+    """
+    # assume everything failed
+    passed = np.zeros(len(findex_table)).astype(bool)
+    if len(findex_table) == 0:
+        return passed
+    # get the pids for these files
+    pids = np.array(findex_table['KW_PID'])
+    # get the pid
+    pid_conds = []
+    for pid in pids:
+        pid_conds.append(f'PID="{pid}"')
+    pid_condition = ' OR '.join(pid_conds)
+    # need to crossmatch again recipe log database for QC
+    ltable = logdbm.get_entries('PID,PASSED_ALL_QC', condition=pid_condition)
+    # get the columsn from the log table
+    all_pids = np.array(ltable['PID'])
+    all_pass = np.array(ltable['PASSED_ALL_QC']).astype(bool)
+    # need to loop around all files
+    for row in range(len(findex_table)):
+        # get the pid for this row
+        pid = findex_table['KW_PID'].iloc[row]
+        # find all rows that have this pid
+        mask = all_pids == pid
+        # deal with no entries
+        if len(mask) == 0:
+            continue
+        # if all rows pass qc passed = 1
+        if np.sum(all_pass[mask]):
+            passed[row] = True
+    # return the passed mask
+    return passed
 
 
 # =============================================================================
