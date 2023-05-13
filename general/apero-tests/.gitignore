@@ -1,2 +1,3 @@
 # Extra gitignore entries specific to tests
+venv/
 out*/
