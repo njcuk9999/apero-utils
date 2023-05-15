@@ -391,7 +391,9 @@ def run_apero_get(settings: Dict[str, Any]):
         simfp_dprtypes = ','.join(pdict['get-lbl']['simfp dprtypes'])
         # get fibers from settings
         scifibers, calfiber = pconst.FIBER_KINDS()
-        calfibers = [calfiber]
+        # scifiber and calfiber must be strings (comma separated)
+        scifibers = ','.join(scifibers)
+        calfibers = str(calfiber)
         # template output types
         red_template_outtypes = ','.join(pdict['get']['template out types'])
         lbl_template_outtypes = ','.join(pdict['get-lbl']['template out types'])
