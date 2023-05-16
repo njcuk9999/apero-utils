@@ -34,8 +34,9 @@ settings:
   filter objects: False
   # objects to filter by
   objects:
-    - PROXIMA
-    - GL699
+    - TAUBOO
+#    - PROXIMA
+#    - GL699
 
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)

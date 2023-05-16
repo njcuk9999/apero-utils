@@ -29,8 +29,6 @@ from scipy.optimize import curve_fit
 # =============================================================================
 # Define variables
 # =============================================================================
-# debug mode (one object, one core)
-DEBUG = False
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
@@ -1488,7 +1486,7 @@ class ObjectData:
         # sort all snr by closest to the median
         all_snr_pos = list(np.argsort(n_ext_h))
         # set these up
-        pos_ext, pos_raw, pos_sc1d = None, None, None
+        pos_ext, pos_s1d, pos_raw, pos_sc1d = None, None, None, None
         file_ext = 'NoFile'
         # loop until we match
         while not matched and len(all_snr_pos) > 0:
@@ -1497,6 +1495,7 @@ class ObjectData:
             # set the filename
             file_ext = self.ext_files[pos_ext]
             # Find the matching raw file
+            pos_s1d = _match_file(reffile=file_ext, files=self.s1d_files)
             pos_raw = _match_file(reffile=file_ext, files=self.raw_files)
             pos_sc1d = _match_file(reffile=file_ext, files=self.sc1d_files)
             # we only stop is a match is found
@@ -1512,7 +1511,7 @@ class ObjectData:
                              f'This should not be possible')
         # ---------------------------------------------------------------------
         # get the extracted spectrum for the spectrum with the highest SNR
-        ext_table = Table.read(self.s1d_files[pos_ext], hdu=1)
+        ext_table = Table.read(self.s1d_files[pos_s1d], hdu=1)
         # get wavelength masks for plotting
         wavemap = ext_table['wavelength']
         limits = self.gsettings['SpecWave']
@@ -3017,9 +3016,9 @@ def make_finder_download_table(entry, objname, item_save_path, item_rel_path,
 # =============================================================================
 # Worker functions
 # =============================================================================
-def debug_mode(gsettings: dict):
+def debug_mode(debugmode: bool, gsettings: dict):
     # switch off some options in debug mode
-    if DEBUG:
+    if debugmode:
         gsettings['N_CORES'] = 1
         gsettings['filter objects'] = True
     return gsettings
@@ -3356,9 +3355,13 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # assume the first argument is the profile filename
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         raise IOError('Please supply the profile filename')
     profile_filename = sys.argv[1]
+    if len(sys.argv) > 2 and sys.argv[2].startswith('--debug'):
+        debug = True
+    else:
+        debug = False
     # step 1: read the yaml file
     apero_profiles = read_yaml_file(profile_filename)
     # get global settings
@@ -3371,7 +3374,7 @@ if __name__ == "__main__":
         # remove working directory
         shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
     # deal with debug mode
-    ari_gsettings = debug_mode(ari_gsettings)
+    ari_gsettings = debug_mode(debug, ari_gsettings)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
