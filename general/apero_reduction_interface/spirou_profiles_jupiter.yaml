@@ -1,27 +1,27 @@
 # General settings (do not remove)
 settings:
   # Instrument (either SPIROU or NIRPS)
-  instrument: NIRPS
+  instrument: SPIROU
   # Working directory: where to store the website data
-  working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
+  working directory: /scratch2/spirou/misc/apero-ari/working/
   # Finder charts (None if not needed)
-  find directory: /cosmos99/nirps/apero-data/misc/apero-find/
+  find directory: None
   # number of cores to use in multiprocessing steps
   N_CORES: 20
   # Spectrum wavelength ranges in nm
   SpecWave:
     limit0:
-      - 985
-      - 1810
+      - 965
+      - 2500
     limit1:
       - 1082
       - 1085
     limit2:
-      - 1575
-      - 1580
+      - 1600
+      - 1604
     limit3:
-      - 1666
-      - 1668
+      - 2000
+      - 2200
   # SSH PATH to copy the website to
   ssh:
     directory: /export/www/home/cook/www/apero-drs/
@@ -34,9 +34,10 @@ settings:
   filter objects: False
   # objects to filter by
   objects:
-    - PROXIMA
     - GL699
 
+
+# -----------------------------------------------------------------------------
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)
 #     lbl path: str, absolute path to LBL directory
@@ -45,33 +46,12 @@ settings:
 #     skip obj table: bool: if True, skip making the object table
 #     skip recipe table: bool: if True, skip making the recipe table
 #     skip msg table: bool: if True, skip making the msg table
-nirps he V0.7.276 online:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_online
-    lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_online/
-    skip obj table: False
-    skip recipe table: True
-    skip msg table: True
-
-nirps ha V0.7.276 online:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
-    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
-    skip obj table: False
-    skip recipe table: True
-    skip msg table: True
-
-nirps he V0.7.276 offline:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_offline/
-    skip obj table: False
-    skip recipe table: True
-    skip msg table: True
-
-nirps ha V0.7.276 offline:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_offline/
-    skip obj table: False
-    skip recipe table: True
-    skip msg table: True
+spirou 07.282 cook@jupiter mini2:
+  apero profile: /scratch2/spirou/drs-settings/setup_07XXX_mini2
+  lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07282_jupiter
+  skip obj table: False
+  skip recipe table: True
+  skip msg table: True
 
 # -----------------------------------------------------------------------------
 # Header keys
@@ -89,23 +69,23 @@ headers:
       dtype: float
       timefmt: mjd
     EXT_Y:
-      key: EXTSN015
-      label: 'SNR[Order 15 (#134 1.08$\mu$m)]'
+      key: EXTSN009
+      label: 'SNR[Order 8 (#71 1.08$\mu$m)]'
       dtype: float
     EXT_H:
-      key: EXTSN060
-      label: 'SNR[Order 60 (#89 1.63$\mu$m)]'
+      key: EXTSN035
+      label: 'SNR[Order 35 (#44 1.75$\mu$m)]'
       dtype: float
     EXT_DPRTYPE:
       key: DPRTYPE
       label: 'DPR TYPE'
       dtype: str
     EXT_SEEING:
-      key: HIERARCH ESO TEL AMBI FWHM START
+      key: WDSEEMED
       label: Seeing at start
       dtype: float
     EXT_AIRMASS:
-      key: HIERARCH ESO TEL AIRM START
+      key: AIRMASS
       label: Airmass at start
       dtype: float
     EXT_EXPTIME:
@@ -145,6 +125,6 @@ headers:
       dtype: float
   LBL:
     EXT_H:
-      key: EXTSN060
-      label: 'SNR[Order 60 (#89 1.63$\mu$m)]'
+      key: EXTSN035
+      label: 'SNR[Order 35 (#44 1.75$\mu$m)]'
       dtype: float

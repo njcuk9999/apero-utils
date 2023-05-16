@@ -14,8 +14,8 @@ settings:
       - 965
       - 2500
     limit1:
-      - 1312
-      - 1316
+      - 1082
+      - 1085
     limit2:
       - 1600
       - 1604
@@ -30,6 +30,11 @@ settings:
     options: ssh -oport=5822
   # whether to reset the working directory
   reset: True
+  # whether to filter by objects
+  filter objects: False
+  # objects to filter by
+  objects:
+    - GL699
 
 # -----------------------------------------------------------------------------
 # name:
@@ -46,3 +51,79 @@ spirou V0.7.282 full:
   skip obj table: False
   skip recipe table: True
   skip msg table: True
+
+# -----------------------------------------------------------------------------
+# Header keys
+headers:
+  PP:
+    PP_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+  EXT:
+    EXT_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    EXT_Y:
+      key: EXTSN009
+      label: 'SNR[Order 8 (#71 1.08$\mu$m)]'
+      dtype: float
+    EXT_H:
+      key: EXTSN035
+      label: 'SNR[Order 35 (#44 1.75$\mu$m)]'
+      dtype: float
+    EXT_DPRTYPE:
+      key: DPRTYPE
+      label: 'DPR TYPE'
+      dtype: str
+    EXT_SEEING:
+      key: WDSEEMED
+      label: Seeing at start
+      dtype: float
+    EXT_AIRMASS:
+      key: AIRMASS
+      label: Airmass at start
+      dtype: float
+    EXT_EXPTIME:
+        key: EXPTIME
+        label: Exposure Time
+        dtype: float
+  TCORR:
+    TCORR_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+  CCF:
+    CCF_MASK:
+      key: CCFMASK
+      label: CCF Mask
+      dtype: str
+    CCF_MJDMID:
+      key: MJDMID
+      label: CCF MJD
+      dtype: float
+      timefmt: mjd
+    CCF_DV:
+      key: RV_CORR
+      label: CCF RV
+      unit: km/s
+      dtype: float
+    CCF_SDV:
+      key: DVRMS_CC
+      label: CCF RV Error
+      unit: m/s
+      dtype: float
+    CCF_FWHM:
+      key: CCFMFWHM
+      label: CCF FWHM
+      unit: km/s
+      dtype: float
+  LBL:
+    EXT_H:
+      key: EXTSN035
+      label: 'SNR[Order 35 (#44 1.75$\mu$m)]'
+      dtype: float
