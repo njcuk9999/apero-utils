@@ -8,6 +8,7 @@ Please edit this file when you add or change files in this directory.
 
 ## Index
 
-- File 1
+- plot_ext_tcorr.py
     
-        Information on file 1
+        Plots the Apero extracted and telluric corrected spectra for a given target, date and exposure number.
+        Can optionally plot the Geneva drs spectra as well.
