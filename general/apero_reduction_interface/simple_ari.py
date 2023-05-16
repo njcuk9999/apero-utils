@@ -3038,7 +3038,7 @@ def clean_object_table(object_table: Table):
         if col in object_table.colnames:
             human_times = []
             for row in object_table[col]:
-                human_times.append(object_table[row].iso)
+                human_times.append(object_table[col][row].iso)
             # remove column from table
             del object_table[col]
             # push these back into the table
