@@ -2157,6 +2157,8 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
                 else:
                     rprops[key] = [result[key]]
     # -------------------------------------------------------------------------
+    # replace object name with the object name + object url
+    object_table[OBJECT_COLUMN] = rprops['OBJURL']
     # clean object table for return
     object_table = clean_object_table(object_table)
     # return the object table
