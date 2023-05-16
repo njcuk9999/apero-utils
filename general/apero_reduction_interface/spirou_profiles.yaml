@@ -14,8 +14,8 @@ settings:
       - 965
       - 2500
     limit1:
-      - 1312
-      - 1316
+      - 1082
+      - 1085
     limit2:
       - 1600
       - 1604
@@ -49,7 +49,7 @@ settings:
 
 spirou 07.282 cook@jupiter mini2:
   apero profile: /scratch2/spirou/drs-settings/setup_07XXX_mini2
-  lbl path: /scratch3/lbl/data/minidata_comp/minidata2_2023-01-19_jupiter
+  lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07282_jupiter
   skip obj table: False
   skip recipe table: True
   skip msg table: True
