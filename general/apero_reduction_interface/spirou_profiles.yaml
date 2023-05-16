@@ -53,3 +53,79 @@ spirou 07.282 cook@jupiter mini2:
   skip obj table: False
   skip recipe table: True
   skip msg table: True
+
+# -----------------------------------------------------------------------------
+# Header keys
+headers:
+  PP:
+    PP_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+  EXT:
+    EXT_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    EXT_Y:
+      key: EXTSN009
+      label: 'SNR[Order 8 (#71 1.08$\mu$m)]'
+      dtype: float
+    EXT_H:
+      key: EXTSN032
+      label: 'SNR[Order 32 (#47 1.64$\mu$m)]'
+      dtype: float
+    EXT_DPRTYPE:
+      key: DPRTYPE
+      label: 'DPR TYPE'
+      dtype: str
+    EXT_SEEING:
+      key: WDSEEMED
+      label: Seeing at start
+      dtype: float
+    EXT_AIRMASS:
+      key: AIRMASS
+      label: Airmass at start
+      dtype: float
+    EXT_EXPTIME:
+        key: EXPTIME
+        label: Exposure Time
+        dtype: float
+  TCORR:
+    TCORR_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+  CCF:
+    CCF_MASK:
+      key: CCFMASK
+      label: CCF Mask
+      dtype: str
+    CCF_MJDMID:
+      key: MJDMID
+      label: CCF MJD
+      dtype: float
+      timefmt: mjd
+    CCF_DV:
+      key: RV_CORR
+      label: CCF RV
+      unit: km/s
+      dtype: float
+    CCF_SDV:
+      key: DVRMS_CC
+      label: CCF RV Error
+      unit: m/s
+      dtype: float
+    CCF_FWHM:
+      key: CCFMFWHM
+      label: CCF FWHM
+      unit: km/s
+      dtype: float
+  LBL:
+    EXT_H:
+      key: EXTSN032
+      label: 'SNR[Order 32 (#47 1.64$\mu$m)]'
+      dtype: float
