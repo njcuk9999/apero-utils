@@ -20,8 +20,8 @@ settings:
       - 1600
       - 1604
     limit3:
-      - 2000
-      - 2200
+      - 2050
+      - 2055
   # SSH PATH to copy the website to
   ssh:
     directory: /export/www/home/cook/www/apero-drs/

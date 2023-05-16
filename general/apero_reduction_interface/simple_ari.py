@@ -1488,7 +1488,7 @@ class ObjectData:
         # sort all snr by closest to the median
         all_snr_pos = list(np.argsort(n_ext_h))
         # set these up
-        pos_ext, pos_raw, pos_tcorr = None, None, None
+        pos_ext, pos_raw, pos_sc1d = None, None, None
         file_ext = 'NoFile'
         # loop until we match
         while not matched and len(all_snr_pos) > 0:
@@ -1498,9 +1498,9 @@ class ObjectData:
             file_ext = self.ext_files[pos_ext]
             # Find the matching raw file
             pos_raw = _match_file(reffile=file_ext, files=self.raw_files)
-            pos_tcorr = _match_file(reffile=file_ext, files=self.tcorr_files)
+            pos_sc1d = _match_file(reffile=file_ext, files=self.sc1d_files)
             # we only stop is a match is found
-            if pos_raw is not None and pos_tcorr is not None:
+            if pos_raw is not None and pos_sc1d is not None:
                 matched = True
             else:
                 all_snr_pos = all_snr_pos[1:]
@@ -1541,10 +1541,10 @@ class ObjectData:
         spec_props['MAX_FILE'] = os.path.basename(self.raw_files[pos_raw])
         # ---------------------------------------------------------------------
         # deal with having telluric file
-        if pos_tcorr is not None:
+        if pos_sc1d is not None:
             # get the telluric corrected spectrum for the spectrum with the
             # highest SNR
-            tcorr_table = Table.read(self.sc1d_files[pos_tcorr], hdu=1)
+            tcorr_table = Table.read(self.sc1d_files[pos_sc1d], hdu=1)
             # push into spec_props
             spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
             spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
@@ -2462,7 +2462,7 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     if tcorr_spec is not None:
         frame1.plot(wavemap[wavemask0], tcorr_spec[wavemask0],
                     color='r', label='Telluric Corrected', lw=0.5)
-        frame1.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec, 90)))
+        frame1.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec, 99)))
     frame1.set(xlabel='Wavelength [nm]', ylabel='Flux', xlim=wavelim0)
     frame1.set_title(title, fontsize=10)
     frame1.legend(loc=0, ncol=2)
@@ -2481,7 +2481,9 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
         if tcorr_spec is not None:
             frame.plot(wavemap[mask], tcorr_spec[mask],
                        color='r', label='Telluric Corrected', lw=0.5)
-            frame.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec[mask], 90)))
+            ymin_mask = 0.5 * np.nanpercentile(tcorr_spec[mask], 1)
+            ymax_mask = 1.5 * np.nanpercentile(tcorr_spec[mask], 99)
+            frame.set_ylim((ymin_mask, ymax_mask))
         if it == 0:
             frame.set_ylabel('Flux')
         frame.set(xlabel='Wavelength [nm]', xlim=wavelim)
