@@ -88,7 +88,7 @@ COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], None, None]
 # define which columns to remove to final table
-REMOVE_COLS = ['FIRST_RAW', 'LAST_RAW', 'EXT_S1D_V', 'SC1D_V_FILE']
+REMOVE_COLS = ['FIRST_RAW', 'EXT_S1D_V', 'SC1D_V_FILE']
 
 # define the lbl rdb suffix (lbl or lbl2)
 LBL_SUFFIX = 'lbl'
@@ -387,6 +387,13 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
     obj_index_page.add_newline()
     obj_index_page.add_text('Object by object index. '
                         'Links to all profiles and finding charts')
+    obj_index_page.add_newline()
+    obj_index_page.add_text('Please note: Your object may be under another '
+                            'name. Please check `here <https://docs.google.com/'
+                            'spreadsheets/d/'
+                            '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
+                            'edit?usp=sharing>`_, the name displayed in '
+                            'ARI will be the first column [OBJNAME]')
     obj_index_page.add_newline()
     # -------------------------------------------------------------------------
     # loop around objects and create a section for each
@@ -756,8 +763,6 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # add counting columns to the object table
     object_table['DPRTYPES'] = [' ' * 255] * len(object_table)
     object_table[COUNT_COLS[0]] = [0] * len(object_table)
-    object_table['FIRST_RAW'] = [None] * len(object_table)
-    object_table['LAST_RAW'] = [None] * len(object_table)
     object_table[COUNT_COLS[1]] = [0] * len(object_table)
     object_table[COUNT_COLS[2]] = [0] * len(object_table)
     object_table[COUNT_COLS[3]] = [0] * len(object_table)
@@ -774,6 +779,8 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # Add s1d columns (these will be removed later)
     object_table[COUNT_COLS[10]] = [0] * len(object_table)
     object_table[COUNT_COLS[11]] = [0] * len(object_table)
+    object_table['FIRST_RAW'] = [None] * len(object_table)
+    object_table['LAST_RAW'] = [None] * len(object_table)
     # ------------------------------------------------------------------
     # storage for files for each type
     file_dict = dict()
