@@ -3,7 +3,7 @@ settings:
   # Instrument (either SPIROU or NIRPS)
   instrument: SPIROU
   # Working directory: where to store the website data
-  working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
+  working directory: /scratch2/spirou/misc/apero-ari/working/
   # Finder charts (None if not needed)
   find directory: None
   # number of cores to use in multiprocessing steps
@@ -36,6 +36,7 @@ settings:
   objects:
     - GL699
 
+
 # -----------------------------------------------------------------------------
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)
@@ -45,9 +46,9 @@ settings:
 #     skip obj table: bool: if True, skip making the object table
 #     skip recipe table: bool: if True, skip making the recipe table
 #     skip msg table: bool: if True, skip making the msg table
-spirou V0.7.282 full:
-  apero profile: /cosmos99/spirou/apero-settings/spirou_07282_online/
-  lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/
+spirou 07.282 cook@jupiter mini2:
+  apero profile: /scratch2/spirou/drs-settings/setup_07XXX_mini2
+  lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07282_jupiter
   skip obj table: False
   skip recipe table: True
   skip msg table: True

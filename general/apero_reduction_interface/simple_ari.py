@@ -89,7 +89,8 @@ COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
                 COUNT_COLS[3], COUNT_COLS[3], None, None]
 # define which columns to remove to final table
 REMOVE_COLS = ['FIRST_RAW', 'EXT_S1D_V', 'SC1D_V_FILE']
-
+# define time columns
+TIME_COLS = ['FIRST_RAW', 'LAST_RAW']
 # define the lbl rdb suffix (lbl or lbl2)
 LBL_SUFFIX = 'lbl'
 # define the LBL stat dir (inside the lbl directory)
@@ -928,7 +929,6 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # sort object table by object column name
     sortmask = np.argsort(object_table[OBJECT_COLUMN])
     object_table = object_table[sortmask]
-    # ------------------------------------------------------------------
     # return object table
     return object_table, file_dict
 
@@ -2082,10 +2082,8 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     if len(object_table) == 0:
         # print progress
         wlog(params, '', 'No objects found in object table')
-        # remove the columns we don't want in the final table
-        for remove_col in REMOVE_COLS:
-            if remove_col in object_table.columns:
-                object_table.remove_columns(remove_col)
+        # clean object table for return
+        object_table = clean_object_table(object_table)
         # return empty table
         return object_table, dict()
     # -------------------------------------------------------------------------
@@ -2159,12 +2157,8 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
                 else:
                     rprops[key] = [result[key]]
     # -------------------------------------------------------------------------
-    # replace object name with the object name + object url
-    object_table[OBJECT_COLUMN] = rprops['OBJURL']
-    # remove the columns we don't want in the final table
-    for remove_col in REMOVE_COLS:
-        if remove_col in object_table.colnames:
-            object_table.remove_columns(remove_col)
+    # clean object table for return
+    object_table = clean_object_table(object_table)
     # return the object table
     return object_table, rprops
 
@@ -3025,6 +3019,32 @@ def debug_mode(gsettings: dict):
         gsettings['N_CORES'] = 1
         gsettings['filter objects'] = True
     return gsettings
+
+
+def clean_object_table(object_table: Table):
+    """
+    Remove unwanted columns and convert time columns to human time
+
+    :param object_table: astropy.table object, the object table
+
+    :return: astropy.table object, the cleaned object table
+    """
+    # remove the columns we don't want in the final table
+    for remove_col in REMOVE_COLS:
+        if remove_col in object_table.columns:
+            object_table.remove_columns(remove_col)
+    # convert any time columns to human time
+    for col in TIME_COLS:
+        if col in object_table.colnames:
+            human_times = []
+            for row in object_table[col]:
+                human_times.append(object_table[row].iso)
+            # remove column from table
+            del object_table[col]
+            # push these back into the table
+            object_table[col] = human_times
+    # return the cleaned object table
+    return object_table
 
 
 def split_line(parts, rawstring):
