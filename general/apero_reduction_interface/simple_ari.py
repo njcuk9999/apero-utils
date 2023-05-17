@@ -901,7 +901,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
                 failed_files = np.array(table['ABSPATH'])[~mask]
                 obs_dirs = np.array(table['OBS_DIR'][mask])
                 # add last processed time of all files for this object
-                pdates = np.arrary(table['KW_DRS_DATE_NOW']).astype(str)
+                pdates = np.array(table['KW_DRS_DATE_NOW']).astype(str)
                 if len(pdates) > 0:
                     times_it = np.max(Time(pdates, format='iso'))
                     time_dict[COUNT_COLS[it]][pos] = times_it
