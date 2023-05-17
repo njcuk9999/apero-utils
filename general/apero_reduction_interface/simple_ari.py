@@ -30,8 +30,6 @@ from scipy.optimize import curve_fit
 # =============================================================================
 # Define variables
 # =============================================================================
-# debug mode (one object, one core)
-DEBUG = False
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
