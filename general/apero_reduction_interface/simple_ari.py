@@ -782,6 +782,10 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     object_table[COUNT_COLS[11]] = [0] * len(object_table)
     object_table['FIRST_RAW'] = [None] * len(object_table)
     object_table['LAST_RAW'] = [None] * len(object_table)
+    # add the last processed columns
+    time_dict = dict()
+    for col in COUNT_COLS:
+        time_dict[f'LAST_PROC_{col}'] = [None] * len(object_table)
     # ------------------------------------------------------------------
     # storage for files for each type
     file_dict = dict()
@@ -886,8 +890,9 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
                     counts[COUNT_COLS[it]] = 0
                     continue
             # get the files
-            table = indexdbm.get_entries('ABSPATH,OBS_DIR,KW_PID',
-                                         condition=condition)
+            dbcols = 'ABSPATH,OBS_DIR,KW_PID,KW_MID_OBS_TIME,KW_DRS_DATE_NOW'
+            table = indexdbm.get_entries(dbcols, condition=condition)
+            # deal with non-raw files
             if 'RAW' not in COUNT_COLS[it]:
                 # get a mask of rows that passed QC (based on PID)
                 mask = _filter_pids(table, logdbm)
@@ -895,6 +900,9 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
                 files = np.array(table['ABSPATH'])[mask]
                 failed_files = np.array(table['ABSPATH'])[~mask]
                 obs_dirs = np.array(table['OBS_DIR'][mask])
+                # add last processed time of all files for this object
+                times_it = np.max(Time(table['KW_DRS_DATE_NOW'], format='iso'))
+                time_dict[COUNT_COLS[it]][pos] = times_it
             else:
                 files = np.array(table['ABSPATH'])
                 failed_files = np.array([])
@@ -911,6 +919,26 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
             object_table[COUNT_COLS[it]][pos] = count
             # set counts
             counts[COUNT_COLS[it]] = count
+    # ------------------------------------------------------------------
+    # turn time_dict into a last processed time for each object
+    last_processed = []
+    # loop around rows
+    for row in range(len(object_table)):
+        times_row = []
+
+        # get all the times for this object so we can take a maximum
+        for col in COUNT_COLS:
+            if col in time_dict:
+                col_time = time_dict[col][row]
+                if col_time is not None:
+                    times_row.append(Time(col_time))
+        # take the maximum time of all times_row
+        if len(times_row) > 0:
+            last_processed.append(np.max(times_row).iso)
+        else:
+            last_processed.append('None')
+    # force into new column
+    object_table['LAST_PROCESSED'] = last_processed
     # ------------------------------------------------------------------
     # remove rows with no raw entries
     mask = object_table[COUNT_COLS[0]] > 0
