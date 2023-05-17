@@ -785,7 +785,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     # add the last processed columns
     time_dict = dict()
     for col in COUNT_COLS:
-        time_dict[f'LAST_PROC_{col}'] = [None] * len(object_table)
+        time_dict[col] = [None] * len(object_table)
     # ------------------------------------------------------------------
     # storage for files for each type
     file_dict = dict()
