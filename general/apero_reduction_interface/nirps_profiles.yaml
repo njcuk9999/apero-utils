@@ -82,12 +82,22 @@ headers:
       label: MJD
       dtype: float
       timefmt: mjd
+    PP_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
   EXT:
     EXT_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
+    EXT_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     EXT_Y:
       key: EXTSN015
       label: 'SNR[Order 15 (#134 1.08$\mu$m)]'
@@ -118,6 +128,11 @@ headers:
       label: MJD
       dtype: float
       timefmt: mjd
+    TCORR_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
   CCF:
     CCF_MASK:
       key: CCFMASK
@@ -128,6 +143,11 @@ headers:
       label: CCF MJD
       dtype: float
       timefmt: mjd
+    CCF_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     CCF_DV:
       key: RV_CORR
       label: CCF RV

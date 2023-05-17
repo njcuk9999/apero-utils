@@ -1461,23 +1461,29 @@ class ObjectData:
         if len(self.pp_files) > 0:
             spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
             spec_props['LAST_PP'] = Time(np.max(hdict['PP_MJDMID'])).iso
+            spec_props['LAST_PP_PROC'] = Time(np.max(hdict['PP_PROC'])).iso
         else:
             spec_props['FIRST_PP'] = None
             spec_props['LAST_PP'] = None
-        # Add first / last ext files
+            spec_props['LAST_PP_PROC'] = None
+            # Add first / last ext files
         if len(self.ext_files) > 0:
             spec_props['FIRST_EXT'] = Time(np.min(hdict['EXT_MJDMID'])).iso
             spec_props['LAST_EXT'] = Time(np.max(hdict['EXT_MJDMID'])).iso
+            spec_props['LAST_EXT_PROC'] = Time(np.max(hdict['EXT_PROC'])).iso
         else:
             spec_props['FIRST_EXT'] = None
             spec_props['LAST_EXT'] = None
+            spec_props['LAST_EXT_PROC'] = None
         # Add first / last tcorr files
         if len(self.tcorr_files) > 0:
             spec_props['FIRST_TCORR'] = Time(np.min(hdict['TCORR_MJDMID'])).iso
             spec_props['LAST_TCORR'] = Time(np.max(hdict['TCORR_MJDMID'])).iso
+            spec_props['LAST_TCORR_PROC'] = Time(np.max(hdict['TCORR_PROC'])).iso
         else:
             spec_props['FIRST_TCORR'] = None
             spec_props['LAST_TCORR'] = None
+            spec_props['LAST_TCORR_PROC'] = None
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
@@ -1720,19 +1726,25 @@ class ObjectData:
         down_save_path = self.settings['DOWNS']
         down_rel_path = f'../{_DOWN_DIR}/'
         # -----------------------------------------------------------------
+        # alias to header dict
+        hdict = self.header_dict
         # storage for ccf values
         ccf_props = dict()
         # get values for use in plot
-        ccf_props['mjd'] = Time(np.array(self.header_dict['CCF_MJDMID']))
-        dv_vec = self.header_dict['CCF_DV'].to(uu.m / uu.s).value
+        ccf_props['mjd'] = Time(np.array(hdict['CCF_MJDMID']))
+        dv_vec = hdict['CCF_DV'].to(uu.m / uu.s).value
         ccf_props['dv'] = np.array(dv_vec)
-        sdv_vec = self.header_dict['CCF_SDV'].to(uu.m / uu.s).value
+        sdv_vec = hdict['CCF_SDV'].to(uu.m / uu.s).value
         ccf_props['sdv'] = np.array(sdv_vec)
-        fwhm_vec = self.header_dict['CCF_FWHM'].to(uu.m / uu.s).value
+        fwhm_vec = hdict['CCF_FWHM'].to(uu.m / uu.s).value
         ccf_props['fwhm'] = np.array(fwhm_vec)
-        ccf_props['masks'] = np.array(self.header_dict['CCF_MASK'])
+        ccf_props['masks'] = np.array(hdict['CCF_MASK'])
         ccf_props['files'] = np.array(self.ccf_files)
         ccf_props['files_failed'] = np.array(self.ccf_files_qc)
+        # -----------------------------------------------------------------
+        ccf_props['FIRST_CCF'] = Time(np.min(hdict['CCF_MJDMID'])).iso
+        ccf_props['LAST_CCF'] = Time(np.max(hdict['CCF_MJDMID'])).iso
+        ccf_props['LAST_CCF_PROC'] = Time(np.max(hdict['CCF_PROC'])).iso
         # -----------------------------------------------------------------
         # select ccf files to use
         select_files = choose_ccf_files(ccf_props)
@@ -2518,10 +2530,13 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     last_raw = spec_props['LAST_RAW']
     first_pp = spec_props['FIRST_PP']
     last_pp = spec_props['LAST_PP']
+    last_pp_proc = spec_props['LAST_PP_PROC']
     first_ext = spec_props['FIRST_EXT']
     last_ext = spec_props['LAST_EXT']
+    last_ext_proc = spec_props['LAST_EXT_PROC']
     first_tcorr = spec_props['FIRST_TCORR']
     last_tcorr = spec_props['LAST_TCORR']
+    last_tcorr_proc = spec_props['LAST_TCORR_PROC']
     coord_url = spec_props['COORD_URL']
     ra, dec = spec_props['RA'], spec_props['Dec']
     teff, spt = spec_props['Teff'], spec_props['Spectral Type']
@@ -2572,11 +2587,12 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{num_pp}')
     stat_dict['Description'].append('Number PP files failed QC')
     stat_dict['Value'].append(f'{num_pp_qc}')
-    stat_dict['Description'].append('First pp file')
+    stat_dict['Description'].append('First pp file [Mid exposure]')
     stat_dict['Value'].append(f'{first_pp}')
-    stat_dict['Description'].append('Last pp file')
+    stat_dict['Description'].append('Last pp file [Mid exposure]')
     stat_dict['Value'].append(f'{last_pp}')
-
+    stat_dict['Description'].append('Last processed [pp]')
+    stat_dict['Value'].append(f'{last_pp_proc}')
     # -------------------------------------------------------------------------
     # add number of ext files
     # -------------------------------------------------------------------------
@@ -2586,11 +2602,12 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{num_ext}')
     stat_dict['Description'].append('Number ext files failed QC')
     stat_dict['Value'].append(f'{num_ext_qc}')
-    stat_dict['Description'].append('First ext file')
+    stat_dict['Description'].append('First ext file [Mid exposure]')
     stat_dict['Value'].append(f'{first_ext}')
-    stat_dict['Description'].append('Last ext file')
+    stat_dict['Description'].append('Last ext file [Mid exposure]')
     stat_dict['Value'].append(f'{last_ext}')
-
+    stat_dict['Description'].append('Last processed [ext]')
+    stat_dict['Value'].append(f'{last_ext_proc}')
     # -------------------------------------------------------------------------
     # add number of tcorr files
     # -------------------------------------------------------------------------
@@ -2600,11 +2617,12 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{num_tcorr}')
     stat_dict['Description'].append('Number tcorr files failed QC')
     stat_dict['Value'].append(f'{num_tcorr_qc}')
-    stat_dict['Description'].append('First tcorr file')
+    stat_dict['Description'].append('First tcorr file [Mid exposure]')
     stat_dict['Value'].append(f'{first_tcorr}')
-    stat_dict['Description'].append('Last tcorr file')
+    stat_dict['Description'].append('Last tcorr file [Mid exposure]')
     stat_dict['Value'].append(f'{last_tcorr}')
-
+    stat_dict['Description'].append('Last processed [tcorr]')
+    stat_dict['Value'].append(f'{last_tcorr_proc}')
     # -------------------------------------------------------------------------
     # add the SNR in Y
     stat_dict['Description'].append('Median SNR Y')
@@ -2907,6 +2925,9 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     fwhm = ccf_props['fwhm']
     num_ccf = len(ccf_props['files'])
     num_ccf_qc = len(ccf_props['files_failed'])
+    first_ccf = ccf_props['FIRST_EXT']
+    last_ccf = ccf_props['LAST_EXT']
+    last_ccf_proc = ccf_props['LAST_EXT_PROC']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -2940,6 +2961,13 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     # add number of ccf files failed
     stat_dict['Description'].append('Number CCF files failed QC')
     stat_dict['Value'].append(num_ccf_qc)
+    # add times
+    stat_dict['Description'].append('First ccf file [Mid exposure]')
+    stat_dict['Value'].append(f'{first_ccf}')
+    stat_dict['Description'].append('Last ccf file [Mid exposure]')
+    stat_dict['Value'].append(f'{last_ccf}')
+    stat_dict['Description'].append('Last processed [ccf]')
+    stat_dict['Value'].append(f'{last_ccf_proc}')
     # --------------------------------------------------------------------------
     # change the columns names
     stat_dict2 = dict()
