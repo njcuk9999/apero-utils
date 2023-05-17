@@ -902,7 +902,8 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
                 obs_dirs = np.array(table['OBS_DIR'][mask])
                 # add last processed time of all files for this object
                 try:
-                    times_it = np.max(Time(table['KW_DRS_DATE_NOW'], format='iso'))
+                    pdates = np.arrary(table['KW_DRS_DATE_NOW']).astype(str)
+                    times_it = np.max(Time(pdates, format='iso'))
                     time_dict[COUNT_COLS[it]][pos] = times_it
                 except (ValueError, TypeError):
                     pass
