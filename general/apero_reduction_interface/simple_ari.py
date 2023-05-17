@@ -2925,9 +2925,9 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     fwhm = ccf_props['fwhm']
     num_ccf = len(ccf_props['files'])
     num_ccf_qc = len(ccf_props['files_failed'])
-    first_ccf = ccf_props['FIRST_EXT']
-    last_ccf = ccf_props['LAST_EXT']
-    last_ccf_proc = ccf_props['LAST_EXT_PROC']
+    first_ccf = ccf_props['FIRST_CCF']
+    last_ccf = ccf_props['LAST_CCF']
+    last_ccf_proc = ccf_props['LAST_CCF_PROC']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
