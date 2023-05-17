@@ -76,7 +76,7 @@ nirps ha V0.7.276 offline:
 # -----------------------------------------------------------------------------
 # Header keys
 headers:
-  PP:
+  pp:
     PP_MJDMID:
       key: MJDMID
       label: MJD
@@ -87,7 +87,7 @@ headers:
       label: Process Date
       dtype: str
       timefmt: iso
-  EXT:
+  ext:
     EXT_MJDMID:
       key: MJDMID
       label: MJD
@@ -122,7 +122,7 @@ headers:
         key: EXPTIME
         label: Exposure Time
         dtype: float
-  TCORR:
+  tcorr:
     TCORR_MJDMID:
       key: MJDMID
       label: MJD
@@ -133,7 +133,7 @@ headers:
       label: Process Date
       dtype: str
       timefmt: iso
-  CCF:
+  ccf:
     CCF_MASK:
       key: CCFMASK
       label: CCF Mask
