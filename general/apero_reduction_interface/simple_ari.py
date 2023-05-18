@@ -81,6 +81,8 @@ COLUMNS['pfits'] = 'p.fits     '
 COLUMNS['lbl'] = 'LBL        '
 COLUMNS['last_obs'] = 'Last observed'
 COLUMNS['last_proc'] = 'Last Processed'
+# polar columns (only used for instruments that use polarimetry)
+POLAR_COLS = ['POL', 'pfits']
 # time series column names
 TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
                     'Last obs mid', 'Number of ext', 'Number of tcorr',
@@ -146,7 +148,7 @@ class FileType:
             # ------------------------------------------------------------------
         # Construct the condition for the query
         # ------------------------------------------------------------------
-        self.cond = f'KW_OBJNAME={objname}'
+        self.cond = f'KW_OBJNAME="{objname}"'
         if self.block_kind is not None:
             self.cond += f' AND BLOCK_KIND="{self.block_kind}"'
         if self.kw_output is not None:
@@ -181,8 +183,11 @@ class FileType:
             self.qc_mask = np.ones(len(self.files)).astype(bool)
             self.obsdirs = np.array(findex_table['OBS_DIR'])
         # get the first and last files in time
-        self.first = np.min(Time(np.array(findex_table['KW_MID_OBS_TIME'])))
-        self.last = np.max(Time(np.array(findex_table['KW_MID_OBS_TIME'])))
+        mjdmids = np.array(findex_table['KW_MID_OBS_TIME']).astype(float)
+        mjdmids = Time(mjdmids, format='mjd')
+        if len(mjdmids) > 0:
+            self.first = np.min(mjdmids)
+            self.last = np.max(mjdmids)
         # count files
         self.num = len(self.files)
         self.num_passed = np.sum(self.qc_mask)
@@ -223,12 +228,16 @@ class ObjectData:
         # flag for whether we have polar files
         self.has_polar = False
         # ---------------------------------------------------------------------
+        # lbl parameters
+        self.lbl_templates: Optional[List[str]] = None
+        self.lbl_select: Optional[str] = None
         # add the lbl stat files into a dictionary
         self.lbl_stat_files = dict()
         # loop around lbl stats files and load lblfilekey dict in
         #   each dict should contain obj+temp combinations
         for lblfilekey in LBL_STAT_FILES:
             self.lbl_stat_files[lblfilekey] = dict()
+        # ---------------------------------------------------------------------
         # last processed of all files for this object
         self.last_processed: Optional[Time] = None
         # ---------------------------------------------------------------------
@@ -289,7 +298,9 @@ class ObjectData:
         # get all filetype last processing times
         all_last_processed = []
         for key in self.filetypes:
-            all_last_processed.append(self.filetypes[key].processed_times)
+            if len(self.filetypes[key].processed_times) > 0:
+                for _time in self.filetypes[key].processed_times:
+                    all_last_processed.append(_time)
         # convert to Time
         all_last_processed = Time(np.array(all_last_processed))
         # get the last processed time of all files
@@ -400,9 +411,17 @@ class ObjectData:
         spec_props['NUM_PP_FILES_FAIL'] = ftypes['pp'].num_failed
         spec_props['NUM_EXT_FILES_FAIL'] = ftypes['ext'].num_failed
         spec_props['NUM_TCORR_FILES_FAIL'] = ftypes['tcorr'].num_failed
-
-        spec_props['FIRST_RAW'] = self.filetypes['raw'].first.iso
-        spec_props['LAST_RAW'] = self.filetypes['raw'].last.iso
+        # add the first and last raw file type
+        first_time = self.filetypes['raw'].first
+        last_time = self.filetypes['raw'].last
+        if first_time is not None:
+            spec_props['FIRST_RAW'] = first_time.iso
+        else:
+            spec_props['FIRST_RAW'] = None
+        if last_time is not None:
+            spec_props['LAST_RAW'] = last_time.iso
+        else:
+            spec_props['LAST_RAW'] = None
         # Add first / last pp files
         if ftypes['pp'].num_passed > 0:
             spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
@@ -787,10 +806,10 @@ class ObjectData:
     def get_time_series_parameters(self):
         # get ext files
         ftypes = self.filetypes
-        ext_files = ftypes['ext'].get_files(qc=True)
-        tcorr_files = ftypes['tcorr'].get_files(qc=True)
+        ext_files_all = ftypes['ext'].get_files(qc=True)
+        tcorr_files_all = ftypes['tcorr'].get_files(qc=True)
         # don't go here is lbl rdb files are not present
-        if len(ext_files) == 0:
+        if len(ext_files_all) == 0:
             return
         # ---------------------------------------------------------------------
         # generate place to save figures
@@ -870,8 +889,8 @@ class ObjectData:
             # -----------------------------------------------------------------
             # Create the ext and tellu for this object
             # -----------------------------------------------------------------
-            ext_files = ext_files[obs_mask_ext]
-            tcorr_files = tcorr_files[obs_mask_tcorr]
+            ext_files = ext_files_all[obs_mask_ext]
+            tcorr_files = tcorr_files_all[obs_mask_tcorr]
             # -----------------------------------------------------------------
             # Create the file lists for this object
             # -----------------------------------------------------------------
@@ -1562,7 +1581,7 @@ def compile_apero_object_table(gsettings) -> Dict[str, ObjectData]:
     # -------------------------------------------------------------------------
     # create objects
     obj_classes = dict()
-    for row, objname in range(len(object_table[OBJECT_COLUMN])):
+    for row, objname in enumerate(object_table[OBJECT_COLUMN]):
         obj_class = ObjectData(objname, filetypes)
         # add astrometric data
         obj_class.add_astrometrics(object_table.iloc[row])
@@ -1593,7 +1612,13 @@ def compile_apero_object_table(gsettings) -> Dict[str, ObjectData]:
     obj_classes_sorted = dict()
     # loop through all objects sorted alphabetically
     for objname in np.sort(list(obj_classes.keys())):
-        obj_classes_sorted[objname] = obj_classes[objname]
+        # get the object class for this object name
+        obj_class = obj_classes[objname]
+        # reject objects that have no raw files
+        if obj_class.filetypes['raw'].num == 0:
+            continue
+        # add to sorted list of objects
+        obj_classes_sorted[objname] = obj_class
     # return object table
     return obj_classes_sorted
 
@@ -1852,6 +1877,10 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
                 lblrdb_files.append(lblrdb_file)
         # add list to the LBLRDB file dict for this object
         object_class.filetypes['lbl_rdb'].files = lblrdb_files
+        object_class.lbl_templates = _template
+        object_class.lbl_select = _select
+        # add to object table
+        object_class.filetypes['lbl_rdb'].num = _count
         # ---------------------------------------------------------------------
         # LBL Stats (generated by Charles)
         # ---------------------------------------------------------------------
@@ -1877,9 +1906,6 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
                 if os.path.exists(lblspath):
                     # add a list to file dict for this object
                     object_class.lbl_stat_files[lblfilekey][objtmp] = lblspath
-        # -------------------------------------------------------------------------
-        # add to object table
-        object_class.filetypes['lbl_rdb'].num = lbl_count
     # -------------------------------------------------------------------------
     # return the object table
     return object_classes
@@ -2863,7 +2889,7 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # add a reference to this section
     page.add_reference(ref)
     # get lbl rdb files
-    lbl_rdb_files = object_instance.filetypes['lbl'].files
+    lbl_rdb_files = object_instance.filetypes['lbl_rdb'].files
     # ------------------------------------------------------------------
     # deal with no spectrum found
     if len(lbl_rdb_files) == 0:
@@ -2967,15 +2993,18 @@ def objpage_timeseries(page: Any, name: str, ref: str,
                            cssclass='csvtable2')
 
 
-def make_obj_table(object_instances: Dict[str, ObjectData]) -> Table:
+def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
     # storage dictionary for conversion to table
     table_dict = dict()
+    # deal with no entries
+    if len(object_instances) == 0:
+        return None
     # get the first instance (for has polar)
     key = list(object_instances.keys())[0]
     object_class0 = object_instances[key]
     # start columns as empty lists
     for col in COLUMNS:
-        if col in 'polar' or col in 'pfiles':
+        if col in POLAR_COLS:
             if object_class0.has_polar:
                 table_dict[col] = []
         else:
@@ -2986,13 +3015,20 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Table:
         # get the class for this objname
         object_class = object_instances[key]
         # set the object name
-        table_dict['OBJNAME'].append(object_class.objname)
+        table_dict['OBJNAME'].append(object_class.objurl)
         # set the ra and dec
         table_dict['RA'].append(object_class.ra)
         table_dict['DEC'].append(object_class.dec)
-        # set the Teff and SpT
-        table_dict['TEFF'].append(object_class.teff)
-        table_dict['SPTYPE'].append(object_class.sptype)
+        # set the Teff
+        if object_class.teff is None:
+            table_dict['TEFF'].append(np.nan)
+        else:
+            table_dict['TEFF'].append(object_class.teff)
+        # set the SpT
+        if object_class.sptype is None:
+            table_dict['SPTYPE'].append('')
+        else:
+            table_dict['SPTYPE'].append(object_class.sptype)
         # set the dprtypes
         table_dict['DPRTYPE'].append(object_class.dprtypes)
         # set the raw number of files
