@@ -352,11 +352,11 @@ def apero_reset(params: Any, pdict: Dict[str, Any]):
     reset_funcs['tmp'] = drs_reset.reset_tmp_folders
     reset_funcs['red'] = drs_reset.reset_reduced_folders
     reset_funcs['out'] = drs_reset.reset_out_folders
-    # print progress
-    print('\t\tResetting processing')
     # deal with None in reset dirs
     if 'None' in reset_dirs:
         return
+    # print progress
+    print('\t\tResetting processing')
     # deal with all in reset dirs
     if 'all' in reset_dirs:
         apero_reset.main(warn=False)
