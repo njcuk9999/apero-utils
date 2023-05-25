@@ -2158,22 +2158,19 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             results_dict[key] = results
     # -------------------------------------------------------------------------
     elif n_cores > 1:
-        import multiprocessing
-        pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
-        # storage for results
-        results_dict = dict()
-        # use a Manager to create a shared dictionary to collect results
-        # change the object column to a url
+        from multiprocessing import get_context
+        # list of params for each entry
+        params_per_process = []
         for it, key in enumerate(object_classes):
-            # combine arguments
             itargs = [it, key] + args[2:]
-            # run the pool
-            results = pool.apply_async(add_obj_page, args=itargs)
-            # push result to result storage
-            results_dict[key] = results
-        # Wait for all jobs to finish
-        pool.close()
-        pool.join()
+            params_per_process.append(itargs)
+
+        with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
+            results = pool.starmap(add_obj_page, params_per_process)
+        # fudge back into return dictionary
+        for row in range(len(results)):
+            for key in results[row]:
+                results_dict[key] = results[row][key]
     # -------------------------------------------------------------------------
     # update object classes with results
     # -------------------------------------------------------------------------
