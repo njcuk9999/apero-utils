@@ -31,10 +31,13 @@ settings:
   # whether to reset the working directory
   reset: True
   # whether to filter by objects
-  filter objects: False
+  filter objects: True
   # objects to filter by
   objects:
     - GL699
+    - TRAPPIST1
+    - GL514
+    - HD189733
 
 # -----------------------------------------------------------------------------
 # name:
