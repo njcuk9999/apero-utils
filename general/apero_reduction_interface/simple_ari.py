@@ -308,8 +308,6 @@ class ObjectData:
             self.last_processed = np.max(all_last_processed)
         else:
             self.last_processed = None
-        # get the last processed time of all files
-        self.last_processed = np.max(all_last_processed)
 
     def add_settings(self, profile: dict, settings: dict,
                      gsettings: dict, headers: dict):
@@ -2164,7 +2162,7 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
         for it, key in enumerate(object_classes):
             itargs = [it, key] + args[2:]
             params_per_process.append(itargs)
-
+        # start parellel jobs
         with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
             results = pool.starmap(add_obj_page, params_per_process)
         # fudge back into return dictionary
