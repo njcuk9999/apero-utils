@@ -2107,6 +2107,11 @@ def add_obj_page(it: int, key: str, profile: dict, gsettings: dict,
     rprops['OBJNAME'] = objname
     rprops['OBJURL'] = obj_url
     rprops['OBJPAGEREF'] = obj_ref_page
+    # ------------------------------------------------------------------
+    # print progress
+    msg = '\tFinished creating page for {0} [{1} of {2}]'
+    margs = [objname, it + 1, len(object_classes)]
+    wlog(params, '', msg.format(*margs), colour='magenta')
     # things to return
     return rprops
 
