@@ -2408,8 +2408,6 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
             table_dict['last_proc'].append(object_class.last_processed.iso)
         else:
             table_dict['last_proc'].append('')
-        # set the last processed value
-        table_dict['last_proc'].append(object_class.last_processed.iso)
     # -------------------------------------------------------------------------
     # finally convert this to a table but use the output column names
     out_table = Table()
