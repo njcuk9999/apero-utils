@@ -404,8 +404,8 @@ class ObjectData:
         spec_props['EXT_Y'] = np.array(hdict['EXT_Y'])
         ext_h = np.array(hdict['EXT_H'])
         spec_props['EXT_H'] = ext_h
-        spec_props['EXT_Y_LABEL'] = self.headers['ext']['EXT_Y']['label']
-        spec_props['EXT_H_LABEL'] = self.headers['ext']['EXT_H']['label']
+        spec_props['EXT_Y_LABEL'] = hdict['ext']['EXT_Y']['label']
+        spec_props['EXT_H_LABEL'] = hdict['ext']['EXT_H']['label']
         spec_props['NUM_RAW_FILES'] = ftypes['raw'].num_passed
         spec_props['NUM_PP_FILES'] = ftypes['pp'].num_passed
         spec_props['NUM_EXT_FILES'] = ftypes['ext'].num_passed
@@ -549,6 +549,13 @@ class ObjectData:
         # compute the stats
         spec_stats_table(spec_props, stat_path, title='Spectrum Information')
         # -----------------------------------------------------------------
+        # construct the header file
+        ext_header_file = os.path.join(down_save_path,
+                                   f'ext2d_header_{self.objname}_file.txt')
+        create_header_file(spec_props['EXT'].get_files(qc=True),
+                           self.headers, 'ext', self.header_dict,
+                           ext_header_file)
+        # -----------------------------------------------------------------
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ext files (2D)
@@ -575,11 +582,13 @@ class ObjectData:
         # get the download table path
         item_path = os.path.join(item_save_path, dwn_base_name)
         # define the download files
-        down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file]
+        down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file,
+                      ext_header_file]
         # define the download descriptions
         down_descs = ['Extracted 2D spectra', 'Extracted 1D spectra',
                       'Telluric corrected 2D spectra',
-                      'Telluric corrected 1D spectra']
+                      'Telluric corrected 1D spectra',
+                      'Extracted 2D header file']
         # compute the download table
         download_table(down_files, down_descs, item_path, down_rel_path,
                        down_save_path, title='Spectrum Downloads')
@@ -2545,6 +2554,36 @@ def create_file_list(files: List[str], path: str):
         for filename in files:
             # write to file
             filelist.write(filename + '\n')
+
+
+def create_header_file(files: List[str], headers: Dict[str, Any], filetype: str,
+                       hdict: Dict[str, Any], filename: str):
+    """
+    Creates a header file (csv) from a dictionary of header keys
+
+    :param files: list of str, the files to loop around
+    :param headers: dict, a dictionary containing those headers to add for
+                    each filetype
+    :param filetype: str, a filetype (i.e. ext, pp, tcorr, ccf)
+    :param hdict: dict, the header values
+    :param filename: str, the filename to save the csv file to
+
+    :return: None, writes file to disk
+    """
+    # check file kind in headers (if it isn't we don't create files)
+    if filetype not in headers:
+        return
+    # storage for dict-->table
+    tabledict = dict()
+    # first column is the filenames
+    tabledict['filename'] = [os.path.basename(filename) for filename in files]
+    # loop around keys in header for this filetype and add to tabledict
+    for keydict in headers[filetype]:
+        tabledict[keydict] = hdict[keydict]
+    # convert to table
+    table = Table(tabledict)
+    # write to file
+    table.write(filename, format='ascii.csv', overwrite=True)
 
 
 def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
