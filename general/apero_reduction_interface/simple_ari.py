@@ -302,7 +302,12 @@ class ObjectData:
                 for _time in self.filetypes[key].processed_times:
                     all_last_processed.append(_time)
         # convert to Time
-        all_last_processed = Time(np.array(all_last_processed))
+        if len(all_last_processed) > 0:
+            all_last_processed = Time(np.array(all_last_processed))
+            # get the last processed time of all files
+            self.last_processed = np.max(all_last_processed)
+        else:
+            self.last_processed = None
         # get the last processed time of all files
         self.last_processed = np.max(all_last_processed)
 
@@ -2398,8 +2403,11 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
             table_dict['pfits'].append(object_class.filetypes['pfiles'].num)
         # set the number of lbl files
         table_dict['lbl'].append(object_class.filetypes['lbl_rdb'].num)
-        # set the last observed value raw file
-        table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
+        # set the last processed value
+        if object_class.last_processed is not None:
+            table_dict['last_proc'].append(object_class.last_processed.iso)
+        else:
+            table_dict['last_proc'].append('')
         # set the last processed value
         table_dict['last_proc'].append(object_class.last_processed.iso)
     # -------------------------------------------------------------------------

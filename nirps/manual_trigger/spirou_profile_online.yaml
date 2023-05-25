@@ -17,7 +17,7 @@ spirou V0.7.282 online:
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
-            - all
+            - None
     # apero_get settings
     get:
         # apero get valid header key: DRSOUTID (for apero red dir)
