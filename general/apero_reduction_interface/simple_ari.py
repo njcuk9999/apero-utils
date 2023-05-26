@@ -2149,8 +2149,6 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # -------------------------------------------------------------------------
     # deal with running on a single core
     if n_cores == 1:
-        # storage for results
-        results_dict = dict()
         # change the object column to a url
         for it, key in enumerate(object_classes):
             # combine arguments
@@ -2172,8 +2170,9 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             results = pool.starmap(add_obj_page, params_per_process)
         # fudge back into return dictionary
         for row in range(len(results)):
-            for key in results[row]:
-                results_dict[key] = results[row][key]
+            objname = results[row]['OBJNAME']
+            # push into results dict
+            results_dict[objname] = results[row]
     # -------------------------------------------------------------------------
     # update object classes with results
     # -------------------------------------------------------------------------
@@ -2186,8 +2185,8 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             # update results
             # -----------------------------------------------------------------
             # This is where we add any results coming back from add_obj_page
-            object_class.objurl = results_dict[key].get()['OBJURL']
-            object_class.objpageref = results_dict[key].get()['OBJPAGEREF']
+            object_class.objurl = results_dict[key]['OBJURL']
+            object_class.objpageref = results_dict[key]['OBJPAGEREF']
     # -------------------------------------------------------------------------
     # return the object table
     return object_classes
@@ -2403,6 +2402,8 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
             table_dict['pfits'].append(object_class.filetypes['pfiles'].num)
         # set the number of lbl files
         table_dict['lbl'].append(object_class.filetypes['lbl_rdb'].num)
+        # set the last observed value raw file
+        table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
         # set the last processed value
         if object_class.last_processed is not None:
             table_dict['last_proc'].append(object_class.last_processed.iso)

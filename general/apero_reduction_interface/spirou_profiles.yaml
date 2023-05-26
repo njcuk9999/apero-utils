@@ -7,7 +7,7 @@ settings:
   # Finder charts (None if not needed)
   find directory: None
   # number of cores to use in multiprocessing steps
-  N_CORES: 20
+  N_CORES: 40
   # Spectrum wavelength ranges in nm
   SpecWave:
     limit0:
@@ -31,7 +31,7 @@ settings:
   # whether to reset the working directory
   reset: True
   # whether to filter by objects
-  filter objects: True
+  filter objects: False
   # objects to filter by
   objects:
     - GL699
