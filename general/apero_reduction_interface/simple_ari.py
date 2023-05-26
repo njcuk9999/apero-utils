@@ -551,7 +551,7 @@ class ObjectData:
         # -----------------------------------------------------------------
         # construct the header file
         ext_header_file = os.path.join(down_save_path,
-                                   f'ext2d_header_{self.objname}_file.txt')
+                                   f'ext2d_header_{self.objname}_file.csv')
         create_header_file(spec_props['EXT'].get_files(qc=True),
                            self.headers, 'ext', self.header_dict,
                            ext_header_file)
