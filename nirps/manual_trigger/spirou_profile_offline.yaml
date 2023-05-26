@@ -20,6 +20,12 @@ nirps ha V0.7.275 online:
             - all
     # apero_get settings
     get:
+        science fibers:
+            - AB
+            - A
+            - B
+        calibration fibers:
+            - C
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - EXT_E2DS_FF
@@ -54,6 +60,10 @@ nirps ha V0.7.275 online:
             # - objects
     # apero_get settings for lbl
     get-lbl:
+        science fibers:
+            - AB
+        calibration fibers:
+            - C
         # input telluric
         science out types:
             - TELLU_OBJ
