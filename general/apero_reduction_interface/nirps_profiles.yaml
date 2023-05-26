@@ -7,7 +7,7 @@ settings:
   # Finder charts (None if not needed)
   find directory: /cosmos99/nirps/apero-data/misc/apero-find/
   # number of cores to use in multiprocessing steps
-  N_CORES: 20
+  N_CORES: 40
   # Spectrum wavelength ranges in nm
   SpecWave:
     limit0:
@@ -34,9 +34,8 @@ settings:
   filter objects: False
   # objects to filter by
   objects:
-    - TAUBOO
-#    - PROXIMA
-#    - GL699
+    - PROXIMA
+    - GL699
 
 # name:
 #     apero profile: str, absolute path to APERO profile (settings)

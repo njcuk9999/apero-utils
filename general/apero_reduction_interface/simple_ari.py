@@ -404,8 +404,8 @@ class ObjectData:
         spec_props['EXT_Y'] = np.array(hdict['EXT_Y'])
         ext_h = np.array(hdict['EXT_H'])
         spec_props['EXT_H'] = ext_h
-        spec_props['EXT_Y_LABEL'] = hdict['ext']['EXT_Y']['label']
-        spec_props['EXT_H_LABEL'] = hdict['ext']['EXT_H']['label']
+        spec_props['EXT_Y_LABEL'] = self.headers['ext']['EXT_Y']['label']
+        spec_props['EXT_H_LABEL'] = self.headers['ext']['EXT_H']['label']
         spec_props['NUM_RAW_FILES'] = ftypes['raw'].num_passed
         spec_props['NUM_PP_FILES'] = ftypes['pp'].num_passed
         spec_props['NUM_EXT_FILES'] = ftypes['ext'].num_passed
@@ -462,7 +462,7 @@ class ObjectData:
         # sort all snr by closest to the median
         all_snr_pos = list(np.argsort(n_ext_h))
         # set these up
-        pos_ext, pos_raw, pos_sc1d = None, None, None
+        pos_ext, pos_raw, pos_s1d, pos_sc1d = None, None, None, None
         file_ext = 'NoFile'
         # loop until we match
         while not matched and len(all_snr_pos) > 0:
@@ -473,6 +473,8 @@ class ObjectData:
             # Find the matching raw file
             pos_raw = _match_file(reffile=file_ext,
                                   files=spec_props['RAW'].get_files(qc=True))
+            pos_s1d = _match_file(reffile=file_ext,
+                                   files=spec_props['S1D'].get_files(qc=True))
             pos_sc1d = _match_file(reffile=file_ext,
                                    files=spec_props['SC1D'].get_files(qc=True))
             # we only stop is a match is found
@@ -488,7 +490,7 @@ class ObjectData:
                              f'This should not be possible')
         # ---------------------------------------------------------------------
         # get the extracted spectrum for the spectrum with the highest SNR
-        ext_file = spec_props['S1D'].get_files(qc=True)[pos_ext]
+        ext_file = spec_props['S1D'].get_files(qc=True)[pos_s1d]
         ext_table = Table.read(ext_file, hdu=1)
         # get wavelength masks for plotting
         wavemap = ext_table['wavelength']
