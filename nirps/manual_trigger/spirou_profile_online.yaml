@@ -68,6 +68,7 @@ spirou V0.7.282 online:
             - TELLU_TEMP_S1DV
         # apero simultaneous FP dprtypes
         simfp dprtypes:
+            - POLAR_FP
             - OBJ_FP
         # sym links in apero get
         symlinks: True
