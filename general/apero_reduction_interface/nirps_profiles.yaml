@@ -7,7 +7,7 @@ settings:
   # Finder charts (None if not needed)
   find directory: /cosmos99/nirps/apero-data/misc/apero-find/
   # number of cores to use in multiprocessing steps
-  N_CORES: 20
+  N_CORES: 40
   # Spectrum wavelength ranges in nm
   SpecWave:
     limit0:
@@ -76,18 +76,28 @@ nirps ha V0.7.276 offline:
 # -----------------------------------------------------------------------------
 # Header keys
 headers:
-  PP:
+  pp:
     PP_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
-  EXT:
+    PP_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ext:
     EXT_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
+    EXT_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     EXT_Y:
       key: EXTSN015
       label: 'SNR[Order 15 (#134 1.08$\mu$m)]'
@@ -112,13 +122,18 @@ headers:
         key: EXPTIME
         label: Exposure Time
         dtype: float
-  TCORR:
+  tcorr:
     TCORR_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
-  CCF:
+    TCORR_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ccf:
     CCF_MASK:
       key: CCFMASK
       label: CCF Mask
@@ -128,6 +143,11 @@ headers:
       label: CCF MJD
       dtype: float
       timefmt: mjd
+    CCF_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     CCF_DV:
       key: RV_CORR
       label: CCF RV

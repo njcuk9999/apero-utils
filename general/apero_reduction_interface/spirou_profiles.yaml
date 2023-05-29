@@ -3,11 +3,11 @@ settings:
   # Instrument (either SPIROU or NIRPS)
   instrument: SPIROU
   # Working directory: where to store the website data
-  working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
+  working directory: /cosmos99/spirou/apero-data/misc/apero-ari/working/
   # Finder charts (None if not needed)
   find directory: None
   # number of cores to use in multiprocessing steps
-  N_CORES: 20
+  N_CORES: 40
   # Spectrum wavelength ranges in nm
   SpecWave:
     limit0:
@@ -35,6 +35,9 @@ settings:
   # objects to filter by
   objects:
     - GL699
+    - TRAPPIST1
+    - GL514
+    - HD189733
 
 # -----------------------------------------------------------------------------
 # name:
@@ -55,18 +58,28 @@ spirou V0.7.282 full:
 # -----------------------------------------------------------------------------
 # Header keys
 headers:
-  PP:
+  pp:
     PP_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
-  EXT:
+    PP_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ext:
     EXT_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
+    EXT_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     EXT_Y:
       key: EXTSN009
       label: 'SNR[Order 8 (#71 1.08$\mu$m)]'
@@ -91,13 +104,18 @@ headers:
         key: EXPTIME
         label: Exposure Time
         dtype: float
-  TCORR:
+  tcorr:
     TCORR_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
-  CCF:
+    TCORR_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ccf:
     CCF_MASK:
       key: CCFMASK
       label: CCF Mask
@@ -107,6 +125,11 @@ headers:
       label: CCF MJD
       dtype: float
       timefmt: mjd
+    CCF_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     CCF_DV:
       key: RV_CORR
       label: CCF RV

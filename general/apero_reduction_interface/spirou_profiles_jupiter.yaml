@@ -20,8 +20,8 @@ settings:
       - 1600
       - 1604
     limit3:
-      - 2000
-      - 2200
+      - 2050
+      - 2055
   # SSH PATH to copy the website to
   ssh:
     directory: /export/www/home/cook/www/apero-drs/
@@ -35,7 +35,6 @@ settings:
   # objects to filter by
   objects:
     - GL699
-
 
 # -----------------------------------------------------------------------------
 # name:
@@ -56,18 +55,28 @@ spirou 07.282 cook@jupiter mini2:
 # -----------------------------------------------------------------------------
 # Header keys
 headers:
-  PP:
+  pp:
     PP_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
-  EXT:
+    PP_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ext:
     EXT_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
+    EXT_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     EXT_Y:
       key: EXTSN009
       label: 'SNR[Order 8 (#71 1.08$\mu$m)]'
@@ -92,13 +101,18 @@ headers:
         key: EXPTIME
         label: Exposure Time
         dtype: float
-  TCORR:
+  tcorr:
     TCORR_MJDMID:
       key: MJDMID
       label: MJD
       dtype: float
       timefmt: mjd
-  CCF:
+    TCORR_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ccf:
     CCF_MASK:
       key: CCFMASK
       label: CCF Mask
@@ -108,6 +122,11 @@ headers:
       label: CCF MJD
       dtype: float
       timefmt: mjd
+    CCF_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
     CCF_DV:
       key: RV_CORR
       label: CCF RV
