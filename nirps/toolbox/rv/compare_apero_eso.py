@@ -41,28 +41,34 @@ plt.rcParams["ytick.right"] = True
 # =====================================================================================================================
 # Define variables
 # =====================================================================================================================
+# APERO reduction info
 mode = "he"  # "ha": high accuracy | "he": high efficiency
 version = "07276"  # version number I assume?
 onoff = "online"  # "online" | "offline"
 
-# Path to lbl rdb files
-path_apero_lbl = "/cosmos99/nirps/lbl-data/nirps_{}_{}_{}/lblrdb/".format(mode, version, onoff)  # APERO
+# Paths to LBL rdb or CCF files
+# path_1 = "/cosmos99/nirps/lbl-data/nirps_{}_{}_{}/lblrdb/".format(mode, version, onoff)  # APERO LBL
+path_1 = "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff)  # APERO CCF
+path_2 = ''  # ESO (this path is not used; the code will query DACE for CCF, and crash for LBL)
+# path_2 = "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff)  # APERO CCF
 
-# Path to ccf files
-path_apero_ccf = "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff)  # APERO
+# Target & template
+target = "Proxima"  # name of target
+template = "Proxima"  # name of template; only used if on of the two dataset is from LBL
 
-# Target
-target = "Proxima"
-template = "Proxima"
+# Pipelines to compare (APERO/ESO)
+pipeline_1 = "APERO"
+pipeline_2 = "ESO"
 
-# RV method
-rv_method_apero = "LBL"
-rv_method_eso = "CCF"
+# RV methods to compare (LBL/CCF)
+rv_method_1 = "CCF"
+rv_method_2 = "CCF"
 
 # Path to save figures (and ccf dictionary)
 path_savefig = ""  # TODO Where?
 # apero_ccf_dict_fname = "apero_ccf_dict.h5"
 
+# Number of sigmas to reject outliers
 nsig = 10
 
 
@@ -154,25 +160,26 @@ def query_dace(target):
     """
     Query DACE to get RV time series
     :param target:  (str) Target name
-    :return: rdj    (1d array), rv (1d array), rv_err (1d array)
+    :return:        rdj (1d array), rv (1d array), rv_err (1d array)
     """
     # Retrieve radial velocity timeseries from DACE
-    dict_eso_dace = Spectroscopy.get_timeseries(target=target, sorted_by_instrument=True, output_format='numpy')
-    dict_eso_dace = dict_eso_dace["NIRPS"]["3.0.0"][mode.upper()]
+    dict_dace = Spectroscopy.get_timeseries(target=target, sorted_by_instrument=True, output_format='numpy')
+    dict_dace = dict_dace["NIRPS"]["3.0.0"][mode.upper()]
 
     # Get date, rv, rv_err
-    rjd, rv, rv_err = dict_eso_dace["rjd"], dict_eso_dace["rv"], dict_eso_dace["rv_err"]
+    rjd, rv, rv_err = dict_dace["rjd"], dict_dace["rv"], dict_dace["rv_err"]
 
     return rjd, rv, rv_err
 
 
-def process_rvs(rjd, rv, rv_err, rv_method, nsig=10):
+def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
     """
     Compute median, standard deviation, and median error bar, and remove outliers.
 
     :param rjd:         (1d array) Reduced Julian day array.
     :param rv:          (1d array) Radial velocity array.
     :param rv_err:      (1d array) Radial velocity uncertainty array.
+    :param pipeline:    (str) "APERO" or "ESO".
     :param rv_method    (str) "LBL" or "CCF".
     :param nsig:        (float, optional) Number of sigmas away from median velocity to reject outliers. Default: 10.
     :return:            rv_dict (dict)
@@ -231,6 +238,7 @@ def process_rvs(rjd, rv, rv_err, rv_method, nsig=10):
                "outliers_lo": {"jd": jd_out_lo,
                                # "rv": rv_out_lo,  # obsolete
                                "indices": iout_lo},
+               "pipeline": pipeline,
                "rv_method": rv_method
                }
 
@@ -239,7 +247,8 @@ def process_rvs(rjd, rv, rv_err, rv_method, nsig=10):
 
 def compare_lbl(path_apero, nsig=10):
     """
-    Compare APERO to ESO LBL radial velocities.
+    OBSOLETE
+    Compare APERO LBL radial velocities to ESO CCF radial velocities.
 
     :param path_apero:  (str) Absolute path to APERO LBL rdb folder.
     :param nsig:        (float, optional) Number of sigmas away from median velocity to reject outliers. Default: 10.
@@ -283,6 +292,7 @@ def compare_lbl(path_apero, nsig=10):
 
 def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf_dict.h5", nsig=10):
     """
+    OBSOLETE
     Compare APERO to ESO CCF radial velocities.
 
     :param path_apero:              (str) Absolute path to APERO reduced data folder.
@@ -378,12 +388,12 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
     return 0
 
 
-def compare_rvs(dict_apero, dict_eso, target, template=None, nsig=10, path_savefig=''):
+def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig=''):
     """
     Compare radial velocities from two reductions.
 
-    :param dict_apero:      (dict) Dictionary of APERO RVs.
-    :param dict_eso:        (dict) Dictionary of ESO RVs.
+    :param dict_1:          (dict) Dictionary of APERO RVs.
+    :param dict_2:          (dict) Dictionary of ESO RVs.
     :param target:          (str) Target name.
     :param template:        (str, optional) Template name. Default: None.
     :param nsig:            (float, optional) Number of sigmas away from median velocity to reject outliers.
@@ -397,89 +407,95 @@ def compare_rvs(dict_apero, dict_eso, target, template=None, nsig=10, path_savef
         template = template.upper()
     print("TARGET: {}".format(target))
 
-    # Compare APERO and ESO ---------------------------------------------------------------------------------------
-    # Search for missing data in both pipelines - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    # Compare ---------------------------------------------------------------------------------------------------------
+    # Search for missing data in both pipelines - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     # Find all observation dates (JDs rounded to integers)
     lasilla_midnight = .5 + 4 / 24  # midnight in La Silla (roughly, depends on hour change), in JD
-    nights_apero = np.unique(np.round(dict_apero["full"]["jd"] - lasilla_midnight))
-    nights_eso = np.unique(np.round(dict_eso["full"]["jd"] - lasilla_midnight))
+    nights_1 = np.unique(np.round(dict_1["full"]["jd"] - lasilla_midnight))
+    nights_2 = np.unique(np.round(dict_2["full"]["jd"] - lasilla_midnight))
     # Convert rounded JDs to JDs at midnight in La Silla
-    nights_apero = nights_apero + lasilla_midnight  # midnight in La Silla (roughly)
-    nights_eso = nights_eso + lasilla_midnight  # midnight in La Silla (roughly)
+    nights_1 = nights_1 + lasilla_midnight  # midnight in La Silla (roughly)
+    nights_2 = nights_2 + lasilla_midnight  # midnight in La Silla (roughly)
     # Convert array of JDs to nightly bins
-    nights_apero_bins = [[n_i - .5, n_i + .5] for n_i in nights_apero]
-    nights_eso_bins = [[n_i - .5, n_i + .5] for n_i in nights_eso]
+    nights_1_bins = [[n_i - .5, n_i + .5] for n_i in nights_1]
+    nights_2_bins = [[n_i - .5, n_i + .5] for n_i in nights_2]
 
     # Find missing data points
-    discard_in_apero = np.array([], dtype=int)
-    discard_in_eso = np.array([], dtype=int)
+    discard_in_1 = np.array([], dtype=int)
+    discard_in_2 = np.array([], dtype=int)
     # Iterate over APERO nights
-    for i_night_bin, night_bin_i in enumerate(nights_apero_bins):
+    for i_night_bin, night_bin_i in enumerate(nights_1_bins):
 
         # Get night start and end times
         night_start, night_end = night_bin_i[0], night_bin_i[1]
 
         # Get indices of points in this night
-        i_pts_apero = (night_start < dict_apero["full"]["jd"]) * (dict_apero["full"]["jd"] <= night_end)
-        i_pts_eso = (night_start < dict_eso["full"]["jd"]) * (dict_eso["full"]["jd"] <= night_end)
+        i_pts_1 = (night_start < dict_1["full"]["jd"]) * (dict_1["full"]["jd"] <= night_end)
+        i_pts_2 = (night_start < dict_2["full"]["jd"]) * (dict_2["full"]["jd"] <= night_end)
 
         # Get number of points in this night
-        npts_apero = np.sum(i_pts_apero)
-        npts_eso = np.sum(i_pts_eso)
+        npts_1 = np.sum(i_pts_1)
+        npts_2 = np.sum(i_pts_2)
 
-        if npts_apero != npts_eso:
+        if npts_1 != npts_2:
             night_start_ymd = Time(night_start, format="jd").to_datetime()
             night_end_ymd = Time(night_end, format="jd").to_datetime()
-            print("Night {} - {}: {} pts in APERO, {} pts in ESO".format(night_start_ymd, night_end_ymd,
-                                                                         npts_apero, npts_eso))
+            print("Night {} - {}: {} pts in {} {}, {} pts in {} {}".format(night_start_ymd, night_end_ymd,
+                                                                           npts_1, dict_1["pipeline"],
+                                                                           dict_1["rv_method"],
+                                                                           npts_2, dict_2["pipeline"],
+                                                                           dict_2["rv_method"]))
             # Discard the entire night for both reductions (cannot compare)
-            if npts_apero > 0:
-                discard_in_apero = np.concatenate((discard_in_apero, np.where(i_pts_apero)[0]))
-            if npts_eso > 0:
-                discard_in_eso = np.concatenate((discard_in_eso, np.where(i_pts_eso)[0]))
+            if npts_1 > 0:
+                discard_in_1 = np.concatenate((discard_in_1, np.where(i_pts_1)[0]))
+            if npts_2 > 0:
+                discard_in_2 = np.concatenate((discard_in_2, np.where(i_pts_2)[0]))
     # Iterate over ESO nights
-    for i_night_bin, night_bin_i in enumerate(nights_eso_bins):
+    for i_night_bin, night_bin_i in enumerate(nights_2_bins):
 
         # Get night start and end times
         night_start, night_end = night_bin_i[0], night_bin_i[1]
 
         # Get indices of points in this night
-        i_pts_eso = (night_start < dict_eso["full"]["jd"]) * (dict_eso["full"]["jd"] <= night_end)
-        i_pts_apero = (night_start < dict_apero["full"]["jd"]) * (dict_apero["full"]["jd"] <= night_end)
+        i_pts_1 = (night_start < dict_1["full"]["jd"]) * (dict_1["full"]["jd"] <= night_end)
+        i_pts_2 = (night_start < dict_2["full"]["jd"]) * (dict_2["full"]["jd"] <= night_end)
 
         # Get number of points in this night
-        npts_eso = np.sum(i_pts_eso)
-        npts_apero = np.sum(i_pts_apero)
+        npts_1 = np.sum(i_pts_1)
+        npts_2 = np.sum(i_pts_2)
 
-        if npts_eso != npts_apero:
+        if npts_2 != npts_1:
             night_start_ymd = Time(night_start, format="jd").to_datetime()
             night_end_ymd = Time(night_end, format="jd").to_datetime()
-            print("Night {} - {}: {} pts in ESO, {} pts in APERO".format(night_start_ymd, night_end_ymd,
-                                                                         npts_eso, npts_apero))
+            print("Night {} - {}: {} pts in {} {}, {} pts in {} {}".format(night_start_ymd, night_end_ymd,
+                                                                           npts_2, dict_2["pipeline"],
+                                                                           dict_2["rv_method"],
+                                                                           npts_1, dict_1["pipeline"],
+                                                                           dict_1["rv_method"]))
             # Discard the entire night for both reductions (cannot compare)
-            if npts_eso > 0:
-                discard_in_eso = np.concatenate((discard_in_eso, np.where(i_pts_eso)[0]))
-            if npts_apero > 0:
-                discard_in_apero = np.concatenate((discard_in_apero, np.where(i_pts_apero)[0]))
+            if npts_2 > 0:
+                discard_in_2 = np.concatenate((discard_in_2, np.where(i_pts_2)[0]))
+            if npts_1 > 0:
+                discard_in_1 = np.concatenate((discard_in_1, np.where(i_pts_1)[0]))
     # Keep only unique indices
-    discard_in_apero = np.unique(discard_in_apero)
-    discard_in_eso = np.unique(discard_in_eso)
+    discard_in_1 = np.unique(discard_in_1)
+    discard_in_2 = np.unique(discard_in_2)
 
     # For comparisons, keep only dates where we have both APERO and ESO data
-    igood_apero = np.arange(dict_apero["full"]["jd"].size)
-    igood_apero = np.delete(igood_apero, discard_in_apero)
-    igood_eso = np.arange(dict_eso["full"]["jd"].size)
-    igood_eso = np.delete(igood_eso, discard_in_eso)
+    igood_1 = np.arange(dict_1["full"]["jd"].size)
+    igood_1 = np.delete(igood_1, discard_in_1)
+    igood_2 = np.arange(dict_2["full"]["jd"].size)
+    igood_2 = np.delete(igood_2, discard_in_2)
 
     diff, jd_diff, std_diff, med_diff, i_diff_outliers_up, diff_outliers_up, jd_diff_outliers_up, i_diff_outliers_lo, \
         diff_outliers_lo, jd_diff_outliers_lo, diff_no_outliers, jd_diff_no_outliers = None, None, None, None, None, \
         None, None, None, None, None, None, None
-    if igood_apero.size != 0 and igood_eso.size != 0:
+    if igood_1.size != 0 and igood_2.size != 0:
         # Compute difference
-        diff = dict_apero["full"]["rv"][igood_apero] - dict_eso["full"]["rv"][igood_eso]
+        diff = dict_1["full"]["rv"][igood_1] - dict_2["full"]["rv"][igood_2]
 
         # Make a JD array for the differences
-        jd_diff = dict_apero["full"]["jd"][igood_apero]
+        jd_diff = dict_1["full"]["jd"][igood_1]
 
         # Compute difference standard deviation in differences
         std_diff = np.nanpercentile(diff, q=[16, 84])
@@ -515,71 +531,71 @@ def compare_rvs(dict_apero, dict_eso, target, template=None, nsig=10, path_savef
 
     # Plot APERO data
     # Plot data
-    axs[0, 0].errorbar(dict_apero["no_outliers"]["jd"], dict_apero["no_outliers"]["rv"],
-                       dict_apero["no_outliers"]["rv_err"],
+    axs[0, 0].errorbar(dict_1["no_outliers"]["jd"], dict_1["no_outliers"]["rv"],
+                       dict_1["no_outliers"]["rv_err"],
                        ls='', marker='.', alpha=.5, color="C0", capsize=capsize,
-                       label="APERO ({})".format(dict_apero["rv_method"]))
+                       label="{} {}".format(dict_1["pipeline"], dict_1["rv_method"]))
     # Plot median
-    axs[0, 0].axhline(dict_apero["no_outliers"]["median"], color="C0", ls=':')
+    axs[0, 0].axhline(dict_1["no_outliers"]["median"], color="C0", ls=':')
     # Plot data, median-subtracted
-    axs[1, 0].errorbar(dict_apero["no_outliers"]["jd"], dict_apero["no_outliers"]["rv"]
-                       - dict_apero["no_outliers"]["median"], dict_apero["no_outliers"]["rv_err"],
+    axs[1, 0].errorbar(dict_1["no_outliers"]["jd"], dict_1["no_outliers"]["rv"]
+                       - dict_1["no_outliers"]["median"], dict_1["no_outliers"]["rv_err"],
                        ls='', marker='.', alpha=.5, color="C0", capsize=capsize,
-                       label=("APERO ({}, {} pts)\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s"
-                              .format(dict_apero["rv_method"], dict_apero["full"]["jd"].size,
-                                      dict_apero["no_outliers"]["mederr"], dict_apero["no_outliers"]["std"])))
+                       label=("{} {} ({} pts)\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s"
+                              .format(dict_1["pipeline"], dict_1["rv_method"], dict_1["full"]["jd"].size,
+                                      dict_1["no_outliers"]["mederr"], dict_1["no_outliers"]["std"])))
     axs[1, 0].axhline(0, color="k", ls=':')
 
     # Plot ESO data
     # Plot data
-    axs[0, 0].errorbar(dict_eso["no_outliers"]["jd"], dict_eso["no_outliers"]["rv"],
-                       dict_eso["no_outliers"]["rv_err"],
+    axs[0, 0].errorbar(dict_2["no_outliers"]["jd"], dict_2["no_outliers"]["rv"],
+                       dict_2["no_outliers"]["rv_err"],
                        ls='', marker='.', alpha=.5, color="C1", capsize=capsize,
-                       label="ESO ({})".format(dict_eso["rv_method"]))
+                       label="{} {}".format(dict_2["pipeline"], dict_2["rv_method"]))
     # Plot median
-    axs[0, 0].axhline(dict_eso["no_outliers"]["median"], color="C1", ls=':')
+    axs[0, 0].axhline(dict_2["no_outliers"]["median"], color="C1", ls=':')
     # Plot data, median-subtracted
-    axs[1, 0].errorbar(dict_eso["no_outliers"]["jd"], dict_eso["no_outliers"]["rv"]
-                       - dict_eso["no_outliers"]["median"], dict_eso["no_outliers"]["rv_err"],
+    axs[1, 0].errorbar(dict_2["no_outliers"]["jd"], dict_2["no_outliers"]["rv"]
+                       - dict_2["no_outliers"]["median"], dict_2["no_outliers"]["rv_err"],
                        ls='', marker='.', alpha=.5, color="C1", capsize=capsize,
-                       label=("\nESO ({}, {} pts)\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s"
-                              .format(dict_eso["rv_method"], dict_eso["full"]["jd"].size,
-                                      dict_eso["no_outliers"]["mederr"], dict_eso["no_outliers"]["std"])))
+                       label=("\n{} {} ({} pts)\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s"
+                              .format(dict_2["pipeline"], dict_2["rv_method"], dict_2["full"]["jd"].size,
+                                      dict_2["no_outliers"]["mederr"], dict_2["no_outliers"]["std"])))
 
     # Plot outliers
     ax0_ymin, ax0_ymax = axs[0, 0].get_ylim()
     ax1_ymin, ax1_ymax = axs[1, 0].get_ylim()
     # In APERO
-    if dict_apero["outliers_up"]["jd"].size > 0:
-        axs[0, 0].plot(dict_apero["outliers_up"]["jd"], ax0_ymax * np.ones_like(dict_apero["outliers_up"]["jd"]),
+    if dict_1["outliers_up"]["jd"].size > 0:
+        axs[0, 0].plot(dict_1["outliers_up"]["jd"], ax0_ymax * np.ones_like(dict_1["outliers_up"]["jd"]),
                        ls='', marker=r'$\uparrow$', alpha=.2, color="C0", markersize=markersize,
                        label="Outliers (any color, up/down)")
-        axs[1, 0].plot(dict_apero["outliers_up"]["jd"], ax1_ymax * np.ones_like(dict_apero["outliers_up"]["jd"]),
+        axs[1, 0].plot(dict_1["outliers_up"]["jd"], ax1_ymax * np.ones_like(dict_1["outliers_up"]["jd"]),
                        ls='', marker=r'$\uparrow$', alpha=.2, color="C0", markersize=markersize)
-    if dict_apero["outliers_lo"]["jd"].size > 0:
-        axs[0, 0].plot(dict_apero["outliers_lo"]["jd"], ax0_ymin * np.ones_like(dict_apero["outliers_lo"]["jd"]),
+    if dict_1["outliers_lo"]["jd"].size > 0:
+        axs[0, 0].plot(dict_1["outliers_lo"]["jd"], ax0_ymin * np.ones_like(dict_1["outliers_lo"]["jd"]),
                        ls='', marker=r'$\downarrow$', alpha=.2, color="C0", markersize=markersize)
-        axs[1, 0].plot(dict_apero["outliers_lo"]["jd"], ax1_ymin * np.ones_like(dict_apero["outliers_lo"]["jd"]),
+        axs[1, 0].plot(dict_1["outliers_lo"]["jd"], ax1_ymin * np.ones_like(dict_1["outliers_lo"]["jd"]),
                        ls='', marker=r'$\downarrow$', alpha=.2, color="C0", markersize=markersize)
     # In ESO
-    if dict_eso["outliers_up"]["jd"].size > 0:
-        axs[0, 0].plot(dict_eso["outliers_up"]["jd"], ax0_ymax * np.ones_like(dict_eso["outliers_up"]["jd"]),
+    if dict_2["outliers_up"]["jd"].size > 0:
+        axs[0, 0].plot(dict_2["outliers_up"]["jd"], ax0_ymax * np.ones_like(dict_2["outliers_up"]["jd"]),
                        ls='', marker=r'$\uparrow$', alpha=.2, color="C1", markersize=markersize)
-        axs[1, 0].plot(dict_eso["outliers_up"]["jd"], ax1_ymax * np.ones_like(dict_eso["outliers_up"]["jd"]),
+        axs[1, 0].plot(dict_2["outliers_up"]["jd"], ax1_ymax * np.ones_like(dict_2["outliers_up"]["jd"]),
                        ls='', marker=r'$\uparrow$', alpha=.2, color="C1", markersize=markersize)
-    if dict_eso["outliers_lo"]["jd"].size > 0:
-        axs[0, 0].plot(dict_eso["outliers_lo"]["jd"], ax0_ymin * np.ones_like(dict_eso["outliers_lo"]["jd"]),
+    if dict_2["outliers_lo"]["jd"].size > 0:
+        axs[0, 0].plot(dict_2["outliers_lo"]["jd"], ax0_ymin * np.ones_like(dict_2["outliers_lo"]["jd"]),
                        ls='', marker=r'$\downarrow$', alpha=.2, color="C1", markersize=markersize)
-        axs[1, 0].plot(dict_eso["outliers_lo"]["jd"], ax1_ymin * np.ones_like(dict_eso["outliers_lo"]["jd"]),
+        axs[1, 0].plot(dict_2["outliers_lo"]["jd"], ax1_ymin * np.ones_like(dict_2["outliers_lo"]["jd"]),
                        ls='', marker=r'$\downarrow$', alpha=.2, color="C1", markersize=markersize)
 
-    if igood_apero.size != 0 and igood_eso.size != 0:
+    if igood_1.size != 0 and igood_2.size != 0:
         # Plot difference between APERO and ESO
         axs[2, 0].plot(jd_diff_no_outliers, diff_no_outliers,
                        ls='', marker='.', color='k',
-                       label="APERO ({}) - ESO ({}), std = {:.2f} m/s".format(dict_apero["rv_method"],
-                                                                              dict_eso["rv_method"],
-                                                                              std_diff))
+                       label="{} {} - {} {}, std = {:.2f} m/s".format(dict_1["pipeline"], dict_1["rv_method"],
+                                                                      dict_2["pipeline"], dict_2["rv_method"],
+                                                                      std_diff))
         axs[2, 0].axhline(med_diff, color='k', ls=':')
         # Plot outliers
         if np.sum(i_diff_outliers_up) > 0:
@@ -589,23 +605,25 @@ def compare_rvs(dict_apero, dict_eso, target, template=None, nsig=10, path_savef
             axs[2, 0].plot(jd_diff_outliers_lo, diff_outliers_lo, ls='', marker=r"$\downarrow$", alpha=.2, color='k',
                            markersize=markersize)
         # Plot a line at missing or discarded data
-        for discard in discard_in_apero:
-            axs[2, 0].axvline(dict_apero["full"]["jd"][discard], color="C0", lw=.5,
-                              label="APERO pt" if discard == discard_in_apero[0] else '')
-        for discard in discard_in_eso:
-            axs[2, 0].axvline(dict_eso["full"]["jd"][discard], color="C1", lw=.5,
-                              label="ESO pt" if discard == discard_in_eso[0] else '')
+        for discard in discard_in_1:
+            axs[2, 0].axvline(dict_1["full"]["jd"][discard], color="C0", lw=.5,
+                              label="{} {} pt".format(dict_1["pipeline"], dict_1["rv_method"])
+                              if discard == discard_in_1[0] else '')
+        for discard in discard_in_2:
+            axs[2, 0].axvline(dict_2["full"]["jd"][discard], color="C1", lw=.5,
+                              label="{} {} pt".format(dict_2["pipeline"], dict_2["rv_method"])
+                              if discard == discard_in_2[0] else '')
 
         # Plot histogram of differences between APERO and ESO
         axs[2, 1].set(xlabel="Count")
         axs[2, 1].hist(diff_no_outliers, bins=9, histtype="step", color='k', orientation="horizontal")
         # Plot single point to show error bar size
-        axs[2, 1].errorbar(1, med_diff, dict_apero["no_outliers"]["mederr"],
+        axs[2, 1].errorbar(1, med_diff, dict_1["no_outliers"]["mederr"],
                            ls='', marker='', color="C0", capsize=capsize,
-                           label="APERO ({}) med. err. bar".format(dict_apero["rv_method"]))
-        axs[2, 1].errorbar(2, med_diff, dict_eso["no_outliers"]["mederr"],
+                           label="APERO {} med. err. bar".format(dict_1["rv_method"]))
+        axs[2, 1].errorbar(2, med_diff, dict_2["no_outliers"]["mederr"],
                            ls='', marker='', color="C1", capsize=capsize,
-                           label="ESO ({}) med. err. bar".format(dict_eso["rv_method"]))
+                           label="ESO {} med. err. bar".format(dict_2["rv_method"]))
 
     # Final edits to the plot -------------------------------------------------------------------------------------
     # Put legend outside subplots for rows 1 & 2
@@ -619,12 +637,14 @@ def compare_rvs(dict_apero, dict_eso, target, template=None, nsig=10, path_savef
     # axs[1, 0].legend(frameon=False, fontsize=fontsize - 4)
     axs[2, 0].legend(frameon=False, fontsize=fontsize - 4, ncols=3)
     axs[2, 1].legend(frameon=False, fontsize=fontsize - 4)
-    axs[0, 0].set(title=("Target: {} | APERO: {}{} | ESO: {}{}"
+    axs[0, 0].set(title=("Target: {} | {} {}{} | {} {}{}"
                          .format(target,
-                                 dict_apero["rv_method"],
-                                 " (template: {})".format(template) if dict_apero["rv_method"] == "LBL" else '',
-                                 dict_eso["rv_method"],
-                                 " (template: {})".format(template) if dict_eso["rv_method"] == "LBL" else '')
+                                 dict_1["pipeline"],
+                                 dict_1["rv_method"],
+                                 " (template: {})".format(template) if dict_1["rv_method"] == "LBL" else '',
+                                 dict_2["pipeline"],
+                                 dict_2["rv_method"],
+                                 " (template: {})".format(template) if dict_2["rv_method"] == "LBL" else '')
                          )
                   )
     fig.tight_layout()
@@ -650,14 +670,14 @@ def compare_rvs(dict_apero, dict_eso, target, template=None, nsig=10, path_savef
     if path_savefig != '':
         if path_savefig[-1] != '/':
             path_savefig = path_savefig + '/'
-    savefname = path_savefig + "{}_APERO-{}{}_ESO-{}{}".format(target,
-                                                               dict_apero["rv_method"],
-                                                               "-{}".format(template) if dict_apero["rv_method"] == "LBL"
-                                                               else '',
-                                                               dict_eso["rv_method"],
-                                                               "-{}".format(template) if dict_eso["rv_method"] == "LBL"
-                                                               else ''
-                                                               )
+    savefname = path_savefig + "{}_{}-{}{}_{}-{}{}".format(target,
+                                                           dict_1["pipeline"], dict_1["rv_method"],
+                                                           "-{}".format(template) if dict_1["rv_method"] == "LBL"
+                                                           else '',
+                                                           dict_2["pipeline"], dict_2["rv_method"],
+                                                           "-{}".format(template) if dict_2["rv_method"] == "LBL"
+                                                           else ''
+                                                           )
     # Save
     # fig.savefig(path_savefig + savefname + ".png")
     # fig.savefig(path_savefig + savefname + ".pdf")
@@ -668,77 +688,73 @@ def compare_rvs(dict_apero, dict_eso, target, template=None, nsig=10, path_savef
     return 0
 
 
-def run_comparison(path_apero, target, template=None, rv_method_apero="LBL", rv_method_eso="CCF", mode="he",
-                   version="07276", onoff="online", path_savefig='', nsig=10):
+def run_comparison(target, template=None,
+                   path_1='', path_2='', pipeline_1="APERO", pipeline_2="ESO", rv_method_1="LBL", rv_method_2="CCF",
+                   mode="he", version="07276", onoff="online", path_savefig='', nsig=10):
     """"""  # TODO add docstring
     # Sanity checks
+    pipeline_1, pipeline_2 = pipeline_1.upper(), pipeline_2.upper()
     assert mode in ["he", "ha"], "ERROR! 'mode' must be either 'he' (high efficiency) or 'ha' (high accuracy)."
     assert version in ["07276"], "ERROR! 'version' must be '07276'."  # add options when more than 1 are availabe
     assert onoff in ["online", "offline"], "ERROR! 'onoff' must be either 'online' or 'offline'."
-    assert rv_method_apero in ["CCF", "LBL"], "ERROR! 'rv_method_apero' must be either 'CCF' or 'LBL'."
-    assert rv_method_eso in ["CCF", "LBL"], "ERROR! 'rv_method_eso' must be either 'CCF' or 'LBL'."
-    if rv_method_apero == "LBL" or rv_method_eso == "LBL":
+    assert pipeline_1 in ["APERO", "ESO"], "ERROR! 'pipeline_1' must be either 'APERO' or 'ESO'."
+    assert pipeline_2 in ["APERO", "ESO"], "ERROR! 'pipeline_2' must be either 'APERO' or 'ESO'."
+    assert rv_method_1 in ["CCF", "LBL"], "ERROR! 'rv_method_1' must be either 'CCF' or 'LBL'."
+    assert rv_method_2 in ["CCF", "LBL"], "ERROR! 'rv_method_2' must be either 'CCF' or 'LBL'."
+    if rv_method_1 == "LBL" or rv_method_2 == "LBL":
         assert template is not None, "ERROR! 'template' must be provided to load LBL data."
 
-    # Put APERO data into a dictionary --------------------------------------------------------------------------------
-    if rv_method_apero == "LBL":
-        # Get date, rv, rv_err from rdb file
-        rjd_apero, rv_apero, rv_err_apero = open_rdb(path_apero + "lbl_{}_{}.rdb".format(target.upper(),
-                                                                                         template.upper()))
+    # Put data into a dictionaries ------------------------------------------------------------------------------------
+    paths = [path_1, path_2]
+    pipelines = [pipeline_1, pipeline_2]
+    rv_methods = [rv_method_1, rv_method_2]
+    dicts = []
+    for i, (path, pipeline, rv_method) in enumerate(zip(paths, pipelines, rv_methods)):
+        if rv_method == "LBL":
+            if pipeline == "APERO":
+                # Get date, rv, rv_err from rdb file
+                rjd, rv, rv_err = open_rdb(path + "lbl_{}_{}.rdb".format(target.upper(), template.upper()))
+            else:  # ESO: No LBL at the moment
+                print("ERROR! LBL RVs have not been computed with ESO reduction yet.")
+                exit()
+        else:  # CCF
+            if pipeline == "APERO":
+                # Lists to store times, RVs, RV_ERRs
+                rjd, rv, rv_err = [], [], []
 
-    else:  # CCF
-        # Lists to store times, RVs, RV_ERRs
-        rjd_apero, rv_apero, rv_err_apero = [], [], []
+                # List of APERO nights
+                night_list = glob.glob(path + "2*")
 
-        # List of APERO nights
-        night_list = glob.glob(path_apero + "2*")
+                # Sort the list of APERO nights
+                night_list.sort()
 
-        # Sort the list of APERO nights
-        night_list.sort()
+                # Iterate over nights
+                for i_night, night_i in enumerate(night_list):
+                    # Get all CCF files in this night
+                    ccf_files = glob.glob(night_i + "/NIRPS*_pp_e2dsff_tcorr_A_ccf_*_neg.fits_A.fits")
 
-        # Iterate over nights
-        for i_night, night_i in enumerate(night_list):
-            night_short = night_i.split('/')[-1]  # YYYY-MM-DD
+                    # Iterate over CCF files to get target
+                    for ccf_file in ccf_files:
+                        if fits.getheader(ccf_file)["OBJECT"] != target:
+                            continue
+                        # Read RJD, RV, RV_ERR
+                        hdr = fits.getheader(ccf_file)
+                        rjd.append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
+                        rv.append(hdr["RV_CORR"] * 1e3)  # [km/s -> m/s]
+                        rv_err.append(hdr["DVRMS_CC"])  # [m/s]
 
-            # Get all CCF files in this night
-            ccf_files = glob.glob(night_i + "/NIRPS*_pp_e2dsff_tcorr_A_ccf_*_neg.fits_A.fits")
+                # Convert lists to arrays
+                rjd, rv, rv_err = np.array(rjd), np.array(rv), np.array(rv_err)
 
-            # Iterate over CCF files to get target
-            for ccf_file in ccf_files:
-                if fits.getheader(ccf_file)["OBJECT"] != target:
-                    continue
-                # Read RJD, RV, RV_ERR
-                hdr = fits.getheader(ccf_file)
-                rjd_apero.append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
-                rv_apero.append(hdr["RV_CORR"] * 1e3)  # [km/s -> m/s]
-                rv_err_apero.append(hdr["DVRMS_CC"])  # [m/s]
-
-        # Convert lists to arrays
-        rjd_apero, rv_apero, rv_err_apero = np.array(rjd_apero), np.array(rv_apero), np.array(rv_err_apero)
-
-    # Process rvs (remove outliers, get JD, compute median and std, etc.)
-    dict_apero = process_rvs(rjd_apero, rv_apero, rv_err_apero, rv_method_apero, nsig=nsig)
-
-    # Put ESO data into a dictionary ----------------------------------------------------------------------------------
-    if rv_method_eso == "LBL":
-        '''
-        # Get date, rv, rv_err from rdb file
-        rjd_eso, rv_eso, rv_err_eso = open_rdb(path_eso_lbl + "lbl_{}_{}.rdb".format(target.upper(), template.upper()))
+            else:  # ESO
+                # Get date, rv, rv_err from DACE
+                rjd, rv, rv_err = query_dace(target)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dict_eso = process_rvs(rjd_eso, rv_eso, rv_err_eso, "LBL", nsig=nsig)
-        '''
-        print("ERROR! LBL RVs have not been computed with ESO reduction yet.")
-        exit()
-    else:
-        # Get date, rv, rv_err from DACE
-        rjd_eso, rv_eso, rv_err_eso = query_dace(target)
-
-    # Process rvs (remove outliers, get JD, compute median and std, etc.)
-    dict_eso = process_rvs(rjd_eso, rv_eso, rv_err_eso, rv_method=rv_method_eso, nsig=nsig)
+        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method, nsig=nsig))
 
     # Compare RVs -----------------------------------------------------------------------------------------------------
-    compare_rvs(dict_apero=dict_apero, dict_eso=dict_eso, target=target, template=template, nsig=nsig,
+    compare_rvs(dict_1=dicts[0], dict_2=dicts[1], target=target, template=template, nsig=nsig,
                 path_savefig=path_savefig)
 
 
@@ -746,9 +762,10 @@ def run_comparison(path_apero, target, template=None, rv_method_apero="LBL", rv_
 # Start of code
 # =====================================================================================================================
 if __name__ == '__main__':
-    run_comparison(path_apero=path_apero_lbl, target=target, template=template, rv_method_apero=rv_method_apero,
-                   rv_method_eso=rv_method_eso, mode=mode, version=version, onoff=onoff, path_savefig=path_savefig,
-                   nsig=nsig)
+    run_comparison(target=target, template=template,
+                   path_1=path_1, path_2=path_2, pipeline_1=pipeline_1, pipeline_2=pipeline_2,
+                   rv_method_1=rv_method_1, rv_method_2=rv_method_2,
+                   mode=mode, version=version, onoff=onoff, path_savefig=path_savefig, nsig=nsig)
 
 
 # =====================================================================================================================
