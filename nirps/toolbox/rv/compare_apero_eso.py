@@ -245,13 +245,14 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
     return rv_dict
 
 
-def compare_lbl(path_apero, nsig=10):
+def compare_lbl(path_apero, nsig=10, path_savefig=''):
     """
     OBSOLETE
     Compare APERO LBL radial velocities to ESO CCF radial velocities.
 
-    :param path_apero:  (str) Absolute path to APERO LBL rdb folder.
-    :param nsig:        (float, optional) Number of sigmas away from median velocity to reject outliers. Default: 10.
+    :param path_apero:      (str) Absolute path to APERO LBL rdb folder.
+    :param nsig:            (float, optional) Number of sigmas away from median velocity to reject outliers. Default: 10.
+    :param path_savefig:    (str, optional) Path where to save figures. Default: ''.
     :return: 0
     """
     if path_apero[-1] != '/':
@@ -273,24 +274,25 @@ def compare_lbl(path_apero, nsig=10):
         rjd_apero, rv_apero, rv_err_apero = open_rdb(rdb_i)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dict_apero = process_rvs(rjd_apero, rv_apero, rv_err_apero, "LBL", nsig=nsig)
+        dict_apero = process_rvs(rjd_apero, rv_apero, rv_err_apero, pipeline="APERO", rv_method="LBL", nsig=nsig)
 
         # Put ESO data into a dictionary ------------------------------------------------------------------------------
         # Get date, rv, rv_err from DACE
         rjd_eso, rv_eso, rv_err_eso = query_dace(target)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dict_eso = process_rvs(rjd_eso, rv_eso, rv_err_eso, "LBL", nsig=nsig)
+        dict_eso = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="LBL", nsig=nsig)
 
         # Compare RVs -------------------------------------------------------------------------------------------------
-        compare_rvs(dict_apero=dict_apero, dict_eso=dict_eso, target=target, template=template, nsig=nsig)
+        compare_rvs(dict_1=dict_apero, dict_2=dict_eso, target=target, template=template, nsig=nsig,
+                    path_savefig=path_savefig)
 
         exit()  # TODO remove this to loop through all rdb files
 
     return 0
 
 
-def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf_dict.h5", nsig=10):
+def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf_dict.h5", nsig=10, path_savefig=''):
     """
     OBSOLETE
     Compare APERO to ESO CCF radial velocities.
@@ -303,6 +305,7 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
                                     Default: "apero_ccf_dict.h5".
     :param nsig:                    (float, optional) Number of sigmas away from median velocity to reject outliers.
                                     Default: 10.
+    :param path_savefig:            (str, optional) Path where to save figures. Default: ''.
     :return: 0
     """
 
@@ -374,17 +377,17 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
     # Iterate over targets
     for i_target, target_i in enumerate(rjd_apero.keys()):
         # APERO
-        dict_apero_i = process_rvs(rjd_apero[target_i], rv_apero[target_i], rv_err_apero[target_i], rv_method="CCF",
-                                   nsig=nsig)
+        dict_apero_i = process_rvs(rjd_apero[target_i], rv_apero[target_i], rv_err_apero[target_i], pipeline="APERO",
+                                   rv_method="CCF", nsig=nsig)
 
         # ESO
         # Get date, rv, rv_err from DACE
         rjd_eso, rv_eso, rv_err_eso = query_dace(target_i)
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dict_eso_i = process_rvs(rjd_eso, rv_eso, rv_err_eso, rv_method="CCF", nsig=nsig)
+        dict_eso_i = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="CCF", nsig=nsig)
 
-        compare_rvs(dict_apero=dict_apero_i, dict_eso=dict_eso_i, target=target_i, template=None,
-                    nsig=10)
+        compare_rvs(dict_1=dict_apero_i, dict_2=dict_eso_i, target=target_i, template=None, nsig=10,
+                    path_savefig=path_savefig)
     return 0
 
 
@@ -691,7 +694,28 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
 def run_comparison(target, template=None,
                    path_1='', path_2='', pipeline_1="APERO", pipeline_2="ESO", rv_method_1="LBL", rv_method_2="CCF",
                    mode="he", version="07276", onoff="online", path_savefig='', nsig=10):
-    """"""  # TODO add docstring
+    """
+    Compare any set of 2 RV time series.
+
+    :param target:          (str) Target name.
+    :param template:        (str, optional) Template name if one of the two or both RV methods is/are LBL.
+                            Default: None.
+    :param path_1:          (str, optional) Absolute path to the data for time series 1. Default: ''.
+    :param path_2:          (str, optional) Absolute path to the data for time series 2. Default: ''.
+    :param pipeline_1:      (str, optional) Pipeline name. Can be either "APERO" or "ESO". Default: "APERO".
+    :param pipeline_2:      (str, optional) Pipeline name. Can be either "APERO" or "ESO". Default: "ESO".
+    :param rv_method_1:     (str, optional) Name of RV method for time series 1. Can be either "LBL" or "CCF".
+                            Default: "LBL".
+    :param rv_method_2:     (str, optional) Name of RV method for time series 2. Can be either "LBL" or "CCF".
+                            Default: "CCF".
+    :param mode:            (str, optional) Instrument mode. Can be either "he" (high efficiency) or "ha" (high
+                            accuracy). Default: "he".
+    :param version:         (str, optional) Reduction version. Default: "07276".
+    :param onoff:           (str, optional) Reduction mode. Can be either "online" or "offline". Default: "online".
+    :param path_savefig:    (str, optional) Absolute path where figures will be saved. Default: ''.
+    :param nsig:            (float, optional) Number of sigmas to reject outliers. Default: 10.
+    :return:                0
+    """
     # Sanity checks
     pipeline_1, pipeline_2 = pipeline_1.upper(), pipeline_2.upper()
     assert mode in ["he", "ha"], "ERROR! 'mode' must be either 'he' (high efficiency) or 'ha' (high accuracy)."
@@ -756,6 +780,8 @@ def run_comparison(target, template=None,
     # Compare RVs -----------------------------------------------------------------------------------------------------
     compare_rvs(dict_1=dicts[0], dict_2=dicts[1], target=target, template=template, nsig=nsig,
                 path_savefig=path_savefig)
+
+    return 0
 
 
 # =====================================================================================================================
