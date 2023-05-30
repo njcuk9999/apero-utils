@@ -1,7 +1,7 @@
 # Radial velocity data working group 
 
 author: Neil Cook
-last update: 2023-03-13
+last update: 2023-05-30
 
 Please edit this file when you add or change files in this directory.
 
