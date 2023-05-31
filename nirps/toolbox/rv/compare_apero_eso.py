@@ -156,10 +156,11 @@ def open_rdb(fname):
     return rjd, rv, rv_err
 
 
-def query_dace(target):
+def query_dace(target, mode="HE"):
     """
     Query DACE to get RV time series
     :param target:  (str) Target name
+    :param mode:    (str, optional) "HE" for "high efficiency", "HA" for "high accuracy". Default: "HE".
     :return:        rdj (1d array), rv (1d array), rv_err (1d array)
     """
     # Retrieve radial velocity timeseries from DACE
@@ -278,7 +279,7 @@ def compare_lbl(path_apero, nsig=10, path_savefig=''):
 
         # Put ESO data into a dictionary ------------------------------------------------------------------------------
         # Get date, rv, rv_err from DACE
-        rjd_eso, rv_eso, rv_err_eso = query_dace(target)
+        rjd_eso, rv_eso, rv_err_eso = query_dace(target, mode=mode)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
         dict_eso = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="LBL", nsig=nsig)
@@ -382,7 +383,7 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
 
         # ESO
         # Get date, rv, rv_err from DACE
-        rjd_eso, rv_eso, rv_err_eso = query_dace(target_i)
+        rjd_eso, rv_eso, rv_err_eso = query_dace(target_i, mode=mode)
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
         dict_eso_i = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="CCF", nsig=nsig)
 
@@ -772,7 +773,7 @@ def run_comparison(target, template=None,
 
             else:  # ESO
                 # Get date, rv, rv_err from DACE
-                rjd, rv, rv_err = query_dace(target)
+                rjd, rv, rv_err = query_dace(target, mode=mode)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
         dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method, nsig=nsig))
