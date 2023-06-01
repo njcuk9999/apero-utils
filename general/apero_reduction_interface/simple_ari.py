@@ -88,14 +88,10 @@ TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
                     'Last obs mid', 'Number of ext', 'Number of tcorr',
                     'Seeing', 'Airmass',
                     'Mean Exptime', 'Total Exptime', 'DPRTYPEs', None, None]
-# define the lbl rdb suffix (lbl or lbl2)
-LBL_SUFFIX = 'lbl'
 # define the lbl files
 LBL_FILETYPES = ['lbl_rdb', 'lbl2_rdb', 'lbl_drift', 'lbl2_drift']
-LBL_FILENAMES = [f'{LBL_SUFFIX}_{0}_{1}.rdb',
-                 f'{LBL_SUFFIX}2_{0}_{1}.rdb',
-                 f'{LBL_SUFFIX}_{0}_{1}_drift.rdb',
-                 f'{LBL_SUFFIX}2_{0}_{1}_drift.rdb']
+LBL_FILENAMES = ['lbl_{0}_{1}.rdb', 'lbl2_{0}_{1}.rdb',
+                 'lbl_{0}_{1}_drift.rdb', 'lbl2_{0}_{1}_drift.rdb']
 LBL_FILE_DESC = ['RDB file', 'RDB2 file', 'Drift file', 'Drift2 file']
 # define which one of these files to use as the main plot file
 LBL_PLOT_FILE = 0
