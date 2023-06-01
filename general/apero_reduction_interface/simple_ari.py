@@ -105,7 +105,7 @@ LBL_STAT_DIR = 'lblstats'
 #  i.e. {objname}_{template}
 LBL_STAT_FILES = dict()
 LBL_STAT_FILES['LBL Diagnostic Plots'] = 'lbl_{0}_plots.pdf'
-LBL_STAT_FILES['LBL BERV zp RDB file'] = 'bervzp_{0}.rdb'
+LBL_STAT_FILES['LBL BERV zp RDB file'] = 'lbl_{0}_bervzp.rdb'
 # define how many ccf files to use
 MAX_NUM_CCF = 100
 # object page styling
