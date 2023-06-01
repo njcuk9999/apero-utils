@@ -664,6 +664,7 @@ class ObjectData:
                 self.lbl_plot_path[lbl_objtmp] = None
                 self.lbl_stats_table[lbl_objtmp] =None
                 self.lbl_dwn_table[lbl_objtmp] = None
+                continue
             # get the plot file for this objname+template
             lbl_pfile = lbl_objtmps[lbl_objtmp][plot_file]
             # load rdb file
