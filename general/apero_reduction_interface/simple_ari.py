@@ -636,18 +636,18 @@ class ObjectData:
         # store the object+ template combinations
         lbl_objtmps = dict()
         # loop around templates (found previously)
-        for lbl_objtmp in self.lbl_templates:
+        for template in self.lbl_templates:
+            # make objtmp string
+            lbl_objtmp = f'{self.objname}_{template}'
             # set each template to have a dictionary of files
             lbl_objtmps[lbl_objtmp] = dict()
             # loop around each lbl file type
             for lbl_filetype in lbl_files:
-                # we match based on objname+template
-                search_string = f'{self.objname}_{lbl_objtmp}'
                 # file to be found
                 matched_file = None
                 # find the file that matches the template
                 for lbl_file in lbl_files[lbl_filetype]:
-                    if search_string in lbl_file:
+                    if lbl_objtmp in lbl_file:
                         matched_file = lbl_file
                         break
                 # append to list if we found a matching objname+template file
