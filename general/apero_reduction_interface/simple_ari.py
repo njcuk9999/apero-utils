@@ -619,9 +619,8 @@ class ObjectData:
         # get lbl rdb files
         lbl_files = dict()
         for filetype in LBL_FILETYPES:
-            files = self.filetypes[filetype].get_files()
-            if len(files) > 0:
-                lbl_files[filetype] = files
+            if self.filetypes[filetype].num > 0:
+                lbl_files[filetype] = self.filetypes[filetype].get_files()
 
         # don't go here is lbl rdb files are not present
         if len(lbl_files) == 0:
@@ -2287,7 +2286,7 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # get the first lbl files
     lbl_files = dict()
     for filetype in LBL_FILETYPES:
-        if len(object_instance.filetypes[filetype]) != 0:
+        if object_instance.filetypes[filetype].num > 0:
             lbl_files[filetype] = object_instance.filetypes[filetype].files
     # ------------------------------------------------------------------
     # deal with no spectrum found
