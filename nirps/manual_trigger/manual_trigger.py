@@ -389,11 +389,11 @@ def run_apero_get(settings: Dict[str, Any]):
         red_dprtypes = ','.join(pdict['get']['science dpr types'])
         lbl_dprtypes = ','.join(pdict['get-lbl']['science dpr types'])
         simfp_dprtypes = ','.join(pdict['get-lbl']['simfp dprtypes'])
-        # get fibers from settings
-        scifibers, calfiber = pconst.FIBER_KINDS()
         # scifiber and calfiber must be strings (comma separated)
-        scifibers = ','.join(scifibers)
-        calfibers = str(calfiber)
+        red_scifibers = ','.join(pdict['get']['science fibers'])
+        # red_calfibers = ','.join(pdict['get']['calib fibers'])
+        lbl_scifibers = ','.join(pdict['get-lbl']['science fibers'])
+        lbl_calfibers = ','.join(pdict['get-lbl']['calib fibers'])
         # template output types
         red_template_outtypes = ','.join(pdict['get']['template out types'])
         lbl_template_outtypes = ','.join(pdict['get-lbl']['template out types'])
@@ -455,11 +455,11 @@ def run_apero_get(settings: Dict[str, Any]):
         # run apero get to make the objects dir in apero dir
         apero_get.main(objnames='*', dprtypes=red_dprtypes,
                        outtypes=red_outtypes, outpath=obj_path,
-                       fibers=scifibers, symlinks=red_symlinks,
+                       fibers=red_scifibers, symlinks=red_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=red_template_outtypes,
-                       outpath=obj_path, fibers=scifibers,
+                       outpath=obj_path, fibers=red_scifibers,
                        symlinks=red_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # --------------------------------------------------------------
@@ -468,36 +468,36 @@ def run_apero_get(settings: Dict[str, Any]):
         # run apero get for objects for lbl
         apero_get.main(objnames='*', dprtypes=lbl_dprtypes,
                        outtypes=lbl_outtypes,
-                       outpath=outpath_objects, fibers=scifibers,
+                       outpath=outpath_objects, fibers=lbl_scifibers,
                        symlinks=lbl_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=lbl_template_outtypes,
-                       outpath=outpath_templates, fibers=scifibers,
+                       outpath=outpath_templates, fibers=lbl_scifibers,
                        symlinks=False, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for simultaneous FP
         apero_get.main(objnames='*', dprtypes=simfp_dprtypes,
                        outtypes='EXT_E2DS_FF', nosubdir=True,
-                       outpath=outpath_fp, fibers=calfibers,
+                       outpath=outpath_fp, fibers=lbl_calfibers,
                        symlinks=lbl_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for extracted FP_FP
         apero_get.main(objnames='*', dprtypes='FP_FP',
                        outtypes='EXT_E2DS_FF',
-                       outpath=outpath_fp, fibers=calfibers,
+                       outpath=outpath_fp, fibers=lbl_calfibers,
                        symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
         apero_get.main(objnames='*',
                        outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=scifibers,
+                       outpath=outpath_calib, fibers=lbl_calfibers,
                        symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
         apero_get.main(objnames='*',
                        outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=calfibers,
+                       outpath=outpath_calib, fibers=lbl_calfibers,
                        symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
 

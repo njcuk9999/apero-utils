@@ -312,9 +312,12 @@ class ObjectData:
                 for _time in self.filetypes[key].processed_times:
                     all_last_processed.append(_time)
         # convert to Time
-        all_last_processed = Time(np.array(all_last_processed))
-        # get the last processed time of all files
-        self.last_processed = np.max(all_last_processed)
+        if len(all_last_processed) > 0:
+            all_last_processed = Time(np.array(all_last_processed))
+            # get the last processed time of all files
+            self.last_processed = np.max(all_last_processed)
+        else:
+            self.last_processed = None
 
     def add_settings(self, profile: dict, settings: dict,
                      gsettings: dict, headers: dict):
@@ -469,7 +472,7 @@ class ObjectData:
         # sort all snr by closest to the median
         all_snr_pos = list(np.argsort(n_ext_h))
         # set these up
-        pos_ext, pos_raw, pos_sc1d = None, None, None
+        pos_ext, pos_raw, pos_s1d, pos_sc1d = None, None, None, None
         file_ext = 'NoFile'
         # loop until we match
         while not matched and len(all_snr_pos) > 0:
@@ -480,6 +483,8 @@ class ObjectData:
             # Find the matching raw file
             pos_raw = _match_file(reffile=file_ext,
                                   files=spec_props['RAW'].get_files(qc=True))
+            pos_s1d = _match_file(reffile=file_ext,
+                                   files=spec_props['S1D'].get_files(qc=True))
             pos_sc1d = _match_file(reffile=file_ext,
                                    files=spec_props['SC1D'].get_files(qc=True))
             # we only stop is a match is found
@@ -495,7 +500,7 @@ class ObjectData:
                              f'This should not be possible')
         # ---------------------------------------------------------------------
         # get the extracted spectrum for the spectrum with the highest SNR
-        ext_file = spec_props['S1D'].get_files(qc=True)[pos_ext]
+        ext_file = spec_props['S1D'].get_files(qc=True)[pos_s1d]
         ext_table = Table.read(ext_file, hdu=1)
         # get wavelength masks for plotting
         wavemap = ext_table['wavelength']
@@ -556,6 +561,13 @@ class ObjectData:
         # compute the stats
         spec_stats_table(spec_props, stat_path, title='Spectrum Information')
         # -----------------------------------------------------------------
+        # construct the header file
+        ext_header_file = os.path.join(down_save_path,
+                                   f'ext2d_header_{self.objname}_file.csv')
+        create_header_file(spec_props['EXT'].get_files(qc=True),
+                           self.headers, 'ext', self.header_dict,
+                           ext_header_file)
+        # -----------------------------------------------------------------
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ext files (2D)
@@ -582,11 +594,13 @@ class ObjectData:
         # get the download table path
         item_path = os.path.join(item_save_path, dwn_base_name)
         # define the download files
-        down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file]
+        down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file,
+                      ext_header_file]
         # define the download descriptions
         down_descs = ['Extracted 2D spectra', 'Extracted 1D spectra',
                       'Telluric corrected 2D spectra',
-                      'Telluric corrected 1D spectra']
+                      'Telluric corrected 1D spectra',
+                      'Extracted 2D header file']
         # compute the download table
         download_table(down_files, down_descs, item_path, down_rel_path,
                        down_save_path, title='Spectrum Downloads')
@@ -2142,6 +2156,11 @@ def add_obj_page(it: int, key: str, profile: dict, gsettings: dict,
     rprops['OBJNAME'] = objname
     rprops['OBJURL'] = obj_url
     rprops['OBJPAGEREF'] = obj_ref_page
+    # ------------------------------------------------------------------
+    # print progress
+    msg = '\tFinished creating page for {0} [{1} of {2}]'
+    margs = [objname, it + 1, len(object_classes)]
+    wlog(params, '', msg.format(*margs), colour='magenta')
     # things to return
     return rprops
 
@@ -2179,8 +2198,6 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # -------------------------------------------------------------------------
     # deal with running on a single core
     if n_cores == 1:
-        # storage for results
-        results_dict = dict()
         # change the object column to a url
         for it, key in enumerate(object_classes):
             # combine arguments
@@ -2191,22 +2208,20 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             results_dict[key] = results
     # -------------------------------------------------------------------------
     elif n_cores > 1:
-        import multiprocessing
-        pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
-        # storage for results
-        results_dict = dict()
-        # use a Manager to create a shared dictionary to collect results
-        # change the object column to a url
+        from multiprocessing import get_context
+        # list of params for each entry
+        params_per_process = []
         for it, key in enumerate(object_classes):
-            # combine arguments
             itargs = [it, key] + args[2:]
-            # run the pool
-            results = pool.apply_async(add_obj_page, args=itargs)
-            # push result to result storage
-            results_dict[key] = results
-        # Wait for all jobs to finish
-        pool.close()
-        pool.join()
+            params_per_process.append(itargs)
+        # start parellel jobs
+        with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
+            results = pool.starmap(add_obj_page, params_per_process)
+        # fudge back into return dictionary
+        for row in range(len(results)):
+            objname = results[row]['OBJNAME']
+            # push into results dict
+            results_dict[objname] = results[row]
     # -------------------------------------------------------------------------
     # update object classes with results
     # -------------------------------------------------------------------------
@@ -2219,8 +2234,8 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             # update results
             # -----------------------------------------------------------------
             # This is where we add any results coming back from add_obj_page
-            object_class.objurl = results_dict[key].get()['OBJURL']
-            object_class.objpageref = results_dict[key].get()['OBJPAGEREF']
+            object_class.objurl = results_dict[key]['OBJURL']
+            object_class.objpageref = results_dict[key]['OBJPAGEREF']
     # -------------------------------------------------------------------------
     # return the object table
     return object_classes
@@ -2442,7 +2457,10 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
         # set the last observed value raw file
         table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
         # set the last processed value
-        table_dict['last_proc'].append(object_class.last_processed.iso)
+        if object_class.last_processed is not None:
+            table_dict['last_proc'].append(object_class.last_processed.iso)
+        else:
+            table_dict['last_proc'].append('')
     # -------------------------------------------------------------------------
     # finally convert this to a table but use the output column names
     out_table = Table()
@@ -2580,6 +2598,36 @@ def create_file_list(files: List[str], path: str):
         for filename in files:
             # write to file
             filelist.write(filename + '\n')
+
+
+def create_header_file(files: List[str], headers: Dict[str, Any], filetype: str,
+                       hdict: Dict[str, Any], filename: str):
+    """
+    Creates a header file (csv) from a dictionary of header keys
+
+    :param files: list of str, the files to loop around
+    :param headers: dict, a dictionary containing those headers to add for
+                    each filetype
+    :param filetype: str, a filetype (i.e. ext, pp, tcorr, ccf)
+    :param hdict: dict, the header values
+    :param filename: str, the filename to save the csv file to
+
+    :return: None, writes file to disk
+    """
+    # check file kind in headers (if it isn't we don't create files)
+    if filetype not in headers:
+        return
+    # storage for dict-->table
+    tabledict = dict()
+    # first column is the filenames
+    tabledict['filename'] = [os.path.basename(filename) for filename in files]
+    # loop around keys in header for this filetype and add to tabledict
+    for keydict in headers[filetype]:
+        tabledict[keydict] = hdict[keydict]
+    # convert to table
+    table = Table(tabledict)
+    # write to file
+    table.write(filename, format='ascii.csv', overwrite=True)
 
 
 def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):

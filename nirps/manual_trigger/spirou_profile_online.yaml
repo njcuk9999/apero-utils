@@ -17,9 +17,15 @@ spirou V0.7.282 online:
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
-            - all
+            - None
     # apero_get settings
     get:
+        science fibers:
+            - AB
+            - A
+            - B
+        calib fibers:
+            - C
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - EXT_E2DS_FF
@@ -54,6 +60,10 @@ spirou V0.7.282 online:
             # - objects
     # apero_get settings for lbl
     get-lbl:
+        science fibers:
+            - AB
+        calib fibers:
+            - C
         # input telluric
         science out types:
             - TELLU_OBJ
@@ -68,6 +78,7 @@ spirou V0.7.282 online:
             - TELLU_TEMP_S1DV
         # apero simultaneous FP dprtypes
         simfp dprtypes:
+            - POLAR_FP
             - OBJ_FP
         # sym links in apero get
         symlinks: True
