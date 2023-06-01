@@ -90,12 +90,22 @@ TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
                     'Mean Exptime', 'Total Exptime', 'DPRTYPEs', None, None]
 # define the lbl rdb suffix (lbl or lbl2)
 LBL_SUFFIX = 'lbl'
+# define the lbl files
+LBL_FILETYPES = ['lbl_rdb', 'lbl2_rdb', 'lbl_drift', 'lbl2_drift']
+LBL_FILENAMES = [f'{LBL_SUFFIX}_{0}_{1}.rdb',
+                 f'{LBL_SUFFIX}2_{0}_{1}.rdb',
+                 f'{LBL_SUFFIX}_{0}_{1}_drift.rdb',
+                 f'{LBL_SUFFIX}2_{0}_{1}_drift.rdb']
+LBL_FILE_DESC = ['RDB file', 'RDB2 file', 'Drift file', 'Drift2 file']
+# define which one of these files to use as the main plot file
+LBL_PLOT_FILE = 0
 # define the LBL stat dir (inside the lbl directory)
 LBL_STAT_DIR = 'lblstats'
 # define the LBL stat files {0} is for the object name + template name
 #  i.e. {objname}_{template}
 LBL_STAT_FILES = dict()
 LBL_STAT_FILES['LBL Diagnostic Plots'] = 'lbl_{0}_plots.pdf'
+LBL_STAT_FILES['LBL BERV zp RDB file'] = 'bervzp_{0}.rdb'
 # define how many ccf files to use
 MAX_NUM_CCF = 100
 # object page styling
@@ -593,9 +603,14 @@ class ObjectData:
         :return:
         """
         # get lbl rdb files
-        lbl_rdb_files = self.filetypes['lbl_rdb'].get_files()
+        lbl_files = dict()
+        for filetype in LBL_FILETYPES:
+            files = self.filetypes[filetype].get_files()
+            if len(files) > 0:
+                lbl_files[filetype] = files
+
         # don't go here is lbl rdb files are not present
-        if len(lbl_rdb_files) == 0:
+        if len(lbl_files) == 0:
             return
         # ---------------------------------------------------------------------
         # generate place to save figures
@@ -611,18 +626,36 @@ class ObjectData:
         ext_h_key = self.headers['LBL']['EXT_H']['key']
         # store the object+ template combinations
         lbl_objtmps = dict()
-        # get the lbl objname+templates combinations
-        for lbl_rdb_file in lbl_rdb_files:
-            # get the basename
-            basename = os.path.basename(lbl_rdb_file)
-            # get the objname+template
-            lbl_objtmp = basename.split(f'{LBL_SUFFIX}_')[-1].split('.rdb')[0]
-            # append to list
-            lbl_objtmps[lbl_objtmp] = lbl_rdb_file
+        # loop around templates (found previously)
+        for lbl_objtmp in self.lbl_templates:
+            # set each template to have a dictionary of files
+            lbl_objtmps[lbl_objtmp] = dict()
+            # loop around each lbl file type
+            for lbl_filetype in lbl_files:
+                # we match based on objname+template
+                search_string = f'{self.objname}_{lbl_objtmp}'
+                # file to be found
+                matched_file = None
+                # find the file that matches the template
+                for lbl_file in lbl_files[lbl_filetype]:
+                    if search_string in lbl_file:
+                        matched_file = lbl_file
+                        break
+                # append to list if we found a matching objname+template file
+                if matched_file is not None:
+                    lbl_objtmps[lbl_objtmp][lbl_filetype] = matched_file
+        # ---------------------------------------------------------------------
+        # def the plot file
+        plot_file = LBL_FILETYPES[LBL_PLOT_FILE]
         # loop around the objname+template combinations
         for lbl_objtmp in lbl_objtmps:
+            # deal with the plot file not existing
+            if plot_file not in lbl_objtmps[lbl_objtmp]:
+                continue
+            # get the plot file for this objname+template
+            lbl_pfile = lbl_objtmps[lbl_objtmp][plot_file]
             # load rdb file
-            rdb_table = Table.read(lbl_objtmps[lbl_objtmp], format='ascii.rdb')
+            rdb_table = Table.read(lbl_pfile, format='ascii.rdb')
             # get the values required
             lbl_props['rjd'] = np.array(rdb_table['rjd'])
             lbl_props['vrad'] = np.array(rdb_table['vrad'])
@@ -657,9 +690,19 @@ class ObjectData:
             # get the download table path
             item_path = os.path.join(item_save_path, dwn_base_name)
             # define the download files
-            down_files = [lbl_objtmps[lbl_objtmp]]
+            down_files = []
             # define the download descriptions
-            down_descs = ['RDB file']
+            down_descs = []
+            # add the lbl files to the down files
+            for it, lblfilekey in enumerate(LBL_FILETYPES):
+                # check for file in lbl_objtmps
+                if lblfilekey not in lbl_objtmps[lbl_objtmp]:
+                    continue
+                # get lbl file
+                lbl_file = lbl_objtmps[lbl_objtmp][lblfilekey]
+                # add to down_files
+                down_files.append(lbl_file)
+                down_descs.append(LBL_FILE_DESC[it])
             # Add the lbl stat files
             for lblfilekey in LBL_STAT_FILES:
                 # deal with no lbl file key for this object
@@ -1572,7 +1615,9 @@ def compile_apero_object_table(gsettings) -> Dict[str, ObjectData]:
     filetypes['sc1d'] = FileType('sc1d', block_kind='red', chain='tcorr',
                                  kw_output='SC1D_V_FILE', fiber=science_fiber)
     # lbl files added as filetype but don't count in same was as other files
-    filetypes['lbl_rdb'] = FileType('lbl_rdb', count=False)
+    filetypes['lbl_fits'] = FileType('lbl_fits', count=False)
+    for filetype in LBL_FILETYPES:
+        filetypes[filetype] = FileType(filetype, count=False)
     # -------------------------------------------------------------------------
     # log that we are loading
     # get the object table from the astrometric database
@@ -1807,14 +1852,6 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
     # get the lbl path
     lbl_path = profile['lbl path']
     # -------------------------------------------------------------------------
-    # we are adding three columns to the object table
-    # first column: templates used for lbl
-    # second column: template selected for lbl count
-    # third column: number of lbl files for template with most lbl files
-    lbl_templates = []
-    lbl_select = []
-    lbl_count = []
-    # -------------------------------------------------------------------------
     # deal with no valid lbl path
     if lbl_path is None:
         return object_classes
@@ -1839,7 +1876,6 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
         if len(lblrv_dir) == 0:
             continue
         # ---------------------------------------------------------------------
-
         # store a list of templates
         templates = []
         # store a list of counts
@@ -1857,30 +1893,32 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
         # decide which template to use (using max of counts)
         select = np.argmax(counts)
         # get strings to add to storage
-        _template = ','.join(templates)
         _select = templates[select]
         _count = int(counts[select])
-        # append to lists
-        lbl_templates.append(_template)
-        lbl_select.append(_select)
-        lbl_count.append(_count)
-        # ---------------------------------------------------------------------
-        # LBL RDB files
-        # ---------------------------------------------------------------------
-        # get all the lbl rdb files for this object name
-        rdb_glob = f'{LBL_SUFFIX}_{objname}_*.rdb'
-        all_lblrdb_files = glob.glob(os.path.join(lbl_path, 'lblrdb', rdb_glob))
-        # remove drift files from the lbl rdb files
-        lblrdb_files = []
-        for lblrdb_file in all_lblrdb_files:
-            if 'drift' not in lblrdb_file:
-                lblrdb_files.append(lblrdb_file)
-        # add list to the LBLRDB file dict for this object
-        object_class.filetypes['lbl_rdb'].files = lblrdb_files
-        object_class.lbl_templates = _template
+        # add the counts to the object class
+        object_class.lbl_templates = templates
         object_class.lbl_select = _select
-        # add to object table
-        object_class.filetypes['lbl_rdb'].num = _count
+        # set the number of files
+        object_class.filetypes['lbl_fits'].num = _count
+        # ---------------------------------------------------------------------
+        # LBL files
+        # ---------------------------------------------------------------------
+        # loop around all lbl files
+        for it, filetype in enumerate(LBL_FILETYPES):
+            lbl_files = []
+            # loop around templates
+            for template in templates:
+                # push the object and template name into the glob
+                lbl_file = LBL_FILENAMES[it].format(objname, template)
+                # get all the lbl files for this object name
+                lbl_file_path = os.path.join(lbl_path, 'lbldrb', lbl_file)
+                # remove drift files from the lbl rdb files
+                if os.path.exists(lbl_file_path):
+                    lbl_files.append(lbl_file_path)
+                # add list to the LBLRDB file dict for this object
+                object_class.filetypes[filetype].files = lbl_files
+                # add to object table
+                object_class.filetypes[filetype].num = len(lbl_files)
         # ---------------------------------------------------------------------
         # LBL Stats (generated by Charles)
         # ---------------------------------------------------------------------
@@ -2231,11 +2269,14 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
-    # get lbl rdb files
-    lbl_rdb_files = object_instance.filetypes['lbl_rdb'].files
+    # get the first lbl files
+    lbl_files = dict()
+    for filetype in LBL_FILETYPES:
+        if len(object_instance.filetypes[filetype]) != 0:
+            lbl_files[filetype] = object_instance.filetypes[filetype].files
     # ------------------------------------------------------------------
     # deal with no spectrum found
-    if len(lbl_rdb_files) == 0:
+    if len(lbl_files) == 0:
         # add the section heading
         page.add_section(name)
         # print that there is no LBL reduction found
@@ -2397,7 +2438,7 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
         if object_class.has_polar:
             table_dict['pfits'].append(object_class.filetypes['pfiles'].num)
         # set the number of lbl files
-        table_dict['lbl'].append(object_class.filetypes['lbl_rdb'].num)
+        table_dict['lbl'].append(object_class.filetypes['lbl_fits'].num)
         # set the last observed value raw file
         table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
         # set the last processed value
