@@ -15,10 +15,11 @@ from astropy.io import ascii, fits
 import h5py
 from astropy.time import Time
 import numpy as np
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from dace_query.spectroscopy import Spectroscopy
 
 # For uniform fonts in plots
-fontsize = 16
+fontsize = 20
 markersize = 12
 capsize = 2
 plt.rcParams["font.size"] = fontsize
@@ -127,6 +128,105 @@ def savehdf5(obj, filename, verbose=False):
     return hf
 
 
+def sigma(im):
+    """"""  # TODO
+    return (np.nanpercentile(im, 85) - np.nanpercentile(im, 15)) / 2
+
+
+def lowpassfilter(input_vect, width=101):
+    """"""  # TODO
+    # Computes a low-pass filter of an input vector. This is done while properly handling
+    # NaN values, but at the same time being reasonably fast.
+    # Algorithm:
+    #
+    # provide an input vector of an arbtrary length and compute a running NaN median over a
+    # box of a given length (width value). The running median is NOT computed at every pixel
+    # but at steps of 1/4th of the width value. This provides a vector of points where
+    # the nan-median has been computed (ymed) and mean position along the input vector (xmed)
+    # of valid (non-NaN) pixels. This xmed/ymed combination is then used in a spline to
+    # recover a vector for all pixel positions within the input vector.
+    #
+    # When there are no valid pixel in a 'width' domain, the value is skipped in the creation
+    # of xmed and ymed, and the domain is splined over.
+
+    # indices along input vector
+    index = np.arange(len(input_vect))
+
+    # placeholders for x and y position along vector
+    xmed = []
+    ymed = []
+
+    # loop through the lenght of the input vector
+    for i in np.arange(-width // 2, len(input_vect) + width // 2, width // 4):
+
+        # if we are at the start or end of vector, we go 'off the edge' and
+        # define a box that goes beyond it. It will lead to an effectively
+        # smaller 'width' value, but will provide a consistent result at edges.
+        low_bound = i
+        high_bound = i + int(width)
+
+        if low_bound < 0:
+            low_bound = 0
+        if high_bound > (len(input_vect) - 1):
+            high_bound = (len(input_vect) - 1)
+
+        pixval = index[low_bound:high_bound]
+
+        if len(pixval) < 3:
+            continue
+
+        # if no finite value, skip
+        if np.max(np.isfinite(input_vect[pixval])) == 0:
+            continue
+
+        # mean position along vector and NaN median value of
+        # points at those positions
+        xmed.append(np.nanmean(pixval))
+        ymed.append(np.nanmedian(input_vect[pixval]))
+
+    xmed = np.array(xmed, dtype=float)
+    ymed = np.array(ymed, dtype=float)
+
+    # we need at least 3 valid points to return a
+    # low-passed vector.
+    if len(xmed) < 3:
+        return np.zeros_like(input_vect) + np.nan
+
+    if len(xmed) != len(np.unique(xmed)):
+        xmed2 = np.unique(xmed)
+        ymed2 = np.zeros_like(xmed2)
+        for i in range(len(xmed2)):
+            ymed2[i] = np.mean(ymed[xmed == xmed2[i]])
+        xmed = xmed2
+        ymed = ymed2
+
+    # splining the vector
+    spline = ius(xmed, ymed, k=1, ext=3)
+    lowpass = spline(np.arange(len(input_vect)))
+
+    return lowpass
+
+
+def compute_ptpscatter(v=None, method='linear_sigma'):
+    """"""  # TODO
+    if v is None:
+        return ['naive_sigma', 'linear_sigma', 'lowpass_sigma', 'quadratic_sigma']
+
+    if method == 'naive_sigma':
+        # we don't know that there's a transit
+        return (np.nanpercentile(v, 84) - np.nanpercentile(v, 16)) / 2.0
+
+    if method == 'linear_sigma':
+        # difference to immediate neighbours
+        return sigma(v[1:-1] - (v[2:] + v[0:-2]) / 2) / np.sqrt(1 + 0.5)
+    if method == 'lowpass_sigma':
+        return sigma(v - lowpassfilter(v, width=15))
+
+    if method == 'quadratic_sigma':
+        v2 = -np.roll(v, -2) / 3 + np.roll(v, -1) + np.roll(v, 1) / 3
+        return sigma(v - v2) / np.sqrt(20 / 9.0)
+
+
 def get_target_template(fname):
     """
     Get target name and template name from file name.
@@ -197,6 +297,7 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
         std_full = rv_err.copy()
     median_full = np.nanmedian(rv)
     mederr_full = np.nanmedian(rv_err)
+    ptpscat_full = compute_ptpscatter(rv, method="linear_sigma")
 
     # Make a copy of the full time series
     jd_full, rv_full, rv_err_full = jd.copy(), rv.copy(), rv_err.copy()
@@ -218,6 +319,7 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
     std = np.nanstd(rv)
     median = np.nanmedian(rv)
     mederr = np.nanmedian(rv_err)
+    ptpscat = compute_ptpscatter(rv, method="linear_sigma")
 
     # Make dictionary to store all arrays
     rv_dict = {"full": {"jd": jd_full,
@@ -225,14 +327,18 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
                         "rv_err": rv_err_full,
                         "std": std_full,
                         "median": median_full,
-                        "mederr": mederr_full},
+                        "mederr": mederr_full,
+                        "ptpscat": ptpscat_full
+                        },
                "no_outliers": {"jd": jd,
                                "rv": rv,
                                "rv_err": rv_err,
                                "std": std,
                                "median": median,
                                "mederr": mederr,
-                               "indices": inonout},
+                               "indices": inonout,
+                               "ptpscat": ptpscat
+                               },
                "outliers_up": {"jd": jd_out_up,
                                # "rv": rv_out_up,  # obsolete
                                "indices": iout_up},
@@ -334,7 +440,7 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
 
             # Iterate over CCF files to get target
             for ccf_file in ccf_files:
-                target = fits.getheader(ccf_file)["OBJECT"]
+                target = fits.getheader(ccf_file)["DRSOBJN"]
                 if target not in targets.keys():
                     targets[target] = {night_short: [ccf_file]}
                 else:
@@ -524,123 +630,104 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
 
     # Plot --------------------------------------------------------------------------------------------------------
     # Set up figure/axes
-    fig, axs = plt.subplots(nrows=3, ncols=2, sharex="col", sharey="row", figsize=(20, 12),
-                            gridspec_kw={"width_ratios": [2, 1], "height_ratios":[1, 2, 2]})
-    # axs[0, 1].remove()
-    # axs[1, 1].remove()
-    axs[0, 0].set(ylabel="Velocity [m/s]")
-    axs[1, 0].set(ylabel="Relative velocity [m/s]")
-    axs[2, 0].set(ylabel="Velocity difference [m/s]")
+    fig, axs = plt.subplots(nrows=2, ncols=2, sharex="col", sharey="row", figsize=(20, 12),
+                            gridspec_kw={"width_ratios": [2, 1]})
+
+    axs[0, 0].set(ylabel="Relative velocity [m/s]")
+    axs[1, 0].set(ylabel="Velocity difference [m/s]")
     axs[-1, 0].set(xlabel="Date")
 
     # Plot APERO data
-    # Plot data
-    axs[0, 0].errorbar(dict_1["no_outliers"]["jd"], dict_1["no_outliers"]["rv"],
-                       dict_1["no_outliers"]["rv_err"],
-                       ls='', marker='.', alpha=.5, color="C0", capsize=capsize,
-                       label="{} {}".format(dict_1["pipeline"], dict_1["rv_method"]))
-    # Plot median
-    axs[0, 0].axhline(dict_1["no_outliers"]["median"], color="C0", ls=':')
     # Plot data, median-subtracted
-    axs[1, 0].errorbar(dict_1["no_outliers"]["jd"], dict_1["no_outliers"]["rv"]
+    axs[0, 0].errorbar(dict_1["no_outliers"]["jd"], dict_1["no_outliers"]["rv"]
                        - dict_1["no_outliers"]["median"], dict_1["no_outliers"]["rv_err"],
                        ls='', marker='.', alpha=.5, color="C0", capsize=capsize,
-                       label=("{} {} ({} pts)\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s"
+                       label=("{} {} ({} pts)\nmed. = {:.2f} m/s\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s\nptp scat. = {:.2f} m/s"
                               .format(dict_1["pipeline"], dict_1["rv_method"], dict_1["full"]["jd"].size,
-                                      dict_1["no_outliers"]["mederr"], dict_1["no_outliers"]["std"])))
-    axs[1, 0].axhline(0, color="k", ls=':')
+                                      dict_1["no_outliers"]["median"],
+                                      dict_1["no_outliers"]["mederr"],
+                                      dict_1["no_outliers"]["std"],
+                                      dict_1["no_outliers"]["ptpscat"]
+                                      )
+                              )
+                       )
+    axs[0, 0].axhline(0, color="k", ls=':')
 
     # Plot ESO data
-    # Plot data
-    axs[0, 0].errorbar(dict_2["no_outliers"]["jd"], dict_2["no_outliers"]["rv"],
-                       dict_2["no_outliers"]["rv_err"],
-                       ls='', marker='.', alpha=.5, color="C1", capsize=capsize,
-                       label="{} {}".format(dict_2["pipeline"], dict_2["rv_method"]))
-    # Plot median
-    axs[0, 0].axhline(dict_2["no_outliers"]["median"], color="C1", ls=':')
     # Plot data, median-subtracted
-    axs[1, 0].errorbar(dict_2["no_outliers"]["jd"], dict_2["no_outliers"]["rv"]
+    axs[0, 0].errorbar(dict_2["no_outliers"]["jd"], dict_2["no_outliers"]["rv"]
                        - dict_2["no_outliers"]["median"], dict_2["no_outliers"]["rv_err"],
                        ls='', marker='.', alpha=.5, color="C1", capsize=capsize,
-                       label=("\n{} {} ({} pts)\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s"
+                       label=("\n{} {} ({} pts)\nmed. = {:.2f} m/s\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s\nptp scat. = {:.2f} m/s"
                               .format(dict_2["pipeline"], dict_2["rv_method"], dict_2["full"]["jd"].size,
-                                      dict_2["no_outliers"]["mederr"], dict_2["no_outliers"]["std"])))
+                                      dict_2["no_outliers"]["median"],
+                                      dict_2["no_outliers"]["mederr"],
+                                      dict_2["no_outliers"]["std"],
+                                      dict_2["no_outliers"]["ptpscat"]
+                                      )
+                              )
+                       )
 
     # Plot outliers
     ax0_ymin, ax0_ymax = axs[0, 0].get_ylim()
-    ax1_ymin, ax1_ymax = axs[1, 0].get_ylim()
     # In APERO
     if dict_1["outliers_up"]["jd"].size > 0:
         axs[0, 0].plot(dict_1["outliers_up"]["jd"], ax0_ymax * np.ones_like(dict_1["outliers_up"]["jd"]),
-                       ls='', marker=r'$\uparrow$', alpha=.2, color="C0", markersize=markersize,
-                       label="Outliers (any color, up/down)")
-        axs[1, 0].plot(dict_1["outliers_up"]["jd"], ax1_ymax * np.ones_like(dict_1["outliers_up"]["jd"]),
                        ls='', marker=r'$\uparrow$', alpha=.2, color="C0", markersize=markersize)
     if dict_1["outliers_lo"]["jd"].size > 0:
         axs[0, 0].plot(dict_1["outliers_lo"]["jd"], ax0_ymin * np.ones_like(dict_1["outliers_lo"]["jd"]),
-                       ls='', marker=r'$\downarrow$', alpha=.2, color="C0", markersize=markersize)
-        axs[1, 0].plot(dict_1["outliers_lo"]["jd"], ax1_ymin * np.ones_like(dict_1["outliers_lo"]["jd"]),
                        ls='', marker=r'$\downarrow$', alpha=.2, color="C0", markersize=markersize)
     # In ESO
     if dict_2["outliers_up"]["jd"].size > 0:
         axs[0, 0].plot(dict_2["outliers_up"]["jd"], ax0_ymax * np.ones_like(dict_2["outliers_up"]["jd"]),
                        ls='', marker=r'$\uparrow$', alpha=.2, color="C1", markersize=markersize)
-        axs[1, 0].plot(dict_2["outliers_up"]["jd"], ax1_ymax * np.ones_like(dict_2["outliers_up"]["jd"]),
-                       ls='', marker=r'$\uparrow$', alpha=.2, color="C1", markersize=markersize)
     if dict_2["outliers_lo"]["jd"].size > 0:
         axs[0, 0].plot(dict_2["outliers_lo"]["jd"], ax0_ymin * np.ones_like(dict_2["outliers_lo"]["jd"]),
-                       ls='', marker=r'$\downarrow$', alpha=.2, color="C1", markersize=markersize)
-        axs[1, 0].plot(dict_2["outliers_lo"]["jd"], ax1_ymin * np.ones_like(dict_2["outliers_lo"]["jd"]),
                        ls='', marker=r'$\downarrow$', alpha=.2, color="C1", markersize=markersize)
 
     if igood_1.size != 0 and igood_2.size != 0:
         # Plot difference between APERO and ESO
-        axs[2, 0].plot(jd_diff_no_outliers, diff_no_outliers,
+        axs[1, 0].plot(jd_diff_no_outliers, diff_no_outliers,
                        ls='', marker='.', color='k',
                        label="{} {} - {} {}, std = {:.2f} m/s".format(dict_1["pipeline"], dict_1["rv_method"],
                                                                       dict_2["pipeline"], dict_2["rv_method"],
                                                                       std_diff))
-        axs[2, 0].axhline(med_diff, color='k', ls=':')
+        axs[1, 0].axhline(med_diff, color='k', ls=':')
         # Plot outliers
         if np.sum(i_diff_outliers_up) > 0:
-            axs[2, 0].plot(jd_diff_outliers_up, diff_outliers_up, ls='', marker=r"$\uparrow$", alpha=.2, color='k',
+            axs[1, 0].plot(jd_diff_outliers_up, diff_outliers_up, ls='', marker=r"$\uparrow$", alpha=.2, color='k',
                            markersize=markersize, label="Outliers (up/down)")
         if np.sum(i_diff_outliers_lo) > 0:
-            axs[2, 0].plot(jd_diff_outliers_lo, diff_outliers_lo, ls='', marker=r"$\downarrow$", alpha=.2, color='k',
+            axs[1, 0].plot(jd_diff_outliers_lo, diff_outliers_lo, ls='', marker=r"$\downarrow$", alpha=.2, color='k',
                            markersize=markersize)
         # Plot a line at missing or discarded data
         for discard in discard_in_1:
-            axs[2, 0].axvline(dict_1["full"]["jd"][discard], color="C0", lw=.5,
+            axs[1, 0].axvline(dict_1["full"]["jd"][discard], color="C0", lw=.5,
                               label="{} {} pt".format(dict_1["pipeline"], dict_1["rv_method"])
                               if discard == discard_in_1[0] else '')
         for discard in discard_in_2:
-            axs[2, 0].axvline(dict_2["full"]["jd"][discard], color="C1", lw=.5,
+            axs[1, 0].axvline(dict_2["full"]["jd"][discard], color="C1", lw=.5,
                               label="{} {} pt".format(dict_2["pipeline"], dict_2["rv_method"])
                               if discard == discard_in_2[0] else '')
 
         # Plot histogram of differences between APERO and ESO
-        axs[2, 1].set(xlabel="Count")
-        axs[2, 1].hist(diff_no_outliers, bins=9, histtype="step", color='k', orientation="horizontal")
+        axs[1, 1].set(xlabel="Count")
+        axs[1, 1].hist(diff_no_outliers, bins=9, histtype="step", color='k', orientation="horizontal")
         # Plot single point to show error bar size
-        axs[2, 1].errorbar(1, med_diff, dict_1["no_outliers"]["mederr"],
+        axs[1, 1].errorbar(1, med_diff, dict_1["no_outliers"]["mederr"],
                            ls='', marker='', color="C0", capsize=capsize,
                            label="APERO {} med. err. bar".format(dict_1["rv_method"]))
-        axs[2, 1].errorbar(2, med_diff, dict_2["no_outliers"]["mederr"],
+        axs[1, 1].errorbar(2, med_diff, dict_2["no_outliers"]["mederr"],
                            ls='', marker='', color="C1", capsize=capsize,
                            label="ESO {} med. err. bar".format(dict_2["rv_method"]))
 
     # Final edits to the plot -------------------------------------------------------------------------------------
-    # Put legend outside subplots for rows 1 & 2
+    # Put legend outside subplots for row 1
     h, l = axs[0, 0].get_legend_handles_labels()
     axs[0, 1].legend(h, l, borderaxespad=0, fontsize=fontsize - 4, loc=2)
     axs[0, 1].axis("off")
-    h, l = axs[1, 0].get_legend_handles_labels()
-    axs[1, 1].legend(h, l, borderaxespad=0, fontsize=fontsize - 4, loc=2)
-    axs[1, 1].axis("off")
-    # axs[0, 0].legend(frameon=False, fontsize=fontsize - 4)
-    # axs[1, 0].legend(frameon=False, fontsize=fontsize - 4)
-    axs[2, 0].legend(frameon=False, fontsize=fontsize - 4, ncols=3)
-    axs[2, 1].legend(frameon=False, fontsize=fontsize - 4)
+    axs[1, 0].legend(frameon=False, fontsize=fontsize - 4, ncols=3)
+    axs[1, 1].legend(frameon=False, fontsize=fontsize - 4)
     axs[0, 0].set(title=("Target: {} | {} {}{} | {} {}{}"
                          .format(target,
                                  dict_1["pipeline"],
@@ -760,7 +847,7 @@ def run_comparison(target, template=None,
 
                     # Iterate over CCF files to get target
                     for ccf_file in ccf_files:
-                        if fits.getheader(ccf_file)["OBJECT"] != target:
+                        if fits.getheader(ccf_file)["DRSOBJN"] != target.upper():
                             continue
                         # Read RJD, RV, RV_ERR
                         hdr = fits.getheader(ccf_file)
