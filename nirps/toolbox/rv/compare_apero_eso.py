@@ -129,25 +129,33 @@ def savehdf5(obj, filename, verbose=False):
 
 
 def sigma(im):
-    """"""  # TODO
+    """
+    Compute a robust sigma (half of the difference between th 85th and 15th percentiles) of a set of numbers.
+
+    :param im:  (ndarray) Array of numbers to compute robust sigma on.
+    :return:    Robust sigma.
+    """
     return (np.nanpercentile(im, 85) - np.nanpercentile(im, 15)) / 2
 
 
 def lowpassfilter(input_vect, width=101):
-    """"""  # TODO
-    # Computes a low-pass filter of an input vector. This is done while properly handling
-    # NaN values, but at the same time being reasonably fast.
-    # Algorithm:
-    #
-    # provide an input vector of an arbtrary length and compute a running NaN median over a
-    # box of a given length (width value). The running median is NOT computed at every pixel
-    # but at steps of 1/4th of the width value. This provides a vector of points where
-    # the nan-median has been computed (ymed) and mean position along the input vector (xmed)
-    # of valid (non-NaN) pixels. This xmed/ymed combination is then used in a spline to
-    # recover a vector for all pixel positions within the input vector.
-    #
-    # When there are no valid pixel in a 'width' domain, the value is skipped in the creation
-    # of xmed and ymed, and the domain is splined over.
+    """
+    Computes a low-pass filter of an input vector. This is done while properly handling NaN values, but at the same time
+    being reasonably fast.
+    Algorithm:
+    provide an input vector of an arbitrary length and compute a running NaN median over a box of a given length (width
+    value). The running median is NOT computed at every pixel but at steps of 1/4th of the width value. This provides a
+    vector of points where the nan-median has been computed (ymed) and mean position along the input vector (xmed) of
+    valid (non-NaN) pixels. This xmed/ymed combination is then used in a spline to recover a vector for all pixel
+    positions within the input vector.
+
+    When there are no valid pixel in a 'width' domain, the value is skipped in the creation of xmed and ymed, and the
+    domain is splined over.
+
+    :param input_vect:  (1darray) Input vector to filter.
+    :param width:       (int, optional) Width of the box of the running NaN median. Default: 101.
+    :return:            lowpass: the low-frequency component of the input vector
+    """
 
     # indices along input vector
     index = np.arange(len(input_vect))
@@ -208,7 +216,14 @@ def lowpassfilter(input_vect, width=101):
 
 
 def compute_ptpscatter(v=None, method='linear_sigma'):
-    """"""  # TODO
+    """
+    Compute the point-to-point scatter of an input vector.
+
+    :param v:       (1darray) Input vector to compute the point-to-point scatter on.
+    :param method:  (str, optional) Method to compute the scatter. Options are "naive_sigma", "linear_sigma",
+                    "lowpass_sigma", "quadratic_sigma". Default: "linear_sigma".
+    :return:        Point-to-point scatter.
+    """
     if v is None:
         return ['naive_sigma', 'linear_sigma', 'lowpass_sigma', 'quadratic_sigma']
 
@@ -393,8 +408,6 @@ def compare_lbl(path_apero, nsig=10, path_savefig=''):
         # Compare RVs -------------------------------------------------------------------------------------------------
         compare_rvs(dict_1=dict_apero, dict_2=dict_eso, target=target, template=template, nsig=nsig,
                     path_savefig=path_savefig)
-
-        exit()  # TODO remove this to loop through all rdb files
 
     return 0
 
