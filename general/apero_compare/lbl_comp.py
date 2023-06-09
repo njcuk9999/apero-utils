@@ -37,12 +37,12 @@ REF_NAME = str(NAME1)
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 paths = dict()
-paths[NAME1] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_nb19/lblrdb/'
-paths[NAME2] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_jupiter/lblrdb/'
-paths[NAME3] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_rali/lblrdb/'
-paths[NAME4] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_newworld/lblrdb/'
-paths[NAME5] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_lam/lblrdb/'
-paths[NAME6] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/lblrdb/'
+paths[NAME1] = '/scratch3/lbl/data/minidata_comp/minidata2_07284_20230608_rali/lblrdb/'
+paths[NAME2] = '/scratch3/lbl/data/minidata_comp/minidata2_07284_20230608_jupiter/lblrdb/'
+paths[NAME3] = '/scratch3/lbl/data/minidata_comp/minidata2_07284_20230608_nb19/lblrdb/'
+# paths[NAME4] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_newworld/lblrdb/'
+# paths[NAME5] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_lam/lblrdb/'
+# paths[NAME6] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/lblrdb/'
 
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)

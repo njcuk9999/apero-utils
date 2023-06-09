@@ -778,15 +778,16 @@ class ObjectData:
         ccf_props['LAST_CCF_PROC'] = Time(np.max(hdict['CCF_PROC'])).iso
         # -----------------------------------------------------------------
         # select ccf files to use
-        select_files = choose_ccf_files(ccf_props)
+        ccf_props = choose_ccf_files(ccf_props)
         # load the first file to get the rv vector
-        ccf_table0 = Table.read(select_files[0], format='fits', hdu=1)
+        ccf_table0 = Table.read(ccf_props['select_files'][0], format='fits',
+                                hdu=1)
         # get the rv vector
         ccf_props['rv_vec'] = ccf_table0['RV']
         # storage for the CCF vectors
-        all_ccf = np.zeros((len(select_files), len(ccf_table0)))
+        all_ccf = np.zeros((len(ccf_props['select_files']), len(ccf_table0)))
         # loop around all other files, load them and load into all_ccf
-        for row, select_file in enumerate(select_files):
+        for row, select_file in enumerate(ccf_props['select_files']):
             table_row = Table.read(select_file, format='fits', hdu=1)
             # get the combined CCF for this file
             ccf_row = table_row['Combined']
@@ -822,8 +823,10 @@ class ObjectData:
         plot_base_name = 'ccf_plot_' + self.objname + '.png'
         # get the plot path
         plot_path = os.path.join(item_save_path, plot_base_name)
+        # set the plot title
+        plot_title = f'CCF {self.objname} [mask={ccf_props["chosen_mask"]}]'
         # plot the lbl figure
-        ccf_plot(ccf_props, plot_path, plot_title=f'CCF {self.objname}')
+        ccf_plot(ccf_props, plot_path, plot_title=plot_title)
         # -----------------------------------------------------------------
         # construct the stats
         # -----------------------------------------------------------------
@@ -1963,7 +1966,7 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
     return object_classes
 
 
-def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
+def choose_ccf_files(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
     """
     Choose CCF files based on the most numerious of a single mask
     and then the MAX_NUM_CCF selected uniformly in time
@@ -1990,8 +1993,11 @@ def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
     time_mask = drs_utils.uniform_time_list(smjd, MAX_NUM_CCF)
     # filter files by the time mask
     sfiles = sfiles[time_mask]
+
+    ccf_props['select_files'] = sfiles
+    ccf_props['chosen_mask'] = chosen_mask
     # return ccf props
-    return sfiles
+    return ccf_props
 
 
 def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
@@ -2959,20 +2965,20 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
     # add rv uncertainty
-    stat_dict['Description'].append('RV Uncertainty (25, 50, 75 percentile)')
+    stat_dict['Description'].append('RV Uncertainty lbl.rdb (25, 50, 75 percentile)')
     stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*p_sigma))
     # add the absolute deviation
-    stat_dict['Description'].append('RV Absolute Deviation (25, 50, 75 '
+    stat_dict['Description'].append('RV Absolute Deviation lbl.rdb (25, 50, 75 '
                                     'percentile)')
     stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*v_sigma))
     # add the number of measurements
-    stat_dict['Description'].append('Number of Measurements')
+    stat_dict['Description'].append('Number of lbl.rdb Measurements')
     stat_dict['Value'].append(len(vrad))
     # add the spurious low points
-    stat_dict['Description'].append('Number of Spurious Low Points')
+    stat_dict['Description'].append('Number of lbl.rdb Spurious Low Points')
     stat_dict['Value'].append(np.sum(low))
     # add the spurious high points
-    stat_dict['Description'].append('Number of Spurious High Points')
+    stat_dict['Description'].append('Number of lbl.rdb Spurious High Points')
     stat_dict['Value'].append(np.sum(high))
     # add the number of nights
     stat_dict['Description'].append('Number of Nights')
@@ -3142,6 +3148,7 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     first_ccf = ccf_props['FIRST_CCF']
     last_ccf = ccf_props['LAST_CCF']
     last_ccf_proc = ccf_props['LAST_CCF_PROC']
+    chosen_mask = ccf_props['chosen_mask']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -3158,6 +3165,9 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     # --------------------------------------------------------------------------
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
+    # add mask used
+    stat_dict['Description'].append('Mask used')
+    stat_dict['Value'].append(chosen_mask)
     # add systemic velocity
     stat_dict['Description'].append('CCF systemic velocity')
     value = r'{:.2f} :math:`\pm` {:.2f} m/s'.format(sys_vel, err_sys_vel)
