@@ -153,7 +153,7 @@ def get_args():
     parser.add_argument('--pmra', type=float, default=np.nan,
                         help='The proper motion in RA of the object (if not '
                              'using apero/simbad) [mas/yr]')
-    parser.add_argument('--pmdec', type=float, default=np.nan,
+    parser.add_argument('--pmde', type=float, default=np.nan,
                         help='The proper motion in DEC of the object (if not '
                              'using apero/simbad) [mas/yr]')
     parser.add_argument('--plx', type=float, default=np.nan,
