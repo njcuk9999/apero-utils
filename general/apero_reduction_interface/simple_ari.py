@@ -2988,10 +2988,11 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     frame[0].set(ylabel='Velocity [m/s]')
     # only keep one unique labels for legend
     handles, labels = [], []
-    for h, l in frame[0].get_legend_handles_labels():
-        if l not in labels:
-            handles.append(h)
-            labels.append(l)
+    raw_handles, raw_labels = frame[0].get_legend_handles_labels()
+    for it in range(len(raw_labels)):
+        if raw_labels[it] not in labels:
+            handles.append(raw_handles[it])
+            labels.append(raw_labels[it])
     # add legend
     frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
@@ -3005,9 +3006,10 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
                        alpha=0.5, color='purple', ls='None',
                        label='Possibily bad (reset rv)')
     # over plot the bad points from above
-    bad_points = np.array(bad_points)
-    frame[1].plot_date(plot_date[bad_points], snr_h[bad_points], fmt='.',
-                       alpha=0.5, color='red', ls='None', label='Outliers')
+    if len(bad_points) > 0:
+        bad_points = np.array(bad_points)
+        frame[1].plot_date(plot_date[bad_points], snr_h[bad_points], fmt='.',
+                           alpha=0.5, color='red', ls='None', label='Outliers')
 
     # add properties
     frame[1].grid(which='both', color='lightgray', linestyle='--')
@@ -3241,7 +3243,7 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     first_ccf = ccf_props['FIRST_CCF']
     last_ccf = ccf_props['LAST_CCF']
     last_ccf_proc = ccf_props['LAST_CCF_PROC']
-    version_ccf = ccf_props['VERSION']
+    version_ccf = ccf_props['CCF_VERSION']
     chosen_mask = ccf_props['chosen_mask']
     # --------------------------------------------------------------------------
     # compute the stats
