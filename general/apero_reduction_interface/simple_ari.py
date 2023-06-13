@@ -2943,7 +2943,8 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     frame[0].plot_date(plot_date[reset_mask], vrad[reset_mask], fmt='.',
                        alpha=0.5,  color='purple', ls='None')
     # plot the error bars
-    frame[0].errorbar([~reset_mask], vrad[~reset_mask], yerr=svrad[~reset_mask],
+    frame[0].errorbar(plot_date[~reset_mask], vrad[~reset_mask],
+                      yerr=svrad[~reset_mask],
                       marker='o', alpha=0.5, color='green', ls='None',
                       label='Good')
     frame[0].errorbar(plot_date[reset_mask], vrad[reset_mask],
