@@ -92,7 +92,7 @@ TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
 LBL_FILETYPES = ['lbl_rdb', 'lbl2_rdb', 'lbl_drift', 'lbl2_drift', 'lbl_fits']
 LBL_FILENAMES = ['lbl_{0}_{1}.rdb', 'lbl2_{0}_{1}.rdb',
                  'lbl_{0}_{1}_drift.rdb', 'lbl2_{0}_{1}_drift.rdb',
-                 'lbl_{1}_{0}.fits']
+                 'lbl_{0}_{1}.fits']
 LBL_FILE_DESC = ['RDB file', 'RDB2 file', 'Drift file', 'Drift2 file',
                  'LBL RDB fits file']
 LBL_DOWNLOAD = [True, True, True, True, False]
