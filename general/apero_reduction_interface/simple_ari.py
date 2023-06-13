@@ -768,8 +768,6 @@ class ObjectData:
         self.lbl_combinations = lbl_objtmps.keys()
 
 
-
-
     def get_ccf_parameters(self):
 
         from apero.core.math import normal_fraction
@@ -1679,7 +1677,7 @@ def compile_apero_object_table(gsettings) -> Dict[str, ObjectData]:
     filetypes['sc1d'] = FileType('sc1d', block_kind='red', chain='tcorr',
                                  kw_output='SC1D_V_FILE', fiber=science_fiber)
     # lbl files added as filetype but don't count in same was as other files
-    filetypes['lbl_fits'] = FileType('lbl_fits', count=False)
+    filetypes['lbl.fits'] = FileType('lbl.fits', count=False)
     for filetype in LBL_FILETYPES:
         filetypes[filetype] = FileType(filetype, count=False)
     # -------------------------------------------------------------------------
@@ -1963,7 +1961,7 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
         object_class.lbl_templates = templates
         object_class.lbl_select = _select
         # set the number of files
-        object_class.filetypes['lbl_fits'].num = _count
+        object_class.filetypes['lbl.fits'].num = _count
         # ---------------------------------------------------------------------
         # LBL files
         # ---------------------------------------------------------------------
@@ -2506,7 +2504,7 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
         if object_class.has_polar:
             table_dict['pfits'].append(object_class.filetypes['pfiles'].num)
         # set the number of lbl files
-        table_dict['lbl'].append(object_class.filetypes['lbl_fits'].num)
+        table_dict['lbl'].append(object_class.filetypes['lbl.fits'].num)
         # set the last observed value raw file
         table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
         # set the last processed value
