@@ -2938,13 +2938,16 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # Top plot LBL RV
     # --------------------------------------------------------------------------
     # plot the points
-    frame[0].plot_date(plot_date, vrad, fmt='.', alpha=0.5,
-                       color='green', ls='None')
+    frame[0].plot_date(plot_date[~reset_mask], vrad[~reset_mask], fmt='.',
+                       alpha=0.5, color='green', ls='None')
+    frame[0].plot_date(plot_date[reset_mask], vrad[reset_mask], fmt='.',
+                       alpha=0.5,  color='purple', ls='None')
     # plot the error bars
-    frame[0].errorbar(plot_date, vrad[~reset_mask], yerr=svrad[~reset_mask],
+    frame[0].errorbar([~reset_mask], vrad[~reset_mask], yerr=svrad[~reset_mask],
                       marker='o', alpha=0.5, color='green', ls='None',
                       label='Good')
-    frame[0].errorbar(plot_date, vrad[reset_mask], yerr=svrad[reset_mask],
+    frame[0].errorbar(plot_date[reset_mask], vrad[reset_mask],
+                      yerr=svrad[reset_mask],
                       marker='o', alpha=0.5, color='purple', ls='None',
                       label='Possibily bad (reset rv)')
     # find percentile cuts that will be expanded by 150% for the ylim
