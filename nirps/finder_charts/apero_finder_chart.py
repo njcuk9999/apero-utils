@@ -61,7 +61,7 @@ FWHM['G'] = 2.0 * uu.arcsec
 FWHM['J'] = 2.0 * uu.arcsec
 # 1-sigma magnitude limit G
 SIGMA_LIMIT = dict()
-SIGMA_LIMIT['G'] = 17
+SIGMA_LIMIT['G'] = 18
 SIGMA_LIMIT['J'] = 15
 SIGMA_LIMIT['H'] = 15
 SIGMA_LIMIT['K'] = 15
