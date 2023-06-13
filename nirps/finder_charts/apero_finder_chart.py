@@ -61,10 +61,10 @@ FWHM['G'] = 2.0 * uu.arcsec
 FWHM['J'] = 2.0 * uu.arcsec
 # 1-sigma magnitude limit G
 SIGMA_LIMIT = dict()
-SIGMA_LIMIT['G'] = 20
-SIGMA_LIMIT['J'] = 17
-SIGMA_LIMIT['H'] = 17
-SIGMA_LIMIT['K'] = 17
+SIGMA_LIMIT['G'] = 17
+SIGMA_LIMIT['J'] = 15
+SIGMA_LIMIT['H'] = 15
+SIGMA_LIMIT['K'] = 15
 # mag limit above 1-sigma limit for null sources
 MAG_LIMIT = -1
 # max proper motion to search for
