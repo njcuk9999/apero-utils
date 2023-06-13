@@ -746,8 +746,8 @@ def from_cmd_args(args: Any) -> Dict[str, Any]:
               args.pmra, args.pmde]
     # loop around keys and values and populate object dictionary
     for key, value in zip(keys, values):
-        # check for null value
-        if np.isnan(value):
+        # skip string values and check for null value
+        if not isinstance(value, str) and np.isnan(value):
             raise ValueError(f'Parameter {key} is None. Must be set if not '
                              f'using apero or simbad')
         objdict[key] = value
