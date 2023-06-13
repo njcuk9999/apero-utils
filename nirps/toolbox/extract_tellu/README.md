@@ -8,6 +8,8 @@ Please edit this file when you add or change files in this directory.
 
 ## Index
 
-- File 1
+- NIRPS_plot_time_series.py
     
-        Information on file 1
+        Script that plots the basic detrending steps applied to a spectral time series.
+        Input = list of exposures
+        Output = Time series steps plot
