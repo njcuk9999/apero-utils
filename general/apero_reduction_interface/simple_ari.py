@@ -2965,7 +2965,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # used for plotting but also for the flagging of outliers
     ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
 
     # store the bad points
     bad_points = []
@@ -2982,8 +2982,9 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
     for ix in range(len(xpoints)):
         bad_points.append(ix)
-        arrow = frame[0].annotate('', xy=(xpoints[ix], ylim[0] - l_arrow * 2),
-                                  xytext=(xpoints[ix], ylim[0] + l_arrow),
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] + l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] - l_arrow * 2),
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
@@ -2995,8 +2996,9 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     for ix in range(len(xpoints)):
         bad_points.append(ix)
 
-        arrow = frame[0].annotate('', xy=(xpoints[ix], ylim[1] - l_arrow * 2),
-                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] + l_arrow),
+                                  xytext=(xpoints[ix], ylim[1] - l_arrow * 2),
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
@@ -3179,7 +3181,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     else:
         ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
     # flag the low outliers
     low = vrad < ylim[0]
 
@@ -3192,8 +3194,9 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     xpoints = np.array(mjd.plot_date[low], dtype=float)
     # x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
-        arrow = frame[0].annotate('', xy=(xpoints[ix], ylim[0] + l_arrow * 2),
-                                  xytext=(xpoints[ix], ylim[0] - l_arrow),
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] - l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] + l_arrow * 2),
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
@@ -3203,8 +3206,9 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     high = vrad > ylim[1]
     xpoints = np.array(mjd.plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        arrow = frame[0].annotate('', xy=(xpoints[ix], ylim[1] - l_arrow * 2),
-                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] + l_arrow),
+                                  xytext=(xpoints[ix], ylim[1] - l_arrow * 2),
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
