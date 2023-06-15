@@ -18,6 +18,8 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.patches import FancyArrowPatch
 import numpy as np
 import pandas as pd
 import yaml
@@ -2929,6 +2931,13 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     snr_h = lbl_props['snr_h']
     snr_h_label = lbl_props['SNR_H_LABEL']
     reset_mask = lbl_props['RESET_RV']
+    # sort data by date
+    sort = np.argsort(plot_date)
+    plot_date = plot_date[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
+    snr_h = snr_h[sort]
+    reset_mask = reset_mask[sort]
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
@@ -2948,7 +2957,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     frame[0].errorbar(plot_date[reset_mask], vrad[reset_mask],
                       yerr=svrad[reset_mask],
                       marker='o', alpha=0.5, color='purple', ls='None',
-                      label='Possibily bad (reset rv)')
+                      label='Possibly bad (reset rv)')
     # find percentile cuts that will be expanded by 150% for the ylim
     pp = np.nanpercentile(vrad, [10, 90])
     diff = pp[1] - pp[0]
@@ -2962,23 +2971,37 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     bad_points = []
     # flag the low outliers
     low = vrad < ylim[0]
+
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='->', linewidth=2, color='red')
+    arrow = None
+
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(plot_date[low], dtype=float)
     x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
     for ix in range(len(xpoints)):
         bad_points.append(ix)
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+        arrow = frame.annotate('', xy=(xpoints[ix], ylim[0] - l_arrow * 2),
+                       xytext=(xpoints[ix], ylim[0] + l_arrow),
+                       arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
         bad_points.append(ix)
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+
+        arrow = frame.annotate('', xy=(xpoints[ix], ylim[0] - l_arrow * 2),
+                       xytext=(xpoints[ix], ylim[0] + l_arrow),
+                       arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
@@ -2991,8 +3014,18 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
         if raw_labels[it] not in labels:
             handles.append(raw_handles[it])
             labels.append(raw_labels[it])
-    # add legend
-    frame[0].legend(handles, labels, loc=0)
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow, ))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Bottom plot SNR
     # --------------------------------------------------------------------------
@@ -3037,6 +3070,7 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     high = lbl_props['high']
     vel_domain = lbl_props['ylim']
     version_lbl = lbl_props['version']
+    num_reset_rv = lbl_props['NUM_RESET_RV']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -3073,6 +3107,9 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     # add the number of nights
     stat_dict['Description'].append('Number of Nights')
     stat_dict['Value'].append(n_nights)
+    # add the number of reset RV points
+    stat_dict['Description'].append('Number of Reset RV Points')
+    stat_dict['Value'].append(num_reset_rv)
     # add the systemic velocity
     stat_dict['Description'].append('Systemic Velocity')
     stat_dict['Value'].append('{:.2f} m/s'.format(sys_vel))
@@ -3108,6 +3145,12 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     has_fit = ccf_props['has_fit']
     fit = ccf_props['fit']
     xlim = ccf_props['xlim']
+
+    # sort data by mjd.plot_date
+    sort = np.argsort(mjd.plot_date)
+    mjd = mjd[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
     # ylim = ccf_props['ylim']
     # --------------------------------------------------------------------------
     # setup the figure
@@ -3122,7 +3165,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
     frame[0].plot_date(mjd.plot_date, vrad, fmt='.', alpha=0.5,
-                       color='green')
+                       color='green', label='Good')
     # plot the CCF RV errors
     frame[0].errorbar(mjd.plot_date, vrad, yerr=svrad, fmt='o',
                       alpha=0.5, color='green')
@@ -3139,25 +3182,59 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     l_arrow = (ylim[1] - ylim[0]) / 10.0
     # flag the low outliers
     low = vrad < ylim[0]
+
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='->', linewidth=2, color='red')
+    arrow = None
+
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(mjd.plot_date[low], dtype=float)
     x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame.annotate('', xy=(xpoints[ix], ylim[0] + l_arrow * 2),
+                       xytext=(xpoints[ix], ylim[0] -l_arrow),
+                       arrowprops=arrowprops)
+
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(mjd.plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame.annotate('', xy=(xpoints[ix], ylim[0] - l_arrow * 2),
+                       xytext=(xpoints[ix], ylim[0] + l_arrow),
+                       arrowprops=arrowprops)
+
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].grid(which='both', color='lightgray', ls='--')
     frame[0].set(xlabel='Date', ylabel='Velocity [m/s]')
+    # only keep one unique labels for legend
+    handles, labels = [], []
+    raw_handles, raw_labels = frame[0].get_legend_handles_labels()
+    for it in range(len(raw_labels)):
+        if raw_labels[it] not in labels:
+            handles.append(raw_handles[it])
+            labels.append(raw_labels[it])
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow, ))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Middle plot median CCF
     # --------------------------------------------------------------------------
@@ -3636,6 +3713,20 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
             passed[row] = True
     # return the passed mask
     return passed
+
+
+class ArrowHandler(HandlerPatch):
+    def __init__(self):
+        # get super call
+        super().__init__()
+        # set arrow props
+        self.arrowprops = None
+
+    def create_artists(self, legend, orig_handle, xdescent, ydescent,
+                       width, height, fontsize, trans):
+        arrow = FancyArrowPatch((0, 3), (25, 3), **self.arrowprops)
+        arrow.set_mutation_scale(10)
+        return [arrow]
 
 
 # =============================================================================
