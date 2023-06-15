@@ -2966,16 +2966,14 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
     l_arrow = 0.05 * (ylim[1] - ylim[0])
-
     # store the bad points
     bad_points = []
-    # flag the low outliers
-    low = vrad < ylim[0]
-
     # set the arrow properties
     arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
     arrow = None
-
+    # --------------------------------------------------------------------------
+    # flag the low outliers
+    low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(plot_date[low], dtype=float)
@@ -3006,6 +3004,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
         # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
         #                color='red', head_width=0.01 * x_range,
         #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
@@ -3184,13 +3183,12 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
         ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
     l_arrow = 0.05 * (ylim[1] - ylim[0])
-    # flag the low outliers
-    low = vrad < ylim[0]
-
     # set the arrow properties
     arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
     arrow = None
-
+    # --------------------------------------------------------------------------
+    # flag the low outliers
+    low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(mjd.plot_date[low], dtype=float)
@@ -3218,6 +3216,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
         # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
         #                color='red', head_width=0.01 * x_range,
         #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].grid(which='both', color='lightgray', ls='--')
