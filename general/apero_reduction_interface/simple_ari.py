@@ -2973,7 +2973,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     low = vrad < ylim[0]
 
     # set the arrow properties
-    arrowprops = dict(arrowstyle='->', linewidth=2, color='red')
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
     arrow = None
 
     # get the x and y values of the outliers to be looped over within
@@ -2985,6 +2985,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
         arrow = frame[0].annotate('',
                                   xy=(xpoints[ix], ylim[0] + l_arrow),
                                   xytext=(xpoints[ix], ylim[0] - l_arrow * 2),
+                                  xycoords='data', textcoords='data',
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
@@ -2999,6 +3000,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
         arrow = frame[0].annotate('',
                                   xy=(xpoints[ix], ylim[1] + l_arrow),
                                   xytext=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xycoords='data', textcoords='data',
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
@@ -3186,7 +3188,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     low = vrad < ylim[0]
 
     # set the arrow properties
-    arrowprops = dict(arrowstyle='->', linewidth=2, color='red')
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
     arrow = None
 
     # get the x and y values of the outliers to be looped over within
@@ -3197,6 +3199,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
         arrow = frame[0].annotate('',
                                   xy=(xpoints[ix], ylim[0] - l_arrow),
                                   xytext=(xpoints[ix], ylim[0] + l_arrow * 2),
+                                  xycoords='data', textcoords='data',
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
@@ -3209,6 +3212,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
         arrow = frame[0].annotate('',
                                   xy=(xpoints[ix], ylim[1] + l_arrow),
                                   xytext=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xycoords='data', textcoords='data',
                                   arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
