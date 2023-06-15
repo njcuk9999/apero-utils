@@ -2983,8 +2983,8 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     for ix in range(len(xpoints)):
         bad_points.append(ix)
         arrow = frame[0].annotate('',
-                                  xy=(xpoints[ix], ylim[0] - l_arrow * 2),
-                                  xytext=(xpoints[ix], ylim[0] + l_arrow),
+                                  xy=(xpoints[ix], ylim[0] + l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] - l_arrow * 2),
                                   xycoords='data', textcoords='data',
                                   arrowprops=arrowprops)
 
@@ -3197,8 +3197,8 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
         arrow = frame[0].annotate('',
-                                  xy=(xpoints[ix], ylim[0] + l_arrow * 2),
-                                  xytext=(xpoints[ix], ylim[0] - l_arrow),
+                                  xy=(xpoints[ix], ylim[0] - l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] + l_arrow * 2),
                                   xycoords='data', textcoords='data',
                                   arrowprops=arrowprops)
 
