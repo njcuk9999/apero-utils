@@ -2995,8 +2995,8 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     for ix in range(len(xpoints)):
         bad_points.append(ix)
 
-        arrow = frame.annotate('', xy=(xpoints[ix], ylim[0] - l_arrow * 2),
-                       xytext=(xpoints[ix], ylim[0] + l_arrow),
+        arrow = frame[0].annotate('', xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                       xytext=(xpoints[ix], ylim[1] + l_arrow),
                        arrowprops=arrowprops)
 
         # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
@@ -3192,7 +3192,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     xpoints = np.array(mjd.plot_date[low], dtype=float)
     x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
-        arrow = frame.annotate('', xy=(xpoints[ix], ylim[0] + l_arrow * 2),
+        arrow = frame[0].annotate('', xy=(xpoints[ix], ylim[0] + l_arrow * 2),
                        xytext=(xpoints[ix], ylim[0] -l_arrow),
                        arrowprops=arrowprops)
 
@@ -3204,8 +3204,8 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     high = vrad > ylim[1]
     xpoints = np.array(mjd.plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        arrow = frame.annotate('', xy=(xpoints[ix], ylim[0] - l_arrow * 2),
-                       xytext=(xpoints[ix], ylim[0] + l_arrow),
+        arrow = frame.annotate('', xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                       xytext=(xpoints[ix], ylim[1] + l_arrow),
                        arrowprops=arrowprops)
 
 
