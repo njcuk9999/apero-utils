@@ -47,15 +47,16 @@ mode = "he"  # "ha": high accuracy | "he": high efficiency
 version = "07276"  # version number I assume?
 onoff = "online"  # "online" | "offline"
 
+# Target & template
+target = "Proxima"  # name of target
+template = "Proxima"  # name of template; only used if on of the two dataset is from LBL
+
+# Paths, pipelines, and RV methods for the pair comparison ------------------------------------------------------------
 # Paths to LBL rdb or CCF files
 # path_1 = "/cosmos99/nirps/lbl-data/nirps_{}_{}_{}/lblrdb/".format(mode, version, onoff)  # APERO LBL
 path_1 = "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff)  # APERO CCF
 path_2 = ''  # ESO (this path is not used; the code will query DACE for CCF, and crash for LBL)
 # path_2 = "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff)  # APERO CCF
-
-# Target & template
-target = "Proxima"  # name of target
-template = "Proxima"  # name of template; only used if on of the two dataset is from LBL
 
 # Pipelines to compare (APERO/ESO)
 pipeline_1 = "APERO"
@@ -64,6 +65,23 @@ pipeline_2 = "ESO"
 # RV methods to compare (LBL/CCF)
 rv_method_1 = "CCF"
 rv_method_2 = "CCF"
+# ---------------------------------------------------------------------------------------------------------------------
+
+# Paths, pipelines, and RV methods for the overplot of all pipelines & methods  ---------------------------------------
+do_compare_all = True  # set to True to overplot all pipelines & methods
+
+# Paths to LBL rdb and CCF files
+paths_all = ["/cosmos99/nirps/lbl-data/nirps_{}_{}_{}/lblrdb/".format(mode, version, onoff),  # APERO CCF
+             "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff),  # APERO LBL
+             ''  # ESO CCF (this path is not used; the code will query DACE for CCF, and crash for LBL)
+             ]
+
+# Pipelines (APERO/ESO)
+pipelines_all = ["APERO", "APERO", "ESO"]
+
+# RV methods (LBL/CCF)
+rv_methods_all = ["LBL", "CCF", "CCF"]
+# ---------------------------------------------------------------------------------------------------------------------
 
 # Path to save figures (and ccf dictionary)
 path_savefig = ""  # TODO Where?
@@ -563,11 +581,11 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
         if npts_1 != npts_2:
             night_start_ymd = Time(night_start, format="jd").to_datetime()
             night_end_ymd = Time(night_end, format="jd").to_datetime()
-            print("Night {} - {}: {} pts in {} {}, {} pts in {} {}".format(night_start_ymd, night_end_ymd,
-                                                                           npts_1, dict_1["pipeline"],
-                                                                           dict_1["rv_method"],
-                                                                           npts_2, dict_2["pipeline"],
-                                                                           dict_2["rv_method"]))
+            print("Night {:04d}-{:02d}-{:02d} to {:04d}-{:02d}-{:02d}: {} pts in {} {}, {} pts in {} {}"
+                  .format(night_start_ymd.year, night_start_ymd.month, night_start_ymd.day,
+                          night_end_ymd.year, night_end_ymd.month, night_end_ymd.day,
+                          npts_1, dict_1["pipeline"], dict_1["rv_method"],
+                          npts_2, dict_2["pipeline"], dict_2["rv_method"]))
             # Discard the entire night for both reductions (cannot compare)
             if npts_1 > 0:
                 discard_in_1 = np.concatenate((discard_in_1, np.where(i_pts_1)[0]))
@@ -590,11 +608,11 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
         if npts_2 != npts_1:
             night_start_ymd = Time(night_start, format="jd").to_datetime()
             night_end_ymd = Time(night_end, format="jd").to_datetime()
-            print("Night {} - {}: {} pts in {} {}, {} pts in {} {}".format(night_start_ymd, night_end_ymd,
-                                                                           npts_2, dict_2["pipeline"],
-                                                                           dict_2["rv_method"],
-                                                                           npts_1, dict_1["pipeline"],
-                                                                           dict_1["rv_method"]))
+            print("Night {:04d}-{:02d}-{:02d} to {:04d}-{:02d}-{:02d}: {} pts in {} {}, {} pts in {} {}"
+                  .format(night_start_ymd.year, night_start_ymd.month, night_start_ymd.day,
+                          night_end_ymd.year, night_end_ymd.month, night_end_ymd.day,
+                          npts_2, dict_2["pipeline"], dict_2["rv_method"],
+                          npts_1, dict_1["pipeline"], dict_1["rv_method"]))
             # Discard the entire night for both reductions (cannot compare)
             if npts_2 > 0:
                 discard_in_2 = np.concatenate((discard_in_2, np.where(i_pts_2)[0]))
@@ -782,7 +800,7 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
                                                            "-{}".format(template) if dict_2["rv_method"] == "LBL"
                                                            else ''
                                                            )
-    # Save
+    # Save figure  # TODO
     # fig.savefig(path_savefig + savefname + ".png")
     # fig.savefig(path_savefig + savefname + ".pdf")
     # print("Saved in {}.png/pdf".format(savefname))
@@ -820,7 +838,7 @@ def run_comparison(target, template=None,
     # Sanity checks
     pipeline_1, pipeline_2 = pipeline_1.upper(), pipeline_2.upper()
     assert mode in ["he", "ha"], "ERROR! 'mode' must be either 'he' (high efficiency) or 'ha' (high accuracy)."
-    assert version in ["07276"], "ERROR! 'version' must be '07276'."  # add options when more than 1 are availabe
+    assert version in ["07276"], "ERROR! 'version' must be '07276'."  # add options when more than 1 are available
     assert onoff in ["online", "offline"], "ERROR! 'onoff' must be either 'online' or 'offline'."
     assert pipeline_1 in ["APERO", "ESO"], "ERROR! 'pipeline_1' must be either 'APERO' or 'ESO'."
     assert pipeline_2 in ["APERO", "ESO"], "ERROR! 'pipeline_2' must be either 'APERO' or 'ESO'."
@@ -829,7 +847,7 @@ def run_comparison(target, template=None,
     if rv_method_1 == "LBL" or rv_method_2 == "LBL":
         assert template is not None, "ERROR! 'template' must be provided to load LBL data."
 
-    # Put data into a dictionaries ------------------------------------------------------------------------------------
+    # Put data in dictionaries ----------------------------------------------------------------------------------------
     paths = [path_1, path_2]
     pipelines = [pipeline_1, pipeline_2]
     rv_methods = [rv_method_1, rv_method_2]
@@ -885,6 +903,142 @@ def run_comparison(target, template=None,
     return 0
 
 
+def compare_all(target, template, paths, pipelines, rv_methods, mode="he", version="07276", onoff="online",
+                path_savefig='', nsig=10):
+    """
+    Compare RVs from all pipelines and methods.
+
+    :param target:          (str) Target name.
+    :param template:        (str, optional) Template name if one of the two or both RV methods is/are LBL.
+                            Default: None.
+    :param paths:           (list) List of absolute paths to the directories where the RVs are stored.
+    :param pipelines:       (list) List of strings with the names of the pipelines.
+    :param rv_methods:      (list) List of strings with the names of the RV methods used to compute the RVs.
+    :param mode:            (str, optional) Mode of the pipeline. Must be either 'he' (high efficiency) or 'ha' (high
+                            accuracy). Default: 'he'.
+    :param version:         (str, optional) Version of the pipeline. Default: '07276'.
+    :param onoff:           (str, optional) Online or offline reduction. Must be either 'online' or 'offline'.
+                            Default: 'online'.
+    :param path_savefig:    (str, optional) Absolute path to the directory where the figure will be saved. Default: ''.
+    :param nsig:            (int, optional) Number of sigmas to use when clipping outliers. Default: 10.
+    :return:                0 if everything went well.
+    """
+    # Sanity checks
+    assert mode in ["he", "ha"], "ERROR! 'mode' must be either 'he' (high efficiency) or 'ha' (high accuracy)."
+    assert version in ["07276"], "ERROR! 'version' must be '07276'."  # add options when more than 1 are available
+    assert onoff in ["online", "offline"], "ERROR! 'onoff' must be either 'online' or 'offline'."
+
+    # Set up figure to overplot all RVs
+    fig, ax = plt.subplots(nrows=1, ncols=2, figsize=(20, 6), gridspec_kw={"width_ratios": [3, 1]})
+
+    # Put data in dictionaries ----------------------------------------------------------------------------------------
+    dicts = []
+    for i, (path, pipeline, rv_method) in enumerate(zip(paths, pipelines, rv_methods)):
+        if rv_method == "LBL":
+            if pipeline == "APERO":
+                # Get date, rv, rv_err from rdb file
+                rjd, rv, rv_err = open_rdb(path + "lbl_{}_{}.rdb".format(target.upper(), template.upper()))
+            else:  # ESO: No LBL at the moment
+                print("ERROR! LBL RVs have not been computed with ESO reduction yet.")
+                exit()
+        else:  # CCF
+            if pipeline == "APERO":
+                # Lists to store times, RVs, RV_ERRs
+                rjd, rv, rv_err = [], [], []
+
+                # List of APERO nights
+                night_list = glob.glob(path + "2*")
+
+                # Sort the list of APERO nights
+                night_list.sort()
+
+                # Iterate over nights
+                for i_night, night_i in enumerate(night_list):
+                    # Get all CCF files in this night
+                    ccf_files = glob.glob(night_i + "/NIRPS*_pp_e2dsff_tcorr_A_ccf_*_neg.fits_A.fits")
+
+                    # Iterate over CCF files to get target
+                    for ccf_file in ccf_files:
+                        if fits.getheader(ccf_file)["DRSOBJN"] != target.upper():
+                            continue
+                        # Read RJD, RV, RV_ERR
+                        hdr = fits.getheader(ccf_file)
+                        rjd.append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
+                        rv.append(hdr["RV_CORR"] * 1e3)  # [km/s -> m/s]
+                        rv_err.append(hdr["DVRMS_CC"])  # [m/s]
+
+                # Convert lists to arrays
+                rjd, rv, rv_err = np.array(rjd), np.array(rv), np.array(rv_err)
+
+            else:  # ESO
+                # Get date, rv, rv_err from DACE
+                rjd, rv, rv_err = query_dace(target, mode=mode)
+
+        # Process rvs (remove outliers, get JD, compute median and std, etc.)
+        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method, nsig=nsig))
+
+        # Plot RVs
+        ax[0].errorbar(dicts[i]["no_outliers"]["jd"], dicts[i]["no_outliers"]["rv"] - dicts[i]["no_outliers"]["median"],
+                       yerr=dicts[i]["no_outliers"]["rv_err"], fmt=".", color="C{}".format(i), alpha=.5,
+                       label=("{} {} ({} pts)".format(dicts[i]["pipeline"],
+                                                      dicts[i]["rv_method"],
+                                                      dicts[i]["full"]["jd"].size
+                                                      )
+                              )
+                             + ("\nmed. = {:.2f} m/s\nmed.err. = {:.2f} m/s\nstd = {:.2f} m/s\nptp scat. = {:.2f} m/s"
+                                .format(dicts[i]["no_outliers"]["median"],
+                                        dicts[i]["no_outliers"]["mederr"],
+                                        dicts[i]["no_outliers"]["std"],
+                                        dicts[i]["no_outliers"]["ptpscat"]
+                                        )
+                                )
+                             + ('\n' if i < len(paths) - 1 else '')
+                       )
+
+        # Plot outliers
+        ax_ymin, ax_ymax = ax[0].get_ylim()
+        if dicts[i]["outliers_up"]["jd"].size > 0:
+            ax[0].plot(dicts[i]["outliers_up"]["jd"], ax_ymax * np.ones_like(dicts[i]["outliers_up"]["jd"]),
+                       ls='', marker=r'$\uparrow$', alpha=.2, color="C0", markersize=markersize)
+        if dicts[i]["outliers_lo"]["jd"].size > 0:
+            ax[0].plot(dicts[i]["outliers_lo"]["jd"], ax_ymin * np.ones_like(dicts[i]["outliers_lo"]["jd"]),
+                       ls='', marker=r'$\downarrow$', alpha=.2, color="C0", markersize=markersize)
+
+    ax[0].axhline(0, ls="--", color="k", alpha=.5)
+
+    # Make a YYYY-MM-DD x axis
+    xlims = ax[0].get_xlim()
+    xlims = (int(xlims[0]), int(xlims[1]))
+    deltax = np.max((int((xlims[1] - xlims[0]) // 4), 1))
+    if deltax > 1:
+        xticks = np.arange(xlims[0], xlims[1] + deltax / 2, deltax)
+        xlabels = Time(xticks, format="jd").to_datetime()
+        xlabels = ["{:4d}-{:02d}-{:02d}".format(xlab_i.year, xlab_i.month, xlab_i.day) for xlab_i in xlabels]
+    else:
+        xticks = ax[0].get_xticks()
+        xticks = xticks[::xticks.size // 4]
+        xlabels = Time(xticks, format="jd").to_datetime()
+        xlabels = ["{:4d}-{:02d}-{:02d} {:02d}:{:02d}"
+                   .format(xlab_i.year, xlab_i.month, xlab_i.day, xlab_i.hour, xlab_i.minute) for xlab_i in xlabels]
+    ax[0].set_xticks(ticks=xticks, labels=xlabels)
+    ax[0].set(xlabel="Date", ylabel="Relative velocity [m/s]")
+
+    # Add legend (place it on the subplot on the right)
+    h, l = ax[0].get_legend_handles_labels()
+    ax[1].legend(h, l, borderaxespad=0, fontsize=fontsize - 4, loc=2)
+    ax[1].axis("off")
+
+    fig.tight_layout()
+    
+    # Save figure  # TODO
+    # fig.savefig(path_savefig + "{}_{}_all.png".format(target.upper(), template.upper()))
+    # fig.savefig(path_savefig + "{}_{}_all.pdf".format(target.upper(), template.upper()))
+
+    plt.show()
+
+    return 0
+
+
 # =====================================================================================================================
 # Start of code
 # =====================================================================================================================
@@ -893,6 +1047,11 @@ if __name__ == '__main__':
                    path_1=path_1, path_2=path_2, pipeline_1=pipeline_1, pipeline_2=pipeline_2,
                    rv_method_1=rv_method_1, rv_method_2=rv_method_2,
                    mode=mode, version=version, onoff=onoff, path_savefig=path_savefig, nsig=nsig)
+
+    if do_compare_all:
+        compare_all(target=target, template=template, paths=paths_all, pipelines=pipelines_all,
+                    rv_methods=rv_methods_all, mode=mode, version=version, onoff=onoff, path_savefig=path_savefig,
+                    nsig=nsig)
 
 
 # =====================================================================================================================
