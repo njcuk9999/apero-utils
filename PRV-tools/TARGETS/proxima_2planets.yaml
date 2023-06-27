@@ -15,13 +15,13 @@ bin_per_epoch: True
 #       'BERV' and 'SqExp' -> a GP on the BERV without a periodic term (only square expo)
 #       'None' and 'None' -> no activity correction, only keplerian fit
 activity_correction:
-    type: 'Train' # Detrend, RV, BERV, Train, None
+    type: 'RV' # Detrend, RV, BERV, Train, None
     quantity: 'CONTRAST' # DTEMP, d2v, vrad
     derivative: True # For Detrend ONLY, is it the value or its time derivative?
     gp_params: # Parameters for the GP
         kernel: 'QuasiPer'
         # expressed in units of vrad, adjusted for other quantities
-        amp: [1.5, 'Jeffreys', 0.5, True]
+        amp: [1.5, 'Gaussian', 0.5, True]
         per: [90.0, 'Gaussian', 15, True] # period
         perlength: [1.0, 'Jeffreys', [0.3,3.0], True] # length of the periodic kernel
         # must be longer than the longest period in the model

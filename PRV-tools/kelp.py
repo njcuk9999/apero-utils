@@ -854,3 +854,4 @@ def kegp(yaml_file,cornerplot = False):
         print('\t{}, {}'.format(par,post.params[par].value))
 
     print(post.bic())
+
