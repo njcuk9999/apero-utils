@@ -9,21 +9,24 @@ Created on 2023-07-03 at 14:51
 
 @author: cook
 """
-from typing import Dict, Any
+import os
+from typing import Any, Dict, Union
 
 import yaml
 
+from apero_raw_tests.core import base
 
 # =============================================================================
 # Define variables
 # =============================================================================
+__VERSION__ = base.__VERSION__
+__AUTHOR__ = base.__AUTHOR__
 
-# -----------------------------------------------------------------------------
 
 # =============================================================================
 # Define functions
 # =============================================================================
-def read_yaml(yaml_filename: str) -> Dict[str, Any]:
+def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
     """
     Read the yaml file and add to settings
 
@@ -32,6 +35,15 @@ def read_yaml(yaml_filename: str) -> Dict[str, Any]:
 
     :return: dict, updated settings dictionary
     """
+    # deal with yaml_filename being None
+    if yaml_filename is None:
+        emsg = 'yaml_filename must be set to a valid file'
+        raise base.AperoRawTestsError(emsg)
+    # deal with yaml_filename not existing
+    if not os.path.exists(yaml_filename):
+        emsg = 'yaml_filename {0} does not exist'
+        eargs = [yaml_filename]
+        raise base.AperoRawTestsError(emsg.format(*eargs))
     # read the yaml file
     with open(yaml_filename, 'r') as f:
         yaml_data = yaml.load(f, Loader=yaml.FullLoader)

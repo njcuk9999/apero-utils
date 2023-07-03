@@ -9,17 +9,21 @@ Created on 2023-07-03 at 14:45
 
 @author: cook
 """
-
-from apero_raw_tests.core import core
-
+from apero_raw_tests.core import base
+from apero_raw_tests.core import misc
+from apero_raw_tests.core import general
 
 # =============================================================================
 # Define variables
 # =============================================================================
-run_tests = core.run_tests
-load_params = core.load_params
 
+load_params = misc.load_params
 
+run_tests = general.run_tests
+
+run_single_test = general.run_single_test
+
+upload_tests = general.upload_tests
 
 # =============================================================================
 # End of code
