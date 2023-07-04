@@ -11,11 +11,14 @@ Created on 2023-07-03 at 14:37
 """
 from typing import Any, Dict
 
+from apero_raw_tests.core import io
+from apero_raw_tests.core import misc
+
 # =============================================================================
 # Define variables
 # =============================================================================
 # name of the column in database, must be unique
-NAME = 'BLANK'
+NAME = 'OBSDIR'
 # define any other constants here that you want moving to the parameters.py
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
@@ -26,9 +29,7 @@ NAME = 'BLANK'
 # =============================================================================
 def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     """
-    Blank test - this tests whether test was run (should always return True)
-    All other tests should return True or False, and only print messages if
-    log is True.
+    Test with observation directory exists
 
     Passed = True
 
@@ -39,14 +40,32 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     :return: bool, True if passed, False otherwise
     """
-    # we don't use parameters here but all tests must take params as first
-    #   and can use any argument from parameters
-    _ = params
+    # define parameters we use here
+    raw_directory = params['raw dir']
     # -------------------------------------------------------------------------
-    # all print out messages must be wrapped in if log
     if log:
-        print('BLANK TEST: This is a blank test - it should always return True')
-        print('OBSDIR: {0}'.format(obsdir))
+        msg = 'Analysing observation directory: {0}'
+        margs = [obsdir]
+        misc.log_msg(msg.format(*margs), level='')
+    # -------------------------------------------------------------------------
+    # get all observation directories
+    obsdirs = io.get_obs_dirs(params)
+    # -------------------------------------------------------------------------
+    # test if observation directory exists in our list
+    if obsdir not in obsdirs:
+        if log:
+            msg = ('OBSDIR TEST: Observation directory {0} does not exist in '
+                   '{1} - TEST FAILED')
+            margs = [obsdir, raw_directory]
+            misc.log_msg(msg.format(*margs), level='warning')
+        return False
+    # -------------------------------------------------------------------------
+    if log:
+        msg = ('OBSDIR TEST: Observation directory {0} exists in {1} '
+               '- TEST PASSED')
+        margs = [obsdir]
+        misc.log_msg(msg.format(*margs), level='')
+    # -------------------------------------------------------------------------
     return True
 
 

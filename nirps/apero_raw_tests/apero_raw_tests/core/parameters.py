@@ -60,12 +60,18 @@ parameters = dict()
 parameters['raw dir'] = Const('raw dir', None, not_none=True, dtype=str)
 
 # observation directory (i.e. night name)
-parameters['obsdir'] = Const('obs dir', None, not_none=True, dtype=str)
+parameters['obsdir'] = Const('obs dir', None, dtype=str)
 
 # the test to run (if running a single test)
-parameters['testname'] = Const('testname', None, dtype=str)
+parameters['test_name'] = Const('testname', None, dtype=str)
 
 
+# define the sheet id for the google sheet
+parameters['sheet id'] = Const('sheet id',
+                               '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
+                               dtype=str)
+# define the sheet name for the google sheet
+parameters['sheet name'] = Const('sheet name', 'Monitor', dtype=str)
 
 # =============================================================================
 # Start of code

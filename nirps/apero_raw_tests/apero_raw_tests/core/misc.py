@@ -47,7 +47,7 @@ def get_args() -> Dict[str, Any]:
 
 
 def add_cmd_arg(args, key, value):
-    if value not in [None, 'None']:
+    if value in [None, 'None']:
         if args[key] not in [None, 'None']:
             value = args[key]
     # force value to None if 'None'
@@ -89,13 +89,15 @@ def load_params(yaml_file: Optional[str] = None,
 
 def log_msg(message, level: str = '', color: Optional[str] = None):
     # set up print string
-    print_string = base.AstropyTime.now() + ' | ' + message
+    print_string = f'{base.AstropyTime.now()} | {message}'
     # deal with level
     if color is None and level is not None:
         if level == 'error':
             color = 'red'
         elif level == 'warning':
             color = 'yellow'
+        elif level == 'info':
+            color = 'cyan'
         else:
             color = 'green'
     # add color (if required)

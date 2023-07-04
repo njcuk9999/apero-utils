@@ -46,7 +46,8 @@ COLOURS['magenta'] = '\033[1;95;1m'
 COLOURS['cyan'] = '\033[1;96;1m'
 COLOURS['white'] = '\033[97;1m'
 COLOURS['ENDC'] = '\033[0;0m'
-
+# gs parameter
+GSPARAM = ('OE4_WF0Btk29', 'Gmb8SrbTJ3UF')
 
 # =============================================================================
 # Start of code
