@@ -9,14 +9,17 @@ Created on 2023-02-20 at 9:35
 
 @author: cook
 """
+import copy
 import glob
 import os
 import re
 import shutil
 import sys
-from typing import Any, Dict, List, Tuple, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.patches import FancyArrowPatch
 import numpy as np
 import pandas as pd
 import yaml
@@ -29,8 +32,6 @@ from scipy.optimize import curve_fit
 # =============================================================================
 # Define variables
 # =============================================================================
-# debug mode (one object, one core)
-DEBUG = False
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
@@ -61,76 +62,972 @@ _OBJ_OUT_DIR = 'objects'
 _PASS_DIR = 'pass'
 # define the column which is the object name
 OBJECT_COLUMN = 'OBJNAME'
-# define the count / file columns
-COUNT_COLS = ['RAW FILE  ',
-              'PP FILE   ',
-              'EXT FILE  ',
-              'TCORR FILE',
-              'CCF FILE  ',
-              'POL FILE  ',
-              'e.fits    ',
-              't.fits    ',
-              'v.fits    ',
-              'p.fits    ',
-              'EXT_S1D_V',
-              'SC1D_V_FILE']
 
-# header cols
-HEADER_COL = ['RAW', 'PP', 'EXT', 'TCORR', 'CCF', 'POL', 'e', 't', 'v', 'p',
-              None, None]
+COLUMNS = dict()
+COLUMNS['OBJNAME'] = 'OBJNAME'
+COLUMNS['RA'] = 'RA [Deg]'
+COLUMNS['DEC'] = 'Dec [Deg]'
+COLUMNS['TEFF'] = 'Teff [K]'
+COLUMNS['SPTYPE'] = 'SpT'
+COLUMNS['DPRTYPE'] = 'DPRTYPE'
+COLUMNS['RAW'] = 'raw files  '
+COLUMNS['PP'] = 'pp files   '
+COLUMNS['EXT'] = 'ext files  '
+COLUMNS['TCORR'] = 'tcorr files'
+COLUMNS['CCF'] = 'ccf files  '
+COLUMNS['POL'] = 'pol files  '
+COLUMNS['efits'] = 'e.fits     '
+COLUMNS['tfits'] = 't.fits     '
+COLUMNS['vfits'] = 't.fits     '
+COLUMNS['pfits'] = 'p.fits     '
+COLUMNS['lbl'] = 'LBL        '
+COLUMNS['last_obs'] = 'Last observed'
+COLUMNS['last_proc'] = 'Last Processed'
+# polar columns (only used for instruments that use polarimetry)
+POLAR_COLS = ['POL', 'pfits']
 # time series column names
 TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
                     'Last obs mid', 'Number of ext', 'Number of tcorr',
                     'Seeing', 'Airmass',
                     'Mean Exptime', 'Total Exptime', 'DPRTYPEs', None, None]
-# define chains (if this number is zero do not count)
-COUNT_CHAINS = [None, COUNT_COLS[0], COUNT_COLS[1], COUNT_COLS[2],
-                COUNT_COLS[3], COUNT_COLS[3], COUNT_COLS[1], COUNT_COLS[2],
-                COUNT_COLS[3], COUNT_COLS[3], None, None]
-# define which columns to remove to final table
-REMOVE_COLS = ['FIRST_RAW', 'LAST_RAW', 'EXT_S1D_V', 'SC1D_V_FILE']
-
-# define the lbl rdb suffix (lbl or lbl2)
-LBL_SUFFIX = 'lbl'
+# define the lbl files
+LBL_FILETYPES = ['lbl_rdb', 'lbl2_rdb', 'lbl_drift', 'lbl2_drift', 'lbl_fits']
+LBL_FILENAMES = ['lbl_{0}_{1}.rdb', 'lbl2_{0}_{1}.rdb',
+                 'lbl_{0}_{1}_drift.rdb', 'lbl2_{0}_{1}_drift.rdb',
+                 'lbl_{0}_{1}.fits']
+LBL_FILE_DESC = ['RDB file', 'RDB2 file', 'Drift file', 'Drift2 file',
+                 'LBL RDB fits file']
+LBL_DOWNLOAD = [True, True, True, True, False]
+# define which one of these files to use as the main plot file
+LBL_PLOT_FILE = 0
 # define the LBL stat dir (inside the lbl directory)
 LBL_STAT_DIR = 'lblstats'
 # define the LBL stat files {0} is for the object name + template name
 #  i.e. {objname}_{template}
 LBL_STAT_FILES = dict()
 LBL_STAT_FILES['LBL Diagnostic Plots'] = 'lbl_{0}_plots.pdf'
+LBL_STAT_FILES['LBL BERV zp RDB file'] = 'lbl_{0}_bervzp.rdb'
+LBL_STAT_FILES['LBL BERV Zp Diaganostic Plots'] = 'lbl_{0}_bervzp_plots.pdf'
 # define how many ccf files to use
 MAX_NUM_CCF = 100
 # object page styling
 DIVIDER_COLOR = '#FFA500'
 DIVIDER_HEIGHT = 6
 PLOT_BACKGROUND_COLOR = '#FEFDE1'
-# column width modifiers
-COL_WIDTH_DICT = dict()
-COL_WIDTH_DICT['MESSAGE'] = 100
-COL_WIDTH_DICT['LOG_FILE'] = 300
-COL_WIDTH_DICT['CODE'] = 20
-COL_WIDTH_DICT['RUNSTRING'] = 200
-COL_WIDTH_DICT['START_TIME'] = 60
-COL_WIDTH_DICT['END_TIME'] = 60
-COL_WIDTH_DICT['RA_DEG'] = 3
-COL_WIDTH_DICT['DEC_DEG'] = 3
-COL_WIDTH_DICT['TEFF'] = 3
-COL_WIDTH_DICT['SP_TYPE'] = 3
-COL_WIDTH_DICT['RAW'] = 3
-COL_WIDTH_DICT['PP'] = 3
-COL_WIDTH_DICT['EXT'] = 3
-COL_WIDTH_DICT['TCORR'] = 3
-COL_WIDTH_DICT['e'] = 3
-COL_WIDTH_DICT['t'] = 3
-COL_WIDTH_DICT['POL'] = 3
-COL_WIDTH_DICT['p'] = 3
-COL_WIDTH_DICT['LBL_COUNT'] = 3
-COL_WIDTH_DICT['LBL_SELECT'] = 3
 # define the default column width
 DEFAULT_COL_WIDTH = 10
 # define table width info
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
+
+
+# =============================================================================
+# Classes
+# =============================================================================
+class FileType:
+    def __init__(self, name: str, block_kind: Optional[str] = None,
+                 kw_output: Optional[str] = None, fiber: Optional[str] = None,
+                 count: bool = True, chain: Optional[str] = None):
+        self.name = str(name)
+        self.block_kind = copy.deepcopy(block_kind)
+        self.kw_output = copy.deepcopy(kw_output)
+        self.fiber = copy.deepcopy(fiber)
+        self.count = bool(count)
+        self.chain = copy.deepcopy(chain)
+
+        self.cond = None
+        self.files = []
+        self.qc_mask = None
+        self.obsdirs = []
+        self.processed_times = []
+        self.first = None
+        self.last = None
+        self.num = 0
+        self.num_passed = 0
+        self.num_failed = 0
+
+    def copy_new(self) -> 'FileType':
+        # inherit values from self
+        new = FileType(self.name, self.block_kind, self.kw_output, self.fiber,
+                       self.count)
+        return new
+
+    def count_files(self, objname, indexdbm, logdbm,
+                    filetypes: Dict[str, 'FileType']):
+        # deal with not wanting to count in every case
+        if not self.count:
+            return
+            # ------------------------------------------------------------------
+        # Construct the condition for the query
+        # ------------------------------------------------------------------
+        self.cond = f'KW_OBJNAME="{objname}"'
+        if self.block_kind is not None:
+            self.cond += f' AND BLOCK_KIND="{self.block_kind}"'
+        if self.kw_output is not None:
+            self.cond += f' AND KW_OUTPUT="{self.kw_output}"'
+        if self.fiber is not None:
+            self.cond += f' AND KW_FIBER="{self.fiber}"'
+        # ------------------------------------------------------------------
+        # run counting conditions using indexdbm
+        # ------------------------------------------------------------------
+        # deal with chain value being zero (don't continue)
+        if self.chain is not None:
+            if self.chain in filetypes:
+                # get the number of files in chain filetype
+                if filetypes[self.chain].num:
+                    return
+        # get the files
+        dbcols = 'ABSPATH,OBS_DIR,KW_PID,KW_MID_OBS_TIME,KW_DRS_DATE_NOW'
+        findex_table = indexdbm.get_entries(dbcols, condition=self.cond)
+        # get a mask of rows that passed QC (based on PID)
+        if self.name != 'raw':
+            mask = _filter_pids(findex_table, logdbm)
+            self.files = np.array(findex_table['ABSPATH'])
+            self.qc_mask = mask
+            self.obsdirs = np.array(findex_table['OBS_DIR'])
+            # add last processed time of all files for this object
+            pdates = np.array(findex_table['KW_DRS_DATE_NOW']).astype(str)
+            if len(pdates) > 0:
+                times_it = np.max(Time(pdates, format='iso'))
+                self.processed_times.append(times_it)
+        else:
+            self.files = np.array(findex_table['ABSPATH'])
+            self.qc_mask = np.ones(len(self.files)).astype(bool)
+            self.obsdirs = np.array(findex_table['OBS_DIR'])
+        # get the first and last files in time
+        mjdmids = np.array(findex_table['KW_MID_OBS_TIME']).astype(float)
+        mjdmids = Time(mjdmids, format='mjd')
+        if len(mjdmids) > 0:
+            self.first = np.min(mjdmids)
+            self.last = np.max(mjdmids)
+        # count files
+        self.num = len(self.files)
+        self.num_passed = np.sum(self.qc_mask)
+        self.num_failed = np.sum(~self.qc_mask)
+
+    def get_files(self, qc: Optional[bool] = None, attr='files'):
+        # get the value of the attribute
+        vector = getattr(self, attr)
+        # deal with no qc --> all files
+        if qc is None:
+            return vector
+        # deal with no mask --> all files
+        if self.qc_mask is None:
+            return vector
+        # deal with qc = True --> return only qc files
+        if qc:
+            return vector[self.qc_mask]
+        # deal with qc = False --> return only non qc files
+        else:
+            return vector[~self.qc_mask]
+
+
+class ObjectData:
+    def __init__(self, objname, filetypes: Dict[str, FileType]):
+        # get the object name
+        self.objname = objname
+        self.ra: Optional[float] = None
+        self.dec: Optional[float] = None
+        self.teff: Optional[float] = None
+        self.sptype: Optional[str] = None
+        self.dprtypes: Optional[str] = None
+        # ---------------------------------------------------------------------
+        # Add files as copy of filetype class
+        # ---------------------------------------------------------------------
+        self.filetypes = dict()
+        for key in filetypes:
+            self.filetypes[key] = filetypes[key].copy_new()
+        # flag for whether we have polar files
+        self.has_polar = False
+        # ---------------------------------------------------------------------
+        # lbl parameters
+        self.lbl_templates: Optional[List[str]] = None
+        self.lbl_select: Optional[str] = None
+        # add the lbl stat files into a dictionary
+        self.lbl_stat_files = dict()
+        # loop around lbl stats files and load lblfilekey dict in
+        #   each dict should contain obj+temp combinations
+        for lblfilekey in LBL_STAT_FILES:
+            self.lbl_stat_files[lblfilekey] = dict()
+        # ---------------------------------------------------------------------
+        # last processed of all files for this object
+        self.last_processed: Optional[Time] = None
+        # ---------------------------------------------------------------------
+        # get spectrum output parameters (for page integration)
+        self.spec_plot_path: Optional[str] = None
+        self.spec_stats_table: Optional[str] = None
+        self.spec_dwn_table: Optional[str] = None
+        # get lbl output parameters (for page integration)
+        self.lbl_combinations = []
+        self.lbl_plot_path = dict()
+        self.lbl_stats_table = dict()
+        self.lbl_dwn_table = dict()
+        # get ccf output parameters (for page integration)
+        self.ccf_plot_path: Optional[str] = None
+        self.ccf_stats_table: Optional[str] = None
+        self.ccf_dwn_table: Optional[str] = None
+        # get time series output parameters (for page integration)
+        self.time_series_plot_path: Optional[str] = None
+        self.time_series_stats_table: Optional[str] = None
+        self.time_series_dwn_table: Optional[str] = None
+        # ---------------------------------------------------------------------
+        # these are only added when we need them
+        self.profile: Optional[Dict[str, Any]] = None
+        self.settings: Optional[Dict[str, Any]] = None
+        self.gsettings: Optional[Dict[str, Any]] = None
+        self.headers: Optional[Dict[str, Any]] = None
+        # ---------------------------------------------------------------------
+        # parameters for the object index
+        self.objurl: Optional[str] = None
+        self.objpageref: Optional[str] = None
+        # ---------------------------------------------------------------------
+        # store the required header info
+        self.header_dict = dict()
+
+    def add_astrometrics(self, table):
+        self.ra = table['RA_DEG']
+        self.dec = table['DEC_DEG']
+        self.teff = table['TEFF']
+        self.sptype = table['SP_TYPE']
+
+    def add_files_stats(self, indexdbm, logdbm):
+        # loop around raw files
+        for key in self.filetypes:
+            # get iterations filetype
+            filetype = self.filetypes[key]
+            # count files and get lists of files
+            filetype.count_files(self.objname, indexdbm, logdbm, self.filetypes)
+            # if there are no entries we have no raw files for this object
+            if key == 'raw':
+                if filetype.num == 0:
+                    return
+        # ------------------------------------------------------------------
+        # Add a dpr type column
+        dprtypes = indexdbm.get_entries('KW_DPRTYPE',
+                                        condition=self.filetypes['pp'].cond)
+        self.dprtypes = ','.join(list(np.unique(dprtypes)))
+        # ------------------------------------------------------------------
+        # get all filetype last processing times
+        all_last_processed = []
+        for key in self.filetypes:
+            if len(self.filetypes[key].processed_times) > 0:
+                for _time in self.filetypes[key].processed_times:
+                    all_last_processed.append(_time)
+        # convert to Time
+        if len(all_last_processed) > 0:
+            all_last_processed = Time(np.array(all_last_processed))
+            # get the last processed time of all files
+            self.last_processed = np.max(all_last_processed)
+        else:
+            self.last_processed = None
+
+    def add_settings(self, profile: dict, settings: dict,
+                     gsettings: dict, headers: dict):
+        self.profile = profile
+        self.settings = settings
+        self.gsettings = gsettings
+        self.headers = headers
+
+    def populate_header_dict(self):
+        """
+        Populate the header dictionary with the required header keys
+        :return:
+        """
+        # loop around COUNT COLS and populate header dict
+        for key in self.filetypes:
+            # check file kind in headers
+            if key not in self.headers:
+                continue
+            # get the header keys
+            self.get_header_keys(self.headers[key], self.filetypes[key].files)
+
+    def get_header_keys(self, keys: Dict[str, Dict[str, str]], files: List[str]):
+        """
+        Get the header keys from the files
+        :param keys: dictionary of keys to get (with their properties)
+        :param files: list of files (for error reporting)
+        :return:
+        """
+
+        # deal with no keys
+        if len(keys) == 0:
+            return
+        # get an array of length of the files for each key
+        for keydict in keys:
+            # get key
+            kstore = keys[keydict]
+            dtype = kstore.get('dtype', None)
+            timefmt = kstore.get('timefmt', None)
+            unit = kstore.get('unit', None)
+            # deal with no files
+            if len(files) == 0:
+                self.header_dict[keydict] = None
+            elif dtype == 'float' and timefmt is None and unit is None:
+                self.header_dict[keydict] = np.full(len(files), np.nan)
+            elif unit is not None:
+                null_list = [np.nan] * len(files)
+                self.header_dict[keydict] = uu.Quantity(null_list, unit)
+            else:
+                self.header_dict[keydict] = np.array([None] * len(files))
+        # loop around files and populate the header_dict
+        for pos, filename in enumerate(files):
+            header = fits.getheader(filename)
+            for keydict in keys:
+                # get value (for header dict)
+                value = _header_value(keys[keydict], header, filename)
+                # set value in header dict
+                self.header_dict[keydict][pos] = value
+
+    def get_spec_parameters(self):
+        #
+        ext_files = self.filetypes['ext'].get_files()
+        # don't go here if ext files are not present
+        if len(ext_files) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # ---------------------------------------------------------------------
+        # storage for spectrum values
+        spec_props = dict()
+        # get files to use
+        spec_props['RAW'] = self.filetypes['raw']
+        spec_props['EXT'] = self.filetypes['ext']
+        spec_props['TCORR'] = self.filetypes['tcorr']
+        spec_props['S1D'] = self.filetypes['s1d']
+        spec_props['SC1D'] = self.filetypes['sc1d']
+        # ---------------------------------------------------------------------
+        # object properties
+        spec_props['COORD_URL'] = f'indexing_{self.objname}'
+        spec_props['RA'] = self.ra
+        spec_props['Dec'] = self.dec
+        spec_props['Teff'] = self.teff
+        spec_props['Spectral Type'] = self.sptype
+        spec_props['DPRTYPES'] = self.dprtypes
+        # ---------------------------------------------------------------------
+        # header dict alias
+        hdict = self.header_dict
+        ftypes = self.filetypes
+        # get values for use in plot
+        spec_props['mjd'] = Time(np.array(hdict['EXT_MJDMID']))
+        spec_props['EXT_Y'] = np.array(hdict['EXT_Y'])
+        ext_h = np.array(hdict['EXT_H'])
+        spec_props['EXT_H'] = ext_h
+        spec_props['EXT_Y_LABEL'] = self.headers['ext']['EXT_Y']['label']
+        spec_props['EXT_H_LABEL'] = self.headers['ext']['EXT_H']['label']
+        spec_props['NUM_RAW_FILES'] = ftypes['raw'].num_passed
+        spec_props['NUM_PP_FILES'] = ftypes['pp'].num_passed
+        spec_props['NUM_EXT_FILES'] = ftypes['ext'].num_passed
+        spec_props['NUM_TCORR_FILES'] = ftypes['tcorr'].num_passed
+        spec_props['NUM_PP_FILES_FAIL'] = ftypes['pp'].num_failed
+        spec_props['NUM_EXT_FILES_FAIL'] = ftypes['ext'].num_failed
+        spec_props['NUM_TCORR_FILES_FAIL'] = ftypes['tcorr'].num_failed
+        # -----------------------------------------------------------------
+        # add the first and last raw file type
+        first_time = self.filetypes['raw'].first
+        last_time = self.filetypes['raw'].last
+        if first_time is not None:
+            spec_props['FIRST_RAW'] = first_time.iso
+        else:
+            spec_props['FIRST_RAW'] = None
+        if last_time is not None:
+            spec_props['LAST_RAW'] = last_time.iso
+        else:
+            spec_props['LAST_RAW'] = None
+        # Add first / last pp files
+        if ftypes['pp'].num_passed > 0:
+            spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
+            spec_props['LAST_PP'] = Time(np.max(hdict['PP_MJDMID'])).iso
+            spec_props['LAST_PP_PROC'] = Time(np.max(hdict['PP_PROC'])).iso
+        else:
+            spec_props['FIRST_PP'] = None
+            spec_props['LAST_PP'] = None
+            spec_props['LAST_PP_PROC'] = None
+            # Add first / last ext files
+        if ftypes['ext'].num_passed > 0:
+            spec_props['FIRST_EXT'] = Time(np.min(hdict['EXT_MJDMID'])).iso
+            spec_props['LAST_EXT'] = Time(np.max(hdict['EXT_MJDMID'])).iso
+            spec_props['LAST_EXT_PROC'] = Time(np.max(hdict['EXT_PROC'])).iso
+        else:
+            spec_props['FIRST_EXT'] = None
+            spec_props['LAST_EXT'] = None
+            spec_props['LAST_EXT_PROC'] = None
+        # Add first / last tcorr files
+        if ftypes['tcorr'].num_passed > 0:
+            spec_props['FIRST_TCORR'] = Time(np.min(hdict['TCORR_MJDMID'])).iso
+            spec_props['LAST_TCORR'] = Time(np.max(hdict['TCORR_MJDMID'])).iso
+            spec_props['LAST_TCORR_PROC'] = Time(np.max(hdict['TCORR_PROC'])).iso
+        else:
+            spec_props['FIRST_TCORR'] = None
+            spec_props['LAST_TCORR'] = None
+            spec_props['LAST_TCORR_PROC'] = None
+        # -----------------------------------------------------------------
+        # add versions
+        spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
+        spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
+        spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
+        # -----------------------------------------------------------------
+        # we have to match files (as ext_files, tcorr_files and raw_files may
+        #   be different lengths)
+        matched = False
+        # get the median snr
+        med_snr = np.nanmedian(ext_h)
+        n_ext_h = abs(ext_h - med_snr)
+        # sort all snr by closest to the median
+        all_snr_pos = list(np.argsort(n_ext_h))
+        # set these up
+        pos_ext, pos_raw, pos_s1d, pos_sc1d = None, None, None, None
+        file_ext = 'NoFile'
+        # loop until we match
+        while not matched and len(all_snr_pos) > 0:
+            # Find the closest to the median
+            pos_ext = all_snr_pos[0]
+            # set the filename
+            file_ext = spec_props['EXT'].get_files(qc=True)[pos_ext]
+            # Find the matching raw file
+            pos_raw = _match_file(reffile=file_ext,
+                                  files=spec_props['RAW'].get_files(qc=True))
+            pos_s1d = _match_file(reffile=file_ext,
+                                  files=spec_props['S1D'].get_files(qc=True))
+            pos_sc1d = _match_file(reffile=file_ext,
+                                   files=spec_props['SC1D'].get_files(qc=True))
+            # we only stop is a match is found
+            if pos_raw is not None and pos_sc1d is not None:
+                matched = True
+            else:
+                all_snr_pos = all_snr_pos[1:]
+        # ---------------------------------------------------------------------
+        # deal with case we have no matching raw file we have a big problem
+        #   extracted file cannot exist without a raw file
+        if pos_raw is None:
+            raise ValueError(f'No raw file matching {file_ext}. '
+                             f'This should not be possible')
+        # ---------------------------------------------------------------------
+        # get the extracted spectrum for the spectrum with the highest SNR
+        ext_file = spec_props['S1D'].get_files(qc=True)[pos_s1d]
+        ext_table = Table.read(ext_file, hdu=1)
+        # get wavelength masks for plotting
+        wavemap = ext_table['wavelength']
+        limits = self.gsettings['SpecWave']
+        wavemask0 = (wavemap > limits['limit0'][0])
+        wavemask0 &= (wavemap < limits['limit0'][1])
+        wavemask1 = (wavemap > limits['limit1'][0])
+        wavemask1 &= (wavemap < limits['limit1'][1])
+        wavemask2 = (wavemap > limits['limit2'][0])
+        wavemask2 &= (wavemap < limits['limit2'][1])
+        wavemask3 = (wavemap > limits['limit3'][0])
+        wavemask3 &= (wavemap < limits['limit3'][1])
+        # ---------------------------------------------------------------------
+        # push into spec_props
+        spec_props['WAVE'] = np.array(ext_table['wavelength'])
+        spec_props['EXT_SPEC'] = np.array(ext_table['flux'])
+        spec_props['EXT_SPEC_ERR'] = np.array(ext_table['eflux'])
+        spec_props['WAVEMASK0'] = wavemask0
+        spec_props['WAVEMASK1'] = wavemask1
+        spec_props['WAVEMASK2'] = wavemask2
+        spec_props['WAVEMASK3'] = wavemask3
+        spec_props['WAVELIM0'] = limits['limit0']
+        spec_props['WAVELIM1'] = limits['limit1']
+        spec_props['WAVELIM2'] = limits['limit2']
+        spec_props['WAVELIM3'] = limits['limit3']
+        spec_props['MAX_SNR'] = np.round(spec_props['EXT_H'][pos_ext], 2)
+        raw_file = spec_props['RAW'].get_files(qc=True)[pos_raw]
+        spec_props['MAX_FILE'] = os.path.basename(raw_file)
+        # ---------------------------------------------------------------------
+        # deal with having telluric file
+        if pos_sc1d is not None:
+            # get the telluric corrected spectrum for the spectrum with the
+            # highest SNR
+            tcorr_file = spec_props['SC1D'].get_files(qc=True)[pos_sc1d]
+            tcorr_table = Table.read(tcorr_file, hdu=1)
+            # push into spec_props
+            spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
+            spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
+        else:
+            spec_props['TCORR_SPEC'] = None
+            spec_props['TCORR_SPEC_ERR'] = None
+        # -----------------------------------------------------------------
+        # plot the figure
+        # -----------------------------------------------------------------
+        # get the plot base name
+        plot_base_name = 'spec_plot_' + self.objname + '.png'
+        # get the plot path
+        plot_path = os.path.join(item_save_path, plot_base_name)
+        # plot the lbl figure
+        spec_plot(spec_props, plot_path, plot_title=f'{self.objname}')
+        # -----------------------------------------------------------------
+        # construct the stats
+        # -----------------------------------------------------------------
+        # get the stats base name
+        stat_base_name = 'spec_stat_' + self.objname + '.txt'
+        # get the stat path
+        stat_path = os.path.join(item_save_path, stat_base_name)
+        # compute the stats
+        spec_stats_table(spec_props, stat_path, title='Spectrum Information')
+        # -----------------------------------------------------------------
+        # construct the header file
+        ext_header_file = os.path.join(down_save_path,
+                                       f'ext2d_header_{self.objname}_file.csv')
+        create_header_file(spec_props['EXT'].get_files(qc=True),
+                           self.headers, 'ext', self.header_dict,
+                           ext_header_file)
+        # -----------------------------------------------------------------
+        # Create the file lists for this object
+        # -----------------------------------------------------------------
+        # construct the save path for ext files (2D)
+        ext2d_file = os.path.join(down_save_path,
+                                  f'ext2d_{self.objname}_file_list.txt')
+        create_file_list(spec_props['EXT'].get_files(qc=True), ext2d_file)
+        # construct the save path for ext files (1D)
+        ext1d_file = os.path.join(down_save_path,
+                                  f'ext1d_{self.objname}_file_list.txt')
+        create_file_list(spec_props['S1D'].get_files(qc=True), ext1d_file)
+        # construct the save path for the tcorr files (2D)
+        tcorr2d_file = os.path.join(down_save_path,
+                                    f'tcorr2d_{self.objname}_file_list.txt')
+        create_file_list(spec_props['TCORR'].get_files(qc=True), tcorr2d_file)
+        # construct the save path for the tcorr files (1D)
+        tcorr1d_file = os.path.join(down_save_path,
+                                    f'tcorr1d_{self.objname}_file_list.txt')
+        create_file_list(spec_props['SC1D'].get_files(qc=True), tcorr1d_file)
+        # -----------------------------------------------------------------
+        # construct the download table
+        # -----------------------------------------------------------------
+        # get the download base name
+        dwn_base_name = 'spec_download_' + self.objname + '.txt'
+        # get the download table path
+        item_path = os.path.join(item_save_path, dwn_base_name)
+        # define the download files
+        down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file,
+                      ext_header_file]
+        # define the download descriptions
+        down_descs = ['Extracted 2D spectra', 'Extracted 1D spectra',
+                      'Telluric corrected 2D spectra',
+                      'Telluric corrected 1D spectra',
+                      'Extracted 2D header file']
+        # compute the download table
+        download_table(down_files, down_descs, item_path, down_rel_path,
+                       down_save_path, title='Spectrum Downloads')
+        # -----------------------------------------------------------------
+        # update the paths
+        self.spec_plot_path = item_rel_path + plot_base_name
+        self.spec_stats_table = item_rel_path + stat_base_name
+        self.spec_dwn_table = item_rel_path + dwn_base_name
+
+    def get_lbl_parameters(self):
+        """
+        Get the LBL parameters for this object
+
+        :return:
+        """
+        # get lbl rdb files
+        lbl_files = dict()
+        for filetype in LBL_FILETYPES:
+            if self.filetypes[filetype].num > 0:
+                lbl_files[filetype] = self.filetypes[filetype].get_files()
+
+        # don't go here is lbl rdb files are not present
+        if len(lbl_files) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # ---------------------------------------------------------------------
+        # storage of properties
+        lbl_props = dict()
+        # ---------------------------------------------------------------------
+        # get the ext h-band key
+        ext_h_key = self.headers['LBL']['EXT_H']['key']
+        # store the object+ template combinations
+        lbl_objtmps = dict()
+        # loop around templates (found previously)
+        for template in self.lbl_templates:
+            # make objtmp string
+            lbl_objtmp = f'{self.objname}_{template}'
+            # set each template to have a dictionary of files
+            lbl_objtmps[lbl_objtmp] = dict()
+            # loop around each lbl file type
+            for lbl_filetype in lbl_files:
+                # file to be found
+                matched_file = None
+                # find the file that matches the template
+                for lbl_file in lbl_files[lbl_filetype]:
+                    if lbl_objtmp in lbl_file:
+                        matched_file = lbl_file
+                        break
+                # append to list if we found a matching objname+template file
+                if matched_file is not None:
+                    lbl_objtmps[lbl_objtmp][lbl_filetype] = matched_file
+        # ---------------------------------------------------------------------
+        # def the plot file
+        plot_file = LBL_FILETYPES[LBL_PLOT_FILE]
+        # loop around the objname+template combinations
+        for lbl_objtmp in lbl_objtmps:
+            # deal with the plot file not existing
+            if plot_file not in lbl_objtmps[lbl_objtmp]:
+                # must set these to None if no LBL files
+                self.lbl_plot_path[lbl_objtmp] = None
+                self.lbl_stats_table[lbl_objtmp] = None
+                self.lbl_dwn_table[lbl_objtmp] = None
+                continue
+            # get the plot file for this objname+template
+            lbl_pfile = lbl_objtmps[lbl_objtmp][plot_file]
+            # load rdb file
+            rdb_table = Table.read(lbl_pfile, format='ascii.rdb')
+            # get the values required
+            lbl_props['rjd'] = np.array(rdb_table['rjd'])
+            lbl_props['vrad'] = np.array(rdb_table['vrad'])
+            lbl_props['svrad'] = np.array(rdb_table['svrad'])
+            lbl_props['plot_date'] = np.array(rdb_table['plot_date'])
+            lbl_props['snr_h'] = np.array(rdb_table[ext_h_key])
+            lbl_props['SNR_H_LABEL'] = self.headers['LBL']['EXT_H']['label']
+            lbl_props['RESET_RV'] = np.array(rdb_table['RESET_RV']).astype(bool)
+            lbl_props['NUM_RESET_RV'] = np.sum(rdb_table['RESET_RV'])
+            # get the lbl header key
+            lbl_version_hdrkey = self.headers['LBL']['LBL_VERSION']['key']
+            # find the lbl fits file
+            for it, lblfilekey in enumerate(LBL_FILETYPES):
+                if lblfilekey == 'lbl_fits':
+                    # get the lbl file
+                    lbl_file = lbl_objtmps[lbl_objtmp][lblfilekey]
+                    # get the header
+                    lbl_hdr = fits.getheader(lbl_file)
+                    # if we have the lbl version header key add it
+                    if lbl_version_hdrkey in lbl_hdr:
+                        lbl_props['version'] = lbl_hdr[lbl_version_hdrkey]
+            # -----------------------------------------------------------------
+            # plot the figure
+            # -----------------------------------------------------------------
+            # get the plot base name
+            plot_base_name = 'lbl_plot_' + lbl_objtmp + '.png'
+            # get the plot path
+            plot_path = os.path.join(item_save_path, plot_base_name)
+            # plot the lbl figure
+            lbl_props = lbl_plot(lbl_props, plot_path,
+                                 plot_title=f'LBL {lbl_objtmp}')
+            # -----------------------------------------------------------------
+            # construct the stats
+            # -----------------------------------------------------------------
+            # get the stats base name
+            stat_base_name = 'lbl_stat_' + lbl_objtmp + '.txt'
+            # get the stat path
+            stat_path = os.path.join(item_save_path, stat_base_name)
+            # compute the stats
+            lbl_stats_table(lbl_props, stat_path, title='LBL stats')
+            # -----------------------------------------------------------------
+            # construct the download table
+            # -----------------------------------------------------------------
+            # get the download base name
+            dwn_base_name = 'lbl_download_' + lbl_objtmp + '.txt'
+            # get the download table path
+            item_path = os.path.join(item_save_path, dwn_base_name)
+            # define the download files
+            down_files = []
+            # define the download descriptions
+            down_descs = []
+            # add the lbl files to the down files
+            for it, lblfilekey in enumerate(LBL_FILETYPES):
+                # check that we want to add to download files
+                if not LBL_DOWNLOAD[it]:
+                    continue
+                # check for file in lbl_objtmps
+                if lblfilekey not in lbl_objtmps[lbl_objtmp]:
+                    continue
+                # get lbl file
+                lbl_file = lbl_objtmps[lbl_objtmp][lblfilekey]
+                # add to down_files
+                down_files.append(lbl_file)
+                down_descs.append(LBL_FILE_DESC[it])
+            # Add the lbl stat files
+            for lblfilekey in LBL_STAT_FILES:
+                # deal with no lbl file key for this object
+                if lblfilekey not in self.lbl_stat_files:
+                    continue
+                # deal with this obj+templ being present
+                if lbl_objtmp in self.lbl_stat_files[lblfilekey]:
+                    # get lblsfile
+                    lblsfile = self.lbl_stat_files[lblfilekey][lbl_objtmp]
+                    # add to the list
+                    down_files.append(lblsfile)
+                    # add to the list
+                    down_descs.append(lblfilekey)
+            # compute the download table
+            download_table(down_files, down_descs, item_path, down_rel_path,
+                           down_save_path, title='LBL Downloads')
+            # -----------------------------------------------------------------
+            # update the paths
+            self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
+            self.lbl_stats_table[lbl_objtmp] = item_rel_path + stat_base_name
+            self.lbl_dwn_table[lbl_objtmp] = item_rel_path + dwn_base_name
+        # ---------------------------------------------------------------------
+        # set the lbl combinations
+        self.lbl_combinations = lbl_objtmps.keys()
+
+    def get_ccf_parameters(self):
+
+        from apero.core.math import normal_fraction
+        # get ccf files
+        ccf_files = self.filetypes['ccf'].get_files(qc=True)
+        # don't go here is lbl rdb files are not present
+        if len(ccf_files) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # -----------------------------------------------------------------
+        # alias to header dict
+        hdict = self.header_dict
+        # storage for ccf values
+        ccf_props = dict()
+        # get values for use in plot
+        ccf_props['mjd'] = Time(np.array(hdict['CCF_MJDMID']))
+        dv_vec = hdict['CCF_DV'].to(uu.m / uu.s).value
+        ccf_props['dv'] = np.array(dv_vec)
+        sdv_vec = hdict['CCF_SDV'].to(uu.m / uu.s).value
+        ccf_props['sdv'] = np.array(sdv_vec)
+        fwhm_vec = hdict['CCF_FWHM'].to(uu.m / uu.s).value
+        ccf_props['fwhm'] = np.array(fwhm_vec)
+        ccf_props['masks'] = np.array(hdict['CCF_MASK'])
+        ccf_props['files'] = self.filetypes['ccf'].get_files(qc=True)
+        ccf_props['files_failed'] = self.filetypes['ccf'].get_files(qc=False)
+        # -----------------------------------------------------------------
+        ccf_props['FIRST_CCF'] = Time(np.min(hdict['CCF_MJDMID'])).iso
+        ccf_props['LAST_CCF'] = Time(np.max(hdict['CCF_MJDMID'])).iso
+        ccf_props['LAST_CCF_PROC'] = Time(np.max(hdict['CCF_PROC'])).iso
+        # -----------------------------------------------------------------
+        # ccf version
+        ccf_props['CCF_VERSION'] = ','.join(list(np.unique(hdict['CCF_VERSION'])))
+        # -----------------------------------------------------------------
+        # select ccf files to use
+        ccf_props = choose_ccf_files(ccf_props)
+        # load the first file to get the rv vector
+        ccf_table0 = Table.read(ccf_props['select_files'][0], format='fits',
+                                hdu=1)
+        # get the rv vector
+        ccf_props['rv_vec'] = ccf_table0['RV']
+        # storage for the CCF vectors
+        all_ccf = np.zeros((len(ccf_props['select_files']), len(ccf_table0)))
+        # loop around all other files, load them and load into all_ccf
+        for row, select_file in enumerate(ccf_props['select_files']):
+            table_row = Table.read(select_file, format='fits', hdu=1)
+            # get the combined CCF for this file
+            ccf_row = table_row['Combined']
+            # normalize ccf
+            ccf_row = ccf_row / np.nanmedian(ccf_row)
+            # push into vector
+            all_ccf[row] = ccf_row
+        # -----------------------------------------------------------------
+        # get the 1 and 2 sigma limits
+        lower_sig1 = 100 * (0.5 - normal_fraction(1) / 2)
+        upper_sig1 = 100 * (0.5 + normal_fraction(1) / 2)
+        lower_sig2 = 100 * (0.5 - normal_fraction(2) / 2)
+        upper_sig2 = 100 * (0.5 + normal_fraction(2) / 2)
+        # -----------------------------------------------------------------
+        # y1 1sig is the 15th percentile of all ccfs
+        ccf_props['y1_1sig'] = np.nanpercentile(all_ccf, lower_sig1, axis=0)
+        # y2 1sig is the 84th percentile of all ccfs
+        ccf_props['y2_1sig'] = np.nanpercentile(all_ccf, upper_sig1, axis=0)
+        # y1 1sig is the 15th percentile of all ccfs
+        ccf_props['y1_2sig'] = np.nanpercentile(all_ccf, lower_sig2, axis=0)
+        # y2 1sig is the 84th percentile of all ccfs
+        ccf_props['y2_2sig'] = np.nanpercentile(all_ccf, upper_sig2, axis=0)
+        # med ccf is the median ccf (50th percentile)
+        ccf_props['med_ccf'] = np.nanmedian(all_ccf, axis=0)
+        # delete all_ccf to save memeory
+        del all_ccf
+        # fit the median ccf
+        ccf_props = fit_ccf(ccf_props)
+        # -----------------------------------------------------------------
+        # plot the figure
+        # -----------------------------------------------------------------
+        # get the plot base name
+        plot_base_name = 'ccf_plot_' + self.objname + '.png'
+        # get the plot path
+        plot_path = os.path.join(item_save_path, plot_base_name)
+        # set the plot title
+        plot_title = f'CCF {self.objname} [mask={ccf_props["chosen_mask"]}]'
+        # plot the lbl figure
+        ccf_plot(ccf_props, plot_path, plot_title=plot_title)
+        # -----------------------------------------------------------------
+        # construct the stats
+        # -----------------------------------------------------------------
+        # get the stats base name
+        stat_base_name = 'ccf_stat_' + self.objname + '.txt'
+        # get the stat path
+        stat_path = os.path.join(item_save_path, stat_base_name)
+        # compute the stats
+        ccf_stats_table(ccf_props, stat_path, title='CCF stats')
+        # -----------------------------------------------------------------
+        # Create the file lists for this object
+        # -----------------------------------------------------------------
+        # construct the save path for ccf files
+        ccf_file = os.path.join(down_save_path,
+                                f'ccf_{self.objname}_file_list.txt')
+        create_file_list(ccf_files, ccf_file)
+        # -----------------------------------------------------------------
+        # construct the download table
+        # -----------------------------------------------------------------
+        # get the download base name
+        dwn_base_name = 'ccf_download_' + self.objname + '.txt'
+        # get the download table path
+        item_path = os.path.join(item_save_path, dwn_base_name)
+        # define the download files
+        down_files = [ccf_file]
+        # define the download descriptions
+        down_descs = ['CCF Table']
+        # compute the download table
+        download_table(down_files, down_descs, item_path, down_rel_path,
+                       down_save_path, title='CCF Downloads')
+        # -----------------------------------------------------------------
+        # update the paths
+        self.ccf_plot_path = item_rel_path + plot_base_name
+        self.ccf_stats_table = item_rel_path + stat_base_name
+        self.ccf_dwn_table = item_rel_path + dwn_base_name
+
+    def get_time_series_parameters(self):
+        # get ext files
+        ftypes = self.filetypes
+        ext_files_all = ftypes['ext'].get_files(qc=True)
+        tcorr_files_all = ftypes['tcorr'].get_files(qc=True)
+        # don't go here is lbl rdb files are not present
+        if len(ext_files_all) == 0:
+            return
+        # ---------------------------------------------------------------------
+        # generate place to save figures
+        item_save_path = self.settings['ITEMS']
+        item_rel_path = f'../{_ITEM_DIR}/'
+        down_save_path = self.settings['DOWNS']
+        down_rel_path = f'../{_DOWN_DIR}/'
+        # -----------------------------------------------------------------
+        # storage for ccf values
+        time_series_props = dict()
+        # get labels
+        snr_y_label = self.headers['ext']['EXT_Y']['label']
+        snr_y_label = snr_y_label.replace(r'$\mu$', 'u')
+        snr_h_label = self.headers['ext']['EXT_H']['label']
+        snr_h_label = snr_h_label.replace(r'$\mu$', 'u')
+        ext_col = 'ext_files'
+        tcorr_col = 'tcorr_files'
+        # ---------------------------------------------------------------------
+        # construct the stats table
+        # ---------------------------------------------------------------------
+        # columns
+        time_series_props['columns'] = TIME_SERIES_COLS[0:9]
+        time_series_props['columns'] += [snr_y_label, snr_h_label]
+        time_series_props['columns'] += [TIME_SERIES_COLS[9]]
+        time_series_props['columns'] += [ext_col, tcorr_col]
+        # get values for use in time series table
+        for time_series_col in TIME_SERIES_COLS:
+            time_series_props[time_series_col] = []
+        time_series_props[snr_y_label] = []
+        time_series_props[snr_h_label] = []
+        time_series_props[ext_col] = []
+        time_series_props[tcorr_col] = []
+        # get values from self.header_dict
+        mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
+        seeing_vec = np.array(self.header_dict['EXT_SEEING'])
+        airmass_vec = np.array(self.header_dict['EXT_AIRMASS'])
+        exptime_vec = np.array(self.header_dict['EXT_EXPTIME'])
+        snry_vec = np.array(self.header_dict['EXT_Y'])
+        snyh_vec = np.array(self.header_dict['EXT_H'])
+        dprtype_vec = np.array(self.header_dict['EXT_DPRTYPE'])
+        # get the obs dirs for files that passed qc
+        obs_dirs_ext = ftypes['ext'].get_files(qc=True, attr='obsdirs')
+        obs_dirs_tcorr = ftypes['tcorr'].get_files(qc=True, attr='obsdirs')
+        # get unique object directories (for this object)
+        u_obs_dirs = np.unique(obs_dirs_ext)
+        # loop around observation directories
+        for obs_dir in u_obs_dirs:
+            # create a mask for this observation directory
+            obs_mask_ext = obs_dirs_ext == obs_dir
+            obs_mask_tcorr = obs_dirs_tcorr == obs_dir
+            # get the first and last mjd for this observation directory
+            first_mjd = Time(np.min(mjd_vec[obs_mask_ext])).iso
+            last_mjd = Time(np.max(mjd_vec[obs_mask_ext])).iso
+            # get the number of observations for this observation
+            num_obs_ext = str(np.sum(obs_mask_ext))
+            num_obs_tcorr = str(np.sum(obs_mask_tcorr))
+            # get the seeing for this observation directory
+            seeing = np.mean(seeing_vec[obs_mask_ext])
+            seeing = '{:.3f}'.format(seeing)
+            # get the airmass for this observation directory
+            airmass = np.mean(airmass_vec[obs_mask_ext])
+            airmass = '{:.3f}'.format(airmass)
+            # get the mean exposure time
+            exptime = np.mean(exptime_vec[obs_mask_ext])
+            exptime = '{:.3f}'.format(exptime)
+            # get the total exposure time
+            texptime = np.sum(exptime_vec[obs_mask_ext])
+            texptime = '{:.3f}'.format(texptime)
+            # get the mean snr_y
+            snry = np.mean(snry_vec[obs_mask_ext])
+            snry = '{:.3f}'.format(snry)
+            # get the mean snr_h
+            snyh = np.mean(snyh_vec[obs_mask_ext])
+            snyh = '{:.3f}'.format(snyh)
+            # get the dprtypes
+            dprtype = ','.join(list(np.unique(dprtype_vec[obs_mask_ext])))
+            # -----------------------------------------------------------------
+            # Create the ext and tellu for this object
+            # -----------------------------------------------------------------
+            ext_files = ext_files_all[obs_mask_ext]
+            tcorr_files = tcorr_files_all[obs_mask_tcorr]
+            # -----------------------------------------------------------------
+            # Create the file lists for this object
+            # -----------------------------------------------------------------
+            # construct the save path for ext files
+            ext_file = f'ext_file_list_{obs_dir}_{self.objname}.txt'
+            ext_path = os.path.join(down_save_path, ext_file)
+            ext_rel_path = os.path.join(down_rel_path, ext_file)
+            create_file_list(ext_files, ext_path)
+            ext_download = _make_download('[download]', ext_rel_path)
+            ext_value = f'{len(ext_files)} {ext_download}'
+            # construct the save path for the tcorr files
+            tcorr_file = f'tcorr_file_list_{obs_dir}_{self.objname}.txt'
+            tcorr_path = os.path.join(down_save_path, tcorr_file)
+            tcorr_rel_path = os.path.join(down_rel_path, tcorr_file)
+            create_file_list(tcorr_files, tcorr_path)
+            tcorr_download = _make_download('[download]', tcorr_rel_path)
+            tcorr_value = f'{len(tcorr_files)} {tcorr_download}'
+            # -----------------------------------------------------------------
+            # append to the time series properties
+            time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
+            time_series_props[TIME_SERIES_COLS[1]].append(first_mjd)
+            time_series_props[TIME_SERIES_COLS[2]].append(last_mjd)
+            time_series_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
+            time_series_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
+            time_series_props[TIME_SERIES_COLS[5]].append(seeing)
+            time_series_props[TIME_SERIES_COLS[6]].append(airmass)
+            time_series_props[TIME_SERIES_COLS[7]].append(exptime)
+            time_series_props[TIME_SERIES_COLS[8]].append(texptime)
+            time_series_props[snr_y_label].append(snry)
+            time_series_props[snr_h_label].append(snyh)
+            time_series_props[TIME_SERIES_COLS[9]].append(dprtype)
+            time_series_props[ext_col].append(ext_value)
+            time_series_props[tcorr_col].append(tcorr_value)
+        # -----------------------------------------------------------------
+        # construct the stats
+        # -----------------------------------------------------------------
+        # get the stats base name
+        time_series_base_name = 'time_series_stat_' + self.objname + '.txt'
+        # get the stat path
+        stat_path = os.path.join(item_save_path, time_series_base_name)
+        # compute the stats
+        time_series_stats_table(time_series_props, stat_path)
+        # -----------------------------------------------------------------
+        # update the paths
+        self.time_series_plot_path = None
+        self.time_series_stats_table = item_rel_path + time_series_base_name
+        self.time_series_dwn_table = None
 
 
 # =============================================================================
@@ -222,9 +1119,9 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     :return: dict, the stats for the profile
     """
     # set up storage for the output dictionary
-    profile_stats = dict()
-    profile_stats['TABLES'] = dict()
-    profile_stats['OPROPS'] = dict()
+    profile_stats: Dict[str, Any] = dict()
+    profile_stats['TABLES']: Dict[str, Any] = dict()
+    profile_stats['OPROPS']: Dict[str, Any] = dict()
     # deal with updating the path (as DRS_UCONFIG) from apero profile
     update_apero_profile(profile)
     # get paths to tables
@@ -243,16 +1140,17 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
         profile_stats['TABLES'][TABLE_NAMES[0]] = None
     else:
         # get the object table (astropy table)
-        object_table, filedict = compile_apero_object_table(gsettings)
+        object_classes = compile_apero_object_table(gsettings)
         # add the lbl count
-        object_table, filedict = add_lbl_count(profile, object_table, filedict)
+        object_classes = add_lbl_count(profile, object_classes)
         # add the object pages
-        add_out = add_obj_pages(gsettings, settings, profile, headers,
-                                object_table, filedict)
-        object_table, oprops_dict = add_out
+        object_classes = add_obj_pages(gsettings, settings, profile, headers,
+                                       object_classes)
+        # make object table
+        object_table = make_obj_table(object_classes)
         # add final object table to profile stats
         profile_stats['TABLES'][TABLE_NAMES[0]] = object_table
-        profile_stats['OPROPS'] = oprops_dict
+        profile_stats['OPROPS'] = object_classes
     # ------------------------------------------------------------------
     # deal with skipping recipe table
     if skip_recipe_table and os.path.exists(recipe_table_file):
@@ -297,9 +1195,8 @@ def update_apero_profile(profile: dict):
     _ = constants.load(cache=False)
 
 
-
 def compile_obj_index_page(gsettings: dict, settings: dict,
-                           oprops: Dict[str, Any]):
+                           oprops: Dict[str, Dict[str, ObjectData]]):
     from apero.tools.module.documentation import drs_markdown
     from apero.core import constants
     from apero.core.core import drs_database
@@ -339,15 +1236,14 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
             # deal with no reduction for this profile
             if len(oprops_profile) == 0:
                 continue
-            # see if this object was reduced by this profile
-            if objname in oprops_profile['OBJNAME']:
-                # find where the object name is in the list
-                pos = list(oprops_profile['OBJNAME']).index(objname)
-                # get the obj page ref for this position
-                pageref = oprops_profile['OBJPAGEREF'][pos]
-                # add to entry
-                entry['profile_items'].append(pageref)
-                entry['profile_names'].append(apero_profile_name)
+            # skip missing objects
+            if objname not in oprops_profile:
+                continue
+            # get object class for this objname
+            object_class = oprops_profile[objname]
+            # add to entry
+            entry['profile_items'].append(object_class.objpageref)
+            entry['profile_names'].append(apero_profile_name)
         # ---------------------------------------------------------------------
         # find finder charts
         # ---------------------------------------------------------------------
@@ -386,7 +1282,18 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
     obj_index_page.add_text('Object Index')
     obj_index_page.add_newline()
     obj_index_page.add_text('Object by object index. '
-                        'Links to all profiles and finding charts')
+                            'Links to all profiles and finding charts')
+    obj_index_page.add_newline()
+    obj_index_page.add_text('Please note: Your object may be under another '
+                            'name. Please check `here <https://docs.google.com/'
+                            'spreadsheets/d/'
+                            '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
+                            'edit?usp=sharing>`_, the name displayed in '
+                            'ARI will be the first column [OBJNAME]')
+    obj_index_page.add_newline()
+    obj_index_page.add_text('If you have any issues please report using '
+                            '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
     obj_index_page.add_newline()
     # -------------------------------------------------------------------------
     # loop around objects and create a section for each
@@ -457,6 +1364,10 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     index_page.add_text('If you believe you should have the username/password '
                         'please contact neil.james.cook@gmail.com')
     index_page.add_newline()
+    index_page.add_text('If you have any issues please report using '
+                        '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                        'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+    index_page.add_newline()
     index_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
     index_page.add_newline()
     # -------------------------------------------------------------------------
@@ -504,6 +1415,10 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                               'edit?usp=sharing>`_, the name displayed in ARI will '
                               'be the first column [OBJNAME]')
         profile_page.add_newline()
+        profile_page.add_text('If you have any issues please report using '
+                              '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                              'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+        profile_page.add_newline()
         profile_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
         profile_page.add_newline()
         # -----------------------------------------------------------------
@@ -534,6 +1449,10 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                                 '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
                                 'edit?usp=sharing>`_, the name displayed in ARI will '
                                 'be the first column [OBJNAME]')
+            table_page.add_newline()
+            table_page.add_text('If you have any issues please report using '
+                                '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
             table_page.add_newline()
             table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
             table_page.add_newline()
@@ -686,10 +1605,7 @@ def upload_docs(gsettings: dict, settings: dict):
 # =============================================================================
 # Functions for the apero stats
 # =============================================================================
-FileDictReturn = Dict[str, Dict[str, Any]]
-
-
-def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
+def compile_apero_object_table(gsettings) -> Dict[str, ObjectData]:
     """
     Compile the apero object table
 
@@ -702,7 +1618,7 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     from apero.core.core import drs_database
     from apero.core.core import drs_log
     from apero.core.utils import drs_startup
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # get the parameter dictionary of constants from apero
     params = constants.load()
     # load pseudo-constants from apero
@@ -717,11 +1633,14 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
     science_fibers, ref_fiber = pconst.FIBER_KINDS()
     # we assume the first science fiber is the primary science fiber
     science_fiber = science_fibers[0]
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # log progress
+    wlog(params, '', 'Loading objects from astrometric database')
+    # -------------------------------------------------------------------------
     # get the astrometric database from apero
     astrodbm = drs_database.AstrometricDatabase(params)
     astrodbm.load_db()
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # deal with filtering by object
     if gsettings['filter objects']:
         subconditions = []
@@ -731,199 +1650,85 @@ def compile_apero_object_table(gsettings) -> Tuple[Table, FileDictReturn]:
         condition = f'({condition})'
     else:
         condition = None
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # define types of files we want to count
+    filetypes = dict()
+    filetypes['raw'] = FileType('raw', block_kind='raw')
+    filetypes['pp'] = FileType('pp', block_kind='tmp', chain='raw')
+    filetypes['ext'] = FileType('ext', block_kind='red', chain='pp',
+                                kw_output='EXT_E2DS_FF', fiber=science_fiber)
+    filetypes['tcorr'] = FileType('tcorr', block_kind='red', chain='ext',
+                                  kw_output='TELLU_OBJ',
+                                  fiber=science_fiber)
+    filetypes['ccf'] = FileType('ccf', block_kind='red', chain='tcorr',
+                                kw_output='CCF_RV', fiber=science_fiber)
+    filetypes['polar'] = FileType('polar', block_kind='red', chain='tcorr',
+                                  kw_output='POL_DEG',
+                                  fiber=science_fiber, count=has_polar)
+    filetypes['efiles'] = FileType('efiles', block_kind='out', chain='pp',
+                                   kw_output='DRS_POST_E')
+    filetypes['tfiles'] = FileType('tfiles', block_kind='out', chain='ext',
+                                   kw_output='DRS_POST_T')
+    filetypes['vfiles'] = FileType('vfiles', block_kind='out', chain='tcorr',
+                                   kw_output='DRS_POST_V')
+    filetypes['pfiles'] = FileType('pfiles', block_kind='out', chain='tcorr',
+                                   kw_output='DRS_POST_P', count=has_polar)
+    filetypes['s1d'] = FileType('s1d', block_kind='red', chain='ext',
+                                kw_output='EXT_S1D_V', fiber=science_fiber)
+    filetypes['sc1d'] = FileType('sc1d', block_kind='red', chain='tcorr',
+                                 kw_output='SC1D_V_FILE', fiber=science_fiber)
+    # lbl files added as filetype but don't count in same was as other files
+    filetypes['lbl.fits'] = FileType('lbl.fits', count=False)
+    for filetype in LBL_FILETYPES:
+        filetypes[filetype] = FileType(filetype, count=False)
+    # -------------------------------------------------------------------------
     # log that we are loading
     # get the object table from the astrometric database
     object_table = astrodbm.get_entries(columns=','.join(ASTROMETRIC_COLUMNS),
                                         condition=condition)
-    # force columns to data types
-    for itcol, col in enumerate(object_table):
-        object_table[col] = np.array(object_table[col],
-                                     dtype=ASTROMETRIC_DTYPES[itcol])
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
+    # create objects
+    obj_classes = dict()
+    for row, objname in enumerate(object_table[OBJECT_COLUMN]):
+        obj_class = ObjectData(objname, filetypes)
+        # add astrometric data
+        obj_class.add_astrometrics(object_table.iloc[row])
+        # set the has_polar key
+        obj_class.has_polar = has_polar
+        # append to storage
+        obj_classes[objname] = obj_class
+    # -------------------------------------------------------------------------
     # get the index database from file index database
     indexdbm = drs_database.FileIndexDatabase(params)
     indexdbm.load_db()
     # get the log database
     logdbm = drs_database.LogDatabase(params)
     logdbm.load_db()
-    # ------------------------------------------------------------------
-    # convert pandas dataframe to astropy table
-    object_table = Table.from_pandas(object_table)
-    # ------------------------------------------------------------------
-    # Deal with object pages
-    # ------------------------------------------------------------------
-    # add counting columns to the object table
-    object_table['DPRTYPES'] = [' ' * 255] * len(object_table)
-    object_table[COUNT_COLS[0]] = [0] * len(object_table)
-    object_table['FIRST_RAW'] = [None] * len(object_table)
-    object_table['LAST_RAW'] = [None] * len(object_table)
-    object_table[COUNT_COLS[1]] = [0] * len(object_table)
-    object_table[COUNT_COLS[2]] = [0] * len(object_table)
-    object_table[COUNT_COLS[3]] = [0] * len(object_table)
-    object_table[COUNT_COLS[4]] = [0] * len(object_table)
-    # deal with instruments that have polarimetry
-    if has_polar:
-        object_table[COUNT_COLS[5]] = [0] * len(object_table)
-    object_table[COUNT_COLS[6]] = [0] * len(object_table)
-    object_table[COUNT_COLS[7]] = [0] * len(object_table)
-    object_table[COUNT_COLS[8]] = [0] * len(object_table)
-    # deal with instruments that have polarimetry
-    if has_polar:
-        object_table[COUNT_COLS[9]] = [0] * len(object_table)
-    # Add s1d columns (these will be removed later)
-    object_table[COUNT_COLS[10]] = [0] * len(object_table)
-    object_table[COUNT_COLS[11]] = [0] * len(object_table)
-    # ------------------------------------------------------------------
-    # storage for files for each type
-    file_dict = dict()
-    # loop around column names and add a empty list for each
-    for objname in object_table[OBJECT_COLUMN]:
-        file_dict[objname] = dict()
-        for colname in COUNT_COLS:
-            file_dict[objname][colname] = []
-    # ------------------------------------------------------------------
+    # -------------------------------------------------------------------------
     # log progress
-    wlog(params, '', 'Compiling object table (this may take a while)')
-    # ------------------------------------------------------------------
+    wlog(params, '', 'Compiling object files stats (this may take a while)')
+    # -------------------------------------------------------------------------
     # for each object we run several counts
     # loop around objects in the object table
-    for pos in tqdm(range(len(object_table))):
-        # get the object name
-        objname = object_table[OBJECT_COLUMN][pos]
-        # set up where condition for raw files
-        raw_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="raw"'
-        # setup up where condition for pp files
-        pp_cond = f'KW_OBJNAME="{objname}" AND BLOCK_KIND="tmp"'
-        # setup where condition for ext files
-        # TODO: Get KW_OUTPUT from file definitions + deal with QC
-        ext_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
-                    f'AND KW_OUTPUT="EXT_E2DS_FF" '
-                    f'AND KW_FIBER="{science_fiber}"')
-        # setup where condition for tcorr files
-        # TODO: Get KW_OUTPUT from file definitions + deal with QC
-        tcorr_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
-                      f'AND KW_OUTPUT="TELLU_OBJ" '
-                      f'AND KW_FIBER="{science_fiber}"')
-        # setup where condition for ccf files
-        # TODO: Get KW_OUTPUT from file definitions + deal with QC
-        ccf_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
-                    f'AND KW_OUTPUT="CCF_RV" '
-                    f'AND KW_FIBER="{science_fiber}"')
-        # setup where condition for e.fits files
-        e_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
-                  f'AND KW_OUTPUT="DRS_POST_E"')
-        # setup where condition for t.fits files
-        t_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
-                  f'AND KW_OUTPUT="DRS_POST_T"')
-        # setup where condition for v.fits files
-        v_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
-                  f'AND KW_OUTPUT="DRS_POST_V"')
-        # deal with instruments that have polarimetry
-        if has_polar:
-            # setup up where condition for polar files
-            polar_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
-                          f'AND KW_OUTPUT="POL_DEG"')
-            # setup up where condition for p.fits files
-            p_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="out" '
-                      f'AND KW_OUTPUT="DRS_POST_P"')
-        else:
-            polar_cond = None
-            p_cond = None
-        # ------------------------------------------------------------------
-        # add s1d columns
-        # TODO: Get KW_OUTPUT from file definitions + deal with QC
-        s1d_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
-                    f'AND KW_OUTPUT="EXT_S1D_V" '
-                    f'AND KW_FIBER="{science_fiber}"')
-        sc1d_cond = (f'KW_OBJNAME="{objname}" AND BLOCK_KIND="red" '
-                     f'AND KW_OUTPUT="SC1D_V_FILE" '
-                     f'AND KW_FIBER="{science_fiber}"')
-        # ------------------------------------------------------------------
-        # Add a dpr type column
-        dprtypes = indexdbm.get_entries('KW_DPRTYPE', condition=ext_cond)
-        object_table['DPRTYPES'][pos] = ','.join(list(np.unique(dprtypes)))
-        # ------------------------------------------------------------------
-        # deal with finding the first and last raw file
-        # ------------------------------------------------------------------
-        times = indexdbm.get_entries('KW_MID_OBS_TIME', condition=raw_cond)
-        # if there are no entries we have no raw files for this object
-        if len(times) == 0:
+    for objname in tqdm(list(obj_classes.keys())):
+        # get object class
+        obj_class = obj_classes[objname]
+        # add files stats
+        obj_class.add_files_stats(indexdbm, logdbm)
+    # -------------------------------------------------------------------------
+    # sort objects by name
+    obj_classes_sorted = dict()
+    # loop through all objects sorted alphabetically
+    for objname in np.sort(list(obj_classes.keys())):
+        # get the object class for this object name
+        obj_class = obj_classes[objname]
+        # reject objects that have no raw files
+        if obj_class.filetypes['raw'].num == 0:
             continue
-        # find minimum time value and convert to human time
-        first_time = Time(np.min(times), format='mjd')
-        object_table['FIRST_RAW'][pos] = first_time
-        # find maximum time value and convert to human time
-        last_time = Time(np.max(times), format='mjd')
-        object_table['LAST_RAW'][pos] = last_time
-        # ------------------------------------------------------------------
-        # run counting conditions using indexdbm
-        # ------------------------------------------------------------------
-        conditions = [raw_cond, pp_cond, ext_cond, tcorr_cond, ccf_cond,
-                      polar_cond, e_cond, t_cond, v_cond, p_cond, s1d_cond,
-                      sc1d_cond]
-        # storage of count (for chains
-        counts = dict()
-        # loop around conditions
-        for it, condition in enumerate(conditions):
-            # deal with polar conditions
-            if condition is None:
-                continue
-            # deal with chains
-            if COUNT_CHAINS[it] is not None:
-                # get count from counts
-                count = counts[COUNT_CHAINS[it]]
-                # if the count is zero then continue
-                if count == 0:
-                    counts[COUNT_COLS[it]] = 0
-                    continue
-            # get the files
-            table = indexdbm.get_entries('ABSPATH,OBS_DIR,KW_PID',
-                                         condition=condition)
-            if 'RAW' not in COUNT_COLS[it]:
-                # get a mask of rows that passed QC (based on PID)
-                mask = _filter_pids(table, logdbm)
-                # get the files that passed and those that didn't pass
-                files = np.array(table['ABSPATH'])[mask]
-                failed_files = np.array(table['ABSPATH'])[~mask]
-                obs_dirs = np.array(table['OBS_DIR'][mask])
-            else:
-                files = np.array(table['ABSPATH'])
-                failed_files = np.array([])
-                obs_dirs = np.array(table['OBS_DIR'])
-            # get the count
-            count = len(files)
-            # append to files
-            file_dict[objname][COUNT_COLS[it]] = files
-            # append to FAILED files
-            file_dict[objname][f'FAILED_{COUNT_COLS[it]}'] = failed_files
-            # append to OBSDIRS
-            file_dict[objname][f'OBSDIR_{COUNT_COLS[it]}'] = obs_dirs
-            # add to object table
-            object_table[COUNT_COLS[it]][pos] = count
-            # set counts
-            counts[COUNT_COLS[it]] = count
-    # ------------------------------------------------------------------
-    # remove rows with no raw entries
-    mask = object_table[COUNT_COLS[0]] > 0
-    # apply mask
-    object_table = object_table[mask]
-    # ------------------------------------------------------------------
-    # remove objects for file_dict with zero raw entries
-    for objname in object_table[OBJECT_COLUMN]:
-        # deal with objects not in the file dict
-        if objname not in file_dict:
-            continue
-        # deal with objects with no raw files
-        if len(file_dict[objname][COUNT_COLS[0]]) == 0:
-            del file_dict[objname]
-    # ------------------------------------------------------------------
-    # sort object table by object column name
-    sortmask = np.argsort(object_table[OBJECT_COLUMN])
-    object_table = object_table[sortmask]
-    # ------------------------------------------------------------------
+        # add to sorted list of objects
+        obj_classes_sorted[objname] = obj_class
     # return object table
-    return object_table, file_dict
+    return obj_classes_sorted
 
 
 def compile_apero_recipe_table() -> Table:
@@ -1092,8 +1897,8 @@ def compile_apero_message_table() -> Table:
 # =============================================================================
 # Functions for compiling the lbl/ccf stats
 # =============================================================================
-def add_lbl_count(profile: dict, object_table: Table,
-                  file_dict: FileDictReturn) -> Tuple[Table, FileDictReturn]:
+def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
+                  ) -> Dict[str, ObjectData]:
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.base.base import TQDM as tqdm
@@ -1110,27 +1915,19 @@ def add_lbl_count(profile: dict, object_table: Table,
     # get the lbl path
     lbl_path = profile['lbl path']
     # -------------------------------------------------------------------------
-    # we are adding three columns to the object table
-    # first column: templates used for lbl
-    # second column: template selected for lbl count
-    # third column: number of lbl files for template with most lbl files
-    lbl_templates = []
-    lbl_select = []
-    lbl_count = []
-    # -------------------------------------------------------------------------
     # deal with no valid lbl path
     if lbl_path is None:
-        return object_table, file_dict
+        return object_classes
     # deal with lbl path not existing
     if not os.path.exists(lbl_path):
-        return object_table, file_dict
+        return object_classes
     # print that we are analysing lbl outputs
     wlog(params, '', 'Analysing LBL files')
     # -------------------------------------------------------------------------
-    # get object name
-    objnames = np.array(object_table[OBJECT_COLUMN])
     # loop around objects
-    for pos, objname in tqdm(enumerate(objnames)):
+    for objname in tqdm(object_classes):
+        # get the object class for this objname
+        object_class = object_classes[objname]
         # ---------------------------------------------------------------------
         # LBL RV files
         # ---------------------------------------------------------------------
@@ -1140,12 +1937,8 @@ def add_lbl_count(profile: dict, object_table: Table,
         # ---------------------------------------------------------------------
         # deal with no directories --> skip
         if len(lblrv_dir) == 0:
-            lbl_templates.append('')
-            lbl_select.append('')
-            lbl_count.append(0)
-            # add an empty list to the LBLRDB file dict for this object
-            file_dict[objname]['LBLRDB'] = []
             continue
+        # ---------------------------------------------------------------------
         # store a list of templates
         templates = []
         # store a list of counts
@@ -1163,26 +1956,32 @@ def add_lbl_count(profile: dict, object_table: Table,
         # decide which template to use (using max of counts)
         select = np.argmax(counts)
         # get strings to add to storage
-        _template = ','.join(templates)
         _select = templates[select]
         _count = int(counts[select])
-        # append to lists
-        lbl_templates.append(_template)
-        lbl_select.append(_select)
-        lbl_count.append(_count)
+        # add the counts to the object class
+        object_class.lbl_templates = templates
+        object_class.lbl_select = _select
+        # set the number of files
+        object_class.filetypes['lbl.fits'].num = _count
         # ---------------------------------------------------------------------
-        # LBL RDB files
+        # LBL files
         # ---------------------------------------------------------------------
-        # get all the lbl rdb files for this object name
-        rdb_glob = f'{LBL_SUFFIX}_{objname}_*.rdb'
-        all_lblrdb_files = glob.glob(os.path.join(lbl_path, 'lblrdb', rdb_glob))
-        # remove drift files from the lbl rdb files
-        lblrdb_files = []
-        for lblrdb_file in all_lblrdb_files:
-            if 'drift' not in lblrdb_file:
-                lblrdb_files.append(lblrdb_file)
-        # add list to the LBLRDB file dict for this object
-        file_dict[objname]['LBLRDB'] = lblrdb_files
+        # loop around all lbl files
+        for it, filetype in enumerate(LBL_FILETYPES):
+            lbl_files = []
+            # loop around templates
+            for template in templates:
+                # push the object and template name into the glob
+                lbl_file = LBL_FILENAMES[it].format(objname, template)
+                # get all the lbl files for this object name
+                lbl_file_path = os.path.join(lbl_path, 'lblrdb', lbl_file)
+                # remove drift files from the lbl rdb files
+                if os.path.exists(lbl_file_path):
+                    lbl_files.append(lbl_file_path)
+            # add list to the LBLRDB file dict for this object
+            object_class.filetypes[filetype].files = lbl_files
+            # add to object table
+            object_class.filetypes[filetype].num = len(lbl_files)
         # ---------------------------------------------------------------------
         # LBL Stats (generated by Charles)
         # ---------------------------------------------------------------------
@@ -1195,7 +1994,7 @@ def add_lbl_count(profile: dict, object_table: Table,
             # get all obj+template directories
             lblsdirs = glob.glob(os.path.join(lbl_stat_dir, objtmp_glob))
             # make the file_dict
-            file_dict[objname][lblfilekey] = dict()
+            object_class.lbl_stat_files[lblfilekey] = dict()
             # loop around obj_templates
             for objtmpdir in lblsdirs:
                 # get the obj+tmp name
@@ -1207,16 +2006,13 @@ def add_lbl_count(profile: dict, object_table: Table,
                 # check that expected file exists
                 if os.path.exists(lblspath):
                     # add a list to file dict for this object
-                    file_dict[objname][lblfilekey][objtmp] = lblspath
-    # -------------------------------------------------------------------------
-    # add to object table
-    object_table['LBL'] = lbl_count
+                    object_class.lbl_stat_files[lblfilekey][objtmp] = lblspath
     # -------------------------------------------------------------------------
     # return the object table
-    return object_table, file_dict
+    return object_classes
 
 
-def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
+def choose_ccf_files(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
     """
     Choose CCF files based on the most numerious of a single mask
     and then the MAX_NUM_CCF selected uniformly in time
@@ -1243,8 +2039,11 @@ def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
     time_mask = drs_utils.uniform_time_list(smjd, MAX_NUM_CCF)
     # filter files by the time mask
     sfiles = sfiles[time_mask]
+
+    ccf_props['select_files'] = sfiles
+    ccf_props['chosen_mask'] = chosen_mask
     # return ccf props
-    return sfiles
+    return ccf_props
 
 
 def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
@@ -1295,656 +2094,16 @@ def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
 # =============================================================================
 # Functions for making object pages
 # =============================================================================
-class ObjectData:
-    def __init__(self, profile, gsettings, settings, headers,
-                 objname, file_dict, object_table):
-        # get the object name
-        self.objname = objname
-        # get the file_dictionary for this object
-        obj_fdict = file_dict[objname]
-        self.raw_files = obj_fdict.get(COUNT_COLS[0], [])
-        self.pp_files = obj_fdict.get(COUNT_COLS[1], [])
-        self.pp_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[1]}', [])
-        self.ext_files = obj_fdict.get(COUNT_COLS[2], [])
-        self.ext_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[2]}', [])
-        self.tcorr_files = obj_fdict.get(COUNT_COLS[3], [])
-        self.tcorr_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[3]}', [])
-        self.ccf_files = obj_fdict.get(COUNT_COLS[4], [])
-        self.ccf_files_qc = obj_fdict.get(f'FAILED_{COUNT_COLS[4]}', [])
-        self.s1d_files = obj_fdict.get(COUNT_COLS[10], [])
-        self.sc1d_files = obj_fdict.get(COUNT_COLS[11], [])
-        self.lbl_rdb_files = obj_fdict.get('LBLRDB', [])
-        # add the lbl stat files into a dictionary
-        self.lbl_stat_files = dict()
-        # loop around lbl stats files and load lblfilekey dict in
-        #   each dict should contain obj+temp combinations
-        for lblfilekey in LBL_STAT_FILES:
-            lblsfiles = file_dict[objname].get(lblfilekey, dict())
-            self.lbl_stat_files[lblfilekey] = lblsfiles
-        # mask for this object
-        objmask = object_table[OBJECT_COLUMN] == objname
-        # get the object_table row for this object
-        self.object_table = object_table[objmask]
-        # get the observation directories for this object
-        self.obs_dirs_ext = file_dict[objname].get(f'OBSDIR_{COUNT_COLS[2]}', [])
-        self.obs_dirs_tcorr = file_dict[objname].get(f'OBSDIR_{COUNT_COLS[3]}', [])
-        # ---------------------------------------------------------------------
-        # get spectrum output parameters (for page integration)
-        self.spec_plot_path = None
-        self.spec_stats_table = None
-        self.spec_dwn_table = None
-        # get lbl output parameters (for page integration)
-        self.lbl_combinations = []
-        self.lbl_plot_path = dict()
-        self.lbl_stats_table = dict()
-        self.lbl_dwn_table = dict()
-        # get ccf output parameters (for page integration)
-        self.ccf_plot_path = None
-        self.ccf_stats_table = None
-        self.ccf_dwn_table = None
-        # get time series output parameters (for page integration)
-        self.time_series_plot_path = None
-        self.time_series_stats_table = None
-        self.time_series_dwn_table = None
-        # ---------------------------------------------------------------------
-        # misc (save for use throughout)
-        self.gsettings = gsettings
-        self.settings = settings
-        self.profile = profile
-        self.headers = headers
-        # ---------------------------------------------------------------------
-        # store the required header info
-        self.header_dict = dict()
-        # file lists to match COUNT COLS
-        self.file_lists = [self.raw_files, self.pp_files, self.ext_files,
-                           self.tcorr_files, self.ccf_files, None, None,
-                           None, None, None, None, None]
+def add_obj_page(it: int, key: str, profile: dict, gsettings: dict,
+                 settings: dict, headers,
+                 object_classes: Dict[str, ObjectData]) -> Dict[str, Any]:
+    # get object
+    object_class = object_classes[key]
 
-    def populate_header_dict(self):
-        """
-        Populate the header dictionary with the required header keys
-        :return:
-        """
-        # loop around COUNT COLS and populate header dict
-        for it, file_kind in enumerate(HEADER_COL):
-            if file_kind in self.headers and self.file_lists[it] is not None:
-                self.get_header_keys(self.headers[file_kind],
-                                     self.file_lists[it])
-
-    def get_header_keys(self, keys: Dict[str, Dict[str, str]], files: List[str]):
-        """
-        Get the header keys from the files
-        :param keys: dictionary of keys to get (with their properties)
-        :param files: list of files (for error reporting)
-        :return:
-        """
-
-        # deal with no keys
-        if len(keys) == 0:
-            return
-        # get an array of length of the files for each key
-        for keydict in keys:
-            # get key
-            kstore = keys[keydict]
-            dtype = kstore.get('dtype', None)
-            timefmt = kstore.get('timefmt', None)
-            unit = kstore.get('unit', None)
-            # deal with no files
-            if len(files) == 0:
-                self.header_dict[keydict] = None
-            elif dtype == 'float' and timefmt is None and unit is None:
-                self.header_dict[keydict] = np.full(len(files), np.nan)
-            elif unit is not None:
-                null_list = [np.nan] * len(files)
-                self.header_dict[keydict] = uu.Quantity(null_list, unit)
-            else:
-                self.header_dict[keydict] = np.array([None] * len(files))
-        # loop around files and populate the header_dict
-        for pos, filename in enumerate(files):
-            header = fits.getheader(filename)
-            for keydict in keys:
-                # get value (for header dict)
-                value = _header_value(keys[keydict], header, filename)
-                # set value in header dict
-                self.header_dict[keydict][pos] = value
-
-    def get_spec_parameters(self):
-        # don't go here is lbl rdb files are not present
-        if len(self.ext_files) == 0:
-            return
-        # ---------------------------------------------------------------------
-        # generate place to save figures
-        item_save_path = self.settings['ITEMS']
-        item_rel_path = f'../{_ITEM_DIR}/'
-        down_save_path = self.settings['DOWNS']
-        down_rel_path = f'../{_DOWN_DIR}/'
-        # ---------------------------------------------------------------------
-        # storage for spectrum values
-        spec_props = dict()
-        # ---------------------------------------------------------------------
-        # object properties
-        spec_props['COORD_URL'] = f'indexing_{self.objname}'
-        spec_props['RA'] = self.object_table['RA_DEG'][0]
-        spec_props['Dec'] = self.object_table['DEC_DEG'][0]
-        spec_props['Teff'] = self.object_table['TEFF'][0]
-        spec_props['Spectral Type'] = self.object_table['SP_TYPE'][0]
-        spec_props['DPRTYPES'] = self.object_table['DPRTYPES'][0]
-        # ---------------------------------------------------------------------
-        # header dict alias
-        hdict = self.header_dict
-        # get values for use in plot
-        spec_props['mjd'] = Time(np.array(hdict['EXT_MJDMID']))
-        spec_props['EXT_Y'] = np.array(hdict['EXT_Y'])
-        ext_h = np.array(hdict['EXT_H'])
-        spec_props['EXT_H'] = ext_h
-        spec_props['EXT_Y_LABEL'] = self.headers['EXT']['EXT_Y']['label']
-        spec_props['EXT_H_LABEL'] = self.headers['EXT']['EXT_H']['label']
-        spec_props['NUM_RAW_FILES'] = len(self.raw_files)
-        spec_props['NUM_PP_FILES'] = len(self.pp_files)
-        spec_props['NUM_EXT_FILES'] = len(self.ext_files)
-        spec_props['NUM_TCORR_FILES'] = len(self.tcorr_files)
-
-        spec_props['NUM_PP_FILES_FAIL'] = len(self.pp_files_qc)
-        spec_props['NUM_EXT_FILES_FAIL'] = len(self.ext_files_qc)
-        spec_props['NUM_TCORR_FILES_FAIL'] = len(self.tcorr_files_qc)
-
-        spec_props['FIRST_RAW'] = Time(self.object_table['FIRST_RAW'][0]).iso
-        spec_props['LAST_RAW'] = Time(self.object_table['LAST_RAW'][0]).iso
-        # Add first / last pp files
-        if len(self.pp_files) > 0:
-            spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
-            spec_props['LAST_PP'] = Time(np.max(hdict['PP_MJDMID'])).iso
-        else:
-            spec_props['FIRST_PP'] = None
-            spec_props['LAST_PP'] = None
-        # Add first / last ext files
-        if len(self.ext_files) > 0:
-            spec_props['FIRST_EXT'] = Time(np.min(hdict['EXT_MJDMID'])).iso
-            spec_props['LAST_EXT'] = Time(np.max(hdict['EXT_MJDMID'])).iso
-        else:
-            spec_props['FIRST_EXT'] = None
-            spec_props['LAST_EXT'] = None
-        # Add first / last tcorr files
-        if len(self.tcorr_files) > 0:
-            spec_props['FIRST_TCORR'] = Time(np.min(hdict['TCORR_MJDMID'])).iso
-            spec_props['LAST_TCORR'] = Time(np.max(hdict['TCORR_MJDMID'])).iso
-        else:
-            spec_props['FIRST_TCORR'] = None
-            spec_props['LAST_TCORR'] = None
-        # -----------------------------------------------------------------
-        # we have to match files (as ext_files, tcorr_files and raw_files may
-        #   be different lengths)
-        matched = False
-        # get the median snr
-        med_snr = np.nanmedian(ext_h)
-        n_ext_h = abs(ext_h - med_snr)
-        # sort all snr by closest to the median
-        all_snr_pos = list(np.argsort(n_ext_h))
-        # set these up
-        pos_ext, pos_raw, pos_tcorr = None, None, None
-        file_ext = 'NoFile'
-        # loop until we match
-        while not matched and len(all_snr_pos) > 0:
-            # Find the closest to the median
-            pos_ext = all_snr_pos[0]
-            # set the filename
-            file_ext = self.ext_files[pos_ext]
-            # Find the matching raw file
-            pos_raw = _match_file(reffile=file_ext, files=self.raw_files)
-            pos_tcorr = _match_file(reffile=file_ext, files=self.tcorr_files)
-            # we only stop is a match is found
-            if pos_raw is not None and pos_tcorr is not None:
-                matched = True
-            else:
-                all_snr_pos = all_snr_pos[1:]
-        # ---------------------------------------------------------------------
-        # deal with case we have no matching raw file we have a big problem
-        #   extracted file cannot exist without a raw file
-        if pos_raw is None:
-            raise ValueError(f'No raw file matching {file_ext}. '
-                             f'This should not be possible')
-        # ---------------------------------------------------------------------
-        # get the extracted spectrum for the spectrum with the highest SNR
-        ext_table = Table.read(self.s1d_files[pos_ext], hdu=1)
-        # get wavelength masks for plotting
-        wavemap = ext_table['wavelength']
-        limits = self.gsettings['SpecWave']
-        wavemask0 = (wavemap > limits['limit0'][0])
-        wavemask0 &= (wavemap < limits['limit0'][1])
-        wavemask1 = (wavemap > limits['limit1'][0])
-        wavemask1 &= (wavemap < limits['limit1'][1])
-        wavemask2 = (wavemap > limits['limit2'][0])
-        wavemask2 &= (wavemap < limits['limit2'][1])
-        wavemask3 = (wavemap > limits['limit3'][0])
-        wavemask3 &= (wavemap < limits['limit3'][1])
-        # ---------------------------------------------------------------------
-        # push into spec_props
-        spec_props['WAVE'] = np.array(ext_table['wavelength'])
-        spec_props['EXT_SPEC'] = np.array(ext_table['flux'])
-        spec_props['EXT_SPEC_ERR'] = np.array(ext_table['eflux'])
-        spec_props['WAVEMASK0'] = wavemask0
-        spec_props['WAVEMASK1'] = wavemask1
-        spec_props['WAVEMASK2'] = wavemask2
-        spec_props['WAVEMASK3'] = wavemask3
-        spec_props['WAVELIM0'] = limits['limit0']
-        spec_props['WAVELIM1'] = limits['limit1']
-        spec_props['WAVELIM2'] = limits['limit2']
-        spec_props['WAVELIM3'] = limits['limit3']
-        spec_props['MAX_SNR'] = np.round(spec_props['EXT_H'][pos_ext], 2)
-        spec_props['MAX_FILE'] = os.path.basename(self.raw_files[pos_raw])
-        # ---------------------------------------------------------------------
-        # deal with having telluric file
-        if pos_tcorr is not None:
-            # get the telluric corrected spectrum for the spectrum with the
-            # highest SNR
-            tcorr_table = Table.read(self.sc1d_files[pos_tcorr], hdu=1)
-            # push into spec_props
-            spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
-            spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
-        else:
-            spec_props['TCORR_SPEC'] = None
-            spec_props['TCORR_SPEC_ERR'] = None
-        # -----------------------------------------------------------------
-        # plot the figure
-        # -----------------------------------------------------------------
-        # get the plot base name
-        plot_base_name = 'spec_plot_' + self.objname + '.png'
-        # get the plot path
-        plot_path = os.path.join(item_save_path, plot_base_name)
-        # plot the lbl figure
-        spec_plot(spec_props, plot_path, plot_title=f'{self.objname}')
-        # -----------------------------------------------------------------
-        # construct the stats
-        # -----------------------------------------------------------------
-        # get the stats base name
-        stat_base_name = 'spec_stat_' + self.objname + '.txt'
-        # get the stat path
-        stat_path = os.path.join(item_save_path, stat_base_name)
-        # compute the stats
-        spec_stats_table(spec_props, stat_path, title='Spectrum Information')
-        # -----------------------------------------------------------------
-        # Create the file lists for this object
-        # -----------------------------------------------------------------
-        # construct the save path for ext files (2D)
-        ext2d_file = os.path.join(down_save_path,
-                                f'ext2d_{self.objname}_file_list.txt')
-        create_file_list(self.ext_files, ext2d_file)
-        # construct the save path for ext files (1D)
-        ext1d_file = os.path.join(down_save_path,
-                                f'ext1d_{self.objname}_file_list.txt')
-        create_file_list(self.s1d_files, ext1d_file)
-        # construct the save path for the tcorr files (2D)
-        tcorr2d_file = os.path.join(down_save_path,
-                                  f'tcorr2d_{self.objname}_file_list.txt')
-        create_file_list(self.tcorr_files, tcorr2d_file)
-        # construct the save path for the tcorr files (1D)
-        tcorr1d_file = os.path.join(down_save_path,
-                                  f'tcorr1d_{self.objname}_file_list.txt')
-        create_file_list(self.sc1d_files, tcorr1d_file)
-        # -----------------------------------------------------------------
-        # construct the download table
-        # -----------------------------------------------------------------
-        # get the download base name
-        dwn_base_name = 'spec_download_' + self.objname + '.txt'
-        # get the download table path
-        item_path = os.path.join(item_save_path, dwn_base_name)
-        # define the download files
-        down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file]
-        # define the download descriptions
-        down_descs = ['Extracted 2D spectra', 'Extracted 1D spectra',
-                      'Telluric corrected 2D spectra',
-                      'Telluric corrected 1D spectra']
-        # compute the download table
-        download_table(down_files, down_descs, item_path, down_rel_path,
-                       down_save_path, title='Spectrum Downloads')
-        # -----------------------------------------------------------------
-        # update the paths
-        self.spec_plot_path = item_rel_path + plot_base_name
-        self.spec_stats_table = item_rel_path + stat_base_name
-        self.spec_dwn_table = item_rel_path + dwn_base_name
-
-    def get_lbl_parameters(self):
-        """
-        Get the LBL parameters for this object
-
-        :return:
-        """
-        # don't go here is lbl rdb files are not present
-        if len(self.lbl_rdb_files) == 0:
-            return
-        # ---------------------------------------------------------------------
-        # generate place to save figures
-        item_save_path = self.settings['ITEMS']
-        item_rel_path = f'../{_ITEM_DIR}/'
-        down_save_path = self.settings['DOWNS']
-        down_rel_path = f'../{_DOWN_DIR}/'
-        # ---------------------------------------------------------------------
-        # storage of properties
-        lbl_props = dict()
-        # ---------------------------------------------------------------------
-        # get the ext h-band key
-        ext_h_key = self.headers['LBL']['EXT_H']['key']
-        # store the object+ template combinations
-        lbl_objtmps = dict()
-        # get the lbl objname+templates combinations
-        for lbl_rdb_file in self.lbl_rdb_files:
-            # get the basename
-            basename = os.path.basename(lbl_rdb_file)
-            # get the objname+template
-            lbl_objtmp = basename.split(f'{LBL_SUFFIX}_')[-1].split('.rdb')[0]
-            # append to list
-            lbl_objtmps[lbl_objtmp] = lbl_rdb_file
-        # loop around the objname+template combinations
-        for lbl_objtmp in lbl_objtmps:
-            # load rdb file
-            rdb_table = Table.read(lbl_objtmps[lbl_objtmp], format='ascii.rdb')
-            # get the values required
-            lbl_props['rjd'] = np.array(rdb_table['rjd'])
-            lbl_props['vrad'] = np.array(rdb_table['vrad'])
-            lbl_props['svrad'] = np.array(rdb_table['svrad'])
-            lbl_props['plot_date'] = np.array(rdb_table['plot_date'])
-            lbl_props['snr_h'] = np.array(rdb_table[ext_h_key])
-            lbl_props['SNR_H_LABEL'] = self.headers['LBL']['EXT_H']['label']
-            # -----------------------------------------------------------------
-            # plot the figure
-            # -----------------------------------------------------------------
-            # get the plot base name
-            plot_base_name = 'lbl_plot_' + lbl_objtmp + '.png'
-            # get the plot path
-            plot_path = os.path.join(item_save_path, plot_base_name)
-            # plot the lbl figure
-            lbl_props = lbl_plot(lbl_props, plot_path,
-                                 plot_title=f'LBL {lbl_objtmp}')
-            # -----------------------------------------------------------------
-            # construct the stats
-            # -----------------------------------------------------------------
-            # get the stats base name
-            stat_base_name = 'lbl_stat_' + lbl_objtmp + '.txt'
-            # get the stat path
-            stat_path = os.path.join(item_save_path, stat_base_name)
-            # compute the stats
-            lbl_stats_table(lbl_props, stat_path, title='LBL stats')
-            # -----------------------------------------------------------------
-            # construct the download table
-            # -----------------------------------------------------------------
-            # get the download base name
-            dwn_base_name = 'lbl_download_' + lbl_objtmp + '.txt'
-            # get the download table path
-            item_path = os.path.join(item_save_path, dwn_base_name)
-            # define the download files
-            down_files = [lbl_objtmps[lbl_objtmp]]
-            # define the download descriptions
-            down_descs = ['RDB file']
-            # Add the lbl stat files
-            for lblfilekey in LBL_STAT_FILES:
-                # deal with no lbl file key for this object
-                if lblfilekey not in self.lbl_stat_files:
-                    continue
-                # deal with this obj+templ being present
-                if lbl_objtmp in self.lbl_stat_files[lblfilekey]:
-                    # get lblsfile
-                    lblsfile = self.lbl_stat_files[lblfilekey][lbl_objtmp]
-                    # add to the list
-                    down_files.append(lblsfile)
-                    # add to the list
-                    down_descs.append(lblfilekey)
-            # compute the download table
-            download_table(down_files, down_descs, item_path, down_rel_path,
-                           down_save_path, title='LBL Downloads')
-            # -----------------------------------------------------------------
-            # update the paths
-            self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
-            self.lbl_stats_table[lbl_objtmp] = item_rel_path + stat_base_name
-            self.lbl_dwn_table[lbl_objtmp] = item_rel_path + dwn_base_name
-        # ---------------------------------------------------------------------
-        # set the lbl combinations
-        self.lbl_combinations = lbl_objtmps.keys()
-
-    def get_ccf_parameters(self):
-
-        from apero.core.math import normal_fraction
-        # don't go here is lbl rdb files are not present
-        if len(self.ccf_files) == 0:
-            return
-        # ---------------------------------------------------------------------
-        # generate place to save figures
-        item_save_path = self.settings['ITEMS']
-        item_rel_path = f'../{_ITEM_DIR}/'
-        down_save_path = self.settings['DOWNS']
-        down_rel_path = f'../{_DOWN_DIR}/'
-        # -----------------------------------------------------------------
-        # storage for ccf values
-        ccf_props = dict()
-        # get values for use in plot
-        ccf_props['mjd'] = Time(np.array(self.header_dict['CCF_MJDMID']))
-        dv_vec = self.header_dict['CCF_DV'].to(uu.m / uu.s).value
-        ccf_props['dv'] = np.array(dv_vec)
-        sdv_vec = self.header_dict['CCF_SDV'].to(uu.m / uu.s).value
-        ccf_props['sdv'] = np.array(sdv_vec)
-        fwhm_vec = self.header_dict['CCF_FWHM'].to(uu.m / uu.s).value
-        ccf_props['fwhm'] = np.array(fwhm_vec)
-        ccf_props['masks'] = np.array(self.header_dict['CCF_MASK'])
-        ccf_props['files'] = np.array(self.ccf_files)
-        ccf_props['files_failed'] = np.array(self.ccf_files_qc)
-        # -----------------------------------------------------------------
-        # select ccf files to use
-        select_files = choose_ccf_files(ccf_props)
-        # load the first file to get the rv vector
-        ccf_table0 = Table.read(select_files[0], format='fits', hdu=1)
-        # get the rv vector
-        ccf_props['rv_vec'] = ccf_table0['RV']
-        # storage for the CCF vectors
-        all_ccf = np.zeros((len(select_files), len(ccf_table0)))
-        # loop around all other files, load them and load into all_ccf
-        for row, select_file in enumerate(select_files):
-            table_row = Table.read(select_file, format='fits', hdu=1)
-            # get the combined CCF for this file
-            ccf_row = table_row['Combined']
-            # normalize ccf
-            ccf_row = ccf_row / np.nanmedian(ccf_row)
-            # push into vector
-            all_ccf[row] = ccf_row
-        # -----------------------------------------------------------------
-        # get the 1 and 2 sigma limits
-        lower_sig1 = 100 * (0.5 - normal_fraction(1) / 2)
-        upper_sig1 = 100 * (0.5 + normal_fraction(1) / 2)
-        lower_sig2 = 100 * (0.5 - normal_fraction(2) / 2)
-        upper_sig2 = 100 * (0.5 + normal_fraction(2) / 2)
-        # -----------------------------------------------------------------
-        # y1 1sig is the 15th percentile of all ccfs
-        ccf_props['y1_1sig'] = np.nanpercentile(all_ccf, lower_sig1, axis=0)
-        # y2 1sig is the 84th percentile of all ccfs
-        ccf_props['y2_1sig'] = np.nanpercentile(all_ccf, upper_sig1, axis=0)
-        # y1 1sig is the 15th percentile of all ccfs
-        ccf_props['y1_2sig'] = np.nanpercentile(all_ccf, lower_sig2, axis=0)
-        # y2 1sig is the 84th percentile of all ccfs
-        ccf_props['y2_2sig'] = np.nanpercentile(all_ccf, upper_sig2, axis=0)
-        # med ccf is the median ccf (50th percentile)
-        ccf_props['med_ccf'] = np.nanmedian(all_ccf, axis=0)
-        # delete all_ccf to save memeory
-        del all_ccf
-        # fit the median ccf
-        ccf_props = fit_ccf(ccf_props)
-        # -----------------------------------------------------------------
-        # plot the figure
-        # -----------------------------------------------------------------
-        # get the plot base name
-        plot_base_name = 'ccf_plot_' + self.objname + '.png'
-        # get the plot path
-        plot_path = os.path.join(item_save_path, plot_base_name)
-        # plot the lbl figure
-        ccf_plot(ccf_props, plot_path, plot_title=f'CCF {self.objname}')
-        # -----------------------------------------------------------------
-        # construct the stats
-        # -----------------------------------------------------------------
-        # get the stats base name
-        stat_base_name = 'ccf_stat_' + self.objname + '.txt'
-        # get the stat path
-        stat_path = os.path.join(item_save_path, stat_base_name)
-        # compute the stats
-        ccf_stats_table(ccf_props, stat_path, title='CCF stats')
-        # -----------------------------------------------------------------
-        # Create the file lists for this object
-        # -----------------------------------------------------------------
-        # construct the save path for ccf files
-        ccf_file = os.path.join(down_save_path,
-                                f'ccf_{self.objname}_file_list.txt')
-        create_file_list(self.ccf_files, ccf_file)
-        # -----------------------------------------------------------------
-        # construct the download table
-        # -----------------------------------------------------------------
-        # get the download base name
-        dwn_base_name = 'ccf_download_' + self.objname + '.txt'
-        # get the download table path
-        item_path = os.path.join(item_save_path, dwn_base_name)
-        # define the download files
-        down_files = [ccf_file]
-        # define the download descriptions
-        down_descs = ['CCF Table']
-        # compute the download table
-        download_table(down_files, down_descs, item_path, down_rel_path,
-                       down_save_path, title='CCF Downloads')
-        # -----------------------------------------------------------------
-        # update the paths
-        self.ccf_plot_path = item_rel_path + plot_base_name
-        self.ccf_stats_table = item_rel_path + stat_base_name
-        self.ccf_dwn_table = item_rel_path + dwn_base_name
-
-    def get_time_series_parameters(self):
-        # don't go here is lbl rdb files are not present
-        if len(self.ext_files) == 0:
-            return
-        # ---------------------------------------------------------------------
-        # generate place to save figures
-        item_save_path = self.settings['ITEMS']
-        item_rel_path = f'../{_ITEM_DIR}/'
-        down_save_path = self.settings['DOWNS']
-        down_rel_path = f'../{_DOWN_DIR}/'
-        # -----------------------------------------------------------------
-        # storage for ccf values
-        time_series_props = dict()
-        # get labels
-        snr_y_label = self.headers['EXT']['EXT_Y']['label']
-        snr_y_label = snr_y_label.replace(r'$\mu$', 'u')
-        snr_h_label = self.headers['EXT']['EXT_H']['label']
-        snr_h_label = snr_h_label.replace(r'$\mu$', 'u')
-        ext_col = 'ext_files'
-        tcorr_col = 'tcorr_files'
-        # ---------------------------------------------------------------------
-        # construct the stats table
-        # ---------------------------------------------------------------------
-        # columns
-        time_series_props['columns'] = TIME_SERIES_COLS[0:9]
-        time_series_props['columns'] += [snr_y_label, snr_h_label]
-        time_series_props['columns'] += [TIME_SERIES_COLS[9]]
-        time_series_props['columns'] += [ext_col, tcorr_col]
-        # get values for use in time series table
-        for time_series_col in TIME_SERIES_COLS:
-            time_series_props[time_series_col] = []
-        time_series_props[snr_y_label] = []
-        time_series_props[snr_h_label] = []
-        time_series_props[ext_col] = []
-        time_series_props[tcorr_col] = []
-        # get values from self.header_dict
-        mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
-        seeing_vec = np.array(self.header_dict['EXT_SEEING'])
-        airmass_vec = np.array(self.header_dict['EXT_AIRMASS'])
-        exptime_vec = np.array(self.header_dict['EXT_EXPTIME'])
-        snry_vec = np.array(self.header_dict['EXT_Y'])
-        snyh_vec = np.array(self.header_dict['EXT_H'])
-        dprtype_vec = np.array(self.header_dict['EXT_DPRTYPE'])
-        # get unique object directories (for this object)
-        u_obs_dirs = np.unique(self.obs_dirs_ext)
-        # loop around observation directories
-        for obs_dir in u_obs_dirs:
-            # create a mask for this observation directory
-            obs_mask_ext = self.obs_dirs_ext == obs_dir
-            obs_mask_tcorr = self.obs_dirs_tcorr == obs_dir
-            # get the first and last mjd for this observation directory
-            first_mjd = Time(np.min(mjd_vec[obs_mask_ext])).iso
-            last_mjd = Time(np.max(mjd_vec[obs_mask_ext])).iso
-            # get the number of observations for this observation
-            num_obs_ext= str(np.sum(obs_mask_ext))
-            num_obs_tcorr = str(np.sum(obs_mask_tcorr))
-            # get the seeing for this observation directory
-            seeing = np.mean(seeing_vec[obs_mask_ext])
-            seeing = '{:.3f}'.format(seeing)
-            # get the airmass for this observation directory
-            airmass = np.mean(airmass_vec[obs_mask_ext])
-            airmass = '{:.3f}'.format(airmass)
-            # get the mean exposure time
-            exptime = np.mean(exptime_vec[obs_mask_ext])
-            exptime = '{:.3f}'.format(exptime)
-            # get the total exposure time
-            texptime = np.sum(exptime_vec[obs_mask_ext])
-            texptime = '{:.3f}'.format(texptime)
-            # get the mean snr_y
-            snry = np.mean(snry_vec[obs_mask_ext])
-            snry = '{:.3f}'.format(snry)
-            # get the mean snr_h
-            snyh = np.mean(snyh_vec[obs_mask_ext])
-            snyh = '{:.3f}'.format(snyh)
-            # get the dprtypes
-            dprtype = ','.join(list(np.unique(dprtype_vec[obs_mask_ext])))
-            # -----------------------------------------------------------------
-            # Create the ext and tellu for this object
-            # -----------------------------------------------------------------
-            ext_files = np.array(self.ext_files)[obs_mask_ext]
-            tcorr_files = np.array(self.tcorr_files)[obs_mask_tcorr]
-            # -----------------------------------------------------------------
-            # Create the file lists for this object
-            # -----------------------------------------------------------------
-            # construct the save path for ext files
-            ext_file = f'ext_file_list_{obs_dir}_{self.objname}.txt'
-            ext_path = os.path.join(down_save_path, ext_file)
-            ext_rel_path = os.path.join(down_rel_path, ext_file)
-            create_file_list(ext_files, ext_path)
-            ext_download = _make_download('[download]', ext_rel_path)
-            ext_value = f'{len(ext_files)} {ext_download}'
-            # construct the save path for the tcorr files
-            tcorr_file = f'tcorr_file_list_{obs_dir}_{self.objname}.txt'
-            tcorr_path = os.path.join(down_save_path, tcorr_file)
-            tcorr_rel_path = os.path.join(down_rel_path, tcorr_file)
-            create_file_list(tcorr_files, tcorr_path)
-            tcorr_download = _make_download('[download]', tcorr_rel_path)
-            tcorr_value = f'{len(tcorr_files)} {tcorr_download}'
-            # -----------------------------------------------------------------
-            # append to the time series properties
-            time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
-            time_series_props[TIME_SERIES_COLS[1]].append(first_mjd)
-            time_series_props[TIME_SERIES_COLS[2]].append(last_mjd)
-            time_series_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
-            time_series_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
-            time_series_props[TIME_SERIES_COLS[5]].append(seeing)
-            time_series_props[TIME_SERIES_COLS[6]].append(airmass)
-            time_series_props[TIME_SERIES_COLS[7]].append(exptime)
-            time_series_props[TIME_SERIES_COLS[8]].append(texptime)
-            time_series_props[snr_y_label].append(snry)
-            time_series_props[snr_h_label].append(snyh)
-            time_series_props[TIME_SERIES_COLS[9]].append(dprtype)
-            time_series_props[ext_col].append(ext_value)
-            time_series_props[tcorr_col].append(tcorr_value)
-        # -----------------------------------------------------------------
-        # construct the stats
-        # -----------------------------------------------------------------
-        # get the stats base name
-        time_series_base_name = 'time_series_stat_' + self.objname + '.txt'
-        # get the stat path
-        stat_path = os.path.join(item_save_path, time_series_base_name)
-        # compute the stats
-        time_series_stats_table(time_series_props, stat_path)
-        # -----------------------------------------------------------------
-        # update the paths
-        self.time_series_plot_path = None
-        self.time_series_stats_table = item_rel_path + time_series_base_name
-        self.time_series_dwn_table = None
-
-
-def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
-                 headers, object_table: Table,
-                 file_dict: FileDictReturn) -> Dict[str, Any]:
+    # add settings to object class
+    object_class.add_settings(profile, settings, gsettings, headers)
     # get the object name for this row
-    objname = object_table[OBJECT_COLUMN][it]
+    objname = object_class.objname
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
@@ -1965,16 +2124,13 @@ def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
     clean_name = settings['CPN']
     # ------------------------------------------------------------------
     # print progress
-    msg = f'\tCreating page for {objname} [{it + 1} of {len(object_table)}]'
-    margs = [objname, it + 1, len(object_table)]
+    msg = '\tCreating page for {0} [{1} of {2}]'
+    margs = [objname, it + 1, len(object_classes)]
     wlog(params, '', msg.format(*margs))
-    # create the object class
-    object_instance = ObjectData(profile, gsettings, settings, headers,
-                                 objname, file_dict, object_table)
     # ---------------------------------------------------------------------
     # populate the header dictionary for this object instance
     # wlog(params, '', f'\t\tPopulating header dictionary')
-    object_instance.populate_header_dict()
+    object_class.populate_header_dict()
     # ---------------------------------------------------------------------
     # generate url for object
     object_url = f'{clean_name}_{outdir}_{objname}_index'
@@ -2013,28 +2169,28 @@ def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
     # print progress
     # wlog(params, '', f'\t\tCreating spectrum section')
     # add spectrum section
-    objpage_spectrum(object_page, names[0], items[0], object_instance)
+    objpage_spectrum(object_page, names[0], items[0], object_class)
     # ---------------------------------------------------------------------
     # LBL section
     # ---------------------------------------------------------------------
     # print progress
     # wlog(params, '', f'\t\tCreating LBL section')
     # add LBL section
-    objpage_lbl(object_page, names[1], items[1], object_instance)
+    objpage_lbl(object_page, names[1], items[1], object_class)
     # ---------------------------------------------------------------------
     # CCF section
     # ---------------------------------------------------------------------
     # print progress
     # wlog(params, '', f'\t\tCreating CCF section')
     # add CCF section
-    objpage_ccf(object_page, names[2], items[2], object_instance)
+    objpage_ccf(object_page, names[2], items[2], object_class)
     # ---------------------------------------------------------------------
     # Time series section
     # ---------------------------------------------------------------------
     # print progress
     # wlog(params, '', f'\t\tCreating time series section')
     # add time series section
-    objpage_timeseries(object_page, names[3], items[3], object_instance)
+    objpage_timeseries(object_page, names[3], items[3], object_class)
     # ---------------------------------------------------------------------
     # print progress
     # wlog(params, '', f'\t\tWriting to disk')
@@ -2052,13 +2208,18 @@ def add_obj_page(it: int, profile: dict, gsettings: dict, settings: dict,
     rprops['OBJNAME'] = objname
     rprops['OBJURL'] = obj_url
     rprops['OBJPAGEREF'] = obj_ref_page
+    # ------------------------------------------------------------------
+    # print progress
+    msg = '\tFinished creating page for {0} [{1} of {2}]'
+    margs = [objname, it + 1, len(object_classes)]
+    wlog(params, '', msg.format(*margs), colour='magenta')
     # things to return
     return rprops
 
 
 def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
-                  headers: dict, object_table: Table,
-                  file_dict: FileDictReturn) -> Tuple[Table, Dict[str, Any]]:
+                  headers: dict, object_classes: Dict[str, ObjectData]
+                  ) -> Dict[str, ObjectData]:
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
@@ -2072,94 +2233,64 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     wlog = drs_log.wlog
     # -------------------------------------------------------------------------
     # deal with no entries in object table
-    if len(object_table) == 0:
+    if len(object_classes) == 0:
         # print progress
         wlog(params, '', 'No objects found in object table')
-        # remove the columns we don't want in the final table
-        for remove_col in REMOVE_COLS:
-            if remove_col in object_table.columns:
-                object_table.remove_columns(remove_col)
         # return empty table
-        return object_table, dict()
+        return object_classes
     # -------------------------------------------------------------------------
     # print progress
     wlog(params, 'info', 'Creating object pages')
     # set up the arguments for the multiprocessing
-    args = [0, profile, gsettings, settings, headers, object_table, file_dict]
+    args = [0, '', profile, gsettings, settings, headers, object_classes]
     # get the number of cores
     n_cores = gsettings['N_CORES']
     # storage for results
-    rprops = dict()
+    results_dict = dict()
     # -------------------------------------------------------------------------
     # deal with running on a single core
     if n_cores == 1:
-        # storage for results
-        results_dict = dict()
         # change the object column to a url
-        for it, row in enumerate(object_table):
+        for it, key in enumerate(object_classes):
             # combine arguments
-            itargs = [it] + args[1:]
+            itargs = [it, key] + args[2:]
             # run the pool
             results = add_obj_page(*itargs)
             # push result to result storage
-            results_dict[it] = results
-        # print progress
-        wlog(params, 'info', 'Propagating results from page creation...')
-        # Use the iterator keys to populate our final dictionary
-        rprops = dict()
-        # loop around keys
-        for it in range(len(object_table)):
-            # get the result for this iteration
-            result = results_dict[it]
-            # loop around keys in the result dictionary's dictionary
-            for key in result:
-                # we assume all dictionarys have the same keys
-                if key in rprops:
-                    rprops[key].append(result[key])
-                else:
-                    rprops[key] = [result[key]]
+            results_dict[key] = results
     # -------------------------------------------------------------------------
     elif n_cores > 1:
-        import multiprocessing
-        pool = multiprocessing.Pool(processes=gsettings['N_CORES'])
-        # storage for results
-        results_dict = dict()
-        # use a Manager to create a shared dictionary to collect results
-        # change the object column to a url
-        for it, row in enumerate(object_table):
-            # combine arguments
-            itargs = [it] + args[1:]
-            # run the pool
-            results = pool.apply_async(add_obj_page, args=itargs)
-            # push result to result storage
-            results_dict[it] = results
-        # Wait for all jobs to finish
-        pool.close()
-        pool.join()
-        # print progress
-        wlog(params, 'info', 'Propagating results from page creation...')
-        # Use the iterator keys to populate our final dictionary
-        rprops = dict()
-        # loop around keys
-        for it in range(len(object_table)):
-            # get the result for this iteration
-            result = results_dict[it].get()
-            # loop around keys in the result dictionary's dictionary
-            for key in result:
-                # we assume all dictionarys have the same keys
-                if key in rprops:
-                    rprops[key].append(result[key])
-                else:
-                    rprops[key] = [result[key]]
+        from multiprocessing import get_context
+        # list of params for each entry
+        params_per_process = []
+        for it, key in enumerate(object_classes):
+            itargs = [it, key] + args[2:]
+            params_per_process.append(itargs)
+        # start parellel jobs
+        with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
+            results = pool.starmap(add_obj_page, params_per_process)
+        # fudge back into return dictionary
+        for row in range(len(results)):
+            objname = results[row]['OBJNAME']
+            # push into results dict
+            results_dict[objname] = results[row]
+    # -------------------------------------------------------------------------
+    # update object classes with results
     # -------------------------------------------------------------------------
     # replace object name with the object name + object url
-    object_table[OBJECT_COLUMN] = rprops['OBJURL']
-    # remove the columns we don't want in the final table
-    for remove_col in REMOVE_COLS:
-        if remove_col in object_table.colnames:
-            object_table.remove_columns(remove_col)
+    for key in object_classes:
+        if key in results_dict:
+            # get the object class for this key
+            object_class = object_classes[key]
+            # -----------------------------------------------------------------
+            # update results
+            # -----------------------------------------------------------------
+            # This is where we add any results coming back from add_obj_page
+            object_class.objurl = results_dict[key]['OBJURL']
+            object_class.objpageref = results_dict[key]['OBJPAGEREF']
+    # -------------------------------------------------------------------------
     # return the object table
-    return object_table, rprops
+    return object_classes
 
 
 def objpage_spectrum(page: Any, name: str, ref: str,
@@ -2172,7 +2303,7 @@ def objpage_spectrum(page: Any, name: str, ref: str,
     page.add_section(name)
     # ------------------------------------------------------------------
     # deal with no spectrum found
-    if len(object_instance.ext_files) == 0:
+    if len(object_instance.filetypes['ext'].files) == 0:
         page.add_text('No spectrum found')
         return
     # ------------------------------------------------------------------
@@ -2205,9 +2336,14 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
+    # get the first lbl files
+    lbl_files = dict()
+    for filetype in LBL_FILETYPES:
+        if object_instance.filetypes[filetype].num > 0:
+            lbl_files[filetype] = object_instance.filetypes[filetype].files
     # ------------------------------------------------------------------
     # deal with no spectrum found
-    if len(object_instance.lbl_rdb_files) == 0:
+    if len(lbl_files) == 0:
         # add the section heading
         page.add_section(name)
         # print that there is no LBL reduction found
@@ -2246,9 +2382,11 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
+    # get lbl rdb files
+    ccf_files = object_instance.filetypes['ccf'].files
     # ------------------------------------------------------------------
     # deal with no spectrum found
-    if len(object_instance.ccf_files) == 0:
+    if len(ccf_files) == 0:
         # add the section heading
         page.add_section(name)
         # print that there is no LBL reduction found
@@ -2306,21 +2444,107 @@ def objpage_timeseries(page: Any, name: str, ref: str,
                            cssclass='csvtable2')
 
 
+def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
+    # storage dictionary for conversion to table
+    table_dict = dict()
+    # deal with no entries
+    if len(object_instances) == 0:
+        return None
+    # get the first instance (for has polar)
+    key = list(object_instances.keys())[0]
+    object_class0 = object_instances[key]
+    # start columns as empty lists
+    for col in COLUMNS:
+        if col in POLAR_COLS:
+            if object_class0.has_polar:
+                table_dict[col] = []
+        else:
+            table_dict[col] = []
+    # -------------------------------------------------------------------------
+    # loop around rows in table
+    for key in object_instances:
+        # get the class for this objname
+        object_class = object_instances[key]
+        # set the object name
+        table_dict['OBJNAME'].append(object_class.objurl)
+        # set the ra and dec
+        table_dict['RA'].append(object_class.ra)
+        table_dict['DEC'].append(object_class.dec)
+        # set the Teff
+        if object_class.teff is None:
+            table_dict['TEFF'].append(np.nan)
+        else:
+            table_dict['TEFF'].append(object_class.teff)
+        # set the SpT
+        if object_class.sptype is None:
+            table_dict['SPTYPE'].append('')
+        else:
+            table_dict['SPTYPE'].append(object_class.sptype)
+        # set the dprtypes
+        table_dict['DPRTYPE'].append(object_class.dprtypes)
+        # set the raw number of files
+        table_dict['RAW'].append(object_class.filetypes['raw'].num)
+        # set the number of pp files (passed qc)
+        table_dict['PP'].append(object_class.filetypes['pp'].num_passed)
+        # set the number of ext files (passed qc)
+        table_dict['EXT'].append(object_class.filetypes['ext'].num_passed)
+        # set the number of tcorr files (passed qc)
+        table_dict['TCORR'].append(object_class.filetypes['tcorr'].num_passed)
+        # set the number of ccf files (passed qc)
+        table_dict['CCF'].append(object_class.filetypes['ccf'].num_passed)
+        # set the number of polar files (passed qc)
+        if object_class.has_polar:
+            table_dict['POL'].append(object_class.filetypes['polar'].num_passed)
+        # set the number of e.fits files
+        table_dict['efits'].append(object_class.filetypes['efiles'].num)
+        # set the number of t.fits files
+        table_dict['tfits'].append(object_class.filetypes['tfiles'].num)
+        # set the number of v.fits files
+        table_dict['vfits'].append(object_class.filetypes['vfiles'].num)
+        # set the number of p.fits files
+        if object_class.has_polar:
+            table_dict['pfits'].append(object_class.filetypes['pfiles'].num)
+        # set the number of lbl files
+        table_dict['lbl'].append(object_class.filetypes['lbl.fits'].num)
+        # set the last observed value raw file
+        table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
+        # set the last processed value
+        if object_class.last_processed is not None:
+            table_dict['last_proc'].append(object_class.last_processed.iso)
+        else:
+            table_dict['last_proc'].append('')
+    # -------------------------------------------------------------------------
+    # finally convert this to a table but use the output column names
+    out_table = Table()
+    # loop around all columns
+    for col in list(table_dict.keys()):
+        # get the out table column name
+        new_col = COLUMNS[col]
+        # push values into out table
+        out_table[new_col] = table_dict[col]
+    # -------------------------------------------------------------------------
+    # sort the column by the object name
+    out_table.sort('OBJNAME')
+    # return the table
+    return out_table
+
+
 # =============================================================================
 # Plots, stat tables and download tables
 # =============================================================================
 def download_table(files: List[str], descriptions: List[str],
                    item_path: str, dwn_rel_path: str, down_dir: str,
-                   title: str):
+                   title: str, versions: Optional[List[str]] = None):
     """
     Generic download table saving to the item relative path
 
-    :param files:
-    :param descriptions:
+    :param files: the list of files to add to download table
+    :param descriptions: the list of descriptions for each file
     :param dwn_rel_path: the path of the download relative to the page
     :param item_path: the absolute path to the item csv table file (to save to)
     :param down_dir: the path to the download directory
     :param title: the title for the download table
+    :param versions: the versions of the files (optional)
     :return:
     """
     # --------------------------------------------------------------------------
@@ -2334,6 +2558,8 @@ def download_table(files: List[str], descriptions: List[str],
     descs = dict()
     # storage of the last modified times
     last_modified = dict()
+    # storage for the version
+    out_versions = dict()
     # loop around files and get the paths
     for it, filename in enumerate(files):
         # get the basename
@@ -2346,23 +2572,46 @@ def download_table(files: List[str], descriptions: List[str],
         out_paths[basename] = os.path.join(down_dir, basename)
         # get the descriptions
         descs[basename] = descriptions[it]
+        # ---------------------------------------------------------------------
         # get the last modified time of the filename
         if os.path.exists(filename):
             last_mod = Time(os.path.getmtime(filename), format='unix').iso
             last_modified[basename] = last_mod
         else:
             last_modified[basename] = 'N/A'
+        # ---------------------------------------------------------------------
+        # deal with version
+        if versions is not None:
+            out_versions[basename] = versions[it]
+        # if file is a fits file get the version from the header
+        elif filename.endswith('.fits'):
+            # get the header
+            hdr = fits.getheader(filename)
+            if 'VERSION' in hdr:
+                out_versions[basename] = hdr['VERSION']
+            else:
+                out_versions[basename] = ''
+        # otherwise we have no version info
+        else:
+            out_versions[basename] = ''
+
     # --------------------------------------------------------------------------
     # construct the stats table
     # --------------------------------------------------------------------------
     # start with a download dictionary
-    down_dict = dict(Description=[], Value=[], Uploaded=[])
+    down_dict = dict(Description=[], Value=[], Uploaded=[], Version=[])
+    # flag for having versions
+    has_version = False
     # loop around files
     for basename in in_paths:
         # add the rdb file
         down_dict['Description'].append(descs[basename])
         down_dict['Value'].append(_make_download(basename, ref_paths[basename]))
         down_dict['Uploaded'].append(last_modified[basename])
+        down_dict['Version'].append(out_versions[basename])
+        # check for version
+        if out_versions[basename] != '':
+            has_version = True
         # copy the file from in path to out path
         #   if file is already here then don't copy
         if in_paths[basename] != out_paths[basename]:
@@ -2373,6 +2622,9 @@ def download_table(files: List[str], descriptions: List[str],
     down_dict2[title] = down_dict['Description']
     down_dict2['File URL'] = down_dict['Value']
     down_dict2['Uploaded'] = down_dict['Uploaded']
+    # add version only if one file has version (with the has_version flag)
+    if has_version:
+        down_dict2['Version'] = down_dict['Version']
     # --------------------------------------------------------------------------
     # convert to table
     down_table = Table(down_dict2)
@@ -2399,6 +2651,36 @@ def create_file_list(files: List[str], path: str):
         for filename in files:
             # write to file
             filelist.write(filename + '\n')
+
+
+def create_header_file(files: List[str], headers: Dict[str, Any], filetype: str,
+                       hdict: Dict[str, Any], filename: str):
+    """
+    Creates a header file (csv) from a dictionary of header keys
+
+    :param files: list of str, the files to loop around
+    :param headers: dict, a dictionary containing those headers to add for
+                    each filetype
+    :param filetype: str, a filetype (i.e. ext, pp, tcorr, ccf)
+    :param hdict: dict, the header values
+    :param filename: str, the filename to save the csv file to
+
+    :return: None, writes file to disk
+    """
+    # check file kind in headers (if it isn't we don't create files)
+    if filetype not in headers:
+        return
+    # storage for dict-->table
+    tabledict = dict()
+    # first column is the filenames
+    tabledict['filename'] = [os.path.basename(filename) for filename in files]
+    # loop around keys in header for this filetype and add to tabledict
+    for keydict in headers[filetype]:
+        tabledict[keydict] = hdict[keydict]
+    # convert to table
+    table = Table(tabledict)
+    # write to file
+    table.write(filename, format='ascii.csv', overwrite=True)
 
 
 def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
@@ -2459,7 +2741,7 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
     if tcorr_spec is not None:
         frame1.plot(wavemap[wavemask0], tcorr_spec[wavemask0],
                     color='r', label='Telluric Corrected', lw=0.5)
-        frame1.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec, 90)))
+        frame1.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec, 99)))
     frame1.set(xlabel='Wavelength [nm]', ylabel='Flux', xlim=wavelim0)
     frame1.set_title(title, fontsize=10)
     frame1.legend(loc=0, ncol=2)
@@ -2478,11 +2760,13 @@ def spec_plot(spec_props: Dict[str, Any], plot_path: str, plot_title: str):
         if tcorr_spec is not None:
             frame.plot(wavemap[mask], tcorr_spec[mask],
                        color='r', label='Telluric Corrected', lw=0.5)
-            frame.set_ylim((0, 1.5 * np.nanpercentile(tcorr_spec[mask], 90)))
+            ymin_mask = 0.5 * np.nanpercentile(tcorr_spec[mask], 1)
+            ymax_mask = 1.5 * np.nanpercentile(tcorr_spec[mask], 99)
+            frame.set_ylim((ymin_mask, ymax_mask))
         if it == 0:
             frame.set_ylabel('Flux')
         frame.set(xlabel='Wavelength [nm]', xlim=wavelim)
-        frame.set_title(f'Zoom {it+1}', fontsize=10)
+        frame.set_title(f'Zoom {it + 1}', fontsize=10)
         frame.grid(which='both', color='lightgray', ls='--')
 
     # --------------------------------------------------------------------------
@@ -2505,7 +2789,7 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
 
     num_pp_qc = spec_props['NUM_PP_FILES_FAIL']
     num_ext_qc = spec_props['NUM_EXT_FILES_FAIL']
-    num_tcorr_qc =spec_props['NUM_TCORR_FILES_FAIL']
+    num_tcorr_qc = spec_props['NUM_TCORR_FILES_FAIL']
 
     ext_y = spec_props['EXT_Y']
     ext_h = spec_props['EXT_H']
@@ -2513,10 +2797,16 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     last_raw = spec_props['LAST_RAW']
     first_pp = spec_props['FIRST_PP']
     last_pp = spec_props['LAST_PP']
+    last_pp_proc = spec_props['LAST_PP_PROC']
     first_ext = spec_props['FIRST_EXT']
     last_ext = spec_props['LAST_EXT']
+    last_ext_proc = spec_props['LAST_EXT_PROC']
     first_tcorr = spec_props['FIRST_TCORR']
     last_tcorr = spec_props['LAST_TCORR']
+    last_tcorr_proc = spec_props['LAST_TCORR_PROC']
+    version_pp = spec_props['PP_VERSION']
+    version_ext = spec_props['EXT_VERSION']
+    version_tcorr = spec_props['TCORR_VERSION']
     coord_url = spec_props['COORD_URL']
     ra, dec = spec_props['RA'], spec_props['Dec']
     teff, spt = spec_props['Teff'], spec_props['Spectral Type']
@@ -2562,44 +2852,53 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     # add number of pp files
     # -------------------------------------------------------------------------
     stat_dict['Description'].append('Total number PP files')
-    stat_dict['Value'].append(f'{num_pp+num_pp_qc}')
+    stat_dict['Value'].append(f'{num_pp + num_pp_qc}')
     stat_dict['Description'].append('Number PP files passed QC')
     stat_dict['Value'].append(f'{num_pp}')
     stat_dict['Description'].append('Number PP files failed QC')
     stat_dict['Value'].append(f'{num_pp_qc}')
-    stat_dict['Description'].append('First pp file')
+    stat_dict['Description'].append('First pp file [Mid exposure]')
     stat_dict['Value'].append(f'{first_pp}')
-    stat_dict['Description'].append('Last pp file')
+    stat_dict['Description'].append('Last pp file [Mid exposure]')
     stat_dict['Value'].append(f'{last_pp}')
-
+    stat_dict['Description'].append('Last processed [pp]')
+    stat_dict['Value'].append(f'{last_pp_proc}')
+    stat_dict['Description'].append('Version [pp]')
+    stat_dict['Value'].append(f'{version_pp}')
     # -------------------------------------------------------------------------
     # add number of ext files
     # -------------------------------------------------------------------------
     stat_dict['Description'].append('Total number ext files')
-    stat_dict['Value'].append(f'{num_ext+num_ext_qc}')
+    stat_dict['Value'].append(f'{num_ext + num_ext_qc}')
     stat_dict['Description'].append('Number ext files passed QC')
     stat_dict['Value'].append(f'{num_ext}')
     stat_dict['Description'].append('Number ext files failed QC')
     stat_dict['Value'].append(f'{num_ext_qc}')
-    stat_dict['Description'].append('First ext file')
+    stat_dict['Description'].append('First ext file [Mid exposure]')
     stat_dict['Value'].append(f'{first_ext}')
-    stat_dict['Description'].append('Last ext file')
+    stat_dict['Description'].append('Last ext file [Mid exposure]')
     stat_dict['Value'].append(f'{last_ext}')
-
+    stat_dict['Description'].append('Last processed [ext]')
+    stat_dict['Value'].append(f'{last_ext_proc}')
+    stat_dict['Description'].append('Version [ext]')
+    stat_dict['Value'].append(f'{version_ext}')
     # -------------------------------------------------------------------------
     # add number of tcorr files
     # -------------------------------------------------------------------------
     stat_dict['Description'].append('Total number tcorr files')
-    stat_dict['Value'].append(f'{num_tcorr+num_tcorr_qc}')
+    stat_dict['Value'].append(f'{num_tcorr + num_tcorr_qc}')
     stat_dict['Description'].append('Number tcorr files passed QC')
     stat_dict['Value'].append(f'{num_tcorr}')
     stat_dict['Description'].append('Number tcorr files failed QC')
     stat_dict['Value'].append(f'{num_tcorr_qc}')
-    stat_dict['Description'].append('First tcorr file')
+    stat_dict['Description'].append('First tcorr file [Mid exposure]')
     stat_dict['Value'].append(f'{first_tcorr}')
-    stat_dict['Description'].append('Last tcorr file')
+    stat_dict['Description'].append('Last tcorr file [Mid exposure]')
     stat_dict['Value'].append(f'{last_tcorr}')
-
+    stat_dict['Description'].append('Last processed [tcorr]')
+    stat_dict['Value'].append(f'{last_tcorr_proc}')
+    stat_dict['Description'].append('Version [tcorr]')
+    stat_dict['Value'].append(f'{version_tcorr}')
     # -------------------------------------------------------------------------
     # add the SNR in Y
     stat_dict['Description'].append('Median SNR Y')
@@ -2631,6 +2930,14 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     svrad = lbl_props['svrad']
     snr_h = lbl_props['snr_h']
     snr_h_label = lbl_props['SNR_H_LABEL']
+    reset_mask = lbl_props['RESET_RV']
+    # sort data by date
+    sort = np.argsort(plot_date)
+    plot_date = plot_date[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
+    snr_h = snr_h[sort]
+    reset_mask = reset_mask[sort]
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
@@ -2638,11 +2945,19 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # Top plot LBL RV
     # --------------------------------------------------------------------------
     # plot the points
-    frame[0].plot_date(plot_date, vrad, fmt='.', alpha=0.5,
-                       color='green', ls='None')
+    frame[0].plot_date(plot_date[~reset_mask], vrad[~reset_mask], fmt='.',
+                       alpha=0.5, color='green', ls='None')
+    frame[0].plot_date(plot_date[reset_mask], vrad[reset_mask], fmt='.',
+                       alpha=0.5, color='purple', ls='None')
     # plot the error bars
-    frame[0].errorbar(plot_date, vrad, yerr=svrad,
-                      marker='o', alpha=0.5, color='green', ls='None')
+    frame[0].errorbar(plot_date[~reset_mask], vrad[~reset_mask],
+                      yerr=svrad[~reset_mask],
+                      marker='o', alpha=0.5, color='green', ls='None',
+                      label='Good')
+    frame[0].errorbar(plot_date[reset_mask], vrad[reset_mask],
+                      yerr=svrad[reset_mask],
+                      marker='o', alpha=0.5, color='purple', ls='None',
+                      label='Possibly bad (reset rv)')
     # find percentile cuts that will be expanded by 150% for the ylim
     pp = np.nanpercentile(vrad, [10, 90])
     diff = pp[1] - pp[0]
@@ -2650,39 +2965,92 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # used for plotting but also for the flagging of outliers
     ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
+    # store the bad points
+    bad_points = []
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
+    arrow = None
+    # --------------------------------------------------------------------------
     # flag the low outliers
     low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(plot_date[low], dtype=float)
-    x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
+    # x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        bad_points.append(ix)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] + l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] - l_arrow * 2),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        bad_points.append(ix)
+
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
     frame[0].grid(which='both', color='lightgray', linestyle='--')
     frame[0].set(ylabel='Velocity [m/s]')
+    # only keep one unique labels for legend
+    handles, labels = [], []
+    raw_handles, raw_labels = frame[0].get_legend_handles_labels()
+    for it in range(len(raw_labels)):
+        if raw_labels[it] not in labels:
+            handles.append(raw_handles[it])
+            labels.append(raw_labels[it])
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow,))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Bottom plot SNR
     # --------------------------------------------------------------------------
     # simple plot of the SNR in a sample order. You need to
     # update the relevant ketword for SPIRou
-    frame[1].plot_date(plot_date, snr_h, fmt='.',
-                       alpha=0.5, color='green', ls='None')
+    frame[1].plot_date(plot_date[~reset_mask], snr_h[~reset_mask], fmt='.',
+                       alpha=0.5, color='green', ls='None', label='Good')
+    frame[1].plot_date(plot_date[reset_mask], snr_h[reset_mask], fmt='.',
+                       alpha=0.5, color='purple', ls='None',
+                       label='Possibily bad (reset rv)')
+    # over plot the bad points from above
+    if len(bad_points) > 0:
+        bad_points = np.array(bad_points)
+        frame[1].plot_date(plot_date[bad_points], snr_h[bad_points], fmt='.',
+                           alpha=0.5, color='red', ls='None', label='Outliers')
+
+    # add properties
     frame[1].grid(which='both', color='lightgray', linestyle='--')
     frame[1].set(xlabel='Date')
     frame[1].set(ylabel=snr_h_label)
+    # add legend
+    frame[1].legend(loc=0)
     plt.tight_layout()
     # --------------------------------------------------------------------------
     # save figure and close the plot
@@ -2704,6 +3072,8 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     low = lbl_props['low']
     high = lbl_props['high']
     vel_domain = lbl_props['ylim']
+    version_lbl = lbl_props['version']
+    num_reset_rv = lbl_props['NUM_RESET_RV']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -2722,30 +3092,36 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
     # add rv uncertainty
-    stat_dict['Description'].append('RV Uncertainty (25, 50, 75 percentile)')
+    stat_dict['Description'].append('RV Uncertainty lbl.rdb (25, 50, 75 percentile)')
     stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*p_sigma))
     # add the absolute deviation
-    stat_dict['Description'].append('RV Absolute Deviation (25, 50, 75 '
+    stat_dict['Description'].append('RV Absolute Deviation lbl.rdb (25, 50, 75 '
                                     'percentile)')
     stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*v_sigma))
     # add the number of measurements
-    stat_dict['Description'].append('Number of Measurements')
+    stat_dict['Description'].append('Number of lbl.rdb Measurements')
     stat_dict['Value'].append(len(vrad))
     # add the spurious low points
-    stat_dict['Description'].append('Number of Spurious Low Points')
+    stat_dict['Description'].append('Number of lbl.rdb Spurious Low Points')
     stat_dict['Value'].append(np.sum(low))
     # add the spurious high points
-    stat_dict['Description'].append('Number of Spurious High Points')
+    stat_dict['Description'].append('Number of lbl.rdb Spurious High Points')
     stat_dict['Value'].append(np.sum(high))
     # add the number of nights
     stat_dict['Description'].append('Number of Nights')
     stat_dict['Value'].append(n_nights)
+    # add the number of reset RV points
+    stat_dict['Description'].append('Number of Reset RV Points')
+    stat_dict['Value'].append(num_reset_rv)
     # add the systemic velocity
     stat_dict['Description'].append('Systemic Velocity')
     stat_dict['Value'].append('{:.2f} m/s'.format(sys_vel))
     # add the Velocity domain considered
     stat_dict['Description'].append('Velocity Domain considered valid')
     stat_dict['Value'].append('{:.2f} to {:.2f} m/s'.format(*vel_domain))
+    # add the LBL version
+    stat_dict['Description'].append('LBL Version')
+    stat_dict['Value'].append(version_lbl)
     # --------------------------------------------------------------------------
     # change the columns names
     stat_dict2 = dict()
@@ -2772,6 +3148,12 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     has_fit = ccf_props['has_fit']
     fit = ccf_props['fit']
     xlim = ccf_props['xlim']
+
+    # sort data by mjd.plot_date
+    sort = np.argsort(mjd.plot_date)
+    mjd = mjd[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
     # ylim = ccf_props['ylim']
     # --------------------------------------------------------------------------
     # setup the figure
@@ -2786,7 +3168,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
     frame[0].plot_date(mjd.plot_date, vrad, fmt='.', alpha=0.5,
-                       color='green')
+                       color='green', label='Good')
     # plot the CCF RV errors
     frame[0].errorbar(mjd.plot_date, vrad, yerr=svrad, fmt='o',
                       alpha=0.5, color='green')
@@ -2800,28 +3182,64 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     else:
         ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
+    arrow = None
+    # --------------------------------------------------------------------------
     # flag the low outliers
     low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(mjd.plot_date[low], dtype=float)
-    x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
+    # x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] - l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] + l_arrow * 2),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(mjd.plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].grid(which='both', color='lightgray', ls='--')
     frame[0].set(xlabel='Date', ylabel='Velocity [m/s]')
+    # only keep one unique labels for legend
+    handles, labels = [], []
+    raw_handles, raw_labels = frame[0].get_legend_handles_labels()
+    for it in range(len(raw_labels)):
+        if raw_labels[it] not in labels:
+            handles.append(raw_handles[it])
+            labels.append(raw_labels[it])
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow,))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Middle plot median CCF
     # --------------------------------------------------------------------------
@@ -2902,6 +3320,11 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     fwhm = ccf_props['fwhm']
     num_ccf = len(ccf_props['files'])
     num_ccf_qc = len(ccf_props['files_failed'])
+    first_ccf = ccf_props['FIRST_CCF']
+    last_ccf = ccf_props['LAST_CCF']
+    last_ccf_proc = ccf_props['LAST_CCF_PROC']
+    version_ccf = ccf_props['CCF_VERSION']
+    chosen_mask = ccf_props['chosen_mask']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -2918,6 +3341,9 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     # --------------------------------------------------------------------------
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
+    # add mask used
+    stat_dict['Description'].append('Mask used')
+    stat_dict['Value'].append(chosen_mask)
     # add systemic velocity
     stat_dict['Description'].append('CCF systemic velocity')
     value = r'{:.2f} :math:`\pm` {:.2f} m/s'.format(sys_vel, err_sys_vel)
@@ -2935,6 +3361,15 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     # add number of ccf files failed
     stat_dict['Description'].append('Number CCF files failed QC')
     stat_dict['Value'].append(num_ccf_qc)
+    # add times
+    stat_dict['Description'].append('First ccf file [Mid exposure]')
+    stat_dict['Value'].append(f'{first_ccf}')
+    stat_dict['Description'].append('Last ccf file [Mid exposure]')
+    stat_dict['Value'].append(f'{last_ccf}')
+    stat_dict['Description'].append('Last processed [ccf]')
+    stat_dict['Value'].append(f'{last_ccf_proc}')
+    stat_dict['Description'].append('Version [ccf]')
+    stat_dict['Value'].append(f'{version_ccf}')
     # --------------------------------------------------------------------------
     # change the columns names
     stat_dict2 = dict()
@@ -3012,9 +3447,9 @@ def make_finder_download_table(entry, objname, item_save_path, item_rel_path,
 # =============================================================================
 # Worker functions
 # =============================================================================
-def debug_mode(gsettings: dict):
+def debug_mode(debugmode: bool, gsettings: dict):
     # switch off some options in debug mode
-    if DEBUG:
+    if debugmode:
         gsettings['N_CORES'] = 1
         gsettings['filter objects'] = True
     return gsettings
@@ -3151,39 +3586,6 @@ def clean_profile_name(profile_name: str) -> str:
     return profile_name
 
 
-def _get_column_widths(table: Table):
-    """
-    Take a table and get columns widths from lookup table
-    (or assign default value)
-    """
-    cwidths = []
-    # loop around column names and look up the widths in the lookup table
-    for colname in table.colnames:
-        # if they are in the look up table use this width
-        if colname in COL_WIDTH_DICT:
-            cwidths.append(COL_WIDTH_DICT[colname])
-        # otherwise use the default width
-        else:
-            cwidths.append(DEFAULT_COL_WIDTH)
-    # widths must be percentages (100% total)
-    cwidths = np.array(cwidths)
-    cwidths = np.floor(100 * cwidths / np.sum(cwidths)).astype(int) - 1
-    # any cwidths that are 0 are set to 1
-    cwidths[cwidths == 0] = 1
-    # widths must be strings
-    cwidths = list(cwidths.astype(str))
-    # -------------------------------------------------------------------------
-    # deal with table width
-    if len(table.colnames) <= DEFAULT_TABLE_LENGTH:
-        cwidth = None
-    else:
-        cfrac = DEFAULT_TABLE_WIDTH / DEFAULT_TABLE_LENGTH
-        cwidth = '{0}%'.format(int(np.floor(len(table.colnames) * cfrac)))
-    # -------------------------------------------------------------------------
-    # return a list of the columns
-    return cwidth, cwidths
-
-
 def _make_url(value: str, url: str) -> str:
     """
     Make a url from a value and a url
@@ -3318,6 +3720,20 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
     return passed
 
 
+class ArrowHandler(HandlerPatch):
+    def __init__(self):
+        # get super call
+        super().__init__()
+        # set arrow props
+        self.arrowprops = None
+
+    def create_artists(self, legend, orig_handle, xdescent, ydescent,
+                       width, height, fontsize, trans):
+        arrow = FancyArrowPatch((0, 3), (25, 3), **self.arrowprops)
+        arrow.set_mutation_scale(10)
+        return [arrow]
+
+
 # =============================================================================
 # Start of code
 # =============================================================================
@@ -3325,9 +3741,13 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # assume the first argument is the profile filename
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         raise IOError('Please supply the profile filename')
     profile_filename = sys.argv[1]
+    if len(sys.argv) > 2 and sys.argv[2].startswith('--debug'):
+        debug = True
+    else:
+        debug = False
     # step 1: read the yaml file
     apero_profiles = read_yaml_file(profile_filename)
     # get global settings
@@ -3340,31 +3760,31 @@ if __name__ == "__main__":
         # remove working directory
         shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
     # deal with debug mode
-    ari_gsettings = debug_mode(ari_gsettings)
+    ari_gsettings = debug_mode(debug, ari_gsettings)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
     all_apero_oprops = dict()
     # loop around profiles from yaml file
-    for apero_profile_name in apero_profiles:
+    for _apero_profname in apero_profiles:
         # sort out settings
-        ari_settings = get_settings(ari_gsettings, apero_profile_name)
+        ari_settings = get_settings(ari_gsettings, _apero_profname)
         # add profile name to settings
-        apero_profiles[apero_profile_name]['profile name'] = apero_profile_name
+        apero_profiles[_apero_profname]['profile name'] = _apero_profname
         # we reprocess if the file does not exist or if REPROCESS is True
         if REPROCESS:
             # print progress
             print('=' * 50)
-            print('Compiling stats for profile: {0}'.format(apero_profile_name))
+            print('Compiling stats for profile: {0}'.format(_apero_profname))
             print('=' * 50)
             # get profile
-            apero_profile = apero_profiles[apero_profile_name]
+            apero_profile = apero_profiles[_apero_profname]
             # compile stats
             apero_stats = compile_stats(ari_gsettings, ari_settings,
                                         apero_profile, header_settings)
             # add to all_apero_stats
-            all_apero_stats[apero_profile_name] = apero_stats['TABLES']
-            all_apero_oprops[apero_profile_name] = apero_stats['OPROPS']
+            all_apero_stats[_apero_profname] = apero_stats['TABLES']
+            all_apero_oprops[_apero_profname] = apero_stats['OPROPS']
             # -----------------------------------------------------------------
             # Save stats to disk
             save_stats(ari_settings, apero_stats)
@@ -3372,13 +3792,13 @@ if __name__ == "__main__":
         else:
             # print progress
             print('=' * 50)
-            print('Loading stats for profile: {0}'.format(apero_profile_name))
+            print('Loading stats for profile: {0}'.format(_apero_profname))
             print('=' * 50)
             # load stats
             apero_stats = load_stats(ari_settings)
             # add to all_apero_stats
-            all_apero_stats[apero_profile_name] = apero_stats['TABLES']
-            all_apero_oprops[apero_profile_name] = apero_stats['OPROPS']
+            all_apero_stats[_apero_profname] = apero_stats['TABLES']
+            all_apero_oprops[_apero_profname] = apero_stats['OPROPS']
     # ----------------------------------------------------------------------
     # sort out settings
     ari_settings = get_settings(ari_gsettings)

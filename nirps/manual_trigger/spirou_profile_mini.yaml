@@ -20,6 +20,12 @@ spirou V0.7.282 mini2:
             - all
     # apero_get settings
     get:
+        science fibers:
+            - AB
+            - A
+            - B
+        calib fibers:
+            - C
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - EXT_E2DS_FF
@@ -54,6 +60,10 @@ spirou V0.7.282 mini2:
             # - objects
     # apero_get settings for lbl
     get-lbl:
+        science fibers:
+            - AB
+        calib fibers:
+            - C
         # input telluric
         science out types:
             - TELLU_OBJ
