@@ -109,6 +109,8 @@ def get_obs_dirs(params: Dict[str, Any]):
         # add to the list of observation directories
         if obs_dir not in obs_dirs:
             obs_dirs.append(obs_dir)
+    # sort alphabetically
+    obs_dirs.sort()
     # return the list of observation directories
     return obs_dirs
 
