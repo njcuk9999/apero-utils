@@ -277,7 +277,7 @@ if __name__ == "__main__":
     # provide a working example of a test
     _params = dict()
     # define the observation directory
-    _obsdir = '2021-03-15'
+    _obsdir = '2021-07-01'
     # run the test
     test(_params, _obsdir, log=True)
 

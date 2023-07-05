@@ -25,6 +25,9 @@ run_single_test = general.run_single_test
 
 upload_tests = general.upload_tests
 
+upload_tests = general.upload_tests
+
+
 # =============================================================================
 # End of code
 # =============================================================================
