@@ -14,8 +14,6 @@ from typing import Any, Dict
 # =============================================================================
 # Define variables
 # =============================================================================
-# name of the column in database, must be unique
-NAME = 'BLANK'
 # define any other constants here that you want moving to the parameters.py
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
