@@ -17,14 +17,36 @@ from apero_raw_tests.tests import eng_test
 # =============================================================================
 # Append your test here
 # =============================================================================
+# dictionary to store all tests
 test_dict = dict()
+
+# form of test_dict entry is as follows:
+#    test_dict['KEY'] = test_module.function
+#
+#    where function must be in form
+#    function(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+#
+# Note the key is the column name that is used
+#    Please do not have punctuation (other than underscore) and no spaces
+
 # blank test - this tests whether the apero raw tests ran
 test_dict['BLANK'] = blank_test.test
-# test 1
+
+# obs dir test - this tests whether the obsdir given exists on disk and has
+#                fits files in its directory
 test_dict['OBSDIR'] = obsdir_test.test
-# test 2
+
+# eng test - Check the consistency of headers with what we expect from
+#            enginnering. Consistency of FP temperature with set point,
+#            enclosure, pumps, valves and the presence of some calibration
+#            files.
 test_dict['ENG_TEST'] = eng_test.test
-# test 3
+
+# test 1 - explanation
+
+# test 2 -
+
+# test 3 - explanation
 
 
 
