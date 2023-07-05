@@ -44,7 +44,7 @@ test_dict['ENG_TEST'] = eng_test.test
 
 # test 1 - explanation
 
-# test 2 -
+# test 2 - explanation
 
 # test 3 - explanation
 

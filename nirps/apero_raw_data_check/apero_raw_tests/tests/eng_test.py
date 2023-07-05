@@ -23,8 +23,6 @@ import copy
 # =============================================================================
 # Define variables
 # =============================================================================
-# name of the column in database, must be unique
-NAME = 'ENG_TEST'
 # define any other constants here that you want moving to the parameters.py
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
@@ -56,24 +54,21 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # -------------------------------------------------------------------------
     # get all observation directories
     obsdirs = io.get_obs_dirs(params)
-    # -------------------------------------------------------------------------
-    # test if observation directory exists in our list
-    if obsdir not in obsdirs:
-        if log:
-            msg = ('OBSDIR TEST: Observation directory {0} does not exist in '
-                   '{1} - TEST FAILED')
-            margs = [obsdir, raw_directory]
-            misc.log_msg(msg.format(*margs), level='warning')
-        return False
-    # -------------------------------------------------------------------------
 
-    files = glob.glob(os.path.join(raw_directory,obsdir)+'/*.fits')
+    obsdir_path = os.path.join(raw_directory, obsdir)
+
+    if not os.path.exists(obsdir_path):
+        if log:
+            print('Observation directory {0} does not exist - TEST FAILED')
+        return False
+
+    files = glob.glob(os.path.join(obsdir_path,'*.fits'))
 
     if len(files) == 0:
         if log:
             # pass a True if no file is found on that night
             print('No files found for night {}'.format(obsdir))
-        return True
+        return False
 
     # create table to store keywords
     tbl = Table()
