@@ -11,7 +11,6 @@ Created on 2023-07-03 at 14:37
 """
 from typing import Any, Dict
 
-from apero_raw_tests.core import io
 from apero_raw_tests.core import misc
 from astropy.io import fits
 import os
@@ -19,6 +18,7 @@ import glob
 import numpy as np
 from astropy.table import Table
 import copy
+
 
 # =============================================================================
 # Define variables
@@ -52,8 +52,6 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         margs = [obsdir]
         misc.log_msg(msg.format(*margs), level='')
     # -------------------------------------------------------------------------
-    # get all observation directories
-    obsdirs = io.get_obs_dirs(params)
 
     obsdir_path = os.path.join(raw_directory, obsdir)
 
@@ -62,7 +60,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             print('Observation directory {0} does not exist - TEST FAILED')
         return False
 
-    files = glob.glob(os.path.join(obsdir_path,'*.fits'))
+    files = glob.glob(os.path.join(obsdir_path, '*.fits'))
 
     if len(files) == 0:
         if log:
@@ -71,19 +69,18 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         return False
 
     # create table to store keywords
-    tbl = Table()
+    tbl = dict()
 
     # keywords to extract and table name
-    keys = [['DATE-OBS','DATE-OBS'],
-            ['MJD-OBS','MJD-OBS'],
-            ['OBJECT','OBJECT'],
-            ['HIERARCH ESO DPR TYPE', 'DPRTYPE'] ]
+    keys = [['DATE-OBS', 'DATE-OBS'],
+            ['MJD-OBS', 'MJD-OBS'],
+            ['HIERARCH ESO DPR TYPE', 'DPR_TYPE']]
     keys = np.array(keys)
 
     # define table columns
     h0 = fits.getheader(files[0])
 
-    for i in range(len(keys[:,0])):
+    for i in range(len(keys[:, 0])):
         # loop on keys and which column to store them
         key = keys[i, 0]
         key2 = keys[i, 1]
@@ -96,16 +93,16 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
         # pad strings to avoid error if there are long strings in later files
         if type(val) == str:
-            val = ' '*100
-        tbl[key2] = np.array([val]*len(files))
+            val = ' ' * 100
+        tbl[key2] = np.array([val] * len(files))
 
     # fill table looping through files
     for ifile in range(len(files)):
         h = fits.getheader(files[ifile])
 
-        for i in range(len(keys[:,0])):
-            key = keys[i,0] # keyword in header
-            key2 = keys[i,1] # keyword in table
+        for i in range(len(keys[:, 0])):
+            key = keys[i, 0]  # keyword in header
+            key2 = keys[i, 1]  # keyword in table
             # only if key is present in header
             if key in h.keys():
                 tbl[key2][ifile] = copy.deepcopy(h[key])
@@ -121,15 +118,15 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     qc = True
     # Here you can add more calibrations that are required (one day LFC maybe)
-    must_have_objects = ['DARK','WAVE,FP,FP','WAVE,UN1,FP','WAVE,FP,UN1', 'FLAT,DARK,LAMP',
-                         'FLAT,LAMP,DARK','WAVE,UN1,UN1']
+    must_have_objects = ['DARK', 'WAVE,FP,FP', 'WAVE,UN1,FP', 'WAVE,FP,UN1', 'FLAT,DARK,LAMP',
+                         'FLAT,LAMP,DARK', 'WAVE,UN1,UN1']
 
     for obj in must_have_objects:
         # could be updated to force a minimum number of calibrations
-        qc = qc & np.any(tbl['OBJECT'] == obj)
+        qc = qc & np.any(tbl['DPR_TYPE'] == obj)
 
-        if obj not in tbl['OBJECT']:
-            failed_log.append('\tNo "OBJECT" = {} on that night'.format(obj))
+        if obj not in tbl['DPR_TYPE']:
+            failed_log.append('\tNo "ESO DPR TYPE" = {} on that night'.format(obj))
     if qc:
         passed_log.append('\tAll "must have" calibrations have been obtained at least once')
     ####################################################################################

@@ -11,7 +11,6 @@ Created on 2023-07-03 at 14:37
 """
 from typing import Any, Dict
 
-from apero_raw_tests.core import io
 from apero_raw_tests.core import misc
 from astropy.io import fits
 import os
@@ -19,6 +18,7 @@ import glob
 import numpy as np
 from astropy.table import Table
 import copy
+
 
 # =============================================================================
 # Define variables
@@ -52,8 +52,6 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         margs = [obsdir]
         misc.log_msg(msg.format(*margs), level='')
     # -------------------------------------------------------------------------
-    # get all observation directories
-    obsdirs = io.get_obs_dirs(params)
 
     obsdir_path = os.path.join(raw_directory, obsdir)
 
@@ -62,7 +60,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             print('Observation directory {0} does not exist - TEST FAILED')
         return False
 
-    files = glob.glob(os.path.join(obsdir_path,'*.fits'))
+    files = glob.glob(os.path.join(obsdir_path, '*.fits'))
 
     if len(files) == 0:
         if log:
@@ -71,30 +69,30 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         return False
 
     # create table to store keywords
-    tbl = Table()
+    tbl = dict()
 
     # keywords to extract and table name
-    keys = [['DATE-OBS','DATE-OBS'],
-            ['MJD-OBS','MJD-OBS'],
-            ['OBJECT','OBJECT'],
+    keys = [['DATE-OBS', 'DATE-OBS'],
+            ['MJD-OBS', 'MJD-OBS'],
+            ['OBJECT', 'OBJECT'],
             ['HIERARCH ESO DPR TYPE', 'DPRTYPE'],
-            ['ESO INS SENS102 STAT','TurboPumpStatus'], # False
-            ['ESO INS TEMP185 VAL','EncloserTemperature'], # ~20 C
-            ['ESO INS TEMP187 VAL','EncloserTemperatureSetpoint'], # ~20 C
-            ['ESO INS PRES104 VAL','VacuumGauge1'], # < 1e-5 mbar
-            ['ESO INS SENS100 STAT','IsolationValve'], # False
-            ['ESO INS SENS144 STAT','WarningCryo1'], # ''
-            ['ESO INS SENS146 STAT','WarningCryo2'],
-            ['ESO INS TEMP14 VAL','FPtemperature_interior'],
+            ['ESO INS SENS102 STAT', 'TurboPumpStatus'],  # False
+            ['ESO INS TEMP185 VAL', 'EncloserTemperature'],  # ~20 C
+            ['ESO INS TEMP187 VAL', 'EncloserTemperatureSetpoint'],  # ~20 C
+            ['ESO INS PRES104 VAL', 'VacuumGauge1'],  # < 1e-5 mbar
+            ['ESO INS SENS100 STAT', 'IsolationValve'],  # False
+            ['ESO INS SENS144 STAT', 'WarningCryo1'],  # ''
+            ['ESO INS SENS146 STAT', 'WarningCryo2'],
+            ['ESO INS TEMP14 VAL', 'FPtemperature_interior'],
             ['ESO INS TEMP13 VAL', 'FPtemperature_exterior'],
-            ['ESO INS TEMP188 VAL','FPtemperature_setpoint']# ''
+            ['ESO INS TEMP188 VAL', 'FPtemperature_setpoint']  # ''
             ]
     keys = np.array(keys)
 
     # define table columns
     h0 = fits.getheader(files[0])
 
-    for i in range(len(keys[:,0])):
+    for i in range(len(keys[:, 0])):
         # loop on keys and which column to store them
         key = keys[i, 0]
         key2 = keys[i, 1]
@@ -107,16 +105,16 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
         # pad strings to avoid error if there are long strings in later files
         if type(val) == str:
-            val = ' '*100
-        tbl[key2] = np.array([val]*len(files))
+            val = ' ' * 100
+        tbl[key2] = np.array([val] * len(files))
 
     # fill table looping through files
     for ifile in range(len(files)):
         h = fits.getheader(files[ifile])
 
-        for i in range(len(keys[:,0])):
-            key = keys[i,0] # keyword in header
-            key2 = keys[i,1] # keyword in table
+        for i in range(len(keys[:, 0])):
+            key = keys[i, 0]  # keyword in header
+            key2 = keys[i, 1]  # keyword in table
             # only if key is present in header
             if key in h.keys():
                 tbl[key2][ifile] = copy.deepcopy(h[key])
@@ -132,7 +130,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # on Enclosure Temperature
     ####################################################################################
-    rms = np.nanstd(tbl['EncloserTemperature']-tbl['EncloserTemperatureSetpoint'])
+    rms = np.nanstd(tbl['EncloserTemperature'] - tbl['EncloserTemperatureSetpoint'])
     # Enclosure temperature should be stable to 0.1 K rms
     qc_rms = 0.1
     qc = rms < qc_rms
@@ -143,7 +141,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     ####################################################################################
     # Enclosure temperature should be within 0.1 K of setpoint
-    mean_diff = np.nanmean(tbl['EncloserTemperature']-tbl['EncloserTemperatureSetpoint'])
+    mean_diff = np.nanmean(tbl['EncloserTemperature'] - tbl['EncloserTemperatureSetpoint'])
     qc_mean = 0.1
     qc = np.abs(mean_diff) < qc_mean
 
@@ -154,14 +152,14 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     ####################################################################################
     # The VacuumGauge1 should see a really good vacuum otherwise there is a leak
-    VacuumGauge1 = np.nanmax(tbl['VacuumGauge1'])
-    qc_VacuumGauge1 = 1e-4
-    qc = VacuumGauge1 < qc_VacuumGauge1
+    vacuum_gauge1 = np.nanmax(tbl['VacuumGauge1'])
+    qc_vacuum_gauge1 = 1e-4
+    qc = vacuum_gauge1 < qc_vacuum_gauge1
 
     if qc:
-        passed_log.append('\tmax VacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(VacuumGauge1, qc_VacuumGauge1))
+        passed_log.append('\tmax VacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(vacuum_gauge1, qc_vacuum_gauge1))
     else:
-        failed_log.append('\tmaxVacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(VacuumGauge1, qc_VacuumGauge1))
+        failed_log.append('\tmaxVacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(vacuum_gauge1, qc_vacuum_gauge1))
 
     ####################################################################################
     # The IsolationValve should be closed, that's super bad if it's open
@@ -180,48 +178,47 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         passed_log.append('\tTurboPumpStatus always closed')
     else:
         failed_log.append('\tTurboPumpStatus sometimes open ({} times, '
-                          '{:.1f}% of time)'.format(turbo_status, np.mean(tbl['TurboPumpStatus'])*100.))
+                          '{:.1f}% of time)'.format(turbo_status, np.mean(tbl['TurboPumpStatus']) * 100.))
 
     ####################################################################################
     # Status is '' empty string when everything is OK
-    WarningCryo1_status = np.sum(tbl['WarningCryo1'] != '')
+    warning_cryo1_status = np.sum(tbl['WarningCryo1'] != '')
 
-    if WarningCryo1_status == 0:
+    if warning_cryo1_status == 0:
         passed_log.append('\tWarningCryo1 always OK')
     else:
-        failed_log.append('\tWarningCryo1 not empty ({} times)'.format(WarningCryo1_status))
+        failed_log.append('\tWarningCryo1 not empty ({} times)'.format(warning_cryo1_status))
 
     ####################################################################################
     # Status is '' empty string when everything is OK
 
-    WarningCryo2_status = np.sum(tbl['WarningCryo2'] != '')
+    warning_cryo2_status = np.sum(tbl['WarningCryo2'] != '')
 
-    if WarningCryo2_status == 0:
+    if warning_cryo2_status == 0:
         passed_log.append('\tWarningCryo2 always OK')
     else:
-        failed_log.append('\tWarningCryo2 not empty ({} times)'.format(WarningCryo2_status))
+        failed_log.append('\tWarningCryo2 not empty ({} times)'.format(warning_cryo2_status))
 
     ####################################################################################
     # FP temperature should be stable to 0.01 K rms
-    rms_FPtemperature = np.nanstd(tbl['FPtemperature_interior'])
-    qc_FPtemperature = 1e-2
-    qc = rms_FPtemperature < qc_FPtemperature
+    rms_fp_temperature = np.nanstd(tbl['FPtemperature_interior'])
+    qc_f_ptemperature = 1e-2
+    qc = rms_fp_temperature < qc_f_ptemperature
     if qc:
-        passed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_FPtemperature,
-                                                                                    qc_FPtemperature))
+        passed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_fp_temperature,
+                                                                                       qc_f_ptemperature))
     else:
-        failed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_FPtemperature,
-                                                                                    qc_FPtemperature))
+        failed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_fp_temperature,
+                                                                                       qc_f_ptemperature))
     ####################################################################################
     # FP temperature should be within 0.005 K of setpoint
-    rms = np.nanstd(tbl['FPtemperature_exterior']-tbl['FPtemperature_setpoint'])
+    rms = np.nanstd(tbl['FPtemperature_exterior'] - tbl['FPtemperature_setpoint'])
     qc_rms = 0.005
     qc = rms < qc_rms
     if qc:
         passed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
     else:
         failed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-
 
     # construct a string for printing output
     passed_log = '\n'.join(passed_log)
