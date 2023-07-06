@@ -80,10 +80,15 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
     # try to run test
     try:
         # print which test we are running
-        msg = '\tRunning test {0} [{1}/{2}]\n\n'
+        msg = '\n\n\tRunning test {0} [{1}/{2}]\n\n'
         margs = [test_name, it + 1, num_tests]
         misc.log_msg(msg.format(*margs), level='')
         output = tests.test_dict[test_name](params, obsdir, log=log)
+        # print whether test passed or failed
+        if output:
+            misc.log_msg('\t\tPASSED', color='green')
+        else:
+            misc.log_msg('\t\tFAILED', color='red')
     except Exception as e:
         if log:
             raise e
