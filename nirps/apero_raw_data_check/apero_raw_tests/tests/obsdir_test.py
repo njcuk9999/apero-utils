@@ -61,7 +61,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     if log:
         msg = ('OBSDIR TEST: Observation directory {0} exists in {1} '
                '- TEST PASSED')
-        margs = [obsdir]
+        margs = [obsdir, raw_directory]
         misc.log_msg(msg.format(*margs), level='')
     # -------------------------------------------------------------------------
     return True

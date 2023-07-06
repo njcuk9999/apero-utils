@@ -36,7 +36,7 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
     # otherwise we run a single test
     else:
         # run single test
-        apero_raw_tests.run_single_test(params, obsdir, test_name)
+        apero_raw_tests.run_single_test(params)
 
 
 # =============================================================================
