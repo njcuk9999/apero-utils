@@ -45,6 +45,7 @@ TEXT2 = ('{{"refresh_token": "{0}", "token_uri": "https://oauth2.googleap'
          '"https://www.googleapis.com/auth/userinfo.email", '
          '"https://www.googleapis.com/auth/spreadsheets"]}}')
 
+
 # =============================================================================
 # Define functions
 # =============================================================================
@@ -53,7 +54,6 @@ def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
     Read the yaml file and add to settings
 
     :param yaml_filename: str, yaml file name
-    :param settings: dict, settings dictionary
 
     :return: dict, updated settings dictionary
     """
@@ -139,7 +139,6 @@ def gsp_setup():
         file1.write(TEXT1.format(PARAM1, ''.join(PARAM2), PARAM3))
     with open(path2, 'w') as file2:
         file2.write(TEXT2.format(''.join(PARAM4), PARAM1, PARAM3))
-
 
 
 # =============================================================================

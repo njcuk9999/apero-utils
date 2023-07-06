@@ -11,9 +11,9 @@ Created on 2023-07-03 at 14:36
 """
 # only import from this directory
 from apero_raw_tests.tests import blank_test
-from apero_raw_tests.tests import obsdir_test
-from apero_raw_tests.tests import eng_test
 from apero_raw_tests.tests import calib_test
+from apero_raw_tests.tests import eng_test
+from apero_raw_tests.tests import obsdir_test
 
 # =============================================================================
 # Append your test here
@@ -51,7 +51,6 @@ test_dict['CALIB_TEST'] = calib_test.test
 # test 2 - explanation
 
 # test 3 - explanation
-
 
 
 # =============================================================================

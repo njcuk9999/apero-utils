@@ -9,15 +9,15 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
+import copy
+import glob
+import os
 from typing import Any, Dict
 
-from apero_raw_tests.core import misc
-from astropy.io import fits
-import os
-import glob
 import numpy as np
-from astropy.table import Table
-import copy
+from astropy.io import fits
+
+from apero_raw_tests.core import misc
 
 
 # =============================================================================

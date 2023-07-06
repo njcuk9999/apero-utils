@@ -14,9 +14,9 @@ from typing import Any, Dict, List
 import gspread_pandas as gspd
 import pandas as pd
 
+from apero_raw_tests import tests
 from apero_raw_tests.core import base
 from apero_raw_tests.core import io
-from apero_raw_tests import tests
 from apero_raw_tests.core import misc
 
 # =============================================================================
@@ -26,6 +26,8 @@ from apero_raw_tests.core import misc
 __VERSION__ = base.__VERSION__
 __DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
+
+
 # -----------------------------------------------------------------------------
 
 # =============================================================================
@@ -139,8 +141,6 @@ def run_single_test(params: Dict[str, Any]):
 
     :param params: parameters dictionary, containing all parameters that can
                    be used
-        :param obsdir: str, the observation directory to run the test on
-    :param test_name:  the name of the test to run
     :return:
     """
     # get observation directories
@@ -181,9 +181,11 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     """
     Add all listed astrometrics objects to the sheet
 
-    :param params:
-    :param astro_objs:
-    :return:
+    :param params: parameters dictionary, containing all parameters that can
+                   used
+    :param dataframe: pandas dataframe, the dataframe to add to the sheet
+
+    :return: None, adds to google sheet
     """
     # deal with no rows in dataframe
     if len(dataframe) == 0:

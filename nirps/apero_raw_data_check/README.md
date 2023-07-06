@@ -1,5 +1,8 @@
 # APERO raw data checks
 
+Version: 0.0.12
+Last updated: 2023-06-07
+
 These checks are designed to check the raw data for validity.
 Results of running this code will be sent to: https://docs.google.com/spreadsheets/d/1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M/edit?usp=sharing
 

@@ -21,6 +21,7 @@ __VERSION__ = base.__VERSION__
 __DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
 
+
 # =============================================================================
 # Define functions
 # =============================================================================
@@ -66,7 +67,6 @@ parameters['obsdir'] = Const('obs dir', None, dtype=str)
 
 # the test to run (if running a single test)
 parameters['test_name'] = Const('testname', None, dtype=str)
-
 
 # define the sheet id for the google sheet
 parameters['sheet id'] = Const('sheet id',
