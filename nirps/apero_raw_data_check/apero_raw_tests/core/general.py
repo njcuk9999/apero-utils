@@ -215,8 +215,8 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     current_dataframe = current_dataframe.reset_index(drop=True)
     # -------------------------------------------------------------------------
     # resort values ascending in date
-    current_dataframe = current_dataframe.sort_values(by='date',
-                                                      ascending=True)
+    current_dataframe = current_dataframe.sort_values(by='obsdir',
+                                                      ascending=False)
     # -------------------------------------------------------------------------
     # print progress
     msg = 'Pushing all rows to google-sheet'
