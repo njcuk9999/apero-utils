@@ -9,6 +9,13 @@ To run the raw data checks do the following:
     >> apero_raw_data_checks
     >> python apero_raw_data_checks.py {profile name}.yaml --obsdir={obs dir}
 
+As a shortcut you can also use `--today` instead of `--obsdir={obs dir}` to run the tests on the most recent observation directory (assuming observation directories are named in the format `YYYY-MM-DD`).
+e.g.
+
+    >> {apero conda env}
+    >> apero_raw_data_checks
+    >> python apero_raw_data_checks.py {profile name}.yaml --today
+
 
 where:
 
