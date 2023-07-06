@@ -77,18 +77,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     keys = [['DATE-OBS','DATE-OBS'],
             ['MJD-OBS','MJD-OBS'],
             ['OBJECT','OBJECT'],
-            ['HIERARCH ESO DPR TYPE', 'DPRTYPE'],
-            ['ESO INS SENS102 STAT','TurboPumpStatus'], # False
-            ['ESO INS TEMP185 VAL','EncloserTemperature'], # ~20 C
-            ['ESO INS TEMP187 VAL','EncloserTemperatureSetpoint'], # ~20 C
-            ['ESO INS PRES104 VAL','VacuumGauge1'], # < 1e-5 mbar
-            ['ESO INS SENS100 STAT','IsolationValve'], # False
-            ['ESO INS SENS144 STAT','WarningCryo1'], # ''
-            ['ESO INS SENS146 STAT','WarningCryo2'],
-            ['ESO INS TEMP14 VAL','FPtemperature_interior'],
-            ['ESO INS TEMP13 VAL', 'FPtemperature_exterior'],
-            ['ESO INS TEMP188 VAL','FPtemperature_setpoint']# ''
-            ]
+            ['HIERARCH ESO DPR TYPE', 'DPRTYPE'] ]
     keys = np.array(keys)
 
     # define table columns
@@ -130,98 +119,20 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     passed_log = []
     failed_log = []
 
-    # on Enclosure Temperature
-    ####################################################################################
-    rms = np.nanstd(tbl['EncloserTemperature']-tbl['EncloserTemperatureSetpoint'])
-    # Enclosure temperature should be stable to 0.1 K rms
-    qc_rms = 0.1
-    qc = rms < qc_rms
+    qc = True
+    # Here you can add more calibrations that are required (one day LFC maybe)
+    must_have_objects = ['DARK','WAVE,FP,FP','WAVE,UN1,FP','WAVE,FP,UN1', 'FLAT,DARK,LAMP',
+                         'FLAT,LAMP,DARK','WAVE,UN1,UN1']
+
+    for obj in must_have_objects:
+        # could be updated to force a minimum number of calibrations
+        qc = qc & np.any(tbl['OBJECT'] == obj)
+
+        if obj not in tbl['OBJECT']:
+            failed_log.append('\tNo "OBJECT" = {} on that night'.format(obj))
     if qc:
-        passed_log.append('\tRMS of enclosure temperature {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-    else:
-        failed_log.append('\tRMS of enclosure temperature {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-
+        passed_log.append('\tAll "must have" calibrations have been obtained at least once')
     ####################################################################################
-    # Enclosure temperature should be within 0.1 K of setpoint
-    mean_diff = np.nanmean(tbl['EncloserTemperature']-tbl['EncloserTemperatureSetpoint'])
-    qc_mean = 0.1
-    qc = np.abs(mean_diff) < qc_mean
-
-    if qc:
-        passed_log.append('\tmean enclosure temperature diff {:.1E} K  (<{:.1E} K)'.format(mean_diff, qc_mean))
-    else:
-        failed_log.append('\tmean enclosure temperature diff {:.1E} K  (<{:.1E} K)'.format(mean_diff, qc_mean))
-
-    ####################################################################################
-    # The VacuumGauge1 should see a really good vacuum otherwise there is a leak
-    VacuumGauge1 = np.nanmax(tbl['VacuumGauge1'])
-    qc_VacuumGauge1 = 1e-4
-    qc = VacuumGauge1 < qc_VacuumGauge1
-
-    if qc:
-        passed_log.append('\tmax VacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(VacuumGauge1, qc_VacuumGauge1))
-    else:
-        failed_log.append('\tmaxVacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(VacuumGauge1, qc_VacuumGauge1))
-
-    ####################################################################################
-    # The IsolationValve should be closed, that's super bad if it's open
-    valve_status = np.sum(tbl['IsolationValve'])
-
-    if valve_status == 0:
-        passed_log.append('\tIsolation valve always closed')
-    else:
-        failed_log.append('\tIsolation valve sometimes open ({} times)'.format(valve_status))
-
-    ####################################################################################
-    # The TurboPumpStatus should be 'off' on the fast majority of occurences (ask Philippe for details)
-    turbo_status = np.sum(tbl['TurboPumpStatus'])
-
-    if turbo_status == 0:
-        passed_log.append('\tTurboPumpStatus always closed')
-    else:
-        failed_log.append('\tTurboPumpStatus sometimes open ({} times, '
-                          '{:.1f}% of time)'.format(turbo_status, np.mean(tbl['TurboPumpStatus'])*100.))
-
-    ####################################################################################
-    # Status is '' empty string when everything is OK
-    WarningCryo1_status = np.sum(tbl['WarningCryo1'] != '')
-
-    if WarningCryo1_status == 0:
-        passed_log.append('\tWarningCryo1 always OK')
-    else:
-        failed_log.append('\tWarningCryo1 not empty ({} times)'.format(WarningCryo1_status))
-
-    ####################################################################################
-    # Status is '' empty string when everything is OK
-
-    WarningCryo2_status = np.sum(tbl['WarningCryo2'] != '')
-
-    if WarningCryo2_status == 0:
-        passed_log.append('\tWarningCryo2 always OK')
-    else:
-        failed_log.append('\tWarningCryo2 not empty ({} times)'.format(WarningCryo2_status))
-
-    ####################################################################################
-    # FP temperature should be stable to 0.01 K rms
-    rms_FPtemperature = np.nanstd(tbl['FPtemperature_interior'])
-    qc_FPtemperature = 1e-2
-    qc = rms_FPtemperature < qc_FPtemperature
-    if qc:
-        passed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_FPtemperature,
-                                                                                    qc_FPtemperature))
-    else:
-        failed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_FPtemperature,
-                                                                                    qc_FPtemperature))
-    ####################################################################################
-    # FP temperature should be within 0.005 K of setpoint
-    rms = np.nanstd(tbl['FPtemperature_exterior']-tbl['FPtemperature_setpoint'])
-    qc_rms = 0.005
-    qc = rms < qc_rms
-    if qc:
-        passed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-    else:
-        failed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-
 
     # construct a string for printing output
     passed_log = '\n'.join(passed_log)
