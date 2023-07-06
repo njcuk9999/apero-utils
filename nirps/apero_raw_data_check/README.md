@@ -15,9 +15,25 @@ where:
 
 - `{profile name}` is one of the yamls in the `apero_raw_data_check` directory
 - `{obs dir}` is a single observation directory (e.g. 2023-01-01)
+- `{apero conda env}` see [APERO setup for NIRPS](https://github.com/njcuk9999/apero-drs/wiki/nirps-general#apero-setup) or [APERO setup for SPIROU](https://github.com/njcuk9999/apero-drs/wiki/spirou-general#apero-setup)
+
 
 Note one can leave off the `--obsdir={obs dir}` argument to get a prompt to run the tests for all nights (this will take longer).
 Note only one observation directory can exist and the most recent will be used all others will be disregarded.
+
+
+# Running a single test (with logs on)
+
+Similarly to above:
+
+    >> {apero conda env}
+    >> apero_raw_data_checks
+    >> python apero_raw_data_checks.py {profile name}.yaml --obsdir={obs dir} --test={test name}
+
+where:
+
+- `{test name}` is the name of the test (the column in the table)
+
 
 # Adding new tests
 

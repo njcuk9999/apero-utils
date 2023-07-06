@@ -40,6 +40,9 @@ def get_args() -> Dict[str, Any]:
     parser.add_argument('--obsdir', type=str, default='None',
                         help='Observation directory name(s) separated by '
                              'commas')
+    parser.add_argument('--test_run', type=str, default='None',
+                        help='If running a single test define the name of that'
+                             ' test here (the column name)')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -71,6 +74,8 @@ def load_params(yaml_file: Optional[str] = None,
     yaml_file = add_cmd_arg(args, 'yaml', yaml_file)
     # get obs dir from cmd args
     params['obsdir'] = add_cmd_arg(args, 'obsdir', obsdir)
+    # get test name from cmd args
+    params['test_name'] = add_cmd_arg(args, 'test_run', None)
     # -------------------------------------------------------------------------
     # load from yaml file
     yaml_params = io.read_yaml(yaml_file)
