@@ -16,7 +16,6 @@ from astropy.io import fits
 import os
 import glob
 import numpy as np
-from astropy.table import Table
 import copy
 
 
@@ -78,7 +77,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     keys = np.array(keys)
 
     # define table columns
-    h0 = fits.getheader(files[0])
+    hdr0 = fits.getheader(files[0])
 
     for i in range(len(keys[:, 0])):
         # loop on keys and which column to store them
@@ -86,10 +85,10 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         key2 = keys[i, 1]
 
         # if not present, we store a dummy value not to raise an error
-        if key not in h0:
+        if key not in hdr0:
             val = 0.0
         else:
-            val = h0[key]
+            val = hdr0[key]
 
         # pad strings to avoid error if there are long strings in later files
         if type(val) == str:
@@ -98,14 +97,14 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # fill table looping through files
     for ifile in range(len(files)):
-        h = fits.getheader(files[ifile])
+        hdr = fits.getheader(files[ifile])
 
         for i in range(len(keys[:, 0])):
             key = keys[i, 0]  # keyword in header
             key2 = keys[i, 1]  # keyword in table
             # only if key is present in header
-            if key in h:
-                tbl[key2][ifile] = copy.deepcopy(h[key])
+            if key in hdr:
+                tbl[key2][ifile] = copy.deepcopy(hdr[key])
 
     # change to True/False for strings
     for key in tbl.keys():
