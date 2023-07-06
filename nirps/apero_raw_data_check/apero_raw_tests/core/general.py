@@ -214,16 +214,6 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     # reset the index of the filtered dataframe
     current_dataframe = current_dataframe.reset_index(drop=True)
     # -------------------------------------------------------------------------
-    # add a few empty rows
-    empty_dataframe = pd.DataFrame()
-    # loop around columns
-    for col in current_dataframe.columns:
-        # fill empty
-        empty_dataframe[col] = [''] * 10
-    # append empty rows to dataframe
-    current_dataframe = pd.concat([current_dataframe, empty_dataframe],
-                                  ignore_index=True)
-    # -------------------------------------------------------------------------
     # resort values ascending in date
     current_dataframe = current_dataframe.sort_values(by='date',
                                                       ascending=True)
