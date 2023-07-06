@@ -13,6 +13,7 @@ Created on 2023-07-03 at 14:36
 from apero_raw_tests.tests import blank_test
 from apero_raw_tests.tests import obsdir_test
 from apero_raw_tests.tests import eng_test
+from apero_raw_tests.tests import calib_test
 
 # =============================================================================
 # Append your test here
@@ -38,9 +39,12 @@ test_dict['OBSDIR'] = obsdir_test.test
 
 # eng test - Check the consistency of headers with what we expect from
 #            enginnering. Consistency of FP temperature with set point,
-#            enclosure, pumps, valves and the presence of some calibration
-#            files.
+#            enclosure, pumps, valves
 test_dict['ENG_TEST'] = eng_test.test
+
+# eng test - Are the expected calibrations present in the night folder
+#            add eventual extra calibrations to the 'must have' objects
+test_dict['CALIB_TEST'] = calib_test.test
 
 # test 1 - explanation
 
