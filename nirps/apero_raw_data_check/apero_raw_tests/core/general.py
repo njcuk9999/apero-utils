@@ -80,11 +80,18 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
     # try to run test
     try:
         # print which test we are running
-        msg = '\tRunning test {0} [{1}/{2}]'
+        msg = '\n\n\tRunning test {0} [{1}/{2}]\n\n'
         margs = [test_name, it + 1, num_tests]
         misc.log_msg(msg.format(*margs), level='')
         output = tests.test_dict[test_name](params, obsdir, log=log)
+        # print whether test passed or failed
+        if output:
+            misc.log_msg('\t\tPASSED', color='green')
+        else:
+            misc.log_msg('\t\tFAILED', color='red')
     except Exception as e:
+        if log:
+            raise e
         msg = '\t\tError in test {0} \n\t {1}'
         margs = [test_name, e]
         misc.log_msg(msg.format(*margs), level='warning')
@@ -124,7 +131,7 @@ def run_tests(params: Dict[str, Any]) -> Dict[str, Dict[str, Any]]:
     return test_values
 
 
-def run_single_test(params: Dict[str, Any], obsdir: str, test_name: str):
+def run_single_test(params: Dict[str, Any]):
     """
     Run a single test in log mode
 
@@ -134,14 +141,35 @@ def run_single_test(params: Dict[str, Any], obsdir: str, test_name: str):
     :param test_name:  the name of the test to run
     :return:
     """
-    if test_name in tests.test_dict:
-        # print message on which observation directory we are processing
-        msg = '\n' + '*' * 50 + '\n'
-        msg += f'Processing single test on observatory directory {obsdir}'
-        msg += '\n' + '*' * 50 + '\n'
-        misc.log_msg(msg, level='info')
-        # run single test
-        _ = run_test(params, obsdir, test_name, 0, 1, True)
+    # get observation directories
+    obsdir = params['obsdir']
+    # deal with no obsdir
+    if obsdir is None:
+        emsg = ('Must define observation directory for single '
+                'test (Either in yaml file or --obsdir')
+        raise base.AperoRawTestsError(emsg)
+    # -------------------------------------------------------------------------
+    # get test_name
+    test_name = params['test_name']
+    # deal with no test_name
+    if test_name is None:
+        emsg = ('Must define test_name for single '
+                'test (Either in yaml file or --test_name')
+        raise base.AperoRawTestsError(emsg)
+    # deal with bad test name
+    if test_name not in tests.test_dict:
+        emsg = 'test_name is not a valid test. \n\nCurrent valid tests:'
+        for _test_name in tests.test_dict.keys():
+            emsg += f'\n\t- "{_test_name}"'
+        raise base.AperoRawTestsError(emsg)
+    # -------------------------------------------------------------------------
+    # print message on which observation directory we are processing
+    msg = '\n' + '*' * 50 + '\n'
+    msg += f'Processing single test on observatory directory {obsdir}'
+    msg += '\n' + '*' * 50 + '\n'
+    misc.log_msg(msg, level='info')
+    # run single test
+    _ = run_test(params, obsdir, test_name, 0, 1, True)
 
 
 # =============================================================================

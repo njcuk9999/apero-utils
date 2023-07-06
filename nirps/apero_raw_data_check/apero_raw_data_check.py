@@ -26,7 +26,7 @@ __AUTHOR__ = apero_raw_tests.base.__AUTHOR__
 def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
          test_name: Optional[str] = None):
     # get params updated for input yaml file
-    params = apero_raw_tests.load_params(yaml_file, obsdir)
+    params = apero_raw_tests.load_params(yaml_file, obsdir, test_name)
     # if we do not have a test name then we run all tests and upload
     if params['test_name'] in [None, 'None']:
         # run the tests
@@ -36,7 +36,7 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
     # otherwise we run a single test
     else:
         # run single test
-        apero_raw_tests.run_single_test(params, obsdir, test_name)
+        apero_raw_tests.run_single_test(params)
 
 
 # =============================================================================
