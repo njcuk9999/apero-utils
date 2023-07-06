@@ -86,7 +86,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         key2 = keys[i, 1]
 
         # if not present, we store a dummy value not to raise an error
-        if key not in h0.keys():
+        if key not in h0:
             val = 0.0
         else:
             val = h0[key]
@@ -104,7 +104,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             key = keys[i, 0]  # keyword in header
             key2 = keys[i, 1]  # keyword in table
             # only if key is present in header
-            if key in h.keys():
+            if key in h:
                 tbl[key2][ifile] = copy.deepcopy(h[key])
 
     # change to True/False for strings
