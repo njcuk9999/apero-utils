@@ -61,7 +61,8 @@ def add_cmd_arg(args, key, value):
 
 
 def load_params(yaml_file: Optional[str] = None,
-                obsdir: Optional[str] = None) -> Dict[str, Any]:
+                obsdir: Optional[str] = None,
+                test_name: Optional[str] = None) -> Dict[str, Any]:
     # set up the return dictionary
     params = dict()
     # load default parameters
@@ -75,7 +76,7 @@ def load_params(yaml_file: Optional[str] = None,
     # get obs dir from cmd args
     params['obsdir'] = add_cmd_arg(args, 'obsdir', obsdir)
     # get test name from cmd args
-    params['test_name'] = add_cmd_arg(args, 'test_run', None)
+    params['test_name'] = add_cmd_arg(args, 'test_run', test_name)
     # -------------------------------------------------------------------------
     # load from yaml file
     yaml_params = io.read_yaml(yaml_file)
