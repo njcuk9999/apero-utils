@@ -7,8 +7,8 @@ from astropy.table import Table
 #title = 'Proxima'
 #tbl = Table.read('lbl_TOI756_GL514.rdb', format='ascii.rdb')
 #title = 'TOI756'
-tbl = Table.read('lbl_TWA7_TWA7.rdb', format='ascii.rdb')
-title = 'TWA7'
+tbl = Table.read('/Volumes/courlan/lbl_SPIROU/lblrdb/lbl_TRAPPIST1PC_tc_TRAPPIST1PC_tc.rdb', format='ascii.rdb')
+title = 'T1'
 
 fig, ax = plt.subplots(nrows = 4, ncols=1,figsize=(15,8),sharex = True  )
 
