@@ -16,7 +16,6 @@ from apero_raw_tests.core import general
 # =============================================================================
 # Define variables
 # =============================================================================
-
 load_params = misc.load_params
 
 run_tests = general.run_tests

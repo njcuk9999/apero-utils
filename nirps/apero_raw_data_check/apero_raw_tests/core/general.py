@@ -13,7 +13,6 @@ from typing import Any, Dict, List
 
 import gspread_pandas as gspd
 import pandas as pd
-from astropy.table import Table
 
 from apero_raw_tests.core import base
 from apero_raw_tests.core import io
@@ -23,7 +22,10 @@ from apero_raw_tests.core import misc
 # =============================================================================
 # Define variables
 # =============================================================================
-
+# version, date, author
+__VERSION__ = base.__VERSION__
+__DATE__ = base.__DATE__
+__AUTHOR__ = base.__AUTHOR__
 # -----------------------------------------------------------------------------
 
 # =============================================================================

@@ -15,7 +15,8 @@ from astropy.time import Time
 # =============================================================================
 # Define variables
 # =============================================================================
-__VERSION__ = '0.0.1'
+__VERSION__ = '0.0.12'
+__DATE__ = '2023-07-06'
 __AUTHOR__ = 'Neil Cook'
 # get astropy time
 AstropyTime = Time

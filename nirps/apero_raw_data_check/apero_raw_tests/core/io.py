@@ -20,7 +20,9 @@ from apero_raw_tests.core import base
 # =============================================================================
 # Define variables
 # =============================================================================
+# version, date, author
 __VERSION__ = base.__VERSION__
+__DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
 # define relative path to google token files
 PARAM1 = ('241559402076-vbo2eu8sl64ehur7'

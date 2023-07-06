@@ -20,7 +20,9 @@ from apero_raw_tests.core import parameters
 # =============================================================================
 # Define variables
 # =============================================================================
+# version, date, author
 __VERSION__ = base.__VERSION__
+__DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
 
 
