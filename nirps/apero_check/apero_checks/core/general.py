@@ -264,7 +264,7 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
 
 
 def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
-                 type_test: str ='raw'):
+                 test_type: str ='raw'):
     """
     Upload test results to google sheet
 
