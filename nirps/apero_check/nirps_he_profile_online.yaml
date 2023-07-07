@@ -1,6 +1,13 @@
 # directory where raw data is downloaded
 raw dir: /nirps_raw/nirps/raw-data/nirps_he
 
+# the apero profile to use (controlled sym link raw data directory and all
+#    apero reduced data directories)
+apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_online
+
+# the lbl data path
+lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_online/
+
 # define the raw sheet name for the google sheet
 raw sheet name: RAW-NIRPS-HE
 

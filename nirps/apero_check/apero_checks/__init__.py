@@ -12,6 +12,7 @@ Created on 2023-07-03 at 14:45
 from apero_checks.core import base
 from apero_checks.core import general
 from apero_checks.core import misc
+from apero_checks.core import red_functions
 
 # =============================================================================
 # Define variables

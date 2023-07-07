@@ -28,8 +28,17 @@ test_dict = dict()
 # Note the key is the column name that is used
 #    Please do not have punctuation (other than underscore) and no spaces
 
-# blank test - this tests whether the apero raw tests ran
+# blank test - this tests whether the apero red tests ran
 test_dict['BLANK'] = blank_test.test
+
+# plan of tests
+# - apero calibration requirements: use functionality from apero_precheck
+# - apero astrometrics: object names (how to do per night?)
+# - apero reduction ran on night
+# - apero log errors
+# - apero log qc passes
+# - lbl ran on night
+# - lbl errors?
 
 # test 1 - explanation
 

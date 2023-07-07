@@ -62,6 +62,14 @@ parameters = dict()
 # directory where raw data is downloaded
 parameters['raw dir'] = Const('raw dir', None, not_none=True, dtype=str)
 
+# the apero profile to use (controlled sym link raw data directory and all
+#    apero reduced data directories)
+parameters['apero profile'] = Const('apero profile', None, not_none=True,
+                                    dtype=str)
+
+# the lbl data path
+parameters['lbl path'] = Const('lbl path', None, not_none=True, dtype=str)
+
 # observation directory (i.e. night name)
 parameters['obsdir'] = Const('obs dir', None, dtype=str)
 
