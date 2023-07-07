@@ -16,6 +16,7 @@ import apero_checks
 # =============================================================================
 # Define variables
 # =============================================================================
+__NAME__ = 'apero_raw_data_check.py'
 # version, date, author
 __VERSION__ = apero_checks.base.__VERSION__
 __DATE__ = apero_checks.base.__DATE__
@@ -30,6 +31,8 @@ __AUTHOR__ = apero_checks.base.__AUTHOR__
 # =============================================================================
 def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
          test_name: Optional[str] = None, today: bool = False):
+    # print splash
+    apero_checks.splash('APERO Raw data checks')
     # get params updated for input yaml file
     params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
     # if we do not have a test name then we run all tests and upload
@@ -42,7 +45,8 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
     else:
         # run single test
         apero_checks.run_single_test(params, test_type='raw')
-
+    # finish with an end message
+    apero_checks.end_msg()
 
 # =============================================================================
 # Start of code

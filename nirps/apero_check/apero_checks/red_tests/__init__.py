@@ -11,7 +11,7 @@ Created on 2023-07-03 at 14:36
 """
 # only import from this directory
 from apero_checks.red_tests import blank_test
-
+from apero_checks.red_tests import calib_test
 
 # =============================================================================
 # Append your test here
@@ -39,6 +39,9 @@ test_dict['BLANK'] = blank_test.test
 # - apero log qc passes
 # - lbl ran on night
 # - lbl errors?
+
+# APERO calib test - test the APERO requirements on calibration
+test_dict['APERO_CALIB'] = calib_test.test
 
 # test 1 - explanation
 

@@ -11,7 +11,7 @@ Created on 2023-07-03 at 14:51
 """
 import argparse
 import copy
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, Tuple
 
 from apero_checks.core import base
 from apero_checks.core import io
@@ -57,7 +57,9 @@ def get_args() -> Dict[str, Any]:
     return vars(args)
 
 
-def add_cmd_arg(args, key, value, null=None):
+def add_cmd_arg(args, key, value, null=None) -> Tuple[Any, str]:
+    # set source
+    source = 'FUNC'
     # define the null values
     null_values = {null, str(null), None}
     # if value is equal to the null value then we check "args"
@@ -65,14 +67,23 @@ def add_cmd_arg(args, key, value, null=None):
         # if the "args" is not in the null values then we use the "args" value
         if args[key] not in null_values:
             value = args[key]
+            source = 'CMD'
     # force value to null if in any of the null values (i.e. a string version
     #   of the null)
     if value in null_values:
-        return null
+        return null, 'NULL'
     # otherwise return our value
     else:
-        return value
+        return value, source
 
+
+def add_source(name: str, value: Any, source: str):
+    if value is None:
+        return ''
+    if source in [None, 'NULL']:
+        return ''
+    else:
+        return f'{name}={value}   [{source}]'
 
 def load_params(yaml_file: Optional[str] = None,
                 obsdir: Optional[str] = None,
@@ -80,6 +91,8 @@ def load_params(yaml_file: Optional[str] = None,
                 today: bool = False) -> Dict[str, Any]:
     # set up the return dictionary
     params = dict()
+    # string for printing variables used
+    sources = dict()
     # load default parameters
     for key in parameters.parameters:
         params[key] = copy.deepcopy(parameters.parameters[key].value)
@@ -87,13 +100,16 @@ def load_params(yaml_file: Optional[str] = None,
     # read from command line
     args = get_args()
     # get yaml file from cmd args
-    yaml_file = add_cmd_arg(args, 'yaml', yaml_file)
+    yaml_file , yaml_source = add_cmd_arg(args, 'yaml', yaml_file)
+    sources['yaml'] = add_source('yaml', yaml_file, yaml_source)
     # get obs dir from cmd args
-    params['obsdir'] = add_cmd_arg(args, 'obsdir', obsdir)
+    params['obsdir'] , obsdir_source = add_cmd_arg(args, 'obsdir', obsdir)
+    sources['obsdir'] = add_source('obsdir', params['obsdir'], obsdir_source)
     # deal with no observation directory (and having today defined
     if params['obsdir'] is None:
         # deal with getting today (bool) from input or cmd args
-        today = add_cmd_arg(args, 'today', today, null=False)
+        today , today_source = add_cmd_arg(args, 'today', today, null=False)
+        sources['today'] = add_source('today', today, today_source)
         # if today is True then we set obsdir to today
         if today:
             # we set it to now YYYY-MM-DD
@@ -101,7 +117,8 @@ def load_params(yaml_file: Optional[str] = None,
             #       observation directories that are not YYYY-MM-DD
             params['obsdir'] = base.AstropyTime.now().iso.split(' ')[0]
     # get test name from cmd args
-    params['test_name'] = add_cmd_arg(args, 'test_run', test_name)
+    params['test_name'], tname_source = add_cmd_arg(args, 'test_run', test_name)
+    sources['test_name'] = add_source('today', today, tname_source)
     # -------------------------------------------------------------------------
     # load from yaml file
     yaml_params = io.read_yaml(yaml_file)
@@ -111,24 +128,75 @@ def load_params(yaml_file: Optional[str] = None,
         if key not in parameters.parameters:
             continue
         # check value from yaml file
-        value = parameters.parameters[key].check(yaml_params[key])
+        value, value_source = parameters.parameters[key].check(yaml_params[key])
+        # add sources to keys we want to report
+        if parameters.parameters[key].report:
+            sources[key] = add_source(key, value, 'YAML')
         # otherwise add key to params
         params[key] = copy.deepcopy(value)
+    # -------------------------------------------------------------------------
+    # print message on which observation directory we are processing
+    msg = f'Parameters used:'
+    log_msg(msg, level='info')
+    # print which yaml we are using
+    for source in sources:
+        msg = '\t - ' + sources[source]
+        if len(sources[source]) > 0:
+            log_msg(msg, level='info')
+    # -------------------------------------------------------------------------
     # return params
     return params
 
 
+def splash(codename):
+    msg1 = '*' * 50
+    log_msg(msg1, color='cyan')
+    msg2 = '*  ' + codename
+    log_msg(msg2, color='magenta')
+    msg3 = '*' * 50
+    msg3 += f'\nVersion={__VERSION__}   Date={__DATE__}'
+    msg3 += '\n' + '*' * 50
+    log_msg(msg3, color='cyan')
+
+
+def end_msg():
+    # print message on which observation directory we are processing
+    msg = '*' * 50
+    msg += f'\nCode finished successfully'
+    msg += '\n' + '*' * 50
+    log_msg(msg, level='info')
+
+
 def log_msg(message, level: str = '', color: Optional[str] = None):
-    # set up print string
-    print_string = f'{base.AstropyTime.now()} | {message}'
+
+    # we want to print all lines with prefix
+    if '\n' in message:
+        messages = message.split('\n')
+    else:
+        messages = [message]
+
+    # get time now
+    timenow = base.AstropyTime.now()
+    # loop around all messages
+    print_string = ''
+    for it, msg in enumerate(messages):
+        if it > 0:
+            prefix = '\n'
+        else:
+            prefix = ''
+        # set up print string
+        print_string += f'{prefix}{timenow} | {msg}'
+
     # deal with level
     if color is None and level is not None:
         if level == 'error':
             color = 'red'
         elif level == 'warning':
             color = 'yellow'
+        elif level == 'test':
+            color = 'magenta'
         elif level == 'info':
-            color = 'cyan'
+            color = 'green'
         else:
             color = 'green'
     # add color (if required)
@@ -141,7 +209,7 @@ def log_msg(message, level: str = '', color: Optional[str] = None):
     if level == 'error':
         raise base.AperoChecksError(print_string)
     else:
-        print(start + message + end)
+        print(start + print_string + end)
 
 
 # =============================================================================

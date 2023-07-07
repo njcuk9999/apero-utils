@@ -26,16 +26,19 @@ __AUTHOR__ = base.__AUTHOR__
 # Define functions
 # =============================================================================
 class Const:
-    def __init__(self, key, value, not_none=False, dtype=None):
+    def __init__(self, key, value, not_none=False, dtype=None,
+                 report: bool = False):
         self.key = key
         self.value = value
         self.not_none = not_none
         self.dtype = dtype
+        self.report = report
 
-    def check(self, value: Optional[Any] = None):
+    def check(self, value: Optional[Any] = None, source: str = 'NULL'):
         # deal with internal check
         if value is None:
             value = self.value
+            source = 'PARAM'
         # check if not none
         if self.not_none and value is None:
             emsg = 'Const {0} must be set in yaml'
@@ -44,13 +47,13 @@ class Const:
         # force dtype if set
         if self.dtype is not None:
             try:
-                return self.dtype(value)
+                return self.dtype(value), source
             except Exception as e:
                 emsg = 'Const {0} must be of type {1} (error: {2})'
                 eargs = [self.key, self.dtype, e]
                 raise base.AperoChecksError(emsg.format(*eargs))
         # return value
-        return value
+        return value, source
 
 
 # =============================================================================
@@ -71,10 +74,15 @@ parameters['apero profile'] = Const('apero profile', None, not_none=True,
 parameters['lbl path'] = Const('lbl path', None, not_none=True, dtype=str)
 
 # observation directory (i.e. night name)
-parameters['obsdir'] = Const('obs dir', None, dtype=str)
+parameters['obsdir'] = Const('obs dir', None, dtype=str, report=True)
 
 # the test to run (if running a single test)
-parameters['test_name'] = Const('testname', None, dtype=str)
+parameters['test_name'] = Const('testname', None, dtype=str, report=True)
+
+# the processing arguments
+processing_dict = dict()
+processing_dict['run file'] = None
+parameters['processing'] = Const('processing', processing_dict)
 
 # define the sheet id for the google sheet
 parameters['raw sheet id'] = Const('raw sheet id',
@@ -92,7 +100,6 @@ parameters['red sheet id'] = Const('red sheet id',
 # define the sheet name for the google sheet
 parameters['red sheet name'] = Const('red sheet name', None, dtype=str,
                                      not_none=True)
-
 
 # =============================================================================
 # Start of code

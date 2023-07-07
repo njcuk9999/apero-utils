@@ -36,14 +36,14 @@ __AUTHOR__ = base.__AUTHOR__
 # =============================================================================
 def get_obs_dirs(params) -> List[str]:
     # print progress
-    msg = '\n' + '*' * 50 + '\n'
-    msg += 'Checking for observation directory'
-    msg += '\n' + '*' * 50 + '\n'
+    msg = '*' * 50
+    msg += '\nChecking for observation directory'
+    msg += '\n' + '*' * 50
     misc.log_msg(msg, level='info')
     # get all observation directories
     if params['obsdir'] is None:
         # ask user if this is what they want
-        msg = ('\n\n\nNo observation directory set, do you want to '
+        msg = ('\n\nNo observation directory set, do you want to '
                'run directories? \n\t[Y]es to continue or [N]o to exit:\t')
         # get user input
         user_input = input(msg)
@@ -88,16 +88,16 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
 
         if test_type == 'raw':
             # print which test we are running
-            msg = '\n\n\tRunning raw test {0} [{1}/{2}]\n\n'
+            msg = '\tRunning raw test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
-            misc.log_msg(msg.format(*margs), level='')
+            misc.log_msg(msg.format(*margs), level='test')
             # run raw tests
             output = raw_tests.test_dict[test_name](params, obsdir, log=log)
         elif test_type == 'red':
             # print which test we are running
-            msg = '\n\n\tRunning red test {0} [{1}/{2}]\n\n'
+            msg = '\tRunning red test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
-            misc.log_msg(msg.format(*margs), level='')
+            misc.log_msg(msg.format(*margs), level='test')
             # run red tests
             output = red_tests.test_dict[test_name](params, obsdir, log=log)
         else:
@@ -136,17 +136,25 @@ def run_tests(params: Dict[str, Any],
     # loop around observation directories
     for obsdir in obsdirs:
         # print message on which observation directory we are processing
-        msg = '\n' + '*' * 50 + '\n'
-        msg += f'Processing observation directory {obsdir}'
-        msg += '\n' + '*' * 50 + '\n'
+        msg = '*' * 50
+        msg += f'\nProcessing observation directory {obsdir}'
+        msg += '\n' + '*' * 50
         misc.log_msg(msg, level='info')
+        # get a list of tests
+        if test_type == 'raw':
+            test_list = raw_tests.test_dict
+        elif test_type == 'red':
+            test_list = red_tests.test_dict
+        else:
+            emsg = 'RUN_TESTS error: test_type must be set to "raw" or "red"'
+            raise base.AperoChecksError(emsg)
         # storage for this observation directory
         test_values[obsdir] = dict()
         # loop around all tests
-        for it, test_name in enumerate(raw_tests.test_dict):
+        for it, test_name in enumerate(test_list):
             # run the test
             output = run_test(params, obsdir, test_name, it=it,
-                              num_tests=len(raw_tests.test_dict),
+                              num_tests=len(test_list),
                               log=False, test_type=test_type)
             # add to test values
             test_values[obsdir][test_name] = output
@@ -172,6 +180,14 @@ def run_single_test(params: Dict[str, Any], test_type: str):
                 'test (Either in yaml file or --obsdir')
         raise base.AperoChecksError(emsg)
     # -------------------------------------------------------------------------
+    # get a list of tests
+    if test_type == 'raw':
+        test_list = raw_tests.test_dict
+    elif test_type == 'red':
+        test_list = red_tests.test_dict
+    else:
+        emsg = 'RUN_TESTS error: test_type must be set to "raw" or "red"'
+        raise base.AperoChecksError(emsg)
     # get test_name
     test_name = params['test_name']
     # deal with no test_name
@@ -180,16 +196,16 @@ def run_single_test(params: Dict[str, Any], test_type: str):
                 'test (Either in yaml file or --test_name')
         raise base.AperoChecksError(emsg)
     # deal with bad test name
-    if test_name not in raw_tests.test_dict:
-        emsg = 'test_name is not a valid test. \n\nCurrent valid tests:'
-        for _test_name in raw_tests.test_dict.keys():
+    if test_name not in test_list:
+        emsg = 'test_name is not a valid test. \nCurrent valid tests:'
+        for _test_name in test_list.keys():
             emsg += f'\n\t- "{_test_name}"'
         raise base.AperoChecksError(emsg)
     # -------------------------------------------------------------------------
     # print message on which observation directory we are processing
-    msg = '\n' + '*' * 50 + '\n'
-    msg += f'Processing single test on observatory directory {obsdir}'
-    msg += '\n' + '*' * 50 + '\n'
+    msg = '*' * 50
+    msg += f'\nProcessing single test on observatory directory {obsdir}'
+    msg += '*' * 50
     misc.log_msg(msg, level='info')
     # run single test
     _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
@@ -283,9 +299,9 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
         misc.log_msg(msg, level='warning')
         return
     # print message on which observation directory we are processing
-    msg = '\n' + '*' * 50 + '\n'
-    msg += f'Uploading to google sheet'
-    msg += '\n' + '*' * 50 + '\n'
+    msg = '*' * 50
+    msg += f'\nUploading to google sheet'
+    msg += '\n' + '*' * 50
     misc.log_msg(msg, level='info')
 
     # get time now

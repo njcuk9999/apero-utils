@@ -13,7 +13,8 @@ from typing import Any, Dict, List, Tuple
 
 import numpy as np
 
-from apero_checks import red_functions
+from apero_checks.core import base
+from apero_checks.core import red_functions
 
 # =============================================================================
 # Define variables
@@ -66,7 +67,7 @@ def calib_check(params: Any, recipe: Any, obsdir: str, log: bool = False
     # get the conditions based on params
     # -------------------------------------------------------------------------
     condition = drs_processing.gen_global_condition(params, findexdbm,
-                                                    odo_reject_list)
+                                                    odo_reject_list, log=log)
     # -------------------------------------------------------------------------
     # get telluric stars and non-telluric stars
     # -------------------------------------------------------------------------
@@ -97,17 +98,31 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     :return: bool, True if passed, False otherwise
     """
+
+    # get the apero profiles run.ini file
+    runfile = params['processing']['run file']
+    # deal with no run file
+    if runfile is None:
+        emsg = ('APERO_CALIB_TEST error: "processing.run file" must be '
+                'defined in yaml')
+        raise base.AperoChecksError(emsg)
     # update apero profile
     apero_params = red_functions.update_apero_profile(params)
     # get the proxy apero recipe
     apero_recipe = red_functions.get_apero_proxy_recipe(apero_params)
+    # update apero params with parameters that normally come from run.ini file
+    apero_params = red_functions.add_run_ini_params(apero_params,
+                                                    apero_recipe, runfile)
     # do the apero calib file check
     cout = calib_check(apero_params, apero_recipe, obsdir, log=log)
     calib_count, calib_times, bad_calib_nights = cout
-
-
     # -------------------------------------------------------------------------
-    return True
+    # we use bad_calib_nights to register pass/fail
+    if len(bad_calib_nights) == 0:
+        return True
+    else:
+        return False
+
 
 
 # =============================================================================
