@@ -1180,11 +1180,13 @@ def update_apero_profile(profile: dict):
     :param profile: dict, the profile to update
     :return:
     """
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = profile['apero profile']
+    # ------------------------------------------------------------------
+    # cannot import until after DRS_UCONFIG is set
     from apero.base import base
     from apero.core import constants
     from apero.core.constants import param_functions
-    # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile['apero profile']
     # reload DPARAMS and IPARAMS
     base.DPARAMS = base.load_database_yaml()
     base.IPARAMS = base.load_install_yaml()
