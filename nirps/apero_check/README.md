@@ -9,20 +9,20 @@ Results of running this code will be sent to: https://docs.google.com/spreadshee
 To run the raw data checks do the following:
 
     >> {apero conda env}
-    >> apero_raw_data_checks
+    >> apero_checks
     >> python apero_raw_data_checks.py {profile name}.yaml --obsdir={obs dir}
 
 As a shortcut you can also use `--today` instead of `--obsdir={obs dir}` to run the tests on the most recent observation directory (assuming observation directories are named in the format `YYYY-MM-DD`).
 e.g.
 
     >> {apero conda env}
-    >> apero_raw_data_checks
+    >> apero_checks
     >> python apero_raw_data_checks.py {profile name}.yaml --today
 
 
 where:
 
-- `{profile name}` is one of the yamls in the `apero_raw_data_check` directory
+- `{profile name}` is one of the yamls in the `apero_checks` directory
 - `{obs dir}` is a single observation directory (e.g. 2023-01-01)
 - `{apero conda env}` see [APERO setup for NIRPS](https://github.com/njcuk9999/apero-drs/wiki/nirps-general#apero-setup) or [APERO setup for SPIROU](https://github.com/njcuk9999/apero-drs/wiki/spirou-general#apero-setup)
 
@@ -36,8 +36,8 @@ Note comments have to be added manually on a separate sheet (see the google shee
 Similarly to above:
 
     >> {apero conda env}
-    >> apero_raw_data_checks
-    >> python apero_raw_data_checks.py {profile name}.yaml --obsdir={obs dir} --test={test name}
+    >> apero_checks
+    >> python apero_checks.py {profile name}.yaml --obsdir={obs dir} --test={test name}
 
 where:
 
