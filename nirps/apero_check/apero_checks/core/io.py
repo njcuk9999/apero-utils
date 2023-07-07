@@ -15,7 +15,7 @@ from typing import Any, Dict, Union
 
 import yaml
 
-from apero_raw_tests.core import base
+from apero_checks.core import base
 
 # =============================================================================
 # Define variables
@@ -60,12 +60,12 @@ def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
     # deal with yaml_filename being None
     if yaml_filename is None:
         emsg = 'yaml_filename must be set to a valid file'
-        raise base.AperoRawTestsError(emsg)
+        raise base.AperoChecksError(emsg)
     # deal with yaml_filename not existing
     if not os.path.exists(yaml_filename):
         emsg = 'yaml_filename {0} does not exist'
         eargs = [yaml_filename]
-        raise base.AperoRawTestsError(emsg.format(*eargs))
+        raise base.AperoChecksError(emsg.format(*eargs))
     # read the yaml file
     with open(yaml_filename, 'r') as f:
         yaml_data = yaml.load(f, Loader=yaml.FullLoader)
@@ -92,7 +92,7 @@ def get_obs_dirs(params: Dict[str, Any]):
     if not os.path.exists(raw_path):
         emsg = 'Raw directory {0} does not exist'
         eargs = [raw_path]
-        raise base.AperoRawTestsError(emsg.format(*eargs))
+        raise base.AperoChecksError(emsg.format(*eargs))
     # get a list of all fits files in raw path
     valid_files = []
     for root, dirs, files in os.walk(raw_path):

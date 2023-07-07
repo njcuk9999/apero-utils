@@ -10,10 +10,10 @@ Created on 2023-07-03 at 14:36
 @author: cook
 """
 # only import from this directory
-from apero_raw_tests.tests import blank_test
-from apero_raw_tests.tests import calib_test
-from apero_raw_tests.tests import eng_test
-from apero_raw_tests.tests import obsdir_test
+from apero_checks.raw_tests import blank_test
+from apero_checks.raw_tests import calib_test
+from apero_checks.raw_tests import eng_test
+from apero_checks.raw_tests import obsdir_test
 
 # =============================================================================
 # Append your test here

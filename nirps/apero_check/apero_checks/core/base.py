@@ -25,7 +25,7 @@ _ = AstropyTime.now
 # =============================================================================
 # Define functions
 # =============================================================================
-class AperoRawTestsError(Exception):
+class AperoChecksError(Exception):
     """
     Error class for apero_raw_tests
     """

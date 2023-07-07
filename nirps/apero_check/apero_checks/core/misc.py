@@ -13,9 +13,9 @@ import argparse
 import copy
 from typing import Any, Dict, Optional
 
-from apero_raw_tests.core import base
-from apero_raw_tests.core import io
-from apero_raw_tests.core import parameters
+from apero_checks.core import base
+from apero_checks.core import io
+from apero_checks.core import parameters
 
 # =============================================================================
 # Define variables
@@ -139,7 +139,7 @@ def log_msg(message, level: str = '', color: Optional[str] = None):
         start, end = '', ''
     # print message
     if level == 'error':
-        raise base.AperoRawTestsError(print_string)
+        raise base.AperoChecksError(print_string)
     else:
         print(start + message + end)
 

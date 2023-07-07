@@ -1,0 +1,8 @@
+# directory where raw data is downloaded
+raw dir: /nirps_raw/nirps/raw-data/nirps_ha
+
+# define the raw sheet name for the google sheet
+raw sheet name: RAW-NIRPS-HA
+
+# define the red sheet name for the google sheet
+red sheet name: RED-NIRPS-HA

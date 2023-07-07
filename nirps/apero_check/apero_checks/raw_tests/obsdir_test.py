@@ -11,8 +11,8 @@ Created on 2023-07-03 at 14:37
 """
 from typing import Any, Dict
 
-from apero_raw_tests.core import io
-from apero_raw_tests.core import misc
+from apero_checks.core import io
+from apero_checks.core import misc
 
 
 # =============================================================================

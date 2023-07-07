@@ -11,7 +11,7 @@ Created on 2023-07-03 at 16:26
 """
 from typing import Any, Optional
 
-from apero_raw_tests.core import base
+from apero_checks.core import base
 
 # =============================================================================
 # Define variables
@@ -40,7 +40,7 @@ class Const:
         if self.not_none and value is None:
             emsg = 'Const {0} must be set in yaml'
             eargs = [self.key]
-            raise base.AperoRawTestsError(emsg.format(*eargs))
+            raise base.AperoChecksError(emsg.format(*eargs))
         # force dtype if set
         if self.dtype is not None:
             try:
@@ -48,7 +48,7 @@ class Const:
             except Exception as e:
                 emsg = 'Const {0} must be of type {1} (error: {2})'
                 eargs = [self.key, self.dtype, e]
-                raise base.AperoRawTestsError(emsg.format(*eargs))
+                raise base.AperoChecksError(emsg.format(*eargs))
         # return value
         return value
 
@@ -69,11 +69,22 @@ parameters['obsdir'] = Const('obs dir', None, dtype=str)
 parameters['test_name'] = Const('testname', None, dtype=str)
 
 # define the sheet id for the google sheet
-parameters['sheet id'] = Const('sheet id',
+parameters['raw sheet id'] = Const('raw sheet id',
                                '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
                                dtype=str)
 # define the sheet name for the google sheet
-parameters['sheet name'] = Const('sheet name', 'Monitor', dtype=str)
+parameters['raw sheet name'] = Const('raw sheet name', None, dtype=str,
+                                     not_none=True)
+
+# define the sheet id for the google sheet
+parameters['red sheet id'] = Const('red sheet id',
+                               '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
+                               dtype=str)
+
+# define the sheet name for the google sheet
+parameters['red sheet name'] = Const('red sheet name', None, dtype=str,
+                                     not_none=True)
+
 
 # =============================================================================
 # Start of code

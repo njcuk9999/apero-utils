@@ -11,15 +11,15 @@ Created on 2023-07-03 at 14:51
 """
 from typing import Optional
 
-import apero_raw_tests
+import apero_checks
 
 # =============================================================================
 # Define variables
 # =============================================================================
 # version, date, author
-__VERSION__ = apero_raw_tests.base.__VERSION__
-__DATE__ = apero_raw_tests.base.__DATE__
-__AUTHOR__ = apero_raw_tests.base.__AUTHOR__
+__VERSION__ = apero_checks.base.__VERSION__
+__DATE__ = apero_checks.base.__DATE__
+__AUTHOR__ = apero_checks.base.__AUTHOR__
 
 
 # -----------------------------------------------------------------------------
@@ -31,17 +31,17 @@ __AUTHOR__ = apero_raw_tests.base.__AUTHOR__
 def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
          test_name: Optional[str] = None, today: bool = False):
     # get params updated for input yaml file
-    params = apero_raw_tests.load_params(yaml_file, obsdir, test_name, today)
+    params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
     # if we do not have a test name then we run all tests and upload
     if params['test_name'] in [None, 'None']:
         # run the tests
-        test_results = apero_raw_tests.run_tests(params)
+        test_results = apero_checks.run_tests(params, test_type='raw')
         # upload the tests
-        apero_raw_tests.upload_tests(params, test_results)
+        apero_checks.upload_tests(params, test_results, test_type='raw')
     # otherwise we run a single test
     else:
         # run single test
-        apero_raw_tests.run_single_test(params)
+        apero_checks.run_single_test(params, test_type='raw')
 
 
 # =============================================================================

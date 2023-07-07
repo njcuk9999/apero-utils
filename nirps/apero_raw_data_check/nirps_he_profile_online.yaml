@@ -1,5 +1,0 @@
-# directory where raw data is downloaded
-raw dir: /nirps_raw/nirps/raw-data/nirps_he
-
-# define the sheet name for the google sheet
-sheet name: Monitor-NIRPS-HE
