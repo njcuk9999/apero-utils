@@ -14,8 +14,8 @@ from astropy.time import Time
 # =============================================================================
 # Define variables
 # =============================================================================
-__VERSION__ = '0.0.12'
-__DATE__ = '2023-07-06'
+__VERSION__ = '0.0.13'
+__DATE__ = '2023-07-07'
 __AUTHOR__ = 'Neil Cook'
 # get astropy time
 AstropyTime = Time
@@ -25,7 +25,7 @@ _ = AstropyTime.now
 # =============================================================================
 # Define functions
 # =============================================================================
-class AperoRawTestsError(Exception):
+class AperoChecksError(Exception):
     """
     Error class for apero_raw_tests
     """

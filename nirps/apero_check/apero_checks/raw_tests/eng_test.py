@@ -17,7 +17,7 @@ from typing import Any, Dict
 import numpy as np
 from astropy.io import fits
 
-from apero_raw_tests.core import misc
+from apero_checks.core import misc
 
 
 # =============================================================================

@@ -61,7 +61,7 @@ e.g.
 
 where:
 
-- `{profile name}` is one of the yamls in the `apero_raw_data_check` directory
+- `{profile name}` is one of the yamls in the `apero_checks` directory
 - `{obs dir}` is a single observation directory (e.g. 2023-01-01)
 - `{apero conda env}` see [APERO setup for NIRPS](https://github.com/njcuk9999/apero-drs/wiki/nirps-general#apero-setup) or [APERO setup for SPIROU](https://github.com/njcuk9999/apero-drs/wiki/spirou-general#apero-setup)
 
