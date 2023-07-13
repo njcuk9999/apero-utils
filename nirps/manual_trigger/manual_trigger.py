@@ -490,7 +490,7 @@ def run_apero_get(settings: Dict[str, Any]):
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
         apero_get.main(objnames='None', outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=lbl_calfibers,
+                       outpath=outpath_calib, fibers=lbl_scifibers,
                        symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
