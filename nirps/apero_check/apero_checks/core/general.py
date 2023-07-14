@@ -49,7 +49,7 @@ def get_obs_dirs(params) -> List[str]:
         user_input = input(msg)
         print('')
         # if user input is "n" then exit
-        if 'n' in user_input.lower():
+        if 'y' not in user_input.lower():
             return []
         obsdirs = io.get_obs_dirs(params)
     else:
