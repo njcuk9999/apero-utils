@@ -167,8 +167,8 @@ def get_blocks_profile2(params, files1: Dict[str, List[str]],
         # get block instance
         block_inst = block(apero_params)
         # only keep those that have an observation directory
-        if not block_inst.has_obs_dirs:
-            continue
+        # if not block_inst.has_obs_dirs:
+        #     continue
         # get block name
         block_name = block.name
         # get block path
