@@ -224,9 +224,9 @@ def main():
     # load parameters
     params = load_params()
     # get a list of files from profile 1 for each block kinds
-    files1 = get_files_profile1(params)
+    files1, paths1 = get_files_profile1(params)
     # get the output files for profile 2 for each block kind
-    files2 = get_blocks_profile2(params, files1)
+    files2 = get_blocks_profile2(params, files1, paths1)
     # copy files from profile 1 to profile 2 for each block kind
     copy_files(files1, files2)
     # update databases for profile 2
