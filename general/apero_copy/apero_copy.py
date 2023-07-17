@@ -9,10 +9,12 @@ Created on 2023-07-13 at 13:07
 
 @author: cook
 """
-import os
 import argparse
-from typing import Any, Dict, List, Tuple, Union
+import os
 import shutil
+from typing import Any, Dict, List, Tuple, Union
+
+import numpy as np
 import yaml
 from tqdm import tqdm
 
@@ -127,6 +129,11 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     blocks = path_definitions.BLOCKS
     # get file index database
     findexdb = drs_database.FileIndexDatabase(params['profile1'])
+    findexdb.load_db()
+    calibdb = drs_database.CalibrationDatabase(params['profile1'])
+    calibdb.load_db()
+    telludb = drs_database.TelluricDatabase(params['profile1'])
+    telludb.load_db()
     # storage for for files
     files1 = dict()
     paths1 = dict()
@@ -134,13 +141,18 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     for block in blocks:
         # get block instance
         block_inst = block(apero_params)
-        # only keep those that have an observation directory
-        if not block_inst.has_obs_dirs:
-            continue
         # get block
         block_name = block_inst.name
         # get block path
         block_path = block_inst.path
+        # deal with calib and tellu blocks
+        if block_inst.name in ['calib', 'tellu']:
+            files1[block_name] = []
+            paths1[block_name] = block_inst.path
+            continue
+        # only keep those that have an observation directory
+        if not block_inst.has_obs_dirs:
+            continue
         # condition for database
         condition = 'BLOCK_KIND="{0}"'.format(block_name)
         # get files from database
@@ -149,6 +161,20 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
         # add to path dict
         paths1[block_name] = block_path
 
+    # need to add the calibration and telluric database files differently
+    for block_name in ['calib', 'tellu']:
+
+        if block_name == 'calib':
+            query = calibdb.database.get('FILENAME', return_pandas=True)
+        else:
+            query = telludb.database.get('FILENAME', return_pandas=True)
+        # push query into a list of basenames (as a character array)
+        basenames = np.char.array(list(query['FILENAME']))
+        # add path to basenames
+        filenames = paths1[block_name] + basenames
+        # get files from database
+        files1[block_name] = filenames
+    # add to path dict
     return files1, paths1
 
 
@@ -167,8 +193,8 @@ def get_blocks_profile2(params, files1: Dict[str, List[str]],
         # get block instance
         block_inst = block(apero_params)
         # only keep those that have an observation directory
-        # if not block_inst.has_obs_dirs:
-        #     continue
+        if not block_inst.has_obs_dirs:
+            continue
         # get block name
         block_name = block.name
         # get block path
