@@ -23,9 +23,14 @@ from tqdm import tqdm
 # Define variables
 # =============================================================================
 __version__ = '0.0.1'
-
+# whether to run in test mode (i.e. do not copy or remove files)
 TEST = False
+# prefix for TMP directory to copy to (before renaming)
+TMP_DIR_PREFIX = 'APERO_COPY_TMP_'
+
+
 # -----------------------------------------------------------------------------
+
 
 # =============================================================================
 # Define functions
@@ -40,7 +45,9 @@ class AperoCopyError(Exception):
 def update_apero_profile(params: Dict[str, Any], profile_path: str) -> Any:
     """
     Update the apero profile with the correct paths
-    :param profile: dict, the profile to update
+
+    :param params: dict, the parameters from the yaml file
+    :param profile_path: dict, the profile to update
     :return:
     """
     # use os to add DRS_UCONFIG to the path
@@ -165,7 +172,7 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
         condition = 'BLOCK_KIND="{0}"'.format(block_name)
         # get files from database
         files1[block_name] = findexdb.get_entries(columns='ABSPATH',
-                                                 condition=condition)
+                                                  condition=condition)
         # add to path dict
         paths1[block_name] = block_path
 
@@ -180,15 +187,16 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
         # push query into a list of basenames (as a character array)
         basenames = np.char.array(list(query['FILENAME']))
         # add path to basenames
-        filenames = paths1[block_name] + basenames
+        filenames = paths1[block_name] + os.sep + basenames
         # get files from database
         files1[block_name] = filenames
     # add to path dict
     return files1, paths1
 
 
-def get_blocks_profile2(params, files1: Dict[str, List[str]],
-                        paths1: Dict[str, str]) -> Dict[str, List[str]]:
+def get_files_profile2(params, files1: Dict[str, List[str]],
+                       paths1: Dict[str, str]
+                       ) -> Tuple[Dict[str, List[str]], Dict[str, str], Dict[str, str]]:
     # load parameters from profile 1
     apero_params = update_apero_profile(params, params['profile2'])
     # import database
@@ -197,6 +205,8 @@ def get_blocks_profile2(params, files1: Dict[str, List[str]],
     blocks = path_definitions.BLOCKS
     # storage for for files
     files2 = dict()
+    paths2 = dict()
+    paths3 = dict()
     # loop around block definitions
     for block in blocks:
         # skip if not in files1
@@ -204,13 +214,14 @@ def get_blocks_profile2(params, files1: Dict[str, List[str]],
             continue
         # get block instance
         block_inst = block(apero_params)
-        # only keep those that have an observation directory
-        if not block_inst.has_obs_dirs:
-            continue
         # get block name
         block_name = block.name
         # get block path
         path2 = block_inst.path
+        # get path3 the temporary path to copy things to first
+        block_base = os.path.basename(path2)
+        block_dir = os.path.dirname(path2)
+        path3 = os.path.join(block_dir, TMP_DIR_PREFIX + block_base)
         # get path1 from paths1
         path1 = paths1[block_name]
         # add a list for each block kind to files
@@ -218,15 +229,17 @@ def get_blocks_profile2(params, files1: Dict[str, List[str]],
         # loop around files
         for infilename in files1[block_name]:
             # replace path1 with path2
-            outfilename = infilename.replace(path1, path2)
+            outfilename = infilename.replace(path1, path3)
             # add to files
             files2[block_name].append(outfilename)
+        # add to path dict
+        paths2[block_name] = path2
+        paths3[block_name] = path3
     # return files
-    return files2
+    return files2, paths2, paths3
 
 
 def copy_files(files1: Dict[str, List[str]], files2: Dict[str, List[str]]):
-
     # loop around each block kind and copy files
     for block_name in files1:
 
@@ -268,7 +281,32 @@ def copy_files(files1: Dict[str, List[str]], files2: Dict[str, List[str]]):
                 shutil.copy(infilename, outfilename)
 
 
+def remove_files(paths2: Dict[str, str]):
+    # loop around each block
+    for block_name in paths2:
+        msg = 'Removing {0}: ({1})'
+        margs = [block_name, paths2[block_name]]
+        print(msg.format(*margs))
+        if not TEST:
+            shutil.rmtree(paths2[block_name])
+
+
+def rename_directories(paths2: Dict[str, str], paths3: Dict[str, str]):
+    # loop around each block
+    for block_name in paths2:
+        msg = 'Renaming {0}: ({1} -> {2})'
+        margs = [block_name, paths3[block_name], paths2[block_name]]
+        print(msg.format(*margs))
+        if not TEST:
+            os.rename(paths3[block_name], paths2[block_name])
+
+
 def update_databases_profile2(params):
+    # print progress
+    print('Updating APERO databases')
+    # if test mode do nothing here
+    if TEST:
+        return
     # load parameters from profile 1
     apero_params = update_apero_profile(params, params['profile2'])
     # apero imports
@@ -298,9 +336,14 @@ def main():
     # get a list of files from profile 1 for each block kinds
     files1, paths1 = get_files_profile1(params)
     # get the output files for profile 2 for each block kind
-    files2 = get_blocks_profile2(params, files1, paths1)
+    files2, paths2, paths3 = get_files_profile2(params, files1, paths1)
     # copy files from profile 1 to profile 2 for each block kind
+    # must copy files to a temporary path first (copying can be slow)
     copy_files(files1, files2)
+    # remove all old files from profile 2 blocks
+    remove_files(paths2)
+    # rename the directories in profile 2 (this is quicker than copying)
+    rename_directories(paths2, paths3)
     # update databases for profile 2
     update_databases_profile2(params)
     # return to __main__
