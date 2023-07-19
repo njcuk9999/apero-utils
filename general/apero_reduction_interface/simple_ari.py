@@ -18,6 +18,8 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.patches import FancyArrowPatch
 import numpy as np
 import pandas as pd
 import yaml
@@ -88,14 +90,24 @@ TIME_SERIES_COLS = ['Obs Dir', 'First obs mid',
                     'Last obs mid', 'Number of ext', 'Number of tcorr',
                     'Seeing', 'Airmass',
                     'Mean Exptime', 'Total Exptime', 'DPRTYPEs', None, None]
-# define the lbl rdb suffix (lbl or lbl2)
-LBL_SUFFIX = 'lbl'
+# define the lbl files
+LBL_FILETYPES = ['lbl_rdb', 'lbl2_rdb', 'lbl_drift', 'lbl2_drift', 'lbl_fits']
+LBL_FILENAMES = ['lbl_{0}_{1}.rdb', 'lbl2_{0}_{1}.rdb',
+                 'lbl_{0}_{1}_drift.rdb', 'lbl2_{0}_{1}_drift.rdb',
+                 'lbl_{0}_{1}.fits']
+LBL_FILE_DESC = ['RDB file', 'RDB2 file', 'Drift file', 'Drift2 file',
+                 'LBL RDB fits file']
+LBL_DOWNLOAD = [True, True, True, True, False]
+# define which one of these files to use as the main plot file
+LBL_PLOT_FILE = 0
 # define the LBL stat dir (inside the lbl directory)
 LBL_STAT_DIR = 'lblstats'
 # define the LBL stat files {0} is for the object name + template name
 #  i.e. {objname}_{template}
 LBL_STAT_FILES = dict()
 LBL_STAT_FILES['LBL Diagnostic Plots'] = 'lbl_{0}_plots.pdf'
+LBL_STAT_FILES['LBL BERV zp RDB file'] = 'lbl_{0}_bervzp.rdb'
+LBL_STAT_FILES['LBL BERV Zp Diaganostic Plots'] = 'lbl_{0}_bervzp_plots.pdf'
 # define how many ccf files to use
 MAX_NUM_CCF = 100
 # object page styling
@@ -410,10 +422,10 @@ class ObjectData:
         spec_props['NUM_PP_FILES'] = ftypes['pp'].num_passed
         spec_props['NUM_EXT_FILES'] = ftypes['ext'].num_passed
         spec_props['NUM_TCORR_FILES'] = ftypes['tcorr'].num_passed
-
         spec_props['NUM_PP_FILES_FAIL'] = ftypes['pp'].num_failed
         spec_props['NUM_EXT_FILES_FAIL'] = ftypes['ext'].num_failed
         spec_props['NUM_TCORR_FILES_FAIL'] = ftypes['tcorr'].num_failed
+        # -----------------------------------------------------------------
         # add the first and last raw file type
         first_time = self.filetypes['raw'].first
         last_time = self.filetypes['raw'].last
@@ -453,6 +465,11 @@ class ObjectData:
             spec_props['LAST_TCORR'] = None
             spec_props['LAST_TCORR_PROC'] = None
         # -----------------------------------------------------------------
+        # add versions
+        spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
+        spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
+        spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
+        # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
         matched = False
@@ -474,7 +491,7 @@ class ObjectData:
             pos_raw = _match_file(reffile=file_ext,
                                   files=spec_props['RAW'].get_files(qc=True))
             pos_s1d = _match_file(reffile=file_ext,
-                                   files=spec_props['S1D'].get_files(qc=True))
+                                  files=spec_props['S1D'].get_files(qc=True))
             pos_sc1d = _match_file(reffile=file_ext,
                                    files=spec_props['SC1D'].get_files(qc=True))
             # we only stop is a match is found
@@ -553,7 +570,7 @@ class ObjectData:
         # -----------------------------------------------------------------
         # construct the header file
         ext_header_file = os.path.join(down_save_path,
-                                   f'ext2d_header_{self.objname}_file.csv')
+                                       f'ext2d_header_{self.objname}_file.csv')
         create_header_file(spec_props['EXT'].get_files(qc=True),
                            self.headers, 'ext', self.header_dict,
                            ext_header_file)
@@ -607,9 +624,13 @@ class ObjectData:
         :return:
         """
         # get lbl rdb files
-        lbl_rdb_files = self.filetypes['lbl_rdb'].get_files()
+        lbl_files = dict()
+        for filetype in LBL_FILETYPES:
+            if self.filetypes[filetype].num > 0:
+                lbl_files[filetype] = self.filetypes[filetype].get_files()
+
         # don't go here is lbl rdb files are not present
-        if len(lbl_rdb_files) == 0:
+        if len(lbl_files) == 0:
             return
         # ---------------------------------------------------------------------
         # generate place to save figures
@@ -625,18 +646,40 @@ class ObjectData:
         ext_h_key = self.headers['LBL']['EXT_H']['key']
         # store the object+ template combinations
         lbl_objtmps = dict()
-        # get the lbl objname+templates combinations
-        for lbl_rdb_file in lbl_rdb_files:
-            # get the basename
-            basename = os.path.basename(lbl_rdb_file)
-            # get the objname+template
-            lbl_objtmp = basename.split(f'{LBL_SUFFIX}_')[-1].split('.rdb')[0]
-            # append to list
-            lbl_objtmps[lbl_objtmp] = lbl_rdb_file
+        # loop around templates (found previously)
+        for template in self.lbl_templates:
+            # make objtmp string
+            lbl_objtmp = f'{self.objname}_{template}'
+            # set each template to have a dictionary of files
+            lbl_objtmps[lbl_objtmp] = dict()
+            # loop around each lbl file type
+            for lbl_filetype in lbl_files:
+                # file to be found
+                matched_file = None
+                # find the file that matches the template
+                for lbl_file in lbl_files[lbl_filetype]:
+                    if lbl_objtmp in lbl_file:
+                        matched_file = lbl_file
+                        break
+                # append to list if we found a matching objname+template file
+                if matched_file is not None:
+                    lbl_objtmps[lbl_objtmp][lbl_filetype] = matched_file
+        # ---------------------------------------------------------------------
+        # def the plot file
+        plot_file = LBL_FILETYPES[LBL_PLOT_FILE]
         # loop around the objname+template combinations
         for lbl_objtmp in lbl_objtmps:
+            # deal with the plot file not existing
+            if plot_file not in lbl_objtmps[lbl_objtmp]:
+                # must set these to None if no LBL files
+                self.lbl_plot_path[lbl_objtmp] = None
+                self.lbl_stats_table[lbl_objtmp] = None
+                self.lbl_dwn_table[lbl_objtmp] = None
+                continue
+            # get the plot file for this objname+template
+            lbl_pfile = lbl_objtmps[lbl_objtmp][plot_file]
             # load rdb file
-            rdb_table = Table.read(lbl_objtmps[lbl_objtmp], format='ascii.rdb')
+            rdb_table = Table.read(lbl_pfile, format='ascii.rdb')
             # get the values required
             lbl_props['rjd'] = np.array(rdb_table['rjd'])
             lbl_props['vrad'] = np.array(rdb_table['vrad'])
@@ -644,6 +687,20 @@ class ObjectData:
             lbl_props['plot_date'] = np.array(rdb_table['plot_date'])
             lbl_props['snr_h'] = np.array(rdb_table[ext_h_key])
             lbl_props['SNR_H_LABEL'] = self.headers['LBL']['EXT_H']['label']
+            lbl_props['RESET_RV'] = np.array(rdb_table['RESET_RV']).astype(bool)
+            lbl_props['NUM_RESET_RV'] = np.sum(rdb_table['RESET_RV'])
+            # get the lbl header key
+            lbl_version_hdrkey = self.headers['LBL']['LBL_VERSION']['key']
+            # find the lbl fits file
+            for it, lblfilekey in enumerate(LBL_FILETYPES):
+                if lblfilekey == 'lbl_fits':
+                    # get the lbl file
+                    lbl_file = lbl_objtmps[lbl_objtmp][lblfilekey]
+                    # get the header
+                    lbl_hdr = fits.getheader(lbl_file)
+                    # if we have the lbl version header key add it
+                    if lbl_version_hdrkey in lbl_hdr:
+                        lbl_props['version'] = lbl_hdr[lbl_version_hdrkey]
             # -----------------------------------------------------------------
             # plot the figure
             # -----------------------------------------------------------------
@@ -671,9 +728,22 @@ class ObjectData:
             # get the download table path
             item_path = os.path.join(item_save_path, dwn_base_name)
             # define the download files
-            down_files = [lbl_objtmps[lbl_objtmp]]
+            down_files = []
             # define the download descriptions
-            down_descs = ['RDB file']
+            down_descs = []
+            # add the lbl files to the down files
+            for it, lblfilekey in enumerate(LBL_FILETYPES):
+                # check that we want to add to download files
+                if not LBL_DOWNLOAD[it]:
+                    continue
+                # check for file in lbl_objtmps
+                if lblfilekey not in lbl_objtmps[lbl_objtmp]:
+                    continue
+                # get lbl file
+                lbl_file = lbl_objtmps[lbl_objtmp][lblfilekey]
+                # add to down_files
+                down_files.append(lbl_file)
+                down_descs.append(LBL_FILE_DESC[it])
             # Add the lbl stat files
             for lblfilekey in LBL_STAT_FILES:
                 # deal with no lbl file key for this object
@@ -734,16 +804,20 @@ class ObjectData:
         ccf_props['LAST_CCF'] = Time(np.max(hdict['CCF_MJDMID'])).iso
         ccf_props['LAST_CCF_PROC'] = Time(np.max(hdict['CCF_PROC'])).iso
         # -----------------------------------------------------------------
+        # ccf version
+        ccf_props['CCF_VERSION'] = ','.join(list(np.unique(hdict['CCF_VERSION'])))
+        # -----------------------------------------------------------------
         # select ccf files to use
-        select_files = choose_ccf_files(ccf_props)
+        ccf_props = choose_ccf_files(ccf_props)
         # load the first file to get the rv vector
-        ccf_table0 = Table.read(select_files[0], format='fits', hdu=1)
+        ccf_table0 = Table.read(ccf_props['select_files'][0], format='fits',
+                                hdu=1)
         # get the rv vector
         ccf_props['rv_vec'] = ccf_table0['RV']
         # storage for the CCF vectors
-        all_ccf = np.zeros((len(select_files), len(ccf_table0)))
+        all_ccf = np.zeros((len(ccf_props['select_files']), len(ccf_table0)))
         # loop around all other files, load them and load into all_ccf
-        for row, select_file in enumerate(select_files):
+        for row, select_file in enumerate(ccf_props['select_files']):
             table_row = Table.read(select_file, format='fits', hdu=1)
             # get the combined CCF for this file
             ccf_row = table_row['Combined']
@@ -779,8 +853,10 @@ class ObjectData:
         plot_base_name = 'ccf_plot_' + self.objname + '.png'
         # get the plot path
         plot_path = os.path.join(item_save_path, plot_base_name)
+        # set the plot title
+        plot_title = f'CCF {self.objname} [mask={ccf_props["chosen_mask"]}]'
         # plot the lbl figure
-        ccf_plot(ccf_props, plot_path, plot_title=f'CCF {self.objname}')
+        ccf_plot(ccf_props, plot_path, plot_title=plot_title)
         # -----------------------------------------------------------------
         # construct the stats
         # -----------------------------------------------------------------
@@ -1104,11 +1180,13 @@ def update_apero_profile(profile: dict):
     :param profile: dict, the profile to update
     :return:
     """
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = profile['apero profile']
+    # ------------------------------------------------------------------
+    # cannot import until after DRS_UCONFIG is set
     from apero.base import base
     from apero.core import constants
     from apero.core.constants import param_functions
-    # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile['apero profile']
     # reload DPARAMS and IPARAMS
     base.DPARAMS = base.load_database_yaml()
     base.IPARAMS = base.load_install_yaml()
@@ -1215,6 +1293,10 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
                             'edit?usp=sharing>`_, the name displayed in '
                             'ARI will be the first column [OBJNAME]')
     obj_index_page.add_newline()
+    obj_index_page.add_text('If you have any issues please report using '
+                            '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+    obj_index_page.add_newline()
     # -------------------------------------------------------------------------
     # loop around objects and create a section for each
     for objname in objdict:
@@ -1284,6 +1366,10 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
     index_page.add_text('If you believe you should have the username/password '
                         'please contact neil.james.cook@gmail.com')
     index_page.add_newline()
+    index_page.add_text('If you have any issues please report using '
+                        '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                        'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+    index_page.add_newline()
     index_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
     index_page.add_newline()
     # -------------------------------------------------------------------------
@@ -1331,6 +1417,10 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                               'edit?usp=sharing>`_, the name displayed in ARI will '
                               'be the first column [OBJNAME]')
         profile_page.add_newline()
+        profile_page.add_text('If you have any issues please report using '
+                              '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                              'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+        profile_page.add_newline()
         profile_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
         profile_page.add_newline()
         # -----------------------------------------------------------------
@@ -1361,6 +1451,10 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                                 '1dOogfEwC7wAagjVFdouB1Y1JdF9Eva4uDW6CTZ8x2FM/'
                                 'edit?usp=sharing>`_, the name displayed in ARI will '
                                 'be the first column [OBJNAME]')
+            table_page.add_newline()
+            table_page.add_text('If you have any issues please report using '
+                                '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
             table_page.add_newline()
             table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
             table_page.add_newline()
@@ -1586,7 +1680,9 @@ def compile_apero_object_table(gsettings) -> Dict[str, ObjectData]:
     filetypes['sc1d'] = FileType('sc1d', block_kind='red', chain='tcorr',
                                  kw_output='SC1D_V_FILE', fiber=science_fiber)
     # lbl files added as filetype but don't count in same was as other files
-    filetypes['lbl_rdb'] = FileType('lbl_rdb', count=False)
+    filetypes['lbl.fits'] = FileType('lbl.fits', count=False)
+    for filetype in LBL_FILETYPES:
+        filetypes[filetype] = FileType(filetype, count=False)
     # -------------------------------------------------------------------------
     # log that we are loading
     # get the object table from the astrometric database
@@ -1821,14 +1917,6 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
     # get the lbl path
     lbl_path = profile['lbl path']
     # -------------------------------------------------------------------------
-    # we are adding three columns to the object table
-    # first column: templates used for lbl
-    # second column: template selected for lbl count
-    # third column: number of lbl files for template with most lbl files
-    lbl_templates = []
-    lbl_select = []
-    lbl_count = []
-    # -------------------------------------------------------------------------
     # deal with no valid lbl path
     if lbl_path is None:
         return object_classes
@@ -1853,7 +1941,6 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
         if len(lblrv_dir) == 0:
             continue
         # ---------------------------------------------------------------------
-
         # store a list of templates
         templates = []
         # store a list of counts
@@ -1871,30 +1958,32 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
         # decide which template to use (using max of counts)
         select = np.argmax(counts)
         # get strings to add to storage
-        _template = ','.join(templates)
         _select = templates[select]
         _count = int(counts[select])
-        # append to lists
-        lbl_templates.append(_template)
-        lbl_select.append(_select)
-        lbl_count.append(_count)
-        # ---------------------------------------------------------------------
-        # LBL RDB files
-        # ---------------------------------------------------------------------
-        # get all the lbl rdb files for this object name
-        rdb_glob = f'{LBL_SUFFIX}_{objname}_*.rdb'
-        all_lblrdb_files = glob.glob(os.path.join(lbl_path, 'lblrdb', rdb_glob))
-        # remove drift files from the lbl rdb files
-        lblrdb_files = []
-        for lblrdb_file in all_lblrdb_files:
-            if 'drift' not in lblrdb_file:
-                lblrdb_files.append(lblrdb_file)
-        # add list to the LBLRDB file dict for this object
-        object_class.filetypes['lbl_rdb'].files = lblrdb_files
-        object_class.lbl_templates = _template
+        # add the counts to the object class
+        object_class.lbl_templates = templates
         object_class.lbl_select = _select
-        # add to object table
-        object_class.filetypes['lbl_rdb'].num = _count
+        # set the number of files
+        object_class.filetypes['lbl.fits'].num = _count
+        # ---------------------------------------------------------------------
+        # LBL files
+        # ---------------------------------------------------------------------
+        # loop around all lbl files
+        for it, filetype in enumerate(LBL_FILETYPES):
+            lbl_files = []
+            # loop around templates
+            for template in templates:
+                # push the object and template name into the glob
+                lbl_file = LBL_FILENAMES[it].format(objname, template)
+                # get all the lbl files for this object name
+                lbl_file_path = os.path.join(lbl_path, 'lblrdb', lbl_file)
+                # remove drift files from the lbl rdb files
+                if os.path.exists(lbl_file_path):
+                    lbl_files.append(lbl_file_path)
+            # add list to the LBLRDB file dict for this object
+            object_class.filetypes[filetype].files = lbl_files
+            # add to object table
+            object_class.filetypes[filetype].num = len(lbl_files)
         # ---------------------------------------------------------------------
         # LBL Stats (generated by Charles)
         # ---------------------------------------------------------------------
@@ -1925,7 +2014,7 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
     return object_classes
 
 
-def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
+def choose_ccf_files(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
     """
     Choose CCF files based on the most numerious of a single mask
     and then the MAX_NUM_CCF selected uniformly in time
@@ -1952,8 +2041,11 @@ def choose_ccf_files(ccf_props: Dict[str, Any]) -> List[str]:
     time_mask = drs_utils.uniform_time_list(smjd, MAX_NUM_CCF)
     # filter files by the time mask
     sfiles = sfiles[time_mask]
+
+    ccf_props['select_files'] = sfiles
+    ccf_props['chosen_mask'] = chosen_mask
     # return ccf props
-    return sfiles
+    return ccf_props
 
 
 def fit_ccf(ccf_props: Dict[str, Any]) -> Dict[str, Any]:
@@ -2246,11 +2338,14 @@ def objpage_lbl(page: Any, name: str, ref: str,
     # page.add_divider(color=DIVIDER_COLOR, height=DIVIDER_HEIGHT)
     # add a reference to this section
     page.add_reference(ref)
-    # get lbl rdb files
-    lbl_rdb_files = object_instance.filetypes['lbl_rdb'].files
+    # get the first lbl files
+    lbl_files = dict()
+    for filetype in LBL_FILETYPES:
+        if object_instance.filetypes[filetype].num > 0:
+            lbl_files[filetype] = object_instance.filetypes[filetype].files
     # ------------------------------------------------------------------
     # deal with no spectrum found
-    if len(lbl_rdb_files) == 0:
+    if len(lbl_files) == 0:
         # add the section heading
         page.add_section(name)
         # print that there is no LBL reduction found
@@ -2412,7 +2507,7 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
         if object_class.has_polar:
             table_dict['pfits'].append(object_class.filetypes['pfiles'].num)
         # set the number of lbl files
-        table_dict['lbl'].append(object_class.filetypes['lbl_rdb'].num)
+        table_dict['lbl'].append(object_class.filetypes['lbl.fits'].num)
         # set the last observed value raw file
         table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
         # set the last processed value
@@ -2445,12 +2540,13 @@ def download_table(files: List[str], descriptions: List[str],
     """
     Generic download table saving to the item relative path
 
-    :param files:
-    :param descriptions:
+    :param files: the list of files to add to download table
+    :param descriptions: the list of descriptions for each file
     :param dwn_rel_path: the path of the download relative to the page
     :param item_path: the absolute path to the item csv table file (to save to)
     :param down_dir: the path to the download directory
     :param title: the title for the download table
+    :param versions: the versions of the files (optional)
     :return:
     """
     # --------------------------------------------------------------------------
@@ -2491,12 +2587,12 @@ def download_table(files: List[str], descriptions: List[str],
             out_versions[basename] = versions[it]
         # if file is a fits file get the version from the header
         elif filename.endswith('.fits'):
-                # get the header
-                hdr = fits.getheader(filename)
-                if 'VERSION' in hdr:
-                    out_versions[basename] = hdr['VERSION']
-                else:
-                    out_versions[basename] = ''
+            # get the header
+            hdr = fits.getheader(filename)
+            if 'VERSION' in hdr:
+                out_versions[basename] = hdr['VERSION']
+            else:
+                out_versions[basename] = ''
         # otherwise we have no version info
         else:
             out_versions[basename] = ''
@@ -2710,6 +2806,9 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     first_tcorr = spec_props['FIRST_TCORR']
     last_tcorr = spec_props['LAST_TCORR']
     last_tcorr_proc = spec_props['LAST_TCORR_PROC']
+    version_pp = spec_props['PP_VERSION']
+    version_ext = spec_props['EXT_VERSION']
+    version_tcorr = spec_props['TCORR_VERSION']
     coord_url = spec_props['COORD_URL']
     ra, dec = spec_props['RA'], spec_props['Dec']
     teff, spt = spec_props['Teff'], spec_props['Spectral Type']
@@ -2766,6 +2865,8 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{last_pp}')
     stat_dict['Description'].append('Last processed [pp]')
     stat_dict['Value'].append(f'{last_pp_proc}')
+    stat_dict['Description'].append('Version [pp]')
+    stat_dict['Value'].append(f'{version_pp}')
     # -------------------------------------------------------------------------
     # add number of ext files
     # -------------------------------------------------------------------------
@@ -2781,6 +2882,8 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{last_ext}')
     stat_dict['Description'].append('Last processed [ext]')
     stat_dict['Value'].append(f'{last_ext_proc}')
+    stat_dict['Description'].append('Version [ext]')
+    stat_dict['Value'].append(f'{version_ext}')
     # -------------------------------------------------------------------------
     # add number of tcorr files
     # -------------------------------------------------------------------------
@@ -2796,6 +2899,8 @@ def spec_stats_table(spec_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{last_tcorr}')
     stat_dict['Description'].append('Last processed [tcorr]')
     stat_dict['Value'].append(f'{last_tcorr_proc}')
+    stat_dict['Description'].append('Version [tcorr]')
+    stat_dict['Value'].append(f'{version_tcorr}')
     # -------------------------------------------------------------------------
     # add the SNR in Y
     stat_dict['Description'].append('Median SNR Y')
@@ -2827,6 +2932,14 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     svrad = lbl_props['svrad']
     snr_h = lbl_props['snr_h']
     snr_h_label = lbl_props['SNR_H_LABEL']
+    reset_mask = lbl_props['RESET_RV']
+    # sort data by date
+    sort = np.argsort(plot_date)
+    plot_date = plot_date[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
+    snr_h = snr_h[sort]
+    reset_mask = reset_mask[sort]
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
@@ -2834,11 +2947,19 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # Top plot LBL RV
     # --------------------------------------------------------------------------
     # plot the points
-    frame[0].plot_date(plot_date, vrad, fmt='.', alpha=0.5,
-                       color='green', ls='None')
+    frame[0].plot_date(plot_date[~reset_mask], vrad[~reset_mask], fmt='.',
+                       alpha=0.5, color='green', ls='None')
+    frame[0].plot_date(plot_date[reset_mask], vrad[reset_mask], fmt='.',
+                       alpha=0.5, color='purple', ls='None')
     # plot the error bars
-    frame[0].errorbar(plot_date, vrad, yerr=svrad,
-                      marker='o', alpha=0.5, color='green', ls='None')
+    frame[0].errorbar(plot_date[~reset_mask], vrad[~reset_mask],
+                      yerr=svrad[~reset_mask],
+                      marker='o', alpha=0.5, color='green', ls='None',
+                      label='Good')
+    frame[0].errorbar(plot_date[reset_mask], vrad[reset_mask],
+                      yerr=svrad[reset_mask],
+                      marker='o', alpha=0.5, color='purple', ls='None',
+                      label='Possibly bad (reset rv)')
     # find percentile cuts that will be expanded by 150% for the ylim
     pp = np.nanpercentile(vrad, [10, 90])
     diff = pp[1] - pp[0]
@@ -2846,39 +2967,92 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # used for plotting but also for the flagging of outliers
     ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
+    # store the bad points
+    bad_points = []
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
+    arrow = None
+    # --------------------------------------------------------------------------
     # flag the low outliers
     low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(plot_date[low], dtype=float)
-    x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
+    # x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        bad_points.append(ix)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] + l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] - l_arrow * 2),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        bad_points.append(ix)
+
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
     frame[0].grid(which='both', color='lightgray', linestyle='--')
     frame[0].set(ylabel='Velocity [m/s]')
+    # only keep one unique labels for legend
+    handles, labels = [], []
+    raw_handles, raw_labels = frame[0].get_legend_handles_labels()
+    for it in range(len(raw_labels)):
+        if raw_labels[it] not in labels:
+            handles.append(raw_handles[it])
+            labels.append(raw_labels[it])
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow,))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Bottom plot SNR
     # --------------------------------------------------------------------------
     # simple plot of the SNR in a sample order. You need to
     # update the relevant ketword for SPIRou
-    frame[1].plot_date(plot_date, snr_h, fmt='.',
-                       alpha=0.5, color='green', ls='None')
+    frame[1].plot_date(plot_date[~reset_mask], snr_h[~reset_mask], fmt='.',
+                       alpha=0.5, color='green', ls='None', label='Good')
+    frame[1].plot_date(plot_date[reset_mask], snr_h[reset_mask], fmt='.',
+                       alpha=0.5, color='purple', ls='None',
+                       label='Possibily bad (reset rv)')
+    # over plot the bad points from above
+    if len(bad_points) > 0:
+        bad_points = np.array(bad_points)
+        frame[1].plot_date(plot_date[bad_points], snr_h[bad_points], fmt='.',
+                           alpha=0.5, color='red', ls='None', label='Outliers')
+
+    # add properties
     frame[1].grid(which='both', color='lightgray', linestyle='--')
     frame[1].set(xlabel='Date')
     frame[1].set(ylabel=snr_h_label)
+    # add legend
+    frame[1].legend(loc=0)
     plt.tight_layout()
     # --------------------------------------------------------------------------
     # save figure and close the plot
@@ -2900,6 +3074,8 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     low = lbl_props['low']
     high = lbl_props['high']
     vel_domain = lbl_props['ylim']
+    version_lbl = lbl_props['version']
+    num_reset_rv = lbl_props['NUM_RESET_RV']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -2918,30 +3094,36 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
     # add rv uncertainty
-    stat_dict['Description'].append('RV Uncertainty (25, 50, 75 percentile)')
+    stat_dict['Description'].append('RV Uncertainty lbl.rdb (25, 50, 75 percentile)')
     stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*p_sigma))
     # add the absolute deviation
-    stat_dict['Description'].append('RV Absolute Deviation (25, 50, 75 '
+    stat_dict['Description'].append('RV Absolute Deviation lbl.rdb (25, 50, 75 '
                                     'percentile)')
     stat_dict['Value'].append('{:.2f}, {:.2f}, {:.2f} m/s'.format(*v_sigma))
     # add the number of measurements
-    stat_dict['Description'].append('Number of Measurements')
+    stat_dict['Description'].append('Number of lbl.rdb Measurements')
     stat_dict['Value'].append(len(vrad))
     # add the spurious low points
-    stat_dict['Description'].append('Number of Spurious Low Points')
+    stat_dict['Description'].append('Number of lbl.rdb Spurious Low Points')
     stat_dict['Value'].append(np.sum(low))
     # add the spurious high points
-    stat_dict['Description'].append('Number of Spurious High Points')
+    stat_dict['Description'].append('Number of lbl.rdb Spurious High Points')
     stat_dict['Value'].append(np.sum(high))
     # add the number of nights
     stat_dict['Description'].append('Number of Nights')
     stat_dict['Value'].append(n_nights)
+    # add the number of reset RV points
+    stat_dict['Description'].append('Number of Reset RV Points')
+    stat_dict['Value'].append(num_reset_rv)
     # add the systemic velocity
     stat_dict['Description'].append('Systemic Velocity')
     stat_dict['Value'].append('{:.2f} m/s'.format(sys_vel))
     # add the Velocity domain considered
     stat_dict['Description'].append('Velocity Domain considered valid')
     stat_dict['Value'].append('{:.2f} to {:.2f} m/s'.format(*vel_domain))
+    # add the LBL version
+    stat_dict['Description'].append('LBL Version')
+    stat_dict['Value'].append(version_lbl)
     # --------------------------------------------------------------------------
     # change the columns names
     stat_dict2 = dict()
@@ -2968,6 +3150,12 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     has_fit = ccf_props['has_fit']
     fit = ccf_props['fit']
     xlim = ccf_props['xlim']
+
+    # sort data by mjd.plot_date
+    sort = np.argsort(mjd.plot_date)
+    mjd = mjd[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
     # ylim = ccf_props['ylim']
     # --------------------------------------------------------------------------
     # setup the figure
@@ -2982,7 +3170,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
     frame[0].plot_date(mjd.plot_date, vrad, fmt='.', alpha=0.5,
-                       color='green')
+                       color='green', label='Good')
     # plot the CCF RV errors
     frame[0].errorbar(mjd.plot_date, vrad, yerr=svrad, fmt='o',
                       alpha=0.5, color='green')
@@ -2996,28 +3184,64 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     else:
         ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
+    arrow = None
+    # --------------------------------------------------------------------------
     # flag the low outliers
     low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(mjd.plot_date[low], dtype=float)
-    x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
+    # x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] - l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] + l_arrow * 2),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(mjd.plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].grid(which='both', color='lightgray', ls='--')
     frame[0].set(xlabel='Date', ylabel='Velocity [m/s]')
+    # only keep one unique labels for legend
+    handles, labels = [], []
+    raw_handles, raw_labels = frame[0].get_legend_handles_labels()
+    for it in range(len(raw_labels)):
+        if raw_labels[it] not in labels:
+            handles.append(raw_handles[it])
+            labels.append(raw_labels[it])
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow,))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Middle plot median CCF
     # --------------------------------------------------------------------------
@@ -3101,6 +3325,8 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     first_ccf = ccf_props['FIRST_CCF']
     last_ccf = ccf_props['LAST_CCF']
     last_ccf_proc = ccf_props['LAST_CCF_PROC']
+    version_ccf = ccf_props['CCF_VERSION']
+    chosen_mask = ccf_props['chosen_mask']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -3117,6 +3343,9 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     # --------------------------------------------------------------------------
     # start with a stats dictionary
     stat_dict = dict(Description=[], Value=[])
+    # add mask used
+    stat_dict['Description'].append('Mask used')
+    stat_dict['Value'].append(chosen_mask)
     # add systemic velocity
     stat_dict['Description'].append('CCF systemic velocity')
     value = r'{:.2f} :math:`\pm` {:.2f} m/s'.format(sys_vel, err_sys_vel)
@@ -3141,6 +3370,8 @@ def ccf_stats_table(ccf_props: Dict[str, Any], stat_path: str, title: str):
     stat_dict['Value'].append(f'{last_ccf}')
     stat_dict['Description'].append('Last processed [ccf]')
     stat_dict['Value'].append(f'{last_ccf_proc}')
+    stat_dict['Description'].append('Version [ccf]')
+    stat_dict['Value'].append(f'{version_ccf}')
     # --------------------------------------------------------------------------
     # change the columns names
     stat_dict2 = dict()
@@ -3489,6 +3720,20 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
             passed[row] = True
     # return the passed mask
     return passed
+
+
+class ArrowHandler(HandlerPatch):
+    def __init__(self):
+        # get super call
+        super().__init__()
+        # set arrow props
+        self.arrowprops = None
+
+    def create_artists(self, legend, orig_handle, xdescent, ydescent,
+                       width, height, fontsize, trans):
+        arrow = FancyArrowPatch((0, 3), (25, 3), **self.arrowprops)
+        arrow.set_mutation_scale(10)
+        return [arrow]
 
 
 # =============================================================================

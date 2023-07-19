@@ -477,25 +477,24 @@ def run_apero_get(settings: Dict[str, Any]):
                        symlinks=False, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for simultaneous FP
-        apero_get.main(objnames='*', dprtypes=simfp_dprtypes,
+        apero_get.main(objnames='None', dprtypes=simfp_dprtypes,
                        outtypes='EXT_E2DS_FF', nosubdir=True,
                        outpath=outpath_fp, fibers=lbl_calfibers,
                        symlinks=lbl_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for extracted FP_FP
-        apero_get.main(objnames='*', dprtypes='FP_FP',
+        apero_get.main(objnames='None', dprtypes='FP_FP',
                        outtypes='EXT_E2DS_FF',
                        outpath=outpath_fp, fibers=lbl_calfibers,
                        symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
-        apero_get.main(objnames='*',
-                       outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=lbl_calfibers,
+        apero_get.main(objnames='None', outtypes='FF_BLAZE,WAVE_NIGHT',
+                       outpath=outpath_calib, fibers=lbl_scifibers,
                        symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
-        apero_get.main(objnames='*',
+        apero_get.main(objnames='None',
                        outtypes='FF_BLAZE,WAVE_NIGHT',
                        outpath=outpath_calib, fibers=lbl_calfibers,
                        symlinks=lbl_symlinks, nosubdir=True,

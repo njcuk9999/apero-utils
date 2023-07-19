@@ -1,0 +1,20 @@
+# directory where raw data is downloaded
+raw dir: H:\nirps_ha\drs-data\common\raw
+
+# the apero profile to use (controlled sym link raw data directory and all
+#    apero reduced data directories)
+apero profile: H:\windows\nirps-ha\drs-settings\nirps_ha_07276_online
+
+# apero get output path
+lbl path: H:\windows\nirps-ha\nirps_ha_07276_online\
+
+# apero_processing settings
+processing:
+    # apero processing run.ini file
+    run file: online_run.ini
+
+# define the raw sheet name for the google sheet
+raw sheet name: RAW-NIRPS-HE
+
+# define the red sheet name for the google sheet
+red sheet name: RED-NIRPS-HE

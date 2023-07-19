@@ -61,10 +61,10 @@ FWHM['G'] = 2.0 * uu.arcsec
 FWHM['J'] = 2.0 * uu.arcsec
 # 1-sigma magnitude limit G
 SIGMA_LIMIT = dict()
-SIGMA_LIMIT['G'] = 20
-SIGMA_LIMIT['J'] = 17
-SIGMA_LIMIT['H'] = 17
-SIGMA_LIMIT['K'] = 17
+SIGMA_LIMIT['G'] = 18
+SIGMA_LIMIT['J'] = 15
+SIGMA_LIMIT['H'] = 15
+SIGMA_LIMIT['K'] = 15
 # mag limit above 1-sigma limit for null sources
 MAG_LIMIT = -1
 # max proper motion to search for
@@ -153,7 +153,7 @@ def get_args():
     parser.add_argument('--pmra', type=float, default=np.nan,
                         help='The proper motion in RA of the object (if not '
                              'using apero/simbad) [mas/yr]')
-    parser.add_argument('--pmdec', type=float, default=np.nan,
+    parser.add_argument('--pmde', type=float, default=np.nan,
                         help='The proper motion in DEC of the object (if not '
                              'using apero/simbad) [mas/yr]')
     parser.add_argument('--plx', type=float, default=np.nan,
@@ -746,8 +746,8 @@ def from_cmd_args(args: Any) -> Dict[str, Any]:
               args.pmra, args.pmde]
     # loop around keys and values and populate object dictionary
     for key, value in zip(keys, values):
-        # check for null value
-        if np.isnan(value):
+        # skip string values and check for null value
+        if not isinstance(value, str) and np.isnan(value):
             raise ValueError(f'Parameter {key} is None. Must be set if not '
                              f'using apero or simbad')
         objdict[key] = value

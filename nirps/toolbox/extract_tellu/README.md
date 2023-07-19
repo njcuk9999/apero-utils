@@ -8,7 +8,9 @@ Please edit this file when you add or change files in this directory.
 
 ## Index
 
-- plot_ext_tcorr.py
+
+- NIRPS_plot_time_series.py
     
-        Plots the Apero extracted and telluric corrected spectra for a given target, date and exposure.
-        Can optionally plot the Geneva drs spectra as well.
+        Script that plots the basic detrending steps applied to a spectral time series.
+        Input = list of exposures
+        Output = Time series steps plot
