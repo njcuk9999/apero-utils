@@ -70,6 +70,10 @@ parameters['raw dir'] = Const('raw dir', None, not_none=True, dtype=str)
 parameters['apero profile'] = Const('apero profile', None, not_none=True,
                                     dtype=str)
 
+# the apero install directory
+parameters['apero install'] = Const('apero install', None, not_none=True,
+                                    dtype=str)
+
 # the lbl data path
 parameters['lbl path'] = Const('lbl path', None, not_none=True, dtype=str)
 

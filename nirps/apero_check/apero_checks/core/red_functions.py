@@ -10,6 +10,7 @@ Created on 2023-07-03 at 17:03
 @author: cook
 """
 import os
+import sys
 from typing import Any
 
 from apero_checks.core import base
@@ -37,6 +38,8 @@ def update_apero_profile(params: dict) -> Any:
     """
     # use os to add DRS_UCONFIG to the path
     os.environ['DRS_UCONFIG'] = params['apero profile']
+    # allow getting apero
+    sys.path.append(params['apero install'])
     # ------------------------------------------------------------------
     # cannot import until after DRS_UCONFIG set
     from apero.base import base

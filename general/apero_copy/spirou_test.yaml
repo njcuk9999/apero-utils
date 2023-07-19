@@ -1,0 +1,8 @@
+# APERO profile to copy from
+profile1: /scratch2/spirou/drs-settings/spirou_minidata2_07286_jupiter
+
+# APERO profile to copy to
+profile2: /scratch2/spirou/drs-settings/spirou_test/
+
+# APERO install directory (if not installed with pip)
+apero install: /scratch2/spirou/drs-bin/apero-drs-spirou-07XXX

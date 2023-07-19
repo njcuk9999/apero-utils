@@ -12,6 +12,7 @@ Created on 2023-07-13 at 13:07
 import argparse
 import os
 import shutil
+import sys
 from typing import Any, Dict, List, Tuple, Union
 
 import numpy as np
@@ -23,7 +24,7 @@ from tqdm import tqdm
 # =============================================================================
 __version__ = '0.0.1'
 
-TEST = True
+TEST = False
 # -----------------------------------------------------------------------------
 
 # =============================================================================
@@ -36,17 +37,21 @@ class AperoCopyError(Exception):
     pass
 
 
-def update_apero_profile(profile_path: str) -> Any:
+def update_apero_profile(params: Dict[str, Any], profile_path: str) -> Any:
     """
     Update the apero profile with the correct paths
     :param profile: dict, the profile to update
     :return:
     """
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = profile_path
+    # allow getting apero
+    if 'apero install' in params and params['apero install'] is not None:
+        sys.path.append(params['apero install'])
+    # load apero modules
     from apero.base import base
     from apero.core import constants
     from apero.core.constants import param_functions
-    # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile_path
     # reload DPARAMS and IPARAMS
     base.DPARAMS = base.load_database_yaml()
     base.IPARAMS = base.load_install_yaml()
@@ -120,7 +125,7 @@ def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
 
 def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     # load parameters from profile 1
-    apero_params = update_apero_profile(params['profile1'])
+    apero_params = update_apero_profile(params, params['profile1'])
 
     # import database
     from apero.core.core import drs_database
@@ -128,11 +133,11 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     # get block definitions
     blocks = path_definitions.BLOCKS
     # get file index database
-    findexdb = drs_database.FileIndexDatabase(params['profile1'])
+    findexdb = drs_database.FileIndexDatabase(apero_params)
     findexdb.load_db()
-    calibdb = drs_database.CalibrationDatabase(params['profile1'])
+    calibdb = drs_database.CalibrationDatabase(apero_params)
     calibdb.load_db()
-    telludb = drs_database.TelluricDatabase(params['profile1'])
+    telludb = drs_database.TelluricDatabase(apero_params)
     telludb.load_db()
     # storage for for files
     files1 = dict()
@@ -145,6 +150,9 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
         block_name = block_inst.name
         # get block path
         block_path = block_inst.path
+        # do not copy raw files
+        if block_name == 'raw':
+            continue
         # deal with calib and tellu blocks
         if block_inst.name in ['calib', 'tellu']:
             files1[block_name] = []
@@ -163,9 +171,10 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
 
     # need to add the calibration and telluric database files differently
     for block_name in ['calib', 'tellu']:
-
+        # deal with calibration database
         if block_name == 'calib':
             query = calibdb.database.get('FILENAME', return_pandas=True)
+        # deal with telluric database
         else:
             query = telludb.database.get('FILENAME', return_pandas=True)
         # push query into a list of basenames (as a character array)
@@ -181,7 +190,7 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
 def get_blocks_profile2(params, files1: Dict[str, List[str]],
                         paths1: Dict[str, str]) -> Dict[str, List[str]]:
     # load parameters from profile 1
-    apero_params = update_apero_profile(params['profile2'])
+    apero_params = update_apero_profile(params, params['profile2'])
     # import database
     from apero.core.constants import path_definitions
     # get block definitions
@@ -190,6 +199,9 @@ def get_blocks_profile2(params, files1: Dict[str, List[str]],
     files2 = dict()
     # loop around block definitions
     for block in blocks:
+        # skip if not in files1
+        if block.name not in files1:
+            continue
         # get block instance
         block_inst = block(apero_params)
         # only keep those that have an observation directory
@@ -231,15 +243,39 @@ def copy_files(files1: Dict[str, List[str]], files2: Dict[str, List[str]]):
             infilename = files1[block_name][it]
             # get outfilename
             outfilename = files2[block_name][it]
+            # make sure in file exists (it really should)
+            if not os.path.exists(infilename):
+                emsg = 'Input file does not exist'
+                emsg += '\n\t infilename = {0}'
+                emsg += '\n\t outfilename = {1}'
+                eargs = [infilename, outfilename]
+                raise AperoCopyError(emsg.format(*eargs))
+            # check that infilename and outfilename are not the same
+            if infilename == outfilename:
+                emsg = 'Cannot copy file input and output filename are the same'
+                emsg += '\n\t infilename = {0}'
+                emsg += '\n\t outfilename = {1}'
+                eargs = [infilename, outfilename]
+                raise AperoCopyError(emsg.format(*eargs))
             # copy file
             if TEST:
                 print('Copying {0} to {1}'.format(infilename, outfilename))
             else:
+                # need to deal with no directory
+                if not os.path.exists(os.path.dirname(outfilename)):
+                    os.makedirs(os.path.dirname(outfilename))
+                # copy file
                 shutil.copy(infilename, outfilename)
 
 
 def update_databases_profile2(params):
-    pass
+    # load parameters from profile 1
+    apero_params = update_apero_profile(params, params['profile2'])
+    # apero imports
+    from apero.tools.module.database import database_update
+    # update the databases
+    dbkind = 'all'
+    database_update.update_database(apero_params, dbkind=dbkind)
 
 
 def main():
@@ -249,6 +285,16 @@ def main():
     """
     # load parameters
     params = load_params()
+    # check that both profiles exist (we assume that this means the directories
+    # are found on disk)
+    if not os.path.exists(params['profile1']):
+        emsg = 'profile1={0} does not exist'
+        eargs = [params['profile1']]
+        raise AperoCopyError(emsg.format(*eargs))
+    if not os.path.exists(params['profile2']):
+        emsg = 'profile2={0} does not exist'
+        eargs = [params['profile2']]
+        raise AperoCopyError(emsg.format(*eargs))
     # get a list of files from profile 1 for each block kinds
     files1, paths1 = get_files_profile1(params)
     # get the output files for profile 2 for each block kind
