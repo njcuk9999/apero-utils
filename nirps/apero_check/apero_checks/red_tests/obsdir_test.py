@@ -43,11 +43,6 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     """
     # update apero profile
     apero_params = red_functions.update_apero_profile(params)
-    # get the proxy apero recipe
-    apero_recipe = red_functions.get_apero_proxy_recipe(apero_params)
-    # update apero params with parameters that normally come from run.ini file
-    apero_params = red_functions.add_run_ini_params(apero_params,
-                                                    apero_recipe, runfile)
     # define parameters we use here
     raw_directory = apero_params['DRS_DATA_RAW']
     # -------------------------------------------------------------------------
