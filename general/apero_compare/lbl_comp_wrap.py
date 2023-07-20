@@ -51,20 +51,22 @@ if __name__ == "__main__":
     name5 = 'newworlds'
     name6 = 'lam'
     name7 = 'halau'
+    # choose which ones to run
+    names = [name6]
     # define data directory
     outpaths = dict()
     outpaths[name1] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_rali/'
     outpaths[name2] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupiter/'
     outpaths[name3] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_nb19/'
     outpaths[name4] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_maestria/'
-    # outpaths[name5] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_newworld/science/'
-    # outpaths[name6] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_lam/science/'
-    # outpaths[name7] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/rscienceed/'
+    outpaths[name5] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_newworld/'
+    outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/'
+    outpaths[name7] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/rscienceed/'
 
     # define jobs list
     jobs = []
     # run the wrap for each mini data set
-    for name in outpaths:
+    for name in names:
         job = Process(target=main, args=(name, outpaths[name]))
         jobs.append(job)
         job.start()

@@ -84,10 +84,10 @@ def load_params():
     # add arguments
     parser.add_argument('yaml', help='yaml file to use', type=str,
                         default=None)
-    parser.add_argument('overwrite', help='overwrite existing files',
-                        action='switch', default=False)
-    parser.add_argument('test', help='run in test mode (no copy or remove)',
-                        action='switch', default=False)
+    parser.add_argument('--overwrite', help='overwrite existing files',
+                        default=False, type=bool)
+    parser.add_argument('--test', help='run in test mode (no copy or remove)',
+                        default=False, type=bool)
     # get arguments
     args = vars(parser.parse_args())
     # ------------------------------------------------------------------
@@ -106,7 +106,8 @@ def load_params():
     params = read_yaml(args['yaml'])
     # add args to params
     for arg in args:
-        params[arg] = args[arg]
+        if arg not in params:
+            params[arg] = args[arg]
     # ------------------------------------------------------------------
     # return the parameters
     return params
@@ -238,6 +239,7 @@ def get_files_profile2(params, files1: Dict[str, List[str]],
         path1 = paths1[block_name]
         # add a list for each block kind to files
         files2[block_name] = []
+        files3[block_name] = []
         # loop around files
         for infilename in files1[block_name]:
             # replace path1 with path2
@@ -315,13 +317,14 @@ def copy_files(params, files1: Dict[str, List[str]],
 
 
 def remove_files(params: Dict[str, Any], paths2: Dict[str, str]):
-    # loop around each block
-    for block_name in paths2:
-        msg = 'Removing {0}: ({1})'
-        margs = [block_name, paths2[block_name]]
-        print(msg.format(*margs))
-        if not params['test']:
-            shutil.rmtree(paths2[block_name])
+    if params['overwrite']:
+        # loop around each block
+        for block_name in paths2:
+            msg = 'Removing {0}: ({1})'
+            margs = [block_name, paths2[block_name]]
+            print(msg.format(*margs))
+            if not params['test']:
+                shutil.rmtree(paths2[block_name])
 
 
 def rename_directories(params: Dict[str, Any], paths2: Dict[str, str],
