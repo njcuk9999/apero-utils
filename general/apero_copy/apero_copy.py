@@ -23,8 +23,6 @@ from tqdm import tqdm
 # Define variables
 # =============================================================================
 __version__ = '0.0.1'
-# whether to run in test mode (i.e. do not copy or remove files)
-TEST = False
 # prefix for TMP directory to copy to (before renaming)
 TMP_DIR_PREFIX = 'APERO_COPY_TMP_'
 
@@ -59,14 +57,21 @@ def update_apero_profile(params: Dict[str, Any], profile_path: str) -> Any:
     from apero.base import base
     from apero.core import constants
     from apero.core.constants import param_functions
+    from apero.core.utils import drs_startup
     # reload DPARAMS and IPARAMS
     base.DPARAMS = base.load_database_yaml()
     base.IPARAMS = base.load_install_yaml()
     # ------------------------------------------------------------------
+    apero_params = constants.load(cache=False)
     # invalidate cache
     param_functions.CONFIG_CACHE = dict()
+    # set apero pid
+    apero_params['PID'], apero_params['DATE_NOW'] = drs_startup.assign_pid()
+    # no inputs
+    apero_params['INPUTS'] = dict()
+    apero_params['OBS_DIR'] = None
     # make sure parameters is reloaded (and not cached)
-    return constants.load(cache=False)
+    return apero_params
 
 
 def load_params():
@@ -79,6 +84,10 @@ def load_params():
     # add arguments
     parser.add_argument('yaml', help='yaml file to use', type=str,
                         default=None)
+    parser.add_argument('overwrite', help='overwrite existing files',
+                        action='switch', default=False)
+    parser.add_argument('test', help='run in test mode (no copy or remove)',
+                        action='switch', default=False)
     # get arguments
     args = vars(parser.parse_args())
     # ------------------------------------------------------------------
@@ -95,6 +104,9 @@ def load_params():
         raise AperoCopyError(emsg.format(*eargs))
     # otherwise we read the yaml file
     params = read_yaml(args['yaml'])
+    # add args to params
+    for arg in args:
+        params[arg] = args[arg]
     # ------------------------------------------------------------------
     # return the parameters
     return params
@@ -133,7 +145,6 @@ def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
 def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     # load parameters from profile 1
     apero_params = update_apero_profile(params, params['profile1'])
-
     # import database
     from apero.core.core import drs_database
     from apero.core.constants import path_definitions
@@ -196,7 +207,7 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
 
 def get_files_profile2(params, files1: Dict[str, List[str]],
                        paths1: Dict[str, str]
-                       ) -> Tuple[Dict[str, List[str]], Dict[str, str], Dict[str, str]]:
+                       ) -> Tuple[Dict[str, List[str]], Dict[str, List[str]], Dict[str, str], Dict[str, str]]:
     # load parameters from profile 1
     apero_params = update_apero_profile(params, params['profile2'])
     # import database
@@ -205,6 +216,7 @@ def get_files_profile2(params, files1: Dict[str, List[str]],
     blocks = path_definitions.BLOCKS
     # storage for for files
     files2 = dict()
+    files3 = dict()
     paths2 = dict()
     paths3 = dict()
     # loop around block definitions
@@ -229,17 +241,21 @@ def get_files_profile2(params, files1: Dict[str, List[str]],
         # loop around files
         for infilename in files1[block_name]:
             # replace path1 with path2
-            outfilename = infilename.replace(path1, path3)
+            outfilename2 = infilename.replace(path1, path2)
+            outfilename3 = infilename.replace(path1, path3)
             # add to files
-            files2[block_name].append(outfilename)
+            files2[block_name].append(outfilename2)
+            files3[block_name].append(outfilename3)
         # add to path dict
         paths2[block_name] = path2
         paths3[block_name] = path3
     # return files
-    return files2, paths2, paths3
+    return files2, files3, paths2, paths3
 
 
-def copy_files(files1: Dict[str, List[str]], files2: Dict[str, List[str]]):
+def copy_files(params, files1: Dict[str, List[str]],
+               files2: Dict[str, List[str]],
+               files3: Dict[str, List[str]]):
     # loop around each block kind and copy files
     for block_name in files1:
 
@@ -255,49 +271,67 @@ def copy_files(files1: Dict[str, List[str]], files2: Dict[str, List[str]]):
             # get infilename
             infilename = files1[block_name][it]
             # get outfilename
-            outfilename = files2[block_name][it]
+            outfilename2 = files2[block_name][it]
+            outfilename3 = files3[block_name][it]
             # make sure in file exists (it really should)
             if not os.path.exists(infilename):
                 emsg = 'Input file does not exist'
                 emsg += '\n\t infilename = {0}'
+                emsg += '\n\t tmpfilename = {1}'
                 emsg += '\n\t outfilename = {1}'
-                eargs = [infilename, outfilename]
+                eargs = [infilename, outfilename3, outfilename2]
                 raise AperoCopyError(emsg.format(*eargs))
             # check that infilename and outfilename are not the same
-            if infilename == outfilename:
+            if infilename == outfilename2 or infilename == outfilename3:
                 emsg = 'Cannot copy file input and output filename are the same'
                 emsg += '\n\t infilename = {0}'
+                emsg += '\n\t tmpfilename = {1}'
                 emsg += '\n\t outfilename = {1}'
-                eargs = [infilename, outfilename]
+                eargs = [infilename, outfilename3, outfilename2]
                 raise AperoCopyError(emsg.format(*eargs))
             # copy file
-            if TEST:
-                print('Copying {0} to {1}'.format(infilename, outfilename))
+            if params['test']:
+                print('Copying {0} to {1}'.format(infilename, outfilename3))
             else:
-                # need to deal with no directory
-                if not os.path.exists(os.path.dirname(outfilename)):
-                    os.makedirs(os.path.dirname(outfilename))
+                # deal with file existing
+                if os.path.exists(outfilename2) and not params['overwrite']:
+                    msg = ('Skipping {0} (already exists) use '
+                           '--overwrite to copy')
+                    margs = [outfilename2]
+                    print(msg.format(*margs))
+                    continue
+                # deal with tmp file existing
+                if os.path.exists(outfilename3):
+                    msg = ('Skipping {0} (tmp file already exists) use '
+                           '--overwrite to copy')
+                    margs = [outfilename3]
+                    print(msg.format(*margs))
+                    continue
+                # need to deal with no tmp directory
+                if not os.path.exists(os.path.dirname(outfilename3)):
+                    os.makedirs(os.path.dirname(outfilename3))
                 # copy file
-                shutil.copy(infilename, outfilename)
+                shutil.copy(infilename, outfilename3)
 
 
-def remove_files(paths2: Dict[str, str]):
+def remove_files(params: Dict[str, Any], paths2: Dict[str, str]):
     # loop around each block
     for block_name in paths2:
         msg = 'Removing {0}: ({1})'
         margs = [block_name, paths2[block_name]]
         print(msg.format(*margs))
-        if not TEST:
+        if not params['test']:
             shutil.rmtree(paths2[block_name])
 
 
-def rename_directories(paths2: Dict[str, str], paths3: Dict[str, str]):
+def rename_directories(params: Dict[str, Any], paths2: Dict[str, str],
+                       paths3: Dict[str, str]):
     # loop around each block
     for block_name in paths2:
         msg = 'Renaming {0}: ({1} -> {2})'
         margs = [block_name, paths3[block_name], paths2[block_name]]
         print(msg.format(*margs))
-        if not TEST:
+        if not params['test']:
             os.rename(paths3[block_name], paths2[block_name])
 
 
@@ -305,7 +339,7 @@ def update_databases_profile2(params):
     # print progress
     print('Updating APERO databases')
     # if test mode do nothing here
-    if TEST:
+    if params['test']:
         return
     # load parameters from profile 1
     apero_params = update_apero_profile(params, params['profile2'])
@@ -336,14 +370,14 @@ def main():
     # get a list of files from profile 1 for each block kinds
     files1, paths1 = get_files_profile1(params)
     # get the output files for profile 2 for each block kind
-    files2, paths2, paths3 = get_files_profile2(params, files1, paths1)
+    files2, files3, paths2, paths3 = get_files_profile2(params, files1, paths1)
     # copy files from profile 1 to profile 2 for each block kind
     # must copy files to a temporary path first (copying can be slow)
-    copy_files(files1, files2)
+    copy_files(params, files1, files2, files3)
     # remove all old files from profile 2 blocks
-    remove_files(paths2)
+    remove_files(params, paths2)
     # rename the directories in profile 2 (this is quicker than copying)
-    rename_directories(paths2, paths3)
+    rename_directories(params, paths2, paths3)
     # update databases for profile 2
     update_databases_profile2(params)
     # return to __main__
