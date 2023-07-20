@@ -15,6 +15,7 @@ import shutil
 import sys
 from typing import Any, Dict, List, Tuple, Union
 
+import git
 import numpy as np
 import yaml
 from tqdm import tqdm
@@ -40,19 +41,29 @@ class AperoCopyError(Exception):
     pass
 
 
-def update_apero_profile(params: Dict[str, Any], profile_path: str) -> Any:
+def update_apero_profile(params: Dict[str, Any], profile: int) -> Any:
     """
     Update the apero profile with the correct paths
 
     :param params: dict, the parameters from the yaml file
-    :param profile_path: dict, the profile to update
+    :param profile: int, the profile (either 1 or 2)
     :return:
     """
+    # deal with profile 1 or profile 2
+    if profile == 1:
+        profile_path = params['profile1']
+        install_path = params.get('apero install 1', None)
+    elif profile == 2:
+        profile_path = params['profile2']
+        install_path = params.get('apero install 2', None)
+    else:
+        emsg = 'profile must be 1 or 2'
+        raise AperoCopyError(emsg)
     # use os to add DRS_UCONFIG to the path
     os.environ['DRS_UCONFIG'] = profile_path
     # allow getting apero
-    if 'apero install' in params and params['apero install'] is not None:
-        sys.path.append(params['apero install'])
+    if install_path is not None:
+        sys.path.append(install_path)
     # load apero modules
     from apero.base import base
     from apero.core import constants
@@ -145,7 +156,7 @@ def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
 
 def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     # load parameters from profile 1
-    apero_params = update_apero_profile(params, params['profile1'])
+    apero_params = update_apero_profile(params, profile=1)
     # import database
     from apero.core.core import drs_database
     from apero.core.constants import path_definitions
@@ -210,7 +221,7 @@ def get_files_profile2(params, files1: Dict[str, List[str]],
                        paths1: Dict[str, str]
                        ) -> Tuple[Dict[str, List[str]], Dict[str, List[str]], Dict[str, str], Dict[str, str]]:
     # load parameters from profile 1
-    apero_params = update_apero_profile(params, params['profile2'])
+    apero_params = update_apero_profile(params, profile=2)
     # import database
     from apero.core.constants import path_definitions
     # get block definitions
@@ -316,15 +327,59 @@ def copy_files(params, files1: Dict[str, List[str]],
                 shutil.copy(infilename, outfilename3)
 
 
-def remove_files(params: Dict[str, Any], paths2: Dict[str, str]):
-    if params['overwrite']:
-        # loop around each block
-        for block_name in paths2:
-            msg = 'Removing {0}: ({1})'
-            margs = [block_name, paths2[block_name]]
-            print(msg.format(*margs))
-            if not params['test']:
-                shutil.rmtree(paths2[block_name])
+def update_git_profile2(params: Dict[str, Any]):
+    # get install path for profile 1
+    install_path1 = params.get('apero install 1', None)
+    # get install path for profile 2
+    install_path2 = params.get('apero install 2', None)
+    # deal with no install path (something is installed with pip)
+    if install_path1 is None or install_path2 is None:
+        return
+    # deal with install paths being the same
+    # in this case we don't need to do anything
+    if install_path1 == install_path2:
+        return
+    # print that we are updating profile 2
+    print('Using git to update profile 2 to match profile 1')
+    # get the git repo for profile 1
+    repo1 = git.Repo(install_path1)
+    # get the git repo for profile 2
+    repo2 = git.Repo(install_path2)
+    # get the active branch for profile 1
+    active1 = repo1.active_branch.name
+    # move to that branch in repo2
+    msg = repo2.git.checkout(active1)
+    print(msg)
+    # update repo2
+    msg = repo2.git.pull()
+    print(msg)
+
+
+def reset_profile2(params: Dict[str, Any]):
+    # load parameters from profile 1
+    apero_params = update_apero_profile(params, profile=2)
+    # import modules
+    from apero.tools.module.setup import drs_reset
+    # get database timeout
+    database_timeout = apero_params['INPUTS']['DATABASE_TIMEOUT']
+    # assets folder
+    drs_reset.reset_assets(apero_params, dtimeout=database_timeout)
+    # tmp folder
+    drs_reset.reset_tmp_folders(apero_params, dtimeout=database_timeout)
+    # reduced folder
+    drs_reset.reset_reduced_folders(apero_params, dtimeout=database_timeout)
+    # calibration folder
+    drs_reset.reset_calibdb(apero_params, dtimeout=database_timeout)
+    # telluric folder
+    drs_reset.reset_telludb(apero_params, dtimeout=database_timeout)
+    # log folder
+    drs_reset.reset_log(apero_params)
+    # plot folder
+    drs_reset.reset_plot(apero_params)
+    # run folder
+    drs_reset.reset_run(apero_params)
+    # out folder
+    drs_reset.reset_out_folders(apero_params, dtimeout=database_timeout)
 
 
 def rename_directories(params: Dict[str, Any], paths2: Dict[str, str],
@@ -345,7 +400,7 @@ def update_databases_profile2(params):
     if params['test']:
         return
     # load parameters from profile 1
-    apero_params = update_apero_profile(params, params['profile2'])
+    apero_params = update_apero_profile(params, profile=2)
     # apero imports
     from apero.tools.module.database import database_update
     # update the databases
@@ -377,8 +432,10 @@ def main():
     # copy files from profile 1 to profile 2 for each block kind
     # must copy files to a temporary path first (copying can be slow)
     copy_files(params, files1, files2, files3)
+    # may need to update profile 2 (via git) to match profile 1
+    update_git_profile2(params)
     # remove all old files from profile 2 blocks
-    remove_files(params, paths2)
+    reset_profile2(params)
     # rename the directories in profile 2 (this is quicker than copying)
     rename_directories(params, paths2, paths3)
     # update databases for profile 2
