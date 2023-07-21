@@ -21,13 +21,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 from astropy.io import fits
 from scipy.ndimage import gaussian_filter1d
-import pdb
 
 
 ########## Only modify these parameters #############
 ext_data_path = '/cosmos99/nirps/apero-data/nirps_he_07276_online/red/2023-04-02/NIRPS_2023-04-03T04_04_01_090_pp_s1d_v_A.fits'
-xlim = [None, None] # in nm
-gaussian_filter_sigma = 0
+xlim = [1553, 1560] # in nm
+gaussian_filter_sigma = 3
 include_geneva = True
 plot_title = f'WASP-178\n{ext_data_path.split("/")[-1]}'
 #####################################################
@@ -105,6 +104,12 @@ if include_geneva:
 
 	geneva_ext_data_cube = np.array(geneva_ext_fits[1].data.tolist())
 	geneva_wave = geneva_ext_data_cube[:, 0]/10  # Angstrom to nm conversion
+
+	c_kms = 299792.458
+	berv = geneva_ext_fits[0].header['HIERARCH ESO QC BERV']
+	doppler_factor = np.sqrt((1+berv/c_kms)/(1-berv/c_kms))
+	geneva_wave = geneva_wave / doppler_factor # revert the BERV correction that the geneva pipeline does
+
 	geneva_ext_flux = geneva_ext_data_cube[:, 2]
 	geneva_tcorr_flux = np.array(geneva_tcorr_fits[1].data.tolist())[:, 2]
 
@@ -135,5 +140,3 @@ plt.xlabel('Wavelength [nm]')
 plt.title(plot_title)
 plt.legend()
 plt.show()
-
-#pdb.set_trace()

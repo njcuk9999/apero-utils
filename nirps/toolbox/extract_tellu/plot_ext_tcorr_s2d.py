@@ -26,8 +26,8 @@ from scipy.ndimage import gaussian_filter1d
 
 ########## Only modify these parameters #############
 ext_data_path = '/cosmos99/nirps/apero-data/nirps_he_07276_online/red/2023-04-02/NIRPS_2023-04-03T04_04_01_090_pp_e2dsff_A.fits'
-order_num = 4 # apero order
-gaussian_filter_sigma = 0
+order_num = 10 # apero order
+gaussian_filter_sigma = 2
 include_geneva = True
 plot_title = f'WASP-178\n{ext_data_path.split("/")[-1]}\norder {order_num}'
 #####################################################
@@ -113,7 +113,13 @@ if include_geneva:
         geneva_tcorr_fits = fits.open('geneva_data/tcorr/' + geneva_tcorr_filename)
 
         geneva_ext_data_cube = np.array(geneva_ext_fits[1].data.tolist())
-        geneva_wave = geneva_ext_fits[4].data[geneva_order] / 10 + geneva_ext_fits[6].data[geneva_order]  # convert Angstrom to nm
+        geneva_wave = geneva_ext_fits[4].data[geneva_order] / 10 # convert Angstrom to nm
+        
+        c_kms = 299792.458
+        berv = geneva_ext_fits[0].header['HIERARCH ESO QC BERV']
+        berv_doppler_factor = np.sqrt((1+berv/c_kms)/(1-berv/c_kms))
+        geneva_wave = geneva_wave / berv_doppler_factor # revert the BERV correction that the geneva pipeline does
+        
         geneva_ext_flux = geneva_ext_fits[1].data[geneva_order]
         geneva_tcorr_flux = geneva_tcorr_fits[1].data[geneva_order]
         geneva_tcorr_flux[np.where(geneva_tcorr_flux == 0)] = np.nan
