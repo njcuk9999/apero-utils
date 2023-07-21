@@ -303,10 +303,13 @@ def query_dace(target, mode="HE"):
     # Get date, rv, rv_err
     rjd, rv, rv_err = dict_dace["rjd"], dict_dace["rv"], dict_dace["rv_err"]
 
-    return rjd, rv, rv_err
+    # Get list of raw CCF files
+    filenames = dict_dace["raw_file"]
+
+    return rjd, rv, rv_err, filenames
 
 
-def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
+def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
     """
     Compute median, standard deviation, and median error bar, and remove outliers.
 
@@ -314,7 +317,8 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
     :param rv:          (1d array) Radial velocity array.
     :param rv_err:      (1d array) Radial velocity uncertainty array.
     :param pipeline:    (str) "APERO" or "ESO".
-    :param rv_method    (str) "LBL" or "CCF".
+    :param rv_method:   (str) "LBL" or "CCF".
+    :param filenames:   (list of str) For CCF RVs, list of all CCF file names. For LBL, list of the one rdb file name.
     :param nsig:        (float, optional) Number of sigmas away from median velocity to reject outliers. Default: 10.
     :return:            rv_dict (dict)
     """
@@ -379,7 +383,8 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, nsig=10):
                                # "rv": rv_out_lo,  # obsolete
                                "indices": iout_lo},
                "pipeline": pipeline,
-               "rv_method": rv_method
+               "rv_method": rv_method,
+               "filenames": filenames
                }
 
     return rv_dict
@@ -418,7 +423,7 @@ def compare_lbl(path_apero, nsig=10, path_savefig=''):
 
         # Put ESO data into a dictionary ------------------------------------------------------------------------------
         # Get date, rv, rv_err from DACE
-        rjd_eso, rv_eso, rv_err_eso = query_dace(target, mode=mode)
+        rjd_eso, rv_eso, rv_err_eso, filenames = query_dace(target, mode=mode)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
         dict_eso = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="LBL", nsig=nsig)
@@ -520,7 +525,7 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
 
         # ESO
         # Get date, rv, rv_err from DACE
-        rjd_eso, rv_eso, rv_err_eso = query_dace(target_i, mode=mode)
+        rjd_eso, rv_eso, rv_err_eso, filenames = query_dace(target_i, mode=mode)
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
         dict_eso_i = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="CCF", nsig=nsig)
 
@@ -564,7 +569,7 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
     # Find missing data points
     discard_in_1 = np.array([], dtype=int)
     discard_in_2 = np.array([], dtype=int)
-    # Iterate over APERO nights
+    # Iterate over nights from reduction 1
     for i_night_bin, night_bin_i in enumerate(nights_1_bins):
 
         # Get night start and end times
@@ -586,12 +591,25 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
                           night_end_ymd.year, night_end_ymd.month, night_end_ymd.day,
                           npts_1, dict_1["pipeline"], dict_1["rv_method"],
                           npts_2, dict_2["pipeline"], dict_2["rv_method"]))
+            # Print names of the files in each reduction
+            print("    Files in {} {}:".format(dict_1["pipeline"], dict_1["rv_method"]))
+            if npts_1 > 0:
+                for i_file, file_i in enumerate(dict_1["filenames"][np.where(i_pts_1)]):
+                    print("        {}".format(file_i))
+            else:
+                print("        No files")
+            print("    Files in {} {}:".format(dict_2["pipeline"], dict_2["rv_method"]))
+            if npts_2 > 0:
+                for i_file, file_i in enumerate(dict_2["filenames"][np.where(i_pts_2)]):
+                    print("        {}".format(file_i))
+            else:
+                print("        No files")
             # Discard the entire night for both reductions (cannot compare)
             if npts_1 > 0:
                 discard_in_1 = np.concatenate((discard_in_1, np.where(i_pts_1)[0]))
             if npts_2 > 0:
                 discard_in_2 = np.concatenate((discard_in_2, np.where(i_pts_2)[0]))
-    # Iterate over ESO nights
+    # Iterate over nights from reduction 2
     for i_night_bin, night_bin_i in enumerate(nights_2_bins):
 
         # Get night start and end times
@@ -613,6 +631,19 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
                           night_end_ymd.year, night_end_ymd.month, night_end_ymd.day,
                           npts_2, dict_2["pipeline"], dict_2["rv_method"],
                           npts_1, dict_1["pipeline"], dict_1["rv_method"]))
+            # Print names of the files in each reduction
+            print("    Files in {} {}:".format(dict_1["pipeline"], dict_1["rv_method"]))
+            if npts_1 > 0:
+                for i_file, file_i in enumerate(dict_1["filenames"][np.where(i_pts_1)[0]]):
+                    print("        {}".format(file_i))
+            else:
+                print("        No files")
+            print("    Files in {} {}:".format(dict_2["pipeline"], dict_2["rv_method"]))
+            if npts_2 > 0:
+                for i_file, file_i in enumerate(dict_2["filenames"][np.where(i_pts_2)[0]]):
+                    print("        {}".format(file_i))
+            else:
+                print("        No files")
             # Discard the entire night for both reductions (cannot compare)
             if npts_2 > 0:
                 discard_in_2 = np.concatenate((discard_in_2, np.where(i_pts_2)[0]))
@@ -853,10 +884,18 @@ def run_comparison(target, template=None,
     rv_methods = [rv_method_1, rv_method_2]
     dicts = []
     for i, (path, pipeline, rv_method) in enumerate(zip(paths, pipelines, rv_methods)):
+        filenames = ['']
         if rv_method == "LBL":
             if pipeline == "APERO":
+                # Build the file name
+                filename = path + "lbl_{}_{}.rdb".format(target.upper(), template.upper())
+
                 # Get date, rv, rv_err from rdb file
-                rjd, rv, rv_err = open_rdb(path + "lbl_{}_{}.rdb".format(target.upper(), template.upper()))
+                rjd, rv, rv_err = open_rdb(filename)
+
+                # Convert file name to list
+                filenames = [filename]
+
             else:  # ESO: No LBL at the moment
                 print("ERROR! LBL RVs have not been computed with ESO reduction yet.")
                 exit()
@@ -871,15 +910,21 @@ def run_comparison(target, template=None,
                 # Sort the list of APERO nights
                 night_list.sort()
 
+                # List of file names
+                filenames = []
+
                 # Iterate over nights
                 for i_night, night_i in enumerate(night_list):
                     # Get all CCF files in this night
                     ccf_files = glob.glob(night_i + "/NIRPS*_pp_e2dsff_tcorr_A_ccf_*_neg.fits_A.fits")
+                    ccf_files.sort()
 
-                    # Iterate over CCF files to get target
+                    # Iterate over CCF files to get only files for this target
                     for ccf_file in ccf_files:
                         if fits.getheader(ccf_file)["DRSOBJN"] != target.upper():
                             continue
+                        # Append file name to list
+                        filenames.append(ccf_file)
                         # Read RJD, RV, RV_ERR
                         hdr = fits.getheader(ccf_file)
                         rjd.append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
@@ -891,10 +936,15 @@ def run_comparison(target, template=None,
 
             else:  # ESO
                 # Get date, rv, rv_err from DACE
-                rjd, rv, rv_err = query_dace(target, mode=mode)
+                rjd, rv, rv_err, filenames = query_dace(target, mode=mode)
+
+        # Convert filenames to array if necessary
+        if type(filenames) == list:
+            filenames = np.array(filenames)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method, nsig=nsig))
+        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method,
+                                 filenames=filenames, nsig=nsig))
 
     # Compare RVs -----------------------------------------------------------------------------------------------------
     compare_rvs(dict_1=dicts[0], dict_2=dicts[1], target=target, template=template, nsig=nsig,
@@ -936,8 +986,15 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", versi
     for i, (path, pipeline, rv_method) in enumerate(zip(paths, pipelines, rv_methods)):
         if rv_method == "LBL":
             if pipeline == "APERO":
+                # Build the file name
+                filename = path + "lbl_{}_{}.rdb".format(target.upper(), template.upper())
+
                 # Get date, rv, rv_err from rdb file
-                rjd, rv, rv_err = open_rdb(path + "lbl_{}_{}.rdb".format(target.upper(), template.upper()))
+                rjd, rv, rv_err = open_rdb(filename)
+
+                # Convert file name to list
+                filenames = [filename]
+
             else:  # ESO: No LBL at the moment
                 print("ERROR! LBL RVs have not been computed with ESO reduction yet.")
                 exit()
@@ -952,15 +1009,20 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", versi
                 # Sort the list of APERO nights
                 night_list.sort()
 
+                # List of filenames
+                filenames = []
+
                 # Iterate over nights
                 for i_night, night_i in enumerate(night_list):
                     # Get all CCF files in this night
                     ccf_files = glob.glob(night_i + "/NIRPS*_pp_e2dsff_tcorr_A_ccf_*_neg.fits_A.fits")
 
-                    # Iterate over CCF files to get target
+                    # Iterate over CCF files to get only files for this target
                     for ccf_file in ccf_files:
                         if fits.getheader(ccf_file)["DRSOBJN"] != target.upper():
                             continue
+                        # Append file name to list
+                        filenames.append(ccf_file)
                         # Read RJD, RV, RV_ERR
                         hdr = fits.getheader(ccf_file)
                         rjd.append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
@@ -972,10 +1034,11 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", versi
 
             else:  # ESO
                 # Get date, rv, rv_err from DACE
-                rjd, rv, rv_err = query_dace(target, mode=mode)
+                rjd, rv, rv_err, filenames = query_dace(target, mode=mode)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method, nsig=nsig))
+        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method,
+                                 filenames=filenames, nsig=nsig))
 
         # Plot RVs
         ax[0].errorbar(dicts[i]["no_outliers"]["jd"], dicts[i]["no_outliers"]["rv"] - dicts[i]["no_outliers"]["median"],
