@@ -79,15 +79,13 @@ def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
     return settings
 
 
-def get_obs_dirs(params: Dict[str, Any]):
+def get_obs_dirs(raw_path: False):
     """
     Get all raw observation directories from params
 
     :param params:
     :return:
     """
-    # get the raw path
-    raw_path = params['raw dir']
     # test that raw directory exists
     if not os.path.exists(raw_path):
         emsg = 'Raw directory {0} does not exist'
@@ -95,7 +93,7 @@ def get_obs_dirs(params: Dict[str, Any]):
         raise base.AperoChecksError(emsg.format(*eargs))
     # get a list of all fits files in raw path
     valid_files = []
-    for root, dirs, files in os.walk(raw_path):
+    for root, dirs, files in os.walk(raw_path, followlinks=True):
         for filename in files:
             if filename.endswith('.fits'):
                 valid_files.append(os.path.join(root, filename))

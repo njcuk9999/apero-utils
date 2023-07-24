@@ -51,7 +51,7 @@ def get_obs_dirs(params) -> List[str]:
         # if user input is "n" then exit
         if 'y' not in user_input.lower():
             return []
-        obsdirs = io.get_obs_dirs(params)
+        obsdirs = io.get_obs_dirs(params['raw dir'])
     else:
         obsdirs = [params['obsdir']]
 

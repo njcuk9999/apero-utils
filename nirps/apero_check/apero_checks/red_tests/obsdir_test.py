@@ -52,7 +52,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         misc.log_msg(msg.format(*margs), level='')
     # -------------------------------------------------------------------------
     # get all observation directories
-    obsdirs = io.get_obs_dirs(params)
+    obsdirs = io.get_obs_dirs(raw_directory)
     # -------------------------------------------------------------------------
     # test if observation directory exists in our list
     if obsdir not in obsdirs:
