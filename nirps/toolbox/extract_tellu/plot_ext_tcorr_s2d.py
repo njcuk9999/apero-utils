@@ -105,9 +105,6 @@ if include_geneva:
     if geneva_order == -1:
         print(f'Order {order_num} is not in Geneva drs')
     else:
-        if not os.path.exists('geneva_data/'):
-            os.makedirs('geneva_data/')
-
         filedate = ':'.join(ext_filename.split('_')[1:4]) + '.' + ext_filename.split('_')[4]
         geneva_ext_filename = f'r.NIRPS.{filedate}_S2D_BLAZE_A.fits'
         geneva_ext_data_path = f'/cosmos99/nirps/geneva-data/DRS-3.0.0/reduced/{obs_date}/{geneva_ext_filename}'
@@ -118,6 +115,8 @@ if include_geneva:
             geneva_ext_fits = fits.open(geneva_ext_data_path)
             geneva_tcorr_fits = fits.open(geneva_tcorr_data_path)
         else:
+            if not os.path.exists('geneva_data/'):
+                os.makedirs('geneva_data/')
             if not os.path.exists('geneva_data/ext/' + geneva_ext_filename):
                 rsync_nirpsclient(geneva_ext_data_path, 'geneva_data/ext/')
             if not os.path.exists('geneva_data/tcorr/' + geneva_tcorr_filename):
