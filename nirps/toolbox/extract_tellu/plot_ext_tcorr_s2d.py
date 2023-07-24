@@ -11,6 +11,7 @@ How to use:
     Specify the standard deviation of the gaussian filter applied to the data (gaussian_filter_sigma), put 0 to ignore the gaussian filter
 	Specify the plot title in the variable plot_title
 	Tell whether or not to also plot the geneva reduced spectra in the variable include_geneva
+	Indicate if you are running this script on the nirps client (on_nirps_client), this will not download the files but will get the data directly from its location on the cluster
 	Run python plot_ext_tcorr_s2d.py
 
 @author: Luc Bazinet
@@ -26,10 +27,11 @@ from scipy.ndimage import gaussian_filter1d
 
 ########## Only modify these parameters #############
 ext_data_path = '/cosmos99/nirps/apero-data/nirps_he_07276_online/red/2023-04-02/NIRPS_2023-04-03T04_04_01_090_pp_e2dsff_A.fits'
-order_num = 10 # apero order
+order_num = 10  # apero order
 gaussian_filter_sigma = 2
 include_geneva = True
 plot_title = f'WASP-178\n{ext_data_path.split("/")[-1]}\norder {order_num}'
+on_nirps_client = False
 #####################################################
 
 
@@ -64,17 +66,21 @@ tcorr_data_path = ext_data_path.replace('e2dsff_A', 'e2dsff_tcorr_A')
 obs_date, ext_filename = ext_data_path.split('/')[-2:]
 tcorr_filename = tcorr_data_path.split('/')[-1]
 
-if not os.path.exists('apero_data/'):
-    os.makedirs('apero_data/')
+if on_nirps_client:
+    ext_fits = fits.open(ext_data_path)
+    tcorr_fits = fits.open(tcorr_data_path)
+else:
+    if not os.path.exists('apero_data/'):
+        os.makedirs('apero_data/')
 
-if not os.path.exists('apero_data/ext/' + ext_filename):
-    rsync_nirpsclient(ext_data_path, 'apero_data/ext/')
+    if not os.path.exists('apero_data/ext/' + ext_filename):
+        rsync_nirpsclient(ext_data_path, 'apero_data/ext/')
 
-if not os.path.exists('apero_data/tcorr/' + tcorr_filename):
-    rsync_nirpsclient(tcorr_data_path, 'apero_data/tcorr/')
+    if not os.path.exists('apero_data/tcorr/' + tcorr_filename):
+        rsync_nirpsclient(tcorr_data_path, 'apero_data/tcorr/')
 
-ext_fits = fits.open('apero_data/ext/' + ext_filename)
-tcorr_fits = fits.open('apero_data/tcorr/' + tcorr_filename)
+    ext_fits = fits.open('apero_data/ext/' + ext_filename)
+    tcorr_fits = fits.open('apero_data/tcorr/' + tcorr_filename)
 
 wave = read_NIRPS_wave(ext_fits[0].header, order_num)
 ext_flux = ext_fits[1].data[order_num]
@@ -101,19 +107,27 @@ if include_geneva:
     else:
         if not os.path.exists('geneva_data/'):
             os.makedirs('geneva_data/')
+
         filedate = ':'.join(ext_filename.split('_')[1:4]) + '.' + ext_filename.split('_')[4]
         geneva_ext_filename = f'r.NIRPS.{filedate}_S2D_BLAZE_A.fits'
+        geneva_ext_data_path = f'/cosmos99/nirps/geneva-data/DRS-3.0.0/reduced/{obs_date}/{geneva_ext_filename}'
         geneva_tcorr_filename = geneva_ext_filename.replace('S2D_BLAZE_A', 'S2D_BLAZE_TELL_CORR_A')
-        if not os.path.exists('geneva_data/ext/' + geneva_ext_filename):
-            rsync_nirpsclient(f'/cosmos99/nirps/geneva-data/DRS-3.0.0/reduced/{obs_date}/{geneva_ext_filename}', 'geneva_data/ext/')
-        if not os.path.exists('geneva_data/tcorr/' + geneva_tcorr_filename):
-            rsync_nirpsclient(f'/cosmos99/nirps/geneva-data/DRS-3.0.0/reduced/{obs_date}/{geneva_tcorr_filename}', 'geneva_data/tcorr/')
+        geneva_tcorr_data_path = f'/cosmos99/nirps/geneva-data/DRS-3.0.0/reduced/{obs_date}/{geneva_tcorr_filename}'
 
-        geneva_ext_fits = fits.open('geneva_data/ext/' + geneva_ext_filename)
-        geneva_tcorr_fits = fits.open('geneva_data/tcorr/' + geneva_tcorr_filename)
+        if on_nirps_client:
+            geneva_ext_fits = fits.open(geneva_ext_data_path)
+            geneva_tcorr_fits = fits.open(geneva_tcorr_data_path)
+        else:
+            if not os.path.exists('geneva_data/ext/' + geneva_ext_filename):
+                rsync_nirpsclient(geneva_ext_data_path, 'geneva_data/ext/')
+            if not os.path.exists('geneva_data/tcorr/' + geneva_tcorr_filename):
+                rsync_nirpsclient(geneva_tcorr_data_path, 'geneva_data/tcorr/')
+
+            geneva_ext_fits = fits.open('geneva_data/ext/' + geneva_ext_filename)
+            geneva_tcorr_fits = fits.open('geneva_data/tcorr/' + geneva_tcorr_filename)
 
         geneva_ext_data_cube = np.array(geneva_ext_fits[1].data.tolist())
-        geneva_wave = geneva_ext_fits[4].data[geneva_order] / 10 # convert Angstrom to nm
+        geneva_wave = geneva_ext_fits[4].data[geneva_order] / 10  # convert Angstrom to nm
         
         c_kms = 299792.458
         berv = geneva_ext_fits[0].header['HIERARCH ESO QC BERV']
