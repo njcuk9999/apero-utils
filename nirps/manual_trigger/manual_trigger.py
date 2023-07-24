@@ -26,6 +26,43 @@ from astropy.time import Time
 # start time
 START_TIME = Time.now()
 # -----------------------------------------------------------------------------
+# define messages
+MANUAL_START = 'MANUAL_START'
+MANUAL_END = 'MANUAL_END'
+APERO_START = 'APERO_START'
+APERO_ERR = 'APERO_ERR'
+APERO_END = 'APERO_END'
+LBL_START = 'LBL_START'
+LBL_ERROR = 'LBL_ERR'
+LBL_END = 'LBL_END'
+
+MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
+            LBL_START, LBL_ERROR, LBL_END]
+
+
+# =============================================================================
+# Define classes
+# =============================================================================
+class TriggerLog:
+    def __init__(self, filename):
+        self.filename = filename
+
+    def write(self, profile: str, logkind: str, message: str):
+        # log kind must be correct
+        if logkind not in MESSAGES:
+            raise ValueError(f'logkind must be one of {MESSAGES}')
+        # get time now
+        timenow = Time.now()
+        # replace any double speech marks with single ones
+        message = message.replace('"', "'")
+        # construct the line
+        elements = [timenow.fits, profile, logkind, f'"{message}"']
+        # get line as single string
+        line = ', '.join(elements)
+        # open file and append line
+        with open(self.filename, 'a') as logfile:
+            logfile.write(line + '\n')
+
 
 
 # =============================================================================
@@ -142,6 +179,20 @@ def get_settings():
     # ----------------------------------------------------------------------
     # read the yaml file and push into settings
     settings = read_yaml(args.profile, settings)
+    # ----------------------------------------------------------------------
+    # construct log path
+    homedir = os.path.expanduser('~')
+    # construct log path
+    logpath = os.path.join(homedir, '.apero', 'manual_trigger')
+    # make sure logpath exists
+    if not os.path.exists(logpath):
+        os.makedirs(logpath)
+    # construct log filename
+    logfile = os.path.join(logpath, args.profile.replace('yaml', '.log'))
+    # get log class
+    logclass = TriggerLog(logfile)
+    # push into settings
+    settings['LOG'] = logclass
     # ----------------------------------------------------------------------
     # return the settings
     return settings
@@ -532,6 +583,9 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # get settings
     trigger_settings = get_settings()
+    # log that we have started manual trigger
+    trigger_settings['LOG'].write('None', MANUAL_START,
+                                  'Manual trigger started')
     # ----------------------------------------------------------------------
     # make symbolic links
     if trigger_settings['MAKELINKS']:
@@ -569,7 +623,10 @@ if __name__ == "__main__":
     if trigger_settings['REDUCTION_INTERFACE']:
         print_process('Running apero reduction interface')
         run_apero_reduction_interface(trigger_settings)
-
+    # ----------------------------------------------------------------------
+    # log that we have finished
+    trigger_settings['LOG'].write('None', MANUAL_END,
+                                  'Manual trigger ended')
 
 # =============================================================================
 # End of code

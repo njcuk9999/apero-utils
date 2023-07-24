@@ -28,6 +28,9 @@ name5 = 'newworlds'
 name6 = 'lam'
 name7 = 'halau'
 
+
+names = [name1, name2, name3, name4, name6]
+
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
 REJECT_DATE_ENDS = [59063.7790]
@@ -42,6 +45,8 @@ outpaths[name1] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_rali/
 outpaths[name2] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupiter/lblrdb/'
 outpaths[name3] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_nb19/lblrdb/'
 outpaths[name4] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_maestria/lblrdb/'
+outpaths[name5] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_newworld/lblrdb'
+outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/lblrdb'
 
 paths = outpaths
 
@@ -95,7 +100,7 @@ if __name__ == "__main__":
 
     # get all fits files
     files = dict()
-    for name in paths:
+    for name in names:
         path = paths[name]
         files[name] = get_files(path)
     # -------------------------------------------------------------------------
@@ -119,7 +124,7 @@ if __name__ == "__main__":
 
     for basename in basenames:
         cond = True
-        for name in paths:
+        for name in names:
             cond &= os.path.exists(os.path.join(paths[name], basename))
         if cond:
             valid_basenames.append(basename)
@@ -132,7 +137,7 @@ if __name__ == "__main__":
     obsdirs = dict()
 
     # loop around reductions
-    for it, name in enumerate(paths):
+    for it, name in enumerate(names):
         # define a list per reduction to store bjds and rvs
         times[name] = []
         rvs[name] = []
@@ -164,7 +169,7 @@ if __name__ == "__main__":
     # keep track of nans
     nanmask = np.zeros(len(times[REF_NAME]), dtype=bool)
     # convert to numpy arrays and count nanrows
-    for name in paths:
+    for name in names:
         times[name] = np.array(times[name])
         rvs[name] = np.array(rvs[name])
         ervs[name] = np.array(ervs[name])
@@ -178,14 +183,14 @@ if __name__ == "__main__":
 
         reject_mask = np.zeros_like(times[REF_NAME], dtype=bool)
         # convert to numpy arrays and count nanrows
-        for name in paths:
+        for name in names:
             for point in range(len(REJECT_DATE_ENDS)):
                 point_mask = times[name] > REJECT_DATE_STARTS[point]
                 point_mask &= times[name] < REJECT_DATE_ENDS[point]
 
                 reject_mask |= point_mask
         # apply mask
-        for name in paths:
+        for name in names:
             times[name] = times[name][~reject_mask]
             rvs[name] = rvs[name][~reject_mask]
             ervs[name] = ervs[name][~reject_mask]
@@ -193,7 +198,7 @@ if __name__ == "__main__":
     # plot
     fig, frames = plt.subplots(ncols=1, nrows=3)
 
-    for name in paths:
+    for name in names:
 
         xvector = times
 
