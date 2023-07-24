@@ -5,6 +5,9 @@ raw dir: /nirps_raw/nirps/raw-data/nirps_ha
 #    apero reduced data directories)
 apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
 
+# the apero install directory
+apero install: /cosmos99/nirps/apero-bin/apero-drs
+
 # directory where lbl files are processed
 lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
 

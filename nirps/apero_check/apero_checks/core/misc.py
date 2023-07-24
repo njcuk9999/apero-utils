@@ -13,6 +13,9 @@ import argparse
 import copy
 from typing import Any, Dict, Optional, Tuple
 
+from astropy.time import TimeDelta
+from astropy import units as uu
+
 from apero_checks.core import base
 from apero_checks.core import io
 from apero_checks.core import parameters
@@ -42,7 +45,8 @@ def get_args() -> Dict[str, Any]:
     parser.add_argument('--obsdir', type=str, default='None',
                         help='Observation directory name(s) separated by '
                              'commas')
-    parser.add_argument('--test_run', type=str, default='None',
+    parser.add_argument('--test_run', '--test', '--test_name', '--testrun',
+                        '--testname', type=str, default='None',
                         help='If running a single test define the name of that'
                              ' test here (the column name)')
     parser.add_argument('--today', action='store_true', default=False,
@@ -51,6 +55,13 @@ def get_args() -> Dict[str, Any]:
                              'the observation directory (only works when '
                              'observation directories are named by date) in '
                              'the form YYYY-MM-DD')
+    parser.add_argument('--yesterday', action='store_true', default=False,
+                        help='If we do not give an --obsdir we can give '
+                             'this argument to always use yesterdays\'s date '
+                             'as the observation directory (only works when '
+                             'observation directories are named by date) in '
+                             'the form YYYY-MM-DD. Note --today takes '
+                             'priority over --yesterday')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -88,7 +99,8 @@ def add_source(name: str, value: Any, source: str):
 def load_params(yaml_file: Optional[str] = None,
                 obsdir: Optional[str] = None,
                 test_name: Optional[str] = None,
-                today: bool = False) -> Dict[str, Any]:
+                today: bool = False,
+                yest: bool = False) -> Dict[str, Any]:
     # set up the return dictionary
     params = dict()
     # string for printing variables used
@@ -116,6 +128,20 @@ def load_params(yaml_file: Optional[str] = None,
             # TODO: this will not be correct for anyone who uses
             #       observation directories that are not YYYY-MM-DD
             params['obsdir'] = base.AstropyTime.now().iso.split(' ')[0]
+
+    if params['obsdir'] is None:
+        # deal with getting today (bool) from input or cmd args
+        yest, yest_source = add_cmd_arg(args, 'yesterday', yest, null=False)
+        sources['yest'] = add_source('yest', yest, yest_source)
+        # if today is True then we set obsdir to today
+        if yest:
+            # we set it to now YYYY-MM-DD
+            # TODO: this will not be correct for anyone who uses
+            #       observation directories that are not YYYY-MM-DD
+            timenow = base.AstropyTime.now()
+            timeyest = timenow - TimeDelta(1 * uu.day)
+            params['obsdir'] = timeyest.iso.split(' ')[0]
+
     # get test name from cmd args
     params['test_name'], tname_source = add_cmd_arg(args, 'test_run', test_name)
     sources['test_name'] = add_source('today', today, tname_source)
