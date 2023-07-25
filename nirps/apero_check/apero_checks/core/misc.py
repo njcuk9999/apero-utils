@@ -114,6 +114,14 @@ def load_params(yaml_file: Optional[str] = None,
     # get yaml file from cmd args
     yaml_file , yaml_source = add_cmd_arg(args, 'yaml', yaml_file)
     sources['yaml'] = add_source('yaml', yaml_file, yaml_source)
+    # -------------------------------------------------------------------------
+    # TODO: this is a hack - eventually all profiles should be in a shared
+    #       directory
+    # deal with yaml file just containing a path to another yaml file
+    yaml_params = io.read_yaml(yaml_file)
+    if len(yaml_params) == 1 and 'path' in yaml_params:
+        yaml_file = yaml_params['path']
+    # -------------------------------------------------------------------------
     # get obs dir from cmd args
     params['obsdir'] , obsdir_source = add_cmd_arg(args, 'obsdir', obsdir)
     sources['obsdir'] = add_source('obsdir', params['obsdir'], obsdir_source)
@@ -147,19 +155,33 @@ def load_params(yaml_file: Optional[str] = None,
     sources['test_name'] = add_source('today', today, tname_source)
     # -------------------------------------------------------------------------
     # load from yaml file
-    yaml_params = io.read_yaml(yaml_file)
-    # push into params
-    for key in yaml_params:
-        # deal with invalid key
-        if key not in parameters.parameters:
-            continue
-        # check value from yaml file
-        value, value_source = parameters.parameters[key].check(yaml_params[key])
-        # add sources to keys we want to report
-        if parameters.parameters[key].report:
-            sources[key] = add_source(key, value, 'YAML')
-        # otherwise add key to params
-        params[key] = copy.deepcopy(value)
+    yaml_params = io.read_yaml(yaml_file, profile_mode=True)
+    # loop around profiles
+    for profile in yaml_params['PROFILES']:
+        # loop around parameters
+        for parameter in parameters.parameters:
+            # get path
+            path = parameters.parameters[parameter].path
+            # if we do not have a path do not load from yaml
+            if path is None:
+                continue
+            # get yaml value
+            yaml_value = yaml_params
+            for ykey in path.split('.'):
+                # get get
+                if ykey in yaml_value:
+                    yaml_value = yaml_value[ykey]
+                else:
+                    emsg = 'YAML path {0} for {1} is invalid'
+                    eargs = [path, parameter]
+                    raise base.AperoChecksError(emsg.format(*eargs))
+            # check value from yaml file
+            value, value_source = parameters.parameters[parameter].check(yaml_value)
+            # add sources to keys we want to report
+            if parameters.parameters[parameter].report:
+                sources[parameter] = add_source(parameter, value, 'YAML')
+            # add key to params
+            params[profile][parameter] = copy.deepcopy(value)
     # -------------------------------------------------------------------------
     # print message on which observation directory we are processing
     msg = f'Parameters used:'
@@ -170,6 +192,15 @@ def load_params(yaml_file: Optional[str] = None,
         if len(sources[source]) > 0:
             log_msg(msg, level='info')
     # -------------------------------------------------------------------------
+    # copy all global parameters into profile parameters
+    for profile in yaml_params['PROFILES']:
+        # loop around all parameters
+        for param in params:
+            # do not copy self
+            if param == profile:
+                continue
+            # copy non-profile "global" parameter
+            params[profile][param] = params[param]
     # return params
     return params
 

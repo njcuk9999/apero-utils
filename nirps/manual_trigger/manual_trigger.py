@@ -44,10 +44,11 @@ MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
 # Define classes
 # =============================================================================
 class TriggerLog:
-    def __init__(self, filename):
+    def __init__(self, filename, profile):
         self.filename = filename
+        self.profile = profile
 
-    def write(self, profile: str, logkind: str, message: str):
+    def write(self, logkind: str, message: str):
         # log kind must be correct
         if logkind not in MESSAGES:
             raise ValueError(f'logkind must be one of {MESSAGES}')
@@ -56,7 +57,7 @@ class TriggerLog:
         # replace any double speech marks with single ones
         message = message.replace('"', "'")
         # construct the line
-        elements = [timenow.fits, profile, logkind, f'"{message}"']
+        elements = [timenow.fits, self.profile, logkind, f'"{message}"']
         # get line as single string
         line = ', '.join(elements)
         # open file and append line
@@ -189,10 +190,14 @@ def get_settings():
         os.makedirs(logpath)
     # construct log filename
     logfile = os.path.join(logpath, args.profile.replace('yaml', '.log'))
-    # get log class
-    logclass = TriggerLog(logfile)
-    # push into settings
-    settings['LOG'] = logclass
+    # make a log for each profile
+    settings['LOG'] = dict()
+    # loop around profiles
+    for profile in settings['PROFILES']:
+        # get log class
+        logclass = TriggerLog(logfile, profile=profile)
+        # push into settings
+        settings['LOG'][profile] = logclass
     # ----------------------------------------------------------------------
     # return the settings
     return settings
@@ -358,6 +363,12 @@ def run_processing(settings: Dict[str, Any]):
     """
     # loop around profiles
     for profile in settings['PROFILES']:
+        # get the obs dirs
+        obs_dirs = settings['OBS_DIRS']
+        # get the obsdirs as a string
+        obsdir_str = ','.join(obs_dirs)
+        # log that APERO started
+        trigger_settings['LOG'][profile].write(APERO_START, obsdir_str)
         # print progress
         print(f'\tRunning profile: {profile}')
         # get the yaml dictionary for this profile
@@ -369,18 +380,22 @@ def run_processing(settings: Dict[str, Any]):
             apero_reset(params, pdict)
         # get the run file
         runfile = pdict['processing']['run file']
-        # get the obs dirs
-        obs_dirs = settings['OBS_DIRS']
+
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_processing
         # run apero processing
         if obs_dirs == '*':
-            apero_processing.main(runfile=runfile,
-                                  test=settings['TEST'])
+            ll = apero_processing.main(runfile=runfile,
+                                       test=settings['TEST'])
         else:
-            apero_processing.main(runfile=runfile,
-                                  include_obs_dirs=','.join(obs_dirs),
-                                  test=settings['TEST'])
+            ll = apero_processing.main(runfile=runfile,
+                                       include_obs_dirs=obsdir_str,
+                                       test=settings['TEST'])
+        # TODO: log apero errors using ll
+        _ = ll
+        # log that APERO ended
+        trigger_settings['LOG'][profile].write(APERO_END, obsdir_str)
+
 
 
 def apero_reset(params: Any, pdict: Dict[str, Any]):
@@ -584,8 +599,9 @@ if __name__ == "__main__":
     # get settings
     trigger_settings = get_settings()
     # log that we have started manual trigger
-    trigger_settings['LOG'].write('None', MANUAL_START,
-                                  'Manual trigger started')
+    for profile in trigger_settings['PROFILES']:
+        trigger_settings['LOG'][profile].write(MANUAL_START,
+                                               'Manual trigger started')
     # ----------------------------------------------------------------------
     # make symbolic links
     if trigger_settings['MAKELINKS']:
@@ -625,8 +641,10 @@ if __name__ == "__main__":
         run_apero_reduction_interface(trigger_settings)
     # ----------------------------------------------------------------------
     # log that we have finished
-    trigger_settings['LOG'].write('None', MANUAL_END,
-                                  'Manual trigger ended')
+    # log that we have started manual trigger
+    for profile in trigger_settings['PROFILES']:
+        trigger_settings['LOG'][profile].write(MANUAL_END,
+                                               'Manual trigger ended')
 
 # =============================================================================
 # End of code

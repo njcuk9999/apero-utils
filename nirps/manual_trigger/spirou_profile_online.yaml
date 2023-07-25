@@ -6,6 +6,8 @@ spirou V0.7.282 online:
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /cosmos99/spirou/apero-settings/spirou_07282_online
+        # the install directory for apero (git hub repo)
+        apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
         lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/
         # start date if not using --obsdir argument

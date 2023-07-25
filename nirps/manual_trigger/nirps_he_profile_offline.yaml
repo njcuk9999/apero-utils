@@ -6,6 +6,8 @@ nirps ha V0.7.275 offline:
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_offline
+        # the install directory for apero (git hub repo)
+        apero install: /cosmos99/nirps/apero-bin/apero-drs
         # apero get output path
         lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_offline/
         # start date if not using --obsdir argument
@@ -86,7 +88,13 @@ nirps ha V0.7.275 offline:
     # lbl settings
     lbl:
         wrap script:
+    # check settings
+    check:
+        # define the raw sheet name for the google sheet
+        raw sheet name: RAW-NIRPS-HE
 
+        # define the red sheet name for the google sheet
+        red sheet name: RED-OFFLINE-NIRPS-HE
 
 
 

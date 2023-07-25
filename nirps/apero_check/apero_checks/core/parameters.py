@@ -27,12 +27,13 @@ __AUTHOR__ = base.__AUTHOR__
 # =============================================================================
 class Const:
     def __init__(self, key, value, not_none=False, dtype=None,
-                 report: bool = False):
+                 report: bool = False, path: Optional[str] = None):
         self.key = key
         self.value = value
         self.not_none = not_none
         self.dtype = dtype
         self.report = report
+        self.path = path
 
     def check(self, value: Optional[Any] = None, source: str = 'NULL'):
         # deal with internal check
@@ -63,19 +64,22 @@ class Const:
 parameters = dict()
 
 # directory where raw data is downloaded
-parameters['raw dir'] = Const('raw dir', None, not_none=True, dtype=str)
+parameters['raw dir'] = Const('raw dir', None, not_none=True, dtype=str,
+                              path='general.raw dir')
 
 # the apero profile to use (controlled sym link raw data directory and all
 #    apero reduced data directories)
 parameters['apero profile'] = Const('apero profile', None, not_none=True,
-                                    dtype=str)
+                                    dtype=str, path='general.apero profile')
 
 # the apero install directory
 parameters['apero install'] = Const('apero install', None, not_none=True,
-                                    dtype=str)
+                                    dtype=str,
+                                    path='general.apero install')
 
 # the lbl data path
-parameters['lbl path'] = Const('lbl path', None, not_none=True, dtype=str)
+parameters['lbl path'] = Const('lbl path', None, not_none=True, dtype=str,
+                               path='general.lbl path')
 
 # observation directory (i.e. night name)
 parameters['obsdir'] = Const('obs dir', None, dtype=str, report=True)
@@ -94,7 +98,8 @@ parameters['raw sheet id'] = Const('raw sheet id',
                                dtype=str)
 # define the sheet name for the google sheet
 parameters['raw sheet name'] = Const('raw sheet name', None, dtype=str,
-                                     not_none=True)
+                                     not_none=True,
+                                     path='check.raw sheet name')
 
 # define the sheet id for the google sheet
 parameters['red sheet id'] = Const('red sheet id',
@@ -103,7 +108,8 @@ parameters['red sheet id'] = Const('red sheet id',
 
 # define the sheet name for the google sheet
 parameters['red sheet name'] = Const('red sheet name', None, dtype=str,
-                                     not_none=True)
+                                     not_none=True,
+                                     path='check.red sheet name')
 
 # =============================================================================
 # Start of code
