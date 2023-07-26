@@ -96,9 +96,11 @@ def load_params():
     parser.add_argument('yaml', help='yaml file to use', type=str,
                         default=None)
     parser.add_argument('--overwrite', help='overwrite existing files',
-                        default=False, type=bool)
+                        action='store_true', default=False)
     parser.add_argument('--test', help='run in test mode (no copy or remove)',
-                        default=False, type=bool)
+                        action='store_true', default=False)
+    parser.add_argument('--symlinks', action='store_true', default=False,
+                        help='Copy in symlink mode (not recommended)')
     # get arguments
     args = vars(parser.parse_args())
     # ------------------------------------------------------------------
@@ -324,7 +326,10 @@ def copy_files(params, files1: Dict[str, List[str]],
                 if not os.path.exists(os.path.dirname(outfilename3)):
                     os.makedirs(os.path.dirname(outfilename3))
                 # copy file
-                shutil.copy(infilename, outfilename3)
+                if params['symlinks']:
+                    os.symlink(infilename, outfilename3)
+                else:
+                    shutil.copy(infilename, outfilename3)
 
 
 def update_git_profile2(params: Dict[str, Any]):
@@ -355,7 +360,12 @@ def update_git_profile2(params: Dict[str, Any]):
     print(msg)
 
 
-def reset_profile2(params: Dict[str, Any]):
+def reset_profile2(params: Dict[str, Any], paths3: Dict[str, str]):
+    # if any block paths in path3 don't exist do not reset anything
+    for block_name in paths3:
+        if not os.path.exists(paths3[block_name]):
+            print('Error {0} does not exist'.format(paths3[block_name]))
+            return False
     # load parameters from profile 1
     apero_params = update_apero_profile(params, profile=2)
     # import modules
@@ -380,17 +390,25 @@ def reset_profile2(params: Dict[str, Any]):
     drs_reset.reset_run(apero_params)
     # out folder
     drs_reset.reset_out_folders(apero_params, dtimeout=database_timeout)
+    # reset correct
+    return True
 
 
 def rename_directories(params: Dict[str, Any], paths2: Dict[str, str],
                        paths3: Dict[str, str]):
     # loop around each block
     for block_name in paths2:
+        if not os.path.exists(paths3[block_name]):
+            print('Error {0} does not exist'.format(paths3[block_name]))
+            return False
         msg = 'Renaming {0}: ({1} -> {2})'
         margs = [block_name, paths3[block_name], paths2[block_name]]
         print(msg.format(*margs))
         if not params['test']:
+            if os.path.exists(paths2[block_name]):
+                shutil.rmtree(paths2[block_name])
             os.rename(paths3[block_name], paths2[block_name])
+    return True
 
 
 def update_databases_profile2(params):
@@ -435,11 +453,13 @@ def main():
     # may need to update profile 2 (via git) to match profile 1
     update_git_profile2(params)
     # remove all old files from profile 2 blocks
-    reset_profile2(params)
+    success = reset_profile2(params, paths3)
     # rename the directories in profile 2 (this is quicker than copying)
-    rename_directories(params, paths2, paths3)
+    if success:
+        success = rename_directories(params, paths2, paths3)
     # update databases for profile 2
-    update_databases_profile2(params)
+    if success:
+        update_databases_profile2(params)
     # return to __main__
     return
 
