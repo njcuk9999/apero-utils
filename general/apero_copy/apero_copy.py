@@ -361,7 +361,7 @@ def reset_profile2(params: Dict[str, Any]):
     # import modules
     from apero.tools.module.setup import drs_reset
     # get database timeout
-    database_timeout = apero_params['INPUTS']['DATABASE_TIMEOUT']
+    database_timeout = 0
     # assets folder
     drs_reset.reset_assets(apero_params, dtimeout=database_timeout)
     # tmp folder
