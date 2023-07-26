@@ -42,7 +42,7 @@ test_dict['BLANK'] = blank_test.test
 # - lbl errors?
 
 # Manual trigger has run
-test_dict['OBSDIR'] = obsdir_test.test
+test_dict['HAS_OBSDIR'] = obsdir_test.test
 
 # APERO calib test - test the APERO requirements on calibration
 test_dict['APERO_CALIB'] = calib_test.test

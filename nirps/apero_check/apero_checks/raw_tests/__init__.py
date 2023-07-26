@@ -35,7 +35,7 @@ test_dict['BLANK'] = blank_test.test
 
 # obs dir test - this tests whether the obsdir given exists on disk and has
 #                fits files in its directory
-test_dict['OBSDIR'] = obsdir_test.test
+test_dict['HAS_OBSDIR'] = obsdir_test.test
 
 # eng test - Check the consistency of headers with what we expect from
 #            enginnering. Consistency of FP temperature with set point,
