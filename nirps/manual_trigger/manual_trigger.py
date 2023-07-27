@@ -654,7 +654,7 @@ if __name__ == "__main__":
         print_process('Making symbolic links')
         make_sym_links(trigger_settings)
         # deal with only creating links
-        if trigger_settings['ONLYLINKS']:
+        if trigger_settings['ONLY_LINKS']:
             print_process('Only making symbolic links')
             sys.exit(0)
     # ----------------------------------------------------------------------
@@ -672,7 +672,7 @@ if __name__ == "__main__":
         print_process('Running apero processing')
         run_processing(trigger_settings)
         # deal with only running processing
-        if trigger_settings['ONLYPROCESSING']:
+        if trigger_settings['ONLY_APEROPROCESSING']:
             print_process('Only running apero processing')
             sys.exit(0)
     # ----------------------------------------------------------------------
@@ -680,17 +680,29 @@ if __name__ == "__main__":
     if trigger_settings['APERO_GET']:
         print_process('Running apero get')
         run_apero_get(trigger_settings)
+        # deal with only running processing
+        if trigger_settings['ONLY_GET']:
+            print_process('Only running apero get')
+            sys.exit(0)
     # ----------------------------------------------------------------------
     # run the apero reduction interface
     if trigger_settings['LBL_PROCESSING']:
         print_process('Running lbl processing')
         run_lbl_processing(trigger_settings)
+        # deal with only running processing
+        if trigger_settings['ONLY_LBLPROCESSING']:
+            print_process('Only running apero get')
+            sys.exit(0)
     # ----------------------------------------------------------------------
     # run the apero reduction interface
     if trigger_settings['REDUCTION_INTERFACE']:
         print_process('Running apero reduction interface')
         # TODO: flag only to do this night
         run_apero_reduction_interface(trigger_settings)
+        # deal with only running processing
+        if trigger_settings['ONLY_REDUCTIONINTERFACE']:
+            print_process('Only running apero get')
+            sys.exit(0)
     # ----------------------------------------------------------------------
     # log that we have finished
     # log that we have started manual trigger
