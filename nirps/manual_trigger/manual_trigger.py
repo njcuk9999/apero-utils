@@ -150,7 +150,7 @@ def get_settings():
     settings['ONLY_PRECHECK'] = args.only_precheck
 
     settings['APERO_PROCESSING'] = args.apero_process
-    settings['ONLYAPEROPROCESSING'] = args.only_apero_process
+    settings['ONLY_APEROPROCESSING'] = args.only_apero_process
 
     settings['APERO_GET'] = args.get
     settings['ONLY_APEROGET'] = args.only_get
