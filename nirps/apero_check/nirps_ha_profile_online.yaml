@@ -1,23 +1,2 @@
-# directory where raw data is downloaded
-raw dir: /nirps_raw/nirps/raw-data/nirps_ha
-
-# the apero profile to use (controlled sym link raw data directory and all
-#    apero reduced data directories)
-apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
-
-# the apero install directory
-apero install: /cosmos99/nirps/apero-bin/apero-drs
-
-# directory where lbl files are processed
-lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
-
-# apero_processing settings
-processing:
-    # apero processing run.ini file
-    run file: online_run.ini
-
-# define the raw sheet name for the google sheet
-raw sheet name: RAW-NIRPS-HA
-
-# define the red sheet name for the google sheet
-red sheet name: RED-NIRPS-HA
+# link to actual yaml file
+path: ../manual_trigger/nirps_ha_profile_online.yaml

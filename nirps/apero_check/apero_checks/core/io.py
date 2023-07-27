@@ -49,7 +49,8 @@ TEXT2 = ('{{"refresh_token": "{0}", "token_uri": "https://oauth2.googleap'
 # =============================================================================
 # Define functions
 # =============================================================================
-def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
+def read_yaml(yaml_filename: Union[str, None],
+              profile_mode: bool = False) -> Dict[str, Any]:
     """
     Read the yaml file and add to settings
 
@@ -71,10 +72,19 @@ def read_yaml(yaml_filename: Union[str, None]) -> Dict[str, Any]:
         yaml_data = yaml.load(f, Loader=yaml.FullLoader)
     # add a profiles sub-dictionary
     settings = dict()
-    # loop around yaml data
-    for key, value in yaml_data.items():
-        # if key is in settings
-        settings[key] = value
+    # deal with profile mode
+    if profile_mode:
+        # add a profiles sub-dictionary
+        settings['PROFILES'] = dict()
+        # loop around yaml data
+        for key, value in yaml_data.items():
+            # if key is in settings
+            settings['PROFILES'][key] = value
+    else:
+        # loop around yaml data
+        for key, value in yaml_data.items():
+            # if key is in settings
+            settings[key] = value
     # return settings
     return settings
 

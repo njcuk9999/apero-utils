@@ -34,17 +34,21 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
     # print splash
     apero_checks.splash('APERO Raw data checks')
     # get params updated for input yaml file
-    params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
-    # if we do not have a test name then we run all tests and upload
-    if params['test_name'] in [None, 'None']:
-        # run the tests
-        test_results = apero_checks.run_tests(params, test_type='raw')
-        # upload the tests
-        apero_checks.upload_tests(params, test_results, test_type='raw')
-    # otherwise we run a single test
-    else:
-        # run single test
-        apero_checks.run_single_test(params, test_type='raw')
+    all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
+    # loop around profiles
+    for profile in all_params['PROFILES']:
+        # get profile params
+        params = all_params['PROFILES'][profile]
+        # if we do not have a test name then we run all tests and upload
+        if params['test_name'] in [None, 'None']:
+            # run the tests
+            test_results = apero_checks.run_tests(params, test_type='raw')
+            # upload the tests
+            apero_checks.upload_tests(params, test_results, test_type='raw')
+        # otherwise we run a single test
+        else:
+            # run single test
+            apero_checks.run_single_test(params, test_type='raw')
     # finish with an end message
     apero_checks.end_msg()
 
