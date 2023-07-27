@@ -44,20 +44,24 @@ MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
 # Define classes
 # =============================================================================
 class TriggerLog:
-    def __init__(self, filename, profile):
+    def __init__(self, filename, profile, obsdirs):
         self.filename = filename
         self.profile = profile
+        self.obsdirs = obsdirs
 
     def write(self, logkind: str, message: str):
         # log kind must be correct
         if logkind not in MESSAGES:
             raise ValueError(f'logkind must be one of {MESSAGES}')
+        # set obs dir string
+        obsdir_str = '|'.join(self.obsdirs)
         # get time now
         timenow = Time.now()
         # replace any double speech marks with single ones
         message = message.replace('"', "'")
         # construct the line
-        elements = [timenow.fits, self.profile, logkind, f'"{message}"']
+        elements = [timenow.fits, self.profile, logkind, f"{obsdir_str}",
+                    f'"{message}"']
         # get line as single string
         line = ', '.join(elements)
         # open file and append line
@@ -189,13 +193,15 @@ def get_settings():
     if not os.path.exists(logpath):
         os.makedirs(logpath)
     # construct log filename
-    logfile = os.path.join(logpath, args.profile.replace('yaml', '.log'))
+    logfile = os.path.join(logpath, args.profile.replace('.yaml', '.log'))
     # make a log for each profile
     settings['LOG'] = dict()
     # loop around profiles
     for profile in settings['PROFILES']:
+        # get the obs dirs
+        obs_dirs = settings['OBS_DIRS']
         # get log class
-        logclass = TriggerLog(logfile, profile=profile)
+        logclass = TriggerLog(logfile, profile=profile, obsdirs=obs_dirs)
         # push into settings
         settings['LOG'][profile] = logclass
     # ----------------------------------------------------------------------
