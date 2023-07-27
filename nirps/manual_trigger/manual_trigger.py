@@ -663,7 +663,7 @@ if __name__ == "__main__":
         print_process('Running apero precheck')
         run_precheck(trigger_settings)
         # deal with only running precheck
-        if trigger_settings['ONLYPRECHECK']:
+        if trigger_settings['ONLY_PRECHECK']:
             print_process('Only running apero precheck')
             sys.exit(0)
     # ----------------------------------------------------------------------
