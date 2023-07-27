@@ -45,30 +45,30 @@ settings:
 #     skip obj table: bool: if True, skip making the object table
 #     skip recipe table: bool: if True, skip making the recipe table
 #     skip msg table: bool: if True, skip making the msg table
-nirps he V0.7.276 online:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_online
-    lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_online/
+nirps he online:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_he_online
+    lbl path: /cosmos99/nirps/lbl-data/nirps_he_online/
     skip obj table: False
     skip recipe table: True
     skip msg table: True
 
-nirps ha V0.7.276 online:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
-    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
+nirps ha online:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_online
+    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_online/
     skip obj table: False
     skip recipe table: True
     skip msg table: True
 
-nirps he V0.7.276 offline:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_he_07276_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_he_07276_offline/
+nirps he offline:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_he_offline
+    lbl path: /cosmos99/nirps/lbl-data/nirps_he_offline/
     skip obj table: False
     skip recipe table: True
     skip msg table: True
 
-nirps ha V0.7.276 offline:
-    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_offline/
+nirps ha offline:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_offline
+    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/
     skip obj table: False
     skip recipe table: True
     skip msg table: True
