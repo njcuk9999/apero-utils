@@ -156,7 +156,7 @@ def get_settings():
     settings['ONLY_APEROGET'] = args.only_get
 
     settings['LBL_PROCESSING'] = args.lbl_process
-    settings['ONLY_LBLPROCSSING'] = args.only_lbl_process
+    settings['ONLY_LBLPROCESSING'] = args.only_lbl_process
 
     settings['REDUCTION_INTERFACE'] = args.ari
     settings['ONLY_REDUCTIONINTERFACE'] = args.only_ari
