@@ -100,7 +100,7 @@ def get_args():
     parser.add_argument('--only_apero_process', type=bool, default=False)
     # apero get switch
     parser.add_argument('--get', type=bool, default=True)
-    parser.add_argument('--only_get', type=bool, default=False)
+    parser.add_argument('--only_aperoget', type=bool, default=False)
     # apero reduction interface switch
     parser.add_argument('--ari', type=bool, default=True)
     parser.add_argument('--only_ari', type=bool, default=False)
@@ -153,7 +153,7 @@ def get_settings():
     settings['ONLY_APEROPROCESSING'] = args.only_apero_process
 
     settings['APERO_GET'] = args.get
-    settings['ONLY_APEROGET'] = args.only_get
+    settings['ONLY_APEROGET'] = args.only_aperoget
 
     settings['LBL_PROCESSING'] = args.lbl_process
     settings['ONLY_LBLPROCESSING'] = args.only_lbl_process
@@ -681,7 +681,7 @@ if __name__ == "__main__":
         print_process('Running apero get')
         run_apero_get(trigger_settings)
         # deal with only running processing
-        if trigger_settings['ONLY_GET']:
+        if trigger_settings['ONLY_APEROGET']:
             print_process('Only running apero get')
             sys.exit(0)
     # ----------------------------------------------------------------------
