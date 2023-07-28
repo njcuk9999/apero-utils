@@ -47,6 +47,9 @@ test_dict['HAS_OBSDIR'] = obsdir_test.test
 # APERO calib test - test the APERO requirements on calibration
 test_dict['APERO_CALIB'] = calib_test.test
 
+# Pixel shifts tests - check for pixel shifts in pp files
+test_dict['PIXEL_SHIFTS'] = pixel_shifts_test.test
+
 # test 1 - explanation
 
 # test 2 - explanation
