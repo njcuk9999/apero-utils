@@ -90,7 +90,8 @@ parameters['test_name'] = Const('testname', None, dtype=str, report=True)
 # the processing arguments
 processing_dict = dict()
 processing_dict['run file'] = None
-parameters['processing'] = Const('processing', processing_dict)
+parameters['processing'] = Const('processing', processing_dict, dtype=dict,
+                                 path='processing')
 
 # define the sheet id for the google sheet
 parameters['raw sheet id'] = Const('raw sheet id',

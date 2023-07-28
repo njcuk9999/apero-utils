@@ -12,6 +12,7 @@ Created on 2023-07-03 at 14:37
 from typing import Any, Dict, List, Tuple
 
 import numpy as np
+import git
 
 from apero_checks.core import base
 from apero_checks.core import red_functions
@@ -66,15 +67,30 @@ def calib_check(params: Any, recipe: Any, obsdir: str, log: bool = False
     # -------------------------------------------------------------------------
     # get the conditions based on params
     # -------------------------------------------------------------------------
-    condition = drs_processing.gen_global_condition(params, findexdbm,
-                                                    odo_reject_list, log=log)
+    # TODO: Remove this try once online is on version v0.7.287+
+    try:
+        condition, _ = drs_processing.gen_global_condition(params, findexdbm,
+                                                           odo_reject_list,
+                                                           log=log)
+    except Exception:
+        condition = drs_processing.gen_global_condition(params, findexdbm,
+                                                        odo_reject_list)
     # -------------------------------------------------------------------------
     # get telluric stars and non-telluric stars
     # -------------------------------------------------------------------------
-    # get all telluric stars
-    tstars = telluric.get_tellu_include_list(params)
-    # get all other stars
-    ostars = drs_processing.get_non_telluric_stars(params, findexdbm, tstars)
+    # TODO: Remove this try once online is on version v0.7.287+
+    try:
+        # get a list of all objects from the file index database
+        all_objects = drs_processing.get_uobjs_from_findex(params, findexdbm)
+        # get all telluric stars
+        tstars = telluric.get_tellu_include_list(params, all_objects=all_objects)
+        # get all other stars
+        ostars = drs_processing.get_non_telluric_stars(params, all_objects, tstars)
+    except Exception:
+        # get all telluric stars
+        tstars = telluric.get_tellu_include_list(params)
+        # get all other stars
+        ostars = drs_processing.get_non_telluric_stars(params, findexdbm, tstars)
     # -------------------------------------------------------------------------
     # get a list of calibration files
     # -------------------------------------------------------------------------

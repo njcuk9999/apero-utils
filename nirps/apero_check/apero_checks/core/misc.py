@@ -158,6 +158,7 @@ def load_params(yaml_file: Optional[str] = None,
     yaml_params = io.read_yaml(yaml_file, profile_mode=True)
     # loop around profiles
     for profile in yaml_params['PROFILES']:
+        params[profile] = dict()
         # loop around parameters
         for parameter in parameters.parameters:
             # get path
@@ -166,7 +167,7 @@ def load_params(yaml_file: Optional[str] = None,
             if path is None:
                 continue
             # get yaml value
-            yaml_value = yaml_params
+            yaml_value = yaml_params['PROFILES'][profile]
             for ykey in path.split('.'):
                 # get get
                 if ykey in yaml_value:
@@ -199,8 +200,18 @@ def load_params(yaml_file: Optional[str] = None,
             # do not copy self
             if param == profile:
                 continue
+            # do not copy those already in params profile
+            if param in params[profile]:
+                continue
             # copy non-profile "global" parameter
             params[profile][param] = params[param]
+    # -------------------------------------------------------------------------
+    # remove global params (do everything by profile)
+    all_keys = list(params.keys())
+    for param in all_keys:
+        if param not in yaml_params['PROFILES']:
+            del params[param]
+    # -------------------------------------------------------------------------
     # return params
     return params
 

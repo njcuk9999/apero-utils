@@ -303,9 +303,10 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
     msg += f'\nUploading to google sheet'
     msg += '\n' + '*' * 50
     misc.log_msg(msg, level='info')
-
     # get time now
     time_now = base.AstropyTime.now().iso
+    # remove the decimal seconds
+    time_now = time_now.split('.')[0]
     # store columns
     columns = ['obsdir', 'date']
     # turn results dictionary into a single dictionary

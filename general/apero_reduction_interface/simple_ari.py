@@ -486,7 +486,7 @@ class ObjectData:
             # Find the closest to the median
             pos_ext = all_snr_pos[0]
             # set the filename
-            file_ext = spec_props['EXT'].get_files(qc=True)[pos_ext]
+            file_ext = spec_props['EXT'].get_files()[pos_ext]
             # Find the matching raw file
             pos_raw = _match_file(reffile=file_ext,
                                   files=spec_props['RAW'].get_files(qc=True))
@@ -3453,7 +3453,7 @@ def debug_mode(debugmode: bool, gsettings: dict):
     # switch off some options in debug mode
     if debugmode:
         gsettings['N_CORES'] = 1
-        gsettings['filter objects'] = True
+        gsettings['filter objects'] = False
     return gsettings
 
 
@@ -3705,7 +3705,14 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
     ltable = logdbm.get_entries('PID,PASSED_ALL_QC', condition=pid_condition)
     # get the columsn from the log table
     all_pids = np.array(ltable['PID'])
-    all_pass = np.array(ltable['PASSED_ALL_QC']).astype(bool)
+    # get the passed all qc value
+    passed_all_qc = np.array(ltable['PASSED_ALL_QC'])
+    # if value is None assume it passed
+    null_mask = ~(passed_all_qc == 1)
+    null_mask &= ~(passed_all_qc == 0)
+    passed_all_qc[null_mask] = 1
+    # push into True and False
+    all_pass = passed_all_qc.astype(bool)
     # need to loop around all files
     for row in range(len(findex_table)):
         # get the pid for this row

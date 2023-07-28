@@ -36,9 +36,9 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
     # get params updated for input yaml file
     all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
     # loop around profiles
-    for profile in all_params['PROFILES']:
+    for profile in all_params:
         # get profile params
-        params = all_params['PROFILES'][profile]
+        params = all_params[profile]
         # if we do not have a test name then we run all tests and upload
         if params['test_name'] in [None, 'None']:
             # run the tests
