@@ -8,6 +8,10 @@ import matplotlib.pyplot as plt
 # directory for the plots
 fig_path = '/home/nirps-client/Frederic/qc_over_time/'
 
+# list of file types this code needs to be run for
+# may be missing some for now
+files_to_check = ['pp', 'tcorr', 'wave', 'blaze', 'shapel', 'flat', 'loco']
+
 # dictionaries with useful information for relevant file types
 # commented out for file types with nothing/no need to plot
 
@@ -138,9 +142,6 @@ loco = {
 # waveref, waveref_res_e2ds, wavered_cav__
 # all included in wave
 
-# list of file types this code needs to be run for
-# may be missing some for now
-files_to_check = ['pp', 'tcorr', 'wave', 'blaze', 'shapel', 'flat', 'loco']
 
 
 def pp_get_n_v(header):
