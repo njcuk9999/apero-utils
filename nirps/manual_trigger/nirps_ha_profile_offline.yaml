@@ -15,7 +15,7 @@ nirps ha offline:
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: complete_run.ini
+        run file: offline_run.ini
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
