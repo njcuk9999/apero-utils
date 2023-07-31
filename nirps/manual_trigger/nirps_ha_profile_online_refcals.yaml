@@ -7,7 +7,7 @@ nirps ha online:
         #    apero reduced data directories)
         apero profile: /cosmos99/nirps/apero-settings/nirps_ha_online
         # the install directory for apero (git hub repo)
-        apero install: /cosmos99/nirps/apero-bin/apero-drs-online
+        apero install: /cosmos99/nirps/git-bin/apero-drs-online
         # directory where lbl files are processed
         lbl path: /cosmos99/nirps/lbl-data/nirps_ha_online/
         # start date if not using --obsdir argument
