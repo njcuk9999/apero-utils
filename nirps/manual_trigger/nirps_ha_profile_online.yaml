@@ -1,13 +1,15 @@
-nirps ha V0.7.275:
+nirps ha online:
     # general settings
     general:
         # directory where raw data is downloaded
         raw dir: /nirps_raw/nirps/raw-data/nirps_ha
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_07276_online
+        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_online
+        # the install directory for apero (git hub repo)
+        apero install: /cosmos99/nirps/git-bin/apero-drs-online
         # directory where lbl files are processed
-        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_07276_online/
+        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_online/
         # start date if not using --obsdir argument
         start date: 2022-11-01
     # apero_processing settings
@@ -86,7 +88,13 @@ nirps ha V0.7.275:
     # lbl settings
     lbl:
         wrap script:
+    # check settings
+    check:
+        # define the raw sheet name for the google sheet
+        raw sheet name: RAW-NIRPS-HA
 
+        # define the red sheet name for the google sheet
+        red sheet name: RED-ONLINE-NIRPS-HA
 
 
 

@@ -26,6 +26,48 @@ from astropy.time import Time
 # start time
 START_TIME = Time.now()
 # -----------------------------------------------------------------------------
+# define messages
+MANUAL_START = 'MANUAL_START'
+MANUAL_END = 'MANUAL_END'
+APERO_START = 'APERO_START'
+APERO_ERR = 'APERO_ERR'
+APERO_END = 'APERO_END'
+LBL_START = 'LBL_START'
+LBL_ERROR = 'LBL_ERR'
+LBL_END = 'LBL_END'
+
+MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
+            LBL_START, LBL_ERROR, LBL_END]
+
+
+# =============================================================================
+# Define classes
+# =============================================================================
+class TriggerLog:
+    def __init__(self, filename, profile, obsdirs):
+        self.filename = filename
+        self.profile = profile
+        self.obsdirs = obsdirs
+
+    def write(self, logkind: str, message: str = 'None'):
+        # log kind must be correct
+        if logkind not in MESSAGES:
+            raise ValueError(f'logkind must be one of {MESSAGES}')
+        # set obs dir string
+        obsdir_str = '|'.join(self.obsdirs)
+        # get time now
+        timenow = Time.now()
+        # replace any double speech marks with single ones
+        message = message.replace('"', "'")
+        # construct the line
+        elements = [timenow.fits, self.profile, logkind, f"{obsdir_str}",
+                    f'"{message}"']
+        # get line as single string
+        line = ', '.join(elements)
+        # open file and append line
+        with open(self.filename, 'a') as logfile:
+            logfile.write(line + '\n')
+
 
 
 # =============================================================================
@@ -53,15 +95,18 @@ def get_args():
     # precheck switch
     parser.add_argument('--precheck', type=bool, default=True)
     parser.add_argument('--only_precheck', type=bool, default=False)
-    # process switch
-    parser.add_argument('--process', type=bool, default=True)
-    parser.add_argument('--only_process', type=bool, default=False)
+    # apero process switch
+    parser.add_argument('--apero_process', type=bool, default=True)
+    parser.add_argument('--only_apero_process', type=bool, default=False)
     # apero get switch
     parser.add_argument('--get', type=bool, default=True)
-    parser.add_argument('--only_get', type=bool, default=False)
+    parser.add_argument('--only_aperoget', type=bool, default=False)
     # apero reduction interface switch
     parser.add_argument('--ari', type=bool, default=True)
     parser.add_argument('--only_ari', type=bool, default=False)
+    # apero lbl switch
+    parser.add_argument('--lbl_process', type=bool, default=True)
+    parser.add_argument('--only_lbl_process', type=bool, default=False)
     # apero get --since parameter
     parser.add_argument('--since', type=str, default='None',
                         help='APERO get - only copy files processed since this date')
@@ -99,49 +144,96 @@ def get_settings():
         settings['SINCE'] = args.since
     # get switches
     settings['MAKELINKS'] = args.links
-    settings['ONLYLINKS'] = args.only_links
+    settings['ONLY_LINKS'] = args.only_links
+
     settings['PRECHECK'] = args.precheck
-    settings['ONLYPRECHECK'] = args.only_precheck
-    settings['PROCESSING'] = args.process
-    settings['ONLYPROCESSING'] = args.only_process
+    settings['ONLY_PRECHECK'] = args.only_precheck
+
+    settings['APERO_PROCESSING'] = args.apero_process
+    settings['ONLY_APEROPROCESSING'] = args.only_apero_process
+
     settings['APERO_GET'] = args.get
-    settings['ONLYAPEROGET'] = args.only_get
+    settings['ONLY_APEROGET'] = args.only_aperoget
+
+    settings['LBL_PROCESSING'] = args.lbl_process
+    settings['ONLY_LBLPROCESSING'] = args.only_lbl_process
+
     settings['REDUCTION_INTERFACE'] = args.ari
-    settings['ONLYREDUCTIONINTERFACE'] = args.only_ari
+    settings['ONLY_REDUCTIONINTERFACE'] = args.only_ari
+    # -------------------------------------------------------------------------
     # deal with only switches (turn off all other switches)
-    if settings['ONLYLINKS']:
+    # -------------------------------------------------------------------------
+    # only links
+    if settings['ONLY_LINKS']:
         settings['MAKELINKS'] = True
         settings['PRECHECK'] = False
-        settings['PROCESSING'] = False
+        settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
+        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = False
-    if settings['ONLYPRECHECK']:
+    # only precheck
+    if settings['ONLY_PRECHECK']:
         settings['MAKELINKS'] = False
         settings['PRECHECK'] = True
-        settings['PROCESSING'] = False
+        settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
+        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = False
-    if settings['ONLYPROCESSING']:
+    # only APERO processing
+    if settings['ONLY_APEROPROCESSING']:
         settings['MAKELINKS'] = False
         settings['PRECHECK'] = False
-        settings['PROCESSING'] = True
+        settings['APERO_PROCESSING'] = True
         settings['APERO_GET'] = False
+        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = False
-    if settings['ONLYAPEROGET']:
+    # only apero get
+    if settings['ONLY_APEROGET']:
         settings['MAKELINKS'] = False
         settings['PRECHECK'] = False
-        settings['PROCESSING'] = False
+        settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = True
+        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = False
-    if settings['ONLYREDUCTIONINTERFACE']:
+    # only lbl processing
+    if settings['ONLY_LBLPROCESSING']:
         settings['MAKELINKS'] = False
         settings['PRECHECK'] = False
-        settings['PROCESSING'] = False
+        settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
+        settings['LBL_PROCESSING'] = True
+        settings['REDUCTION_INTERFACE'] = False
+    # only ARI
+    if settings['ONLY_REDUCTIONINTERFACE']:
+        settings['MAKELINKS'] = False
+        settings['PRECHECK'] = False
+        settings['APERO_PROCESSING'] = False
+        settings['APERO_GET'] = False
+        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = True
     # ----------------------------------------------------------------------
     # read the yaml file and push into settings
     settings = read_yaml(args.profile, settings)
+    # ----------------------------------------------------------------------
+    # construct log path
+    homedir = os.path.expanduser('~')
+    # construct log path
+    logpath = os.path.join(homedir, '.apero', 'manual_trigger')
+    # make sure logpath exists
+    if not os.path.exists(logpath):
+        os.makedirs(logpath)
+    # construct log filename
+    logfile = os.path.join(logpath, args.profile.replace('.yaml', '.log'))
+    # make a log for each profile
+    settings['LOG'] = dict()
+    # loop around profiles
+    for profile in settings['PROFILES']:
+        # get the obs dirs
+        obs_dirs = settings['OBS_DIRS']
+        # get log class
+        logclass = TriggerLog(logfile, profile=profile, obsdirs=obs_dirs)
+        # push into settings
+        settings['LOG'][profile] = logclass
     # ----------------------------------------------------------------------
     # return the settings
     return settings
@@ -307,6 +399,12 @@ def run_processing(settings: Dict[str, Any]):
     """
     # loop around profiles
     for profile in settings['PROFILES']:
+        # get the obs dirs
+        obs_dirs = settings['OBS_DIRS']
+        # get the obsdirs as a string
+        obsdir_str = ','.join(obs_dirs)
+        # log that APERO started
+        trigger_settings['LOG'][profile].write(APERO_START)
         # print progress
         print(f'\tRunning profile: {profile}')
         # get the yaml dictionary for this profile
@@ -318,18 +416,22 @@ def run_processing(settings: Dict[str, Any]):
             apero_reset(params, pdict)
         # get the run file
         runfile = pdict['processing']['run file']
-        # get the obs dirs
-        obs_dirs = settings['OBS_DIRS']
+
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_processing
         # run apero processing
         if obs_dirs == '*':
-            apero_processing.main(runfile=runfile,
-                                  test=settings['TEST'])
+            ll = apero_processing.main(runfile=runfile,
+                                       test=settings['TEST'])
         else:
-            apero_processing.main(runfile=runfile,
-                                  include_obs_dirs=','.join(obs_dirs),
-                                  test=settings['TEST'])
+            ll = apero_processing.main(runfile=runfile,
+                                       include_obs_dirs=obsdir_str,
+                                       test=settings['TEST'])
+        # TODO: log apero errors using ll
+        _ = ll
+        # log that APERO ended
+        trigger_settings['LOG'][profile].write(APERO_END)
+
 
 
 def apero_reset(params: Any, pdict: Dict[str, Any]):
@@ -490,7 +592,7 @@ def run_apero_get(settings: Dict[str, Any]):
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
         apero_get.main(objnames='None', outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=lbl_calfibers,
+                       outpath=outpath_calib, fibers=lbl_scifibers,
                        symlinks=lbl_symlinks, nosubdir=True,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for calibs (wave + blaze) science fiber
@@ -524,6 +626,17 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     return
 
 
+def run_lbl_processing(settings: Dict[str, Any]):
+    """
+    Run the LBL processing
+
+    :param settings: dict, settings dictionary
+    """
+    _ = settings
+    print('\tNot implemented.')
+    return
+
+
 # =============================================================================
 # Start of code
 # =============================================================================
@@ -532,13 +645,16 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # get settings
     trigger_settings = get_settings()
+    # log that we have started manual trigger
+    for profile in trigger_settings['PROFILES']:
+        trigger_settings['LOG'][profile].write(MANUAL_START)
     # ----------------------------------------------------------------------
     # make symbolic links
     if trigger_settings['MAKELINKS']:
         print_process('Making symbolic links')
         make_sym_links(trigger_settings)
         # deal with only creating links
-        if trigger_settings['ONLYLINKS']:
+        if trigger_settings['ONLY_LINKS']:
             print_process('Only making symbolic links')
             sys.exit(0)
     # ----------------------------------------------------------------------
@@ -547,16 +663,16 @@ if __name__ == "__main__":
         print_process('Running apero precheck')
         run_precheck(trigger_settings)
         # deal with only running precheck
-        if trigger_settings['ONLYPRECHECK']:
+        if trigger_settings['ONLY_PRECHECK']:
             print_process('Only running apero precheck')
             sys.exit(0)
     # ----------------------------------------------------------------------
     # run apero processing on all profiles
-    if trigger_settings['PROCESSING']:
+    if trigger_settings['APERO_PROCESSING']:
         print_process('Running apero processing')
         run_processing(trigger_settings)
         # deal with only running processing
-        if trigger_settings['ONLYPROCESSING']:
+        if trigger_settings['ONLY_APEROPROCESSING']:
             print_process('Only running apero processing')
             sys.exit(0)
     # ----------------------------------------------------------------------
@@ -564,12 +680,34 @@ if __name__ == "__main__":
     if trigger_settings['APERO_GET']:
         print_process('Running apero get')
         run_apero_get(trigger_settings)
+        # deal with only running processing
+        if trigger_settings['ONLY_APEROGET']:
+            print_process('Only running apero get')
+            sys.exit(0)
+    # ----------------------------------------------------------------------
+    # run the apero reduction interface
+    if trigger_settings['LBL_PROCESSING']:
+        print_process('Running lbl processing')
+        run_lbl_processing(trigger_settings)
+        # deal with only running processing
+        if trigger_settings['ONLY_LBLPROCESSING']:
+            print_process('Only running apero get')
+            sys.exit(0)
     # ----------------------------------------------------------------------
     # run the apero reduction interface
     if trigger_settings['REDUCTION_INTERFACE']:
         print_process('Running apero reduction interface')
+        # TODO: flag only to do this night
         run_apero_reduction_interface(trigger_settings)
-
+        # deal with only running processing
+        if trigger_settings['ONLY_REDUCTIONINTERFACE']:
+            print_process('Only running apero get')
+            sys.exit(0)
+    # ----------------------------------------------------------------------
+    # log that we have finished
+    # log that we have started manual trigger
+    for profile in trigger_settings['PROFILES']:
+        trigger_settings['LOG'][profile].write(MANUAL_END)
 
 # =============================================================================
 # End of code

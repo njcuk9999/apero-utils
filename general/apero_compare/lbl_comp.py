@@ -20,47 +20,53 @@ from astropy.table import Table
 # =============================================================================
 # Define variables
 # =============================================================================
-NAME1 = 'spirou@rali'
-NAME2 = 'cook@jupiter'
-NAME3 = 'cook@nb19'
-NAME4 = 'newworlds'
-NAME5 = 'lam'
-NAME6 = 'halau'
+name1 = 'spirou@rali'
+name2 = 'cook@jupiter'
+name3 = 'cook@nb19'
+name4 = 'spirou@maestria'
+name5 = 'newworlds'
+name6 = 'lam'
+name7 = 'halau'
+
+
+names = [name1, name2, name3, name4, name6]
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
 REJECT_DATE_ENDS = [59063.7790]
 
 # Define which reduction is the reference reduction
-REF_NAME = str(NAME1)
+REF_NAME = str(name1)
 # -----------------------------------------------------------------------------
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
-paths = dict()
-paths[NAME1] = '/scratch3/lbl/data/minidata_comp/minidata2_07284_20230608_rali/lblrdb/'
-paths[NAME2] = '/scratch3/lbl/data/minidata_comp/minidata2_07284_20230608_jupiter/lblrdb/'
-paths[NAME3] = '/scratch3/lbl/data/minidata_comp/minidata2_07284_20230608_nb19/lblrdb/'
-# paths[NAME4] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_newworld/lblrdb/'
-# paths[NAME5] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_lam/lblrdb/'
-# paths[NAME6] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/lblrdb/'
+outpaths = dict()
+outpaths[name1] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_rali/lblrdb/'
+outpaths[name2] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupiter/lblrdb/'
+outpaths[name3] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_nb19/lblrdb/'
+outpaths[name4] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_maestria/lblrdb/'
+outpaths[name5] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_newworld/lblrdb'
+outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/lblrdb'
+
+paths = outpaths
 
 # -----------------------------------------------------------------------------
 # add a color for each reduction (i.e. b, g, r, k, m, c, orange, purple)
 COLORS = dict()
-COLORS[NAME1] = 'b'
-COLORS[NAME2] = 'r'
-COLORS[NAME3] = 'g'
-COLORS[NAME4] = 'orange'
-COLORS[NAME5] = 'purple'
-COLORS[NAME6] = 'k'
+COLORS[name1] = 'b'
+COLORS[name2] = 'r'
+COLORS[name3] = 'g'
+COLORS[name4] = 'orange'
+COLORS[name5] = 'purple'
+COLORS[name6] = 'k'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
-MARKERS[NAME1] = 'o'
-MARKERS[NAME2] = 's'
-MARKERS[NAME3] = '+'
-MARKERS[NAME4] = '^'
-MARKERS[NAME5] = 'x'
-MARKERS[NAME6] = 'v'
+MARKERS[name1] = 'o'
+MARKERS[name2] = 's'
+MARKERS[name3] = '+'
+MARKERS[name4] = '^'
+MARKERS[name5] = 'x'
+MARKERS[name6] = 'v'
 # markers needing facecolor
 has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------
@@ -94,7 +100,7 @@ if __name__ == "__main__":
 
     # get all fits files
     files = dict()
-    for name in paths:
+    for name in names:
         path = paths[name]
         files[name] = get_files(path)
     # -------------------------------------------------------------------------
@@ -118,7 +124,7 @@ if __name__ == "__main__":
 
     for basename in basenames:
         cond = True
-        for name in paths:
+        for name in names:
             cond &= os.path.exists(os.path.join(paths[name], basename))
         if cond:
             valid_basenames.append(basename)
@@ -131,7 +137,7 @@ if __name__ == "__main__":
     obsdirs = dict()
 
     # loop around reductions
-    for it, name in enumerate(paths):
+    for it, name in enumerate(names):
         # define a list per reduction to store bjds and rvs
         times[name] = []
         rvs[name] = []
@@ -163,7 +169,7 @@ if __name__ == "__main__":
     # keep track of nans
     nanmask = np.zeros(len(times[REF_NAME]), dtype=bool)
     # convert to numpy arrays and count nanrows
-    for name in paths:
+    for name in names:
         times[name] = np.array(times[name])
         rvs[name] = np.array(rvs[name])
         ervs[name] = np.array(ervs[name])
@@ -177,22 +183,22 @@ if __name__ == "__main__":
 
         reject_mask = np.zeros_like(times[REF_NAME], dtype=bool)
         # convert to numpy arrays and count nanrows
-        for name in paths:
+        for name in names:
             for point in range(len(REJECT_DATE_ENDS)):
                 point_mask = times[name] > REJECT_DATE_STARTS[point]
                 point_mask &= times[name] < REJECT_DATE_ENDS[point]
 
                 reject_mask |= point_mask
         # apply mask
-        for name in paths:
+        for name in names:
             times[name] = times[name][~reject_mask]
             rvs[name] = rvs[name][~reject_mask]
             ervs[name] = ervs[name][~reject_mask]
     # -------------------------------------------------------------------------
     # plot
-    fig, frames = plt.subplots(ncols=1, nrows=2)
+    fig, frames = plt.subplots(ncols=1, nrows=3)
 
-    for name in paths:
+    for name in names:
 
         xvector = times
 
@@ -214,8 +220,15 @@ if __name__ == "__main__":
         ediff = np.sqrt(ervs[REF_NAME]**2 + ervs[name]**2)
         diffrms = np.nanstd(diff)
 
+        diff2 = ((rvs[REF_NAME] - np.nanmedian(rvs[REF_NAME])) -
+                 (rvs[name] - np.nanmedian(rvs[name])))
+
+
         frames[1].plot(xvector[REF_NAME], diff,
                        label=f'{REF_NAME}-{name}', **pkwargs)
+
+        frames[2].plot(xvector[REF_NAME], diff2,
+                       label=f'({REF_NAME}-med)-({name}-med)', **pkwargs)
 
         print(f'rms of difference {REF_NAME}-{name} = {diffrms} m/s')
 
@@ -227,6 +240,12 @@ if __name__ == "__main__":
     frames[1].legend(loc=0)
     frames[1].set(xlabel=TIME_KEY, ylabel='$\Delta$RV m/s')
     frames[1].ticklabel_format(useOffset=False)
+
+    frames[2].legend(loc=0)
+    frames[2].set(xlabel=TIME_KEY, ylabel='$\Delta$RV m/s')
+    frames[2].ticklabel_format(useOffset=False)
+
+
     plt.show()
     plt.close()
 

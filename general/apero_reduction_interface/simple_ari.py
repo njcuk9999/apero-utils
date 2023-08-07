@@ -18,6 +18,8 @@ import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
+from matplotlib.legend_handler import HandlerPatch
+from matplotlib.patches import FancyArrowPatch
 import numpy as np
 import pandas as pd
 import yaml
@@ -484,12 +486,12 @@ class ObjectData:
             # Find the closest to the median
             pos_ext = all_snr_pos[0]
             # set the filename
-            file_ext = spec_props['EXT'].get_files(qc=True)[pos_ext]
+            file_ext = spec_props['EXT'].get_files()[pos_ext]
             # Find the matching raw file
             pos_raw = _match_file(reffile=file_ext,
                                   files=spec_props['RAW'].get_files(qc=True))
             pos_s1d = _match_file(reffile=file_ext,
-                                   files=spec_props['S1D'].get_files(qc=True))
+                                  files=spec_props['S1D'].get_files(qc=True))
             pos_sc1d = _match_file(reffile=file_ext,
                                    files=spec_props['SC1D'].get_files(qc=True))
             # we only stop is a match is found
@@ -568,7 +570,7 @@ class ObjectData:
         # -----------------------------------------------------------------
         # construct the header file
         ext_header_file = os.path.join(down_save_path,
-                                   f'ext2d_header_{self.objname}_file.csv')
+                                       f'ext2d_header_{self.objname}_file.csv')
         create_header_file(spec_props['EXT'].get_files(qc=True),
                            self.headers, 'ext', self.header_dict,
                            ext_header_file)
@@ -671,7 +673,7 @@ class ObjectData:
             if plot_file not in lbl_objtmps[lbl_objtmp]:
                 # must set these to None if no LBL files
                 self.lbl_plot_path[lbl_objtmp] = None
-                self.lbl_stats_table[lbl_objtmp] =None
+                self.lbl_stats_table[lbl_objtmp] = None
                 self.lbl_dwn_table[lbl_objtmp] = None
                 continue
             # get the plot file for this objname+template
@@ -766,9 +768,6 @@ class ObjectData:
         # ---------------------------------------------------------------------
         # set the lbl combinations
         self.lbl_combinations = lbl_objtmps.keys()
-
-
-
 
     def get_ccf_parameters(self):
 
@@ -1181,11 +1180,13 @@ def update_apero_profile(profile: dict):
     :param profile: dict, the profile to update
     :return:
     """
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = profile['apero profile']
+    # ------------------------------------------------------------------
+    # cannot import until after DRS_UCONFIG is set
     from apero.base import base
     from apero.core import constants
     from apero.core.constants import param_functions
-    # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile['apero profile']
     # reload DPARAMS and IPARAMS
     base.DPARAMS = base.load_database_yaml()
     base.IPARAMS = base.load_install_yaml()
@@ -1293,8 +1294,8 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
                             'ARI will be the first column [OBJNAME]')
     obj_index_page.add_newline()
     obj_index_page.add_text('If you have any issues please report using '
-                        '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                        'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                            '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
     obj_index_page.add_newline()
     # -------------------------------------------------------------------------
     # loop around objects and create a section for each
@@ -1417,8 +1418,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                               'be the first column [OBJNAME]')
         profile_page.add_newline()
         profile_page.add_text('If you have any issues please report using '
-                            '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                              '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                              'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
         profile_page.add_newline()
         profile_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
         profile_page.add_newline()
@@ -1679,7 +1680,7 @@ def compile_apero_object_table(gsettings) -> Dict[str, ObjectData]:
     filetypes['sc1d'] = FileType('sc1d', block_kind='red', chain='tcorr',
                                  kw_output='SC1D_V_FILE', fiber=science_fiber)
     # lbl files added as filetype but don't count in same was as other files
-    filetypes['lbl_fits'] = FileType('lbl_fits', count=False)
+    filetypes['lbl.fits'] = FileType('lbl.fits', count=False)
     for filetype in LBL_FILETYPES:
         filetypes[filetype] = FileType(filetype, count=False)
     # -------------------------------------------------------------------------
@@ -1963,7 +1964,7 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
         object_class.lbl_templates = templates
         object_class.lbl_select = _select
         # set the number of files
-        object_class.filetypes['lbl_fits'].num = _count
+        object_class.filetypes['lbl.fits'].num = _count
         # ---------------------------------------------------------------------
         # LBL files
         # ---------------------------------------------------------------------
@@ -2506,7 +2507,7 @@ def make_obj_table(object_instances: Dict[str, ObjectData]) -> Optional[Table]:
         if object_class.has_polar:
             table_dict['pfits'].append(object_class.filetypes['pfiles'].num)
         # set the number of lbl files
-        table_dict['lbl'].append(object_class.filetypes['lbl_fits'].num)
+        table_dict['lbl'].append(object_class.filetypes['lbl.fits'].num)
         # set the last observed value raw file
         table_dict['last_obs'].append(object_class.filetypes['raw'].last.iso)
         # set the last processed value
@@ -2539,12 +2540,13 @@ def download_table(files: List[str], descriptions: List[str],
     """
     Generic download table saving to the item relative path
 
-    :param files:
-    :param descriptions:
+    :param files: the list of files to add to download table
+    :param descriptions: the list of descriptions for each file
     :param dwn_rel_path: the path of the download relative to the page
     :param item_path: the absolute path to the item csv table file (to save to)
     :param down_dir: the path to the download directory
     :param title: the title for the download table
+    :param versions: the versions of the files (optional)
     :return:
     """
     # --------------------------------------------------------------------------
@@ -2585,12 +2587,12 @@ def download_table(files: List[str], descriptions: List[str],
             out_versions[basename] = versions[it]
         # if file is a fits file get the version from the header
         elif filename.endswith('.fits'):
-                # get the header
-                hdr = fits.getheader(filename)
-                if 'VERSION' in hdr:
-                    out_versions[basename] = hdr['VERSION']
-                else:
-                    out_versions[basename] = ''
+            # get the header
+            hdr = fits.getheader(filename)
+            if 'VERSION' in hdr:
+                out_versions[basename] = hdr['VERSION']
+            else:
+                out_versions[basename] = ''
         # otherwise we have no version info
         else:
             out_versions[basename] = ''
@@ -2931,6 +2933,13 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     snr_h = lbl_props['snr_h']
     snr_h_label = lbl_props['SNR_H_LABEL']
     reset_mask = lbl_props['RESET_RV']
+    # sort data by date
+    sort = np.argsort(plot_date)
+    plot_date = plot_date[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
+    snr_h = snr_h[sort]
+    reset_mask = reset_mask[sort]
     # set background color
     frame[0].set_facecolor(PLOT_BACKGROUND_COLOR)
     frame[1].set_facecolor(PLOT_BACKGROUND_COLOR)
@@ -2941,7 +2950,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     frame[0].plot_date(plot_date[~reset_mask], vrad[~reset_mask], fmt='.',
                        alpha=0.5, color='green', ls='None')
     frame[0].plot_date(plot_date[reset_mask], vrad[reset_mask], fmt='.',
-                       alpha=0.5,  color='purple', ls='None')
+                       alpha=0.5, color='purple', ls='None')
     # plot the error bars
     frame[0].errorbar(plot_date[~reset_mask], vrad[~reset_mask],
                       yerr=svrad[~reset_mask],
@@ -2950,7 +2959,7 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     frame[0].errorbar(plot_date[reset_mask], vrad[reset_mask],
                       yerr=svrad[reset_mask],
                       marker='o', alpha=0.5, color='purple', ls='None',
-                      label='Possibily bad (reset rv)')
+                      label='Possibly bad (reset rv)')
     # find percentile cuts that will be expanded by 150% for the ylim
     pp = np.nanpercentile(vrad, [10, 90])
     diff = pp[1] - pp[0]
@@ -2958,29 +2967,46 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
     # used for plotting but also for the flagging of outliers
     ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
-
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
     # store the bad points
     bad_points = []
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
+    arrow = None
+    # --------------------------------------------------------------------------
     # flag the low outliers
     low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(plot_date[low], dtype=float)
-    x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
+    # x_range = np.nanmax(plot_date) - np.nanmin(plot_date)
     for ix in range(len(xpoints)):
         bad_points.append(ix)
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] + l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] - l_arrow * 2),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
         bad_points.append(ix)
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].set(title=plot_title)
@@ -2993,8 +3019,18 @@ def lbl_plot(lbl_props: Dict[str, Any], plot_path: str,
         if raw_labels[it] not in labels:
             handles.append(raw_handles[it])
             labels.append(raw_labels[it])
-    # add legend
-    frame[0].legend(handles, labels, loc=0)
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow,))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Bottom plot SNR
     # --------------------------------------------------------------------------
@@ -3039,6 +3075,7 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     high = lbl_props['high']
     vel_domain = lbl_props['ylim']
     version_lbl = lbl_props['version']
+    num_reset_rv = lbl_props['NUM_RESET_RV']
     # --------------------------------------------------------------------------
     # compute the stats
     # --------------------------------------------------------------------------
@@ -3075,6 +3112,9 @@ def lbl_stats_table(lbl_props: Dict[str, Any], stat_path: str, title: str):
     # add the number of nights
     stat_dict['Description'].append('Number of Nights')
     stat_dict['Value'].append(n_nights)
+    # add the number of reset RV points
+    stat_dict['Description'].append('Number of Reset RV Points')
+    stat_dict['Value'].append(num_reset_rv)
     # add the systemic velocity
     stat_dict['Description'].append('Systemic Velocity')
     stat_dict['Value'].append('{:.2f} m/s'.format(sys_vel))
@@ -3110,6 +3150,12 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     has_fit = ccf_props['has_fit']
     fit = ccf_props['fit']
     xlim = ccf_props['xlim']
+
+    # sort data by mjd.plot_date
+    sort = np.argsort(mjd.plot_date)
+    mjd = mjd[sort]
+    vrad = vrad[sort]
+    svrad = svrad[sort]
     # ylim = ccf_props['ylim']
     # --------------------------------------------------------------------------
     # setup the figure
@@ -3124,7 +3170,7 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     # --------------------------------------------------------------------------
     # # plot the CCF RV points
     frame[0].plot_date(mjd.plot_date, vrad, fmt='.', alpha=0.5,
-                       color='green')
+                       color='green', label='Good')
     # plot the CCF RV errors
     frame[0].errorbar(mjd.plot_date, vrad, yerr=svrad, fmt='o',
                       alpha=0.5, color='green')
@@ -3138,28 +3184,64 @@ def ccf_plot(ccf_props: Dict[str, Any], plot_path: str, plot_title: str):
     else:
         ylim = [central_val - 1.5 * diff, central_val + 1.5 * diff]
     # length of the arrow flagging outliers
-    l_arrow = (ylim[1] - ylim[0]) / 10.0
+    l_arrow = 0.05 * (ylim[1] - ylim[0])
+    # set the arrow properties
+    arrowprops = dict(arrowstyle='<-', linewidth=2, color='red')
+    arrow = None
+    # --------------------------------------------------------------------------
     # flag the low outliers
     low = vrad < ylim[0]
     # get the x and y values of the outliers to be looped over within
     # the arrow plotting
     xpoints = np.array(mjd.plot_date[low], dtype=float)
-    x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
+    # x_range = np.nanmax(mjd.plot_date) - np.nanmin(mjd.plot_date)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[0] - l_arrow),
+                                  xytext=(xpoints[ix], ylim[0] + l_arrow * 2),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[0] + l_arrow * 2, 0, -l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
     # same as above for the high outliers
     high = vrad > ylim[1]
     xpoints = np.array(mjd.plot_date[high], dtype=float)
     for ix in range(len(xpoints)):
-        frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
-                       color='red', head_width=0.01 * x_range,
-                       head_length=0.25 * l_arrow, alpha=0.5)
+        arrow = frame[0].annotate('',
+                                  xy=(xpoints[ix], ylim[1] - l_arrow * 2),
+                                  xytext=(xpoints[ix], ylim[1] + l_arrow),
+                                  xycoords='data', textcoords='data',
+                                  arrowprops=arrowprops)
+
+        # frame[0].arrow(xpoints[ix], ylim[1] - l_arrow * 2, 0, l_arrow,
+        #                color='red', head_width=0.01 * x_range,
+        #                head_length=0.25 * l_arrow, alpha=0.5, label='Outliers')
+    # --------------------------------------------------------------------------
     # setting the plot
     frame[0].set(ylim=ylim)
     frame[0].grid(which='both', color='lightgray', ls='--')
     frame[0].set(xlabel='Date', ylabel='Velocity [m/s]')
+    # only keep one unique labels for legend
+    handles, labels = [], []
+    raw_handles, raw_labels = frame[0].get_legend_handles_labels()
+    for it in range(len(raw_labels)):
+        if raw_labels[it] not in labels:
+            handles.append(raw_handles[it])
+            labels.append(raw_labels[it])
+    # --------------------------------------------------------------------------
+    # Create a custom legend handle for the arrows
+    if arrow is not None:
+        arrow_handle = ArrowHandler()
+        arrow_handle.arrowprops = arrowprops
+        handler_map = {tuple: arrow_handle}
+        handles.append((arrow,))
+        labels.append('Outliers')
+        # add legend
+        frame[0].legend(handles, labels, loc=0, handler_map=handler_map)
+    else:
+        frame[0].legend(handles, labels, loc=0)
     # --------------------------------------------------------------------------
     # Middle plot median CCF
     # --------------------------------------------------------------------------
@@ -3371,7 +3453,7 @@ def debug_mode(debugmode: bool, gsettings: dict):
     # switch off some options in debug mode
     if debugmode:
         gsettings['N_CORES'] = 1
-        gsettings['filter objects'] = True
+        gsettings['filter objects'] = False
     return gsettings
 
 
@@ -3623,7 +3705,14 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
     ltable = logdbm.get_entries('PID,PASSED_ALL_QC', condition=pid_condition)
     # get the columsn from the log table
     all_pids = np.array(ltable['PID'])
-    all_pass = np.array(ltable['PASSED_ALL_QC']).astype(bool)
+    # get the passed all qc value
+    passed_all_qc = np.array(ltable['PASSED_ALL_QC'])
+    # if value is None assume it passed
+    null_mask = ~(passed_all_qc == 1)
+    null_mask &= ~(passed_all_qc == 0)
+    passed_all_qc[null_mask] = 1
+    # push into True and False
+    all_pass = passed_all_qc.astype(bool)
     # need to loop around all files
     for row in range(len(findex_table)):
         # get the pid for this row
@@ -3638,6 +3727,20 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
             passed[row] = True
     # return the passed mask
     return passed
+
+
+class ArrowHandler(HandlerPatch):
+    def __init__(self):
+        # get super call
+        super().__init__()
+        # set arrow props
+        self.arrowprops = None
+
+    def create_artists(self, legend, orig_handle, xdescent, ydescent,
+                       width, height, fontsize, trans):
+        arrow = FancyArrowPatch((0, 3), (25, 3), **self.arrowprops)
+        arrow.set_mutation_scale(10)
+        return [arrow]
 
 
 # =============================================================================
