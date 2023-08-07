@@ -44,7 +44,6 @@ plt.rcParams["ytick.right"] = True
 # =====================================================================================================================
 # APERO reduction info
 mode = "he"  # "ha": high accuracy | "he": high efficiency
-version = "07276"  # version number I assume?
 onoff = "online"  # "online" | "offline"
 
 # Target & template
@@ -53,10 +52,10 @@ template = "Proxima"  # name of template; only used if on of the two dataset is 
 
 # Paths, pipelines, and RV methods for the pair comparison ------------------------------------------------------------
 # Paths to LBL rdb or CCF files
-# path_1 = "/cosmos99/nirps/lbl-data/nirps_{}_{}_{}/lblrdb/".format(mode, version, onoff)  # APERO LBL
-path_1 = "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff)  # APERO CCF
+# path_1 = "/cosmos99/nirps/lbl-data/nirps_{}_{}/lblrdb/".format(mode, onoff)  # APERO LBL
+path_1 = "/cosmos99/nirps/apero-data/nirps_{}_{}/red/".format(mode, onoff)  # APERO CCF
 path_2 = ''  # ESO (this path is not used; the code will query DACE for CCF, and crash for LBL)
-# path_2 = "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff)  # APERO CCF
+# path_2 = "/cosmos99/nirps/apero-data/nirps_{}_{}/red/".format(mode, onoff)  # APERO CCF
 
 # Pipelines to compare (APERO/ESO)
 pipeline_1 = "APERO"
@@ -71,8 +70,8 @@ rv_method_2 = "CCF"
 do_compare_all = True  # set to True to overplot all pipelines & methods
 
 # Paths to LBL rdb and CCF files
-paths_all = ["/cosmos99/nirps/lbl-data/nirps_{}_{}_{}/lblrdb/".format(mode, version, onoff),  # APERO CCF
-             "/cosmos99/nirps/apero-data/nirps_{}_{}_{}/red/".format(mode, version, onoff),  # APERO LBL
+paths_all = ["/cosmos99/nirps/lbl-data/nirps_{}_{}/lblrdb/".format(mode, onoff),  # APERO CCF
+             "/cosmos99/nirps/apero-data/nirps_{}_{}/red/".format(mode, onoff),  # APERO LBL
              ''  # ESO CCF (this path is not used; the code will query DACE for CCF, and crash for LBL)
              ]
 
@@ -843,7 +842,7 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
 
 def run_comparison(target, template=None,
                    path_1='', path_2='', pipeline_1="APERO", pipeline_2="ESO", rv_method_1="LBL", rv_method_2="CCF",
-                   mode="he", version="07276", onoff="online", path_savefig='', nsig=10):
+                   mode="he", onoff="online", path_savefig='', nsig=10):
     """
     Compare any set of 2 RV time series.
 
@@ -860,7 +859,6 @@ def run_comparison(target, template=None,
                             Default: "CCF".
     :param mode:            (str, optional) Instrument mode. Can be either "he" (high efficiency) or "ha" (high
                             accuracy). Default: "he".
-    :param version:         (str, optional) Reduction version. Default: "07276".
     :param onoff:           (str, optional) Reduction mode. Can be either "online" or "offline". Default: "online".
     :param path_savefig:    (str, optional) Absolute path where figures will be saved. Default: ''.
     :param nsig:            (float, optional) Number of sigmas to reject outliers. Default: 10.
@@ -869,7 +867,6 @@ def run_comparison(target, template=None,
     # Sanity checks
     pipeline_1, pipeline_2 = pipeline_1.upper(), pipeline_2.upper()
     assert mode in ["he", "ha"], "ERROR! 'mode' must be either 'he' (high efficiency) or 'ha' (high accuracy)."
-    assert version in ["07276"], "ERROR! 'version' must be '07276'."  # add options when more than 1 are available
     assert onoff in ["online", "offline"], "ERROR! 'onoff' must be either 'online' or 'offline'."
     assert pipeline_1 in ["APERO", "ESO"], "ERROR! 'pipeline_1' must be either 'APERO' or 'ESO'."
     assert pipeline_2 in ["APERO", "ESO"], "ERROR! 'pipeline_2' must be either 'APERO' or 'ESO'."
@@ -953,7 +950,7 @@ def run_comparison(target, template=None,
     return 0
 
 
-def compare_all(target, template, paths, pipelines, rv_methods, mode="he", version="07276", onoff="online",
+def compare_all(target, template, paths, pipelines, rv_methods, mode="he", onoff="online",
                 path_savefig='', nsig=10):
     """
     Compare RVs from all pipelines and methods.
@@ -966,7 +963,6 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", versi
     :param rv_methods:      (list) List of strings with the names of the RV methods used to compute the RVs.
     :param mode:            (str, optional) Mode of the pipeline. Must be either 'he' (high efficiency) or 'ha' (high
                             accuracy). Default: 'he'.
-    :param version:         (str, optional) Version of the pipeline. Default: '07276'.
     :param onoff:           (str, optional) Online or offline reduction. Must be either 'online' or 'offline'.
                             Default: 'online'.
     :param path_savefig:    (str, optional) Absolute path to the directory where the figure will be saved. Default: ''.
@@ -975,7 +971,6 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", versi
     """
     # Sanity checks
     assert mode in ["he", "ha"], "ERROR! 'mode' must be either 'he' (high efficiency) or 'ha' (high accuracy)."
-    assert version in ["07276"], "ERROR! 'version' must be '07276'."  # add options when more than 1 are available
     assert onoff in ["online", "offline"], "ERROR! 'onoff' must be either 'online' or 'offline'."
 
     # Set up figure to overplot all RVs
@@ -1109,11 +1104,11 @@ if __name__ == '__main__':
     run_comparison(target=target, template=template,
                    path_1=path_1, path_2=path_2, pipeline_1=pipeline_1, pipeline_2=pipeline_2,
                    rv_method_1=rv_method_1, rv_method_2=rv_method_2,
-                   mode=mode, version=version, onoff=onoff, path_savefig=path_savefig, nsig=nsig)
+                   mode=mode, onoff=onoff, path_savefig=path_savefig, nsig=nsig)
 
     if do_compare_all:
         compare_all(target=target, template=template, paths=paths_all, pipelines=pipelines_all,
-                    rv_methods=rv_methods_all, mode=mode, version=version, onoff=onoff, path_savefig=path_savefig,
+                    rv_methods=rv_methods_all, mode=mode, onoff=onoff, path_savefig=path_savefig,
                     nsig=nsig)
 
 
