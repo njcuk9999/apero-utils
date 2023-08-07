@@ -84,8 +84,7 @@ rv_methods_all = ["LBL", "CCF", "CCF"]
 # ---------------------------------------------------------------------------------------------------------------------
 
 # Path to save figures (and ccf dictionary)
-path_savefig = ""  # TODO Where?
-# apero_ccf_dict_fname = "apero_ccf_dict.h5"
+path_savefig = ""  # TODO the user should decide where to save the figures
 
 # Number of sigmas to reject outliers
 nsig = 10
@@ -853,10 +852,10 @@ def compare_rvs(dict_1, dict_2, target, template=None, nsig=10, path_savefig='')
                                                            "-{}".format(template) if dict_2["rv_method"] == "LBL"
                                                            else ''
                                                            )
-    # Save figure  # TODO
-    # fig.savefig(path_savefig + savefname + ".png")
-    # fig.savefig(path_savefig + savefname + ".pdf")
-    # print("Saved in {}.png/pdf".format(savefname))
+    # Save figure
+    fig.savefig(path_savefig + savefname + ".png")
+    fig.savefig(path_savefig + savefname + ".pdf")
+    print("Saved in {}.png/pdf".format(savefname))
 
     plt.show()
 
@@ -1119,9 +1118,9 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", onoff
 
     fig.tight_layout()
     
-    # Save figure  # TODO
-    # fig.savefig(path_savefig + "{}_{}_all.png".format(target.upper(), template.upper()))
-    # fig.savefig(path_savefig + "{}_{}_all.pdf".format(target.upper(), template.upper()))
+    # Save figure
+    fig.savefig(path_savefig + "{}_{}_all.png".format(target.upper(), template.upper()))
+    fig.savefig(path_savefig + "{}_{}_all.pdf".format(target.upper(), template.upper()))
 
     plt.show()
 
