@@ -1,0 +1,176 @@
+# General settings (do not remove)
+settings:
+  # Instrument (either SPIROU or NIRPS)
+  instrument: NIRPS
+  # Working directory: where to store the website data
+  working directory: /cosmos99/nirps/apero-data/misc/apero-ari/working/
+  # Finder charts (None if not needed)
+  find directory: /cosmos99/nirps/apero-data/misc/apero-find/
+  # number of cores to use in multiprocessing steps
+  N_CORES: 10
+  # Spectrum wavelength ranges in nm
+  SpecWave:
+    limit0:
+      - 985
+      - 1810
+    limit1:
+      - 1082
+      - 1085
+    limit2:
+      - 1575
+      - 1580
+    limit3:
+      - 1666
+      - 1668
+  # SSH PATH to copy the website to
+  ssh:
+    directory: /export/www/home/cook/www/apero-drs/
+    user: cook
+    host: venus.astro.umontreal.ca
+    options: ssh -oport=5822
+  # whether to reset the working directory
+  reset: True
+  # whether to filter by objects
+  filter objects: False
+  # objects to filter by
+  objects:
+    - PROXIMA
+    - GL699
+
+# name:
+#     apero profile: str, absolute path to APERO profile (settings)
+#     lbl path: str, absolute path to LBL directory
+#     username: str, username for html
+#     account: str, account for html
+#     skip obj table: bool: if True, skip making the object table
+#     skip recipe table: bool: if True, skip making the recipe table
+#     skip msg table: bool: if True, skip making the msg table
+nirps he online:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_he_online
+    lbl path: /cosmos99/nirps/lbl-data/nirps_he_online/
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
+
+nirps ha online:
+    apero profile: /cosmos99/nirps/apero-settings/nirps_ha_online
+    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_online/
+    skip obj table: False
+    skip recipe table: True
+    skip msg table: True
+
+# -----------------------------------------------------------------------------
+# Header keys
+headers:
+  pp:
+    PP_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    PP_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+    PP_VERSION:
+      key: PVERSION
+      label: APERO PP Version
+      dtype: str
+  ext:
+    EXT_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    EXT_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+    EXT_Y:
+      key: EXTSN015
+      label: 'SNR[Order 15 (#134 1.08$\mu$m)]'
+      dtype: float
+    EXT_H:
+      key: EXTSN060
+      label: 'SNR[Order 60 (#89 1.63$\mu$m)]'
+      dtype: float
+    EXT_DPRTYPE:
+      key: DPRTYPE
+      label: 'DPR TYPE'
+      dtype: str
+    EXT_SEEING:
+      key: HIERARCH ESO TEL AMBI FWHM START
+      label: Seeing at start
+      dtype: float
+    EXT_AIRMASS:
+      key: HIERARCH ESO TEL AIRM START
+      label: Airmass at start
+      dtype: float
+    EXT_EXPTIME:
+        key: EXPTIME
+        label: Exposure Time
+        dtype: float
+    EXT_VERSION:
+      key: VERSION
+      label: APERO Version
+      dtype: str
+  tcorr:
+    TCORR_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    TCORR_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+    TCORR_VERSION:
+      key: VERSION
+      label: APERO Version
+      dtype: str
+  ccf:
+    CCF_MASK:
+      key: CCFMASK
+      label: CCF Mask
+      dtype: str
+    CCF_MJDMID:
+      key: MJDMID
+      label: CCF MJD
+      dtype: float
+      timefmt: mjd
+    CCF_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+    CCF_DV:
+      key: RV_CORR
+      label: CCF RV
+      unit: km/s
+      dtype: float
+    CCF_SDV:
+      key: DVRMS_CC
+      label: CCF RV Error
+      unit: m/s
+      dtype: float
+    CCF_FWHM:
+      key: CCFMFWHM
+      label: CCF FWHM
+      unit: km/s
+      dtype: float
+    CCF_VERSION:
+      key: VERSION
+      label: APERO Version
+      dtype: str
+  LBL:
+    EXT_H:
+      key: EXTSN060
+      label: 'SNR[Order 60 (#89 1.63$\mu$m)]'
+      dtype: float
+    LBL_VERSION:
+      key: LBL_VERS
+      label: LBL Version
+      dtype: str
