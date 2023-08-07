@@ -17,6 +17,7 @@ from astropy.time import Time
 import numpy as np
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from dace_query.spectroscopy import Spectroscopy
+import datetime
 
 # For uniform fonts in plots
 fontsize = 20
@@ -277,15 +278,27 @@ def open_rdb(fname):
     Load LBL rdb file to get JD, velocity, and velocity error bar.
 
     :param fname:   (str) Absolute path to the rdb file.
-    :return:        rjd (1d array), rv (1d array), rv_err (1d array)
+    :return:        date (1d array of datetime objects), rv (1d array), rv_err (1d array)
     """
     # Open file
     tbl_i = ascii.read(fname)
 
     # Get date, vrad, svrad
-    rjd, rv, rv_err = tbl_i["rjd"], tbl_i["vrad"], tbl_i["svrad"]
+    rv, rv_err = tbl_i["vrad"], tbl_i["svrad"]
 
-    return rjd, rv, rv_err
+    # Get file names for dates
+    fnames = tbl_i["FILENAME"]
+
+    # Convert date from file names into python datetime objects
+    date = []
+    for fname in fnames:
+        idx = len("NIRPS_")
+        date_i = fname.split('/')[-1][idx:idx + len("YYYY-MM-DDTHH_MM_SS_SSS")]
+        date_i = datetime.datetime.strptime(date_i, "%Y-%m-%dT%H_%M_%S_%f")
+        date.append(date_i)
+    date = np.array(date)
+
+    return date, rv, rv_err
 
 
 def query_dace(target, mode="HE"):
@@ -293,26 +306,35 @@ def query_dace(target, mode="HE"):
     Query DACE to get RV time series
     :param target:  (str) Target name
     :param mode:    (str, optional) "HE" for "high efficiency", "HA" for "high accuracy". Default: "HE".
-    :return:        rdj (1d array), rv (1d array), rv_err (1d array)
+    :return:        date (1d array of datetime objects), rv (1d array), rv_err (1d array), filenames (1d array of str)
     """
     # Retrieve radial velocity timeseries from DACE
     dict_dace = Spectroscopy.get_timeseries(target=target, sorted_by_instrument=True, output_format='numpy')
     dict_dace = dict_dace["NIRPS"]["3.0.0"][mode.upper()]
 
-    # Get date, rv, rv_err
-    rjd, rv, rv_err = dict_dace["rjd"], dict_dace["rv"], dict_dace["rv_err"]
+    # Get rv, rv_err
+    rv, rv_err = dict_dace["rv"], dict_dace["rv_err"]
 
     # Get list of raw CCF files
     filenames = dict_dace["raw_file"]
 
-    return rjd, rv, rv_err, filenames
+    # Get dates
+    date = []
+    for fname in filenames:
+        idx = len("r.NIRPS.")
+        date_i = fname.split('/')[-1][idx:idx + len("YYYY-MM-DDTHH:MM:SS.SSS")]
+        date_i = datetime.datetime.strptime(date_i, "%Y-%m-%dT%H:%M:%S.%f")
+        date.append(date_i)
+    date = np.array(date)
+
+    return date, rv, rv_err, filenames
 
 
-def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
+def process_rvs(date, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
     """
     Compute median, standard deviation, and median error bar, and remove outliers.
 
-    :param rjd:         (1d array) Reduced Julian day array.
+    :param date:        (1d array of datetime objects) Date and time of observations.
     :param rv:          (1d array) Radial velocity array.
     :param rv_err:      (1d array) Radial velocity uncertainty array.
     :param pipeline:    (str) "APERO" or "ESO".
@@ -321,10 +343,6 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
     :param nsig:        (float, optional) Number of sigmas away from median velocity to reject outliers. Default: 10.
     :return:            rv_dict (dict)
     """
-    # Convert date from RJD to JD
-    jd = rjd + 2.4e6  # [RJD -> JD]
-    # date_apero = Time(jdmid, format="jd").to_datetime()
-
     # Compute std, median, and median error bar before outlier rejection
     std_full = np.nanpercentile(rv, q=[16, 84])
     std_full = (std_full[-1] - std_full[0]) / 2
@@ -336,7 +354,9 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
     ptpscat_full = compute_ptpscatter(rv, method="linear_sigma")
 
     # Make a copy of the full time series
-    jd_full, rv_full, rv_err_full = jd.copy(), rv.copy(), rv_err.copy()
+    date_full, rv_full, rv_err_full = date.copy(), rv.copy(), rv_err.copy()
+    jd = Time(date_full).jd  # convert to JDs to simplify arithmetic operations
+    jd_full = jd.copy()  # make a copy of the full JDs
 
     # Remove nsig * sigma outliers
     # TODO: Median-filter before finding outliers?
@@ -349,7 +369,9 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
     iout_lo = np.where((rv_err > 50 * mederr_full) * (rv < median_full) + ((rv - median_full) / std_full < -nsig))
     jd_out_up = jd[iout_up]
     jd_out_lo = jd[iout_lo]
-    jd, rv, rv_err = jd[inonout], rv[inonout], rv_err[inonout]
+    date_out_up = date[iout_up]
+    date_out_lo = date[iout_lo]
+    date, jd, rv, rv_err = date[inonout], jd[inonout], rv[inonout], rv_err[inonout]
 
     # Compute std, median and median error bar, after outlier rejection
     std = np.nanstd(rv)
@@ -358,7 +380,8 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
     ptpscat = compute_ptpscatter(rv, method="linear_sigma")
 
     # Make dictionary to store all arrays
-    rv_dict = {"full": {"jd": jd_full,
+    rv_dict = {"full": {"date": date_full,
+                        "jd": jd_full,
                         "rv": rv_full,
                         "rv_err": rv_err_full,
                         "std": std_full,
@@ -366,7 +389,8 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
                         "mederr": mederr_full,
                         "ptpscat": ptpscat_full
                         },
-               "no_outliers": {"jd": jd,
+               "no_outliers": {"date": date,
+                               "jd": jd,
                                "rv": rv,
                                "rv_err": rv_err,
                                "std": std,
@@ -375,10 +399,12 @@ def process_rvs(rjd, rv, rv_err, pipeline, rv_method, filenames, nsig=10):
                                "indices": inonout,
                                "ptpscat": ptpscat
                                },
-               "outliers_up": {"jd": jd_out_up,
+               "outliers_up": {"date": date_out_up,
+                               "jd": jd_out_up,
                                # "rv": rv_out_up,  # obsolete
                                "indices": iout_up},
-               "outliers_lo": {"jd": jd_out_lo,
+               "outliers_lo": {"date": date_out_lo,
+                               "jd": jd_out_lo,
                                # "rv": rv_out_lo,  # obsolete
                                "indices": iout_lo},
                "pipeline": pipeline,
@@ -414,18 +440,18 @@ def compare_lbl(path_apero, nsig=10, path_savefig=''):
         target, template = get_target_template(rdb_i)
 
         # Put APERO data into a dictionary ----------------------------------------------------------------------------
-        # Get date, rv, rv_err from rdb file
-        rjd_apero, rv_apero, rv_err_apero = open_rdb(rdb_i)
+        # Get rv, rv_err, date from rdb file
+        date_apero, rv_apero, rv_err_apero = open_rdb(rdb_i)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dict_apero = process_rvs(rjd_apero, rv_apero, rv_err_apero, pipeline="APERO", rv_method="LBL", nsig=nsig)
+        dict_apero = process_rvs(date_apero, rv_apero, rv_err_apero, pipeline="APERO", rv_method="LBL", nsig=nsig)
 
         # Put ESO data into a dictionary ------------------------------------------------------------------------------
         # Get date, rv, rv_err from DACE
-        rjd_eso, rv_eso, rv_err_eso, filenames = query_dace(target, mode=mode)
+        date_eso, rv_eso, rv_err_eso, filenames = query_dace(target, mode=mode)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dict_eso = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="LBL", nsig=nsig)
+        dict_eso = process_rvs(date_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="LBL", nsig=nsig)
 
         # Compare RVs -------------------------------------------------------------------------------------------------
         compare_rvs(dict_1=dict_apero, dict_2=dict_eso, target=target, template=template, nsig=nsig,
@@ -487,7 +513,7 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
         # _ = savehdf5(targets, path_savefig + apero_ccf_dict_fname)
 
     # Read CCF RVs
-    rjd_apero, rv_apero, rv_err_apero = {}, {}, {}
+    rv_apero, rv_err_apero = {}, {}
     # Iterate over targets
     if compare_target is None:
         compare_target = list(targets.keys())
@@ -503,30 +529,27 @@ def compare_ccf(path_apero, compare_target=None, apero_ccf_dict_fname="apero_ccf
             # Iterate over CCF files
             for k_ccffile, ccffile_k in enumerate(targets[target_i][night_j]):
                 if j_night == 0:
-                    rjd_apero[target_i] = []
                     rv_apero[target_i] = []
                     rv_err_apero[target_i] = []
-                # Get rjd, rv, rv_err
+                # Get rv, rv_err
                 hdr = fits.getheader(ccffile_k)
-                rjd_apero[target_i].append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
                 rv_apero[target_i].append(hdr["RV_CORR"] * 1e3)  # [km/s -> m/s]
                 rv_err_apero[target_i].append(hdr["DVRMS_CC"])  # [m/s]
-        rjd_apero[target_i] = np.array(rjd_apero[target_i])
         rv_apero[target_i] = np.array(rv_apero[target_i])
         rv_err_apero[target_i] = np.array(rv_err_apero[target_i])
 
     # Put ESO ---------------------------------------------------------------------------------------------------------
     # Iterate over targets
-    for i_target, target_i in enumerate(rjd_apero.keys()):
+    for i_target, target_i in enumerate(rv_apero.keys()):
         # APERO
-        dict_apero_i = process_rvs(rjd_apero[target_i], rv_apero[target_i], rv_err_apero[target_i], pipeline="APERO",
+        dict_apero_i = process_rvs(date_apero[target_i], rv_apero[target_i], rv_err_apero[target_i], pipeline="APERO",
                                    rv_method="CCF", nsig=nsig)
 
         # ESO
         # Get date, rv, rv_err from DACE
-        rjd_eso, rv_eso, rv_err_eso, filenames = query_dace(target_i, mode=mode)
+        date_eso, rv_eso, rv_err_eso, filenames = query_dace(target_i, mode=mode)
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dict_eso_i = process_rvs(rjd_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="CCF", nsig=nsig)
+        dict_eso_i = process_rvs(date_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="CCF", nsig=nsig)
 
         compare_rvs(dict_1=dict_apero_i, dict_2=dict_eso_i, target=target_i, template=None, nsig=10,
                     path_savefig=path_savefig)
@@ -888,7 +911,7 @@ def run_comparison(target, template=None,
                 filename = path + "lbl_{}_{}.rdb".format(target.upper(), template.upper())
 
                 # Get date, rv, rv_err from rdb file
-                rjd, rv, rv_err = open_rdb(filename)
+                date, rv, rv_err = open_rdb(filename)
 
                 # Convert file name to list
                 filenames = [filename]
@@ -899,7 +922,7 @@ def run_comparison(target, template=None,
         else:  # CCF
             if pipeline == "APERO":
                 # Lists to store times, RVs, RV_ERRs
-                rjd, rv, rv_err = [], [], []
+                rv, rv_err, date = [], [], []
 
                 # List of APERO nights
                 night_list = glob.glob(path + "2*")
@@ -922,25 +945,29 @@ def run_comparison(target, template=None,
                             continue
                         # Append file name to list
                         filenames.append(ccf_file)
-                        # Read RJD, RV, RV_ERR
+                        # Read RV, RV_ERR
                         hdr = fits.getheader(ccf_file)
-                        rjd.append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
                         rv.append(hdr["RV_CORR"] * 1e3)  # [km/s -> m/s]
                         rv_err.append(hdr["DVRMS_CC"])  # [m/s]
+                        # Get date from file name
+                        idx = len("NIRPS_")
+                        date_i = ccf_file.split("/")[-1][idx:idx + len("YYYY-MM-DDTHH_MM_SS_SSS")]
+                        date_i = datetime.datetime.strptime(date_i, "%Y-%m-%dT%H_%M_%S_%f")
+                        date.append(date_i)
 
                 # Convert lists to arrays
-                rjd, rv, rv_err = np.array(rjd), np.array(rv), np.array(rv_err)
+                date, rv, rv_err = np.array(date), np.array(rv), np.array(rv_err)
 
             else:  # ESO
                 # Get date, rv, rv_err from DACE
-                rjd, rv, rv_err, filenames = query_dace(target, mode=mode)
+                date, rv, rv_err, filenames = query_dace(target, mode=mode)
 
         # Convert filenames to array if necessary
         if type(filenames) == list:
             filenames = np.array(filenames)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method,
+        dicts.append(process_rvs(date=date, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method,
                                  filenames=filenames, nsig=nsig))
 
     # Compare RVs -----------------------------------------------------------------------------------------------------
@@ -985,7 +1012,7 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", onoff
                 filename = path + "lbl_{}_{}.rdb".format(target.upper(), template.upper())
 
                 # Get date, rv, rv_err from rdb file
-                rjd, rv, rv_err = open_rdb(filename)
+                date, rv, rv_err = open_rdb(filename)
 
                 # Convert file name to list
                 filenames = [filename]
@@ -996,7 +1023,7 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", onoff
         else:  # CCF
             if pipeline == "APERO":
                 # Lists to store times, RVs, RV_ERRs
-                rjd, rv, rv_err = [], [], []
+                rv, rv_err, date = [], [], []
 
                 # List of APERO nights
                 night_list = glob.glob(path + "2*")
@@ -1018,21 +1045,25 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", onoff
                             continue
                         # Append file name to list
                         filenames.append(ccf_file)
-                        # Read RJD, RV, RV_ERR
+                        # Read RV, RV_ERR
                         hdr = fits.getheader(ccf_file)
-                        rjd.append(hdr["MJDMID"] + .5)  # [MJD -> RJD]
                         rv.append(hdr["RV_CORR"] * 1e3)  # [km/s -> m/s]
                         rv_err.append(hdr["DVRMS_CC"])  # [m/s]
+                        # Get date from file name
+                        idx = len("NIRPS_")
+                        date_i = ccf_file.split("/")[-1][idx:idx + len("YYYY-MM-DDTHH_MM_SS_SSS")]
+                        date_i = datetime.datetime.strptime(date_i, "%Y-%m-%dT%H_%M_%S_%f")
+                        date.append(date_i)
 
                 # Convert lists to arrays
-                rjd, rv, rv_err = np.array(rjd), np.array(rv), np.array(rv_err)
+                date, rv, rv_err = np.array(date), np.array(rv), np.array(rv_err)
 
             else:  # ESO
                 # Get date, rv, rv_err from DACE
-                rjd, rv, rv_err, filenames = query_dace(target, mode=mode)
+                date, rv, rv_err, filenames = query_dace(target, mode=mode)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
-        dicts.append(process_rvs(rjd=rjd, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method,
+        dicts.append(process_rvs(date=date, rv=rv, rv_err=rv_err, pipeline=pipeline, rv_method=rv_method,
                                  filenames=filenames, nsig=nsig))
 
         # Plot RVs
