@@ -26,10 +26,10 @@ name3 = 'cook@nb19'
 name4 = 'spirou@maestria'
 name5 = 'newworlds'
 name6 = 'lam'
-name7 = 'halau'
+name7 = 'cfht'
 
 
-names = [name1, name2, name3, name4, name6]
+names = [name1, name2, name3, name4, name6, name7]
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
@@ -47,6 +47,7 @@ outpaths[name3] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_nb19/
 outpaths[name4] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_maestria/lblrdb/'
 outpaths[name5] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_newworld/lblrdb'
 outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/lblrdb'
+outpaths[name7] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_cfht/lblrdb'
 
 paths = outpaths
 

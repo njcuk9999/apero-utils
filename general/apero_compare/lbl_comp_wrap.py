@@ -50,9 +50,9 @@ if __name__ == "__main__":
     name4 = 'spirou@maestria'
     name5 = 'newworlds'
     name6 = 'lam'
-    name7 = 'halau'
+    name7 = 'cfht'
     # choose which ones to run
-    names = [name6]
+    names = [name7]
     # define data directory
     outpaths = dict()
     outpaths[name1] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_rali/'
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     outpaths[name4] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_maestria/'
     outpaths[name5] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_newworld/'
     outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/'
-    outpaths[name7] = '/scratch3/lbl/data/minidata_comp/minidata2_07275_halau/rscienceed/'
+    outpaths[name7] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_cfht/'
 
     # define jobs list
     jobs = []
