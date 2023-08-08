@@ -297,7 +297,7 @@ def open_rdb(fname):
         date.append(date_i)
     date = np.array(date)
 
-    return date, rv, rv_err
+    return date, rv, rv_err, fnames
 
 
 def query_dace(target, mode="HE"):
@@ -440,14 +440,14 @@ def compare_lbl(path_apero, nsig=10, path_savefig=''):
 
         # Put APERO data into a dictionary ----------------------------------------------------------------------------
         # Get rv, rv_err, date from rdb file
-        date_apero, rv_apero, rv_err_apero = open_rdb(rdb_i)
+        date_apero, rv_apero, rv_err_apero, filenames_apero = open_rdb(rdb_i)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
         dict_apero = process_rvs(date_apero, rv_apero, rv_err_apero, pipeline="APERO", rv_method="LBL", nsig=nsig)
 
         # Put ESO data into a dictionary ------------------------------------------------------------------------------
         # Get date, rv, rv_err from DACE
-        date_eso, rv_eso, rv_err_eso, filenames = query_dace(target, mode=mode)
+        date_eso, rv_eso, rv_err_eso, filenames_eso = query_dace(target, mode=mode)
 
         # Process rvs (remove outliers, get JD, compute median and std, etc.)
         dict_eso = process_rvs(date_eso, rv_eso, rv_err_eso, pipeline="ESO", rv_method="LBL", nsig=nsig)
@@ -910,10 +910,7 @@ def run_comparison(target, template=None,
                 filename = path + "lbl_{}_{}.rdb".format(target.upper(), template.upper())
 
                 # Get date, rv, rv_err from rdb file
-                date, rv, rv_err = open_rdb(filename)
-
-                # Convert file name to list
-                filenames = [filename]
+                date, rv, rv_err, filenames = open_rdb(filename)
 
             else:  # ESO: No LBL at the moment
                 print("ERROR! LBL RVs have not been computed with ESO reduction yet.")
@@ -1011,10 +1008,7 @@ def compare_all(target, template, paths, pipelines, rv_methods, mode="he", onoff
                 filename = path + "lbl_{}_{}.rdb".format(target.upper(), template.upper())
 
                 # Get date, rv, rv_err from rdb file
-                date, rv, rv_err = open_rdb(filename)
-
-                # Convert file name to list
-                filenames = [filename]
+                date, rv, rv_err, filenames = open_rdb(filename)
 
             else:  # ESO: No LBL at the moment
                 print("ERROR! LBL RVs have not been computed with ESO reduction yet.")
