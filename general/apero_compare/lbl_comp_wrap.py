@@ -52,7 +52,7 @@ if __name__ == "__main__":
     name6 = 'lam'
     name7 = 'cfht'
     # choose which ones to run
-    names = [name7]
+    names = [name5]
     # define data directory
     outpaths = dict()
     outpaths[name1] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_rali/'
