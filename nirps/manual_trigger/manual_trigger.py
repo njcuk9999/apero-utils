@@ -581,10 +581,12 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     cwd = os.getcwd()
     # loop around profiles
     for profile in settings['PROFILES']:
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
         # get ari path
-        ari_path = settings[profile]['ari']['path']
+        ari_path = pdict['ari']['path']
         # get ari profile
-        ari_profile = settings[profile]['ari']['profile']
+        ari_profile = pdict['ari']['profile']
         # deal with no ari code
         if 'simple_ari.py' not in os.listdir(ari_path):
             print('\t\tERROR: simple_ari.py not found in {0}'.format(ari_path))

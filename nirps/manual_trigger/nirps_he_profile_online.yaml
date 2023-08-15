@@ -86,7 +86,7 @@ nirps he online:
     # ari-settings
     ari:
         # ari path
-        path: /comos99/nirps/git-bin/apero-utils/general/apero_reduction_interface/
+        path: /cosmos99/nirps/git-bin/apero-utils/general/apero_reduction_interface/
         # ari profile
         profile: nirps_profiles.yaml
     # check settings
