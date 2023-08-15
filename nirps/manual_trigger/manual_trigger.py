@@ -363,13 +363,20 @@ def run_processing(settings: Dict[str, Any]):
         pdict = settings['PROFILES'][profile]
         # update the apero profile
         params = update_apero_profile(pdict)
+        # get preset
+        p_reset = pdict['processing']['reset']
         # deal with a reset
-        if pdict['processing']['reset'] not in ['None', None]:
-            # ask user because this is dangerous
-            msg = 'Are you sure you want to reset {0}? [Y]es/[N]o: '
-            uinput = input(msg.format(pdict['processing']['reset']))
-            if uinput.upper() == 'Y' or uinput.upper() == 'YES':
-                apero_reset(params, pdict)
+        if p_reset is not None:
+            # have to check a list
+            cond1 = 'None' in p_reset
+            cond2 = None in p_reset
+            # only ask if either of these are true
+            if not cond1 and not cond2:
+                # ask user because this is dangerous
+                msg = 'Are you sure you want to reset {0}? [Y]es/[N]o: '
+                uinput = input(msg.format(pdict['processing']['reset']))
+                if uinput.upper() == 'Y' or uinput.upper() == 'YES':
+                    apero_reset(params, pdict)
         # get the run file
         runfile = pdict['processing']['run file']
 
