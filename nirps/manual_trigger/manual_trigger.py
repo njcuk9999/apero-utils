@@ -364,7 +364,7 @@ def run_processing(settings: Dict[str, Any]):
         # update the apero profile
         params = update_apero_profile(pdict)
         # deal with a reset
-        if pdict['processing']['reset'] is not None:
+        if pdict['processing']['reset'] not in ['None', None]:
             # ask user because this is dangerous
             msg = 'Are you sure you want to reset {0}? [Y]es/[N]o: '
             uinput = input(msg.format(pdict['processing']['reset']))
