@@ -30,6 +30,8 @@ settings:
     options: ssh -oport=5822
   # whether to reset the working directory
   reset: True
+  # whether to sync with current working directory
+  sync: True
   # whether to filter by objects
   filter objects: False
   # objects to filter by
