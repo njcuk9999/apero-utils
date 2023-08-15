@@ -119,7 +119,9 @@ DEFAULT_COL_WIDTH = 10
 # define table width info
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
-
+# define rsync commands
+RSYNC_CMD_IN = 'rsync -avuz -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
+RSYNC_CMD_OUT = 'rsync -avuz -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
 
 # =============================================================================
 # Classes
@@ -1559,6 +1561,41 @@ def compile_docs(settings: dict):
     os.chdir(cwd)
 
 
+def sync_docs(gsettings: dict, settings: dict):
+    # must import here (so that os.environ is set)
+    # noinspection PyPep8Naming
+    from apero.core import constants
+    from apero.tools.module.documentation import drs_documentation
+    from apero.core.utils import drs_startup
+    from apero.core.core import drs_log
+    # ------------------------------------------------------------------
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
+    # get WLOG
+    wlog = drs_log.wlog
+    # get output directory
+    out_dir = settings['OUT']
+    # get the instrument
+    instrument = settings['INSTRUMENT'].lower()
+    # ------------------------------------------------------------------
+    # make sure we copy contents not directory
+    if not out_dir.endswith(os.sep):
+        out_dir += os.sep
+    # get rsync dict
+    rdict = dict()
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
+    rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                    f'ari/{instrument}/')
+    rdict['OUTPATH'] = out_dir
+    # print command to rsync
+    wlog(params, '', RSYNC_CMD_IN.format(**rdict))
+    # run command (will require password)
+    os.system(RSYNC_CMD_IN.format(**rdict))
+
 def upload_docs(gsettings: dict, settings: dict):
     """
     Upload the documentation to the web server
@@ -1600,9 +1637,9 @@ def upload_docs(gsettings: dict, settings: dict):
     rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
                                     f'ari/{instrument}/')
     # print command to rsync
-    wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
+    wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
     # run command (will require password)
-    os.system(drs_documentation.RSYNC_CMD.format(**rdict))
+    os.system(RSYNC_CMD_OUT.format(**rdict))
 
 
 # =============================================================================
@@ -3769,6 +3806,15 @@ if __name__ == "__main__":
     if ari_gsettings['reset']:
         # remove working directory
         shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
+    # deal with a sync from server
+    if ari_gsettings['sync']:
+        # get global settings
+        ari_settings = get_settings(ari_gsettings)
+        # step 6: upload to hosting
+        print('=' * 50)
+        print('Syncing docs...')
+        print('=' * 50)
+        upload_docs(ari_gsettings, ari_settings)
     # deal with debug mode
     ari_gsettings = debug_mode(debug, ari_gsettings)
     # ----------------------------------------------------------------------
