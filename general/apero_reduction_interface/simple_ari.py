@@ -1547,9 +1547,11 @@ def compile_docs(settings: dict):
         shutil.rmtree(static_outdir)
     # copy the static directory as well
     shutil.copytree(__file__.replace('simple_ari.py', '_static'),
-                    os.path.join(settings['WORKING'], '_static'))
+                    os.path.join(settings['WORKING'], '_static'),
+                    dirs_exist_ok=True)
     shutil.copytree(__file__.replace('simple_ari.py', '_templates'),
-                    os.path.join(settings['WORKING'], '_templates'))
+                    os.path.join(settings['WORKING'], '_templates'),
+                    dirs_exist_ok=True)
     # ------------------------------------------------------------------
     # get current directory
     cwd = os.getcwd()
