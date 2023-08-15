@@ -32,12 +32,9 @@ MANUAL_END = 'MANUAL_END'
 APERO_START = 'APERO_START'
 APERO_ERR = 'APERO_ERR'
 APERO_END = 'APERO_END'
-LBL_START = 'LBL_START'
-LBL_ERROR = 'LBL_ERR'
-LBL_END = 'LBL_END'
 
-MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
-            LBL_START, LBL_ERROR, LBL_END]
+
+MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END]
 
 
 # =============================================================================
@@ -146,17 +143,11 @@ def get_settings():
     settings['MAKELINKS'] = args.links
     settings['ONLY_LINKS'] = args.only_links
 
-    settings['PRECHECK'] = args.precheck
-    settings['ONLY_PRECHECK'] = args.only_precheck
-
     settings['APERO_PROCESSING'] = args.apero_process
     settings['ONLY_APEROPROCESSING'] = args.only_apero_process
 
     settings['APERO_GET'] = args.get
     settings['ONLY_APEROGET'] = args.only_aperoget
-
-    settings['LBL_PROCESSING'] = args.lbl_process
-    settings['ONLY_LBLPROCESSING'] = args.only_lbl_process
 
     settings['REDUCTION_INTERFACE'] = args.ari
     settings['ONLY_REDUCTIONINTERFACE'] = args.only_ari
@@ -166,50 +157,26 @@ def get_settings():
     # only links
     if settings['ONLY_LINKS']:
         settings['MAKELINKS'] = True
-        settings['PRECHECK'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
-        settings['LBL_PROCESSING'] = False
-        settings['REDUCTION_INTERFACE'] = False
-    # only precheck
-    if settings['ONLY_PRECHECK']:
-        settings['MAKELINKS'] = False
-        settings['PRECHECK'] = True
-        settings['APERO_PROCESSING'] = False
-        settings['APERO_GET'] = False
-        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = False
     # only APERO processing
     if settings['ONLY_APEROPROCESSING']:
         settings['MAKELINKS'] = False
-        settings['PRECHECK'] = False
         settings['APERO_PROCESSING'] = True
         settings['APERO_GET'] = False
-        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = False
     # only apero get
     if settings['ONLY_APEROGET']:
         settings['MAKELINKS'] = False
-        settings['PRECHECK'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = True
-        settings['LBL_PROCESSING'] = False
-        settings['REDUCTION_INTERFACE'] = False
-    # only lbl processing
-    if settings['ONLY_LBLPROCESSING']:
-        settings['MAKELINKS'] = False
-        settings['PRECHECK'] = False
-        settings['APERO_PROCESSING'] = False
-        settings['APERO_GET'] = False
-        settings['LBL_PROCESSING'] = True
         settings['REDUCTION_INTERFACE'] = False
     # only ARI
     if settings['ONLY_REDUCTIONINTERFACE']:
         settings['MAKELINKS'] = False
-        settings['PRECHECK'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
-        settings['LBL_PROCESSING'] = False
         settings['REDUCTION_INTERFACE'] = True
     # ----------------------------------------------------------------------
     # read the yaml file and push into settings
@@ -380,17 +347,6 @@ def get_obs_dirs(profile: Dict[str, Any]) -> List[str]:
     return obs_dirs
 
 
-def run_precheck(settings: Dict[str, Any]):
-    """
-    Run the precheck on all profiles
-
-    :param settings: dict, settings dictionary
-    """
-    _ = settings
-    print('\tNot implemented.')
-    return
-
-
 def run_processing(settings: Dict[str, Any]):
     """
     Run the processing on all profiles
@@ -413,7 +369,11 @@ def run_processing(settings: Dict[str, Any]):
         params = update_apero_profile(pdict)
         # deal with a reset
         if pdict['processing']['reset'] is not None:
-            apero_reset(params, pdict)
+            # ask user because this is dangerous
+            msg = 'Are you sure you want to reset {0}? [Y]es/[N]o: '
+            uinput = input(msg.format(pdict['processing']['reset']))
+            if uinput.upper() == 'Y' or uinput.upper() == 'YES':
+                apero_reset(params, pdict)
         # get the run file
         runfile = pdict['processing']['run file']
 
@@ -621,9 +581,27 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
 
     :param settings: dict, settings dictionary
     """
-    _ = settings
-    print('\tNot implemented.')
-    return
+    # get the current working directory
+    cwd = os.getcwd()
+    # loop around profiles
+    for profile in settings['PROFILES']:
+        # get ari path
+        ari_path = settings[profile]['ari']['path']
+        # get ari profile
+        ari_profile = settings[profile]['ari']['profile']
+        # deal with no ari code
+        if 'simple_ari.py' not in os.listdir(ari_path):
+            print('\t\tERROR: simple_ari.py not found in {0}'.format(ari_path))
+            continue
+        # change to ari path
+        os.chdir(ari_path)
+        # set up command
+        ari_cmd = 'python simple_ari.py {0} --filter="{1}"'
+        # run simple ari interface
+        # TODO: This is terrible - do not use os.system
+        os.system(ari_cmd.format(ari_profile, profile))
+    # change back to original path
+    os.chdir(cwd)
 
 
 def run_lbl_processing(settings: Dict[str, Any]):
@@ -658,15 +636,6 @@ if __name__ == "__main__":
             print_process('Only making symbolic links')
             sys.exit(0)
     # ----------------------------------------------------------------------
-    # run apero precheck on all profiles
-    if trigger_settings['PRECHECK']:
-        print_process('Running apero precheck')
-        run_precheck(trigger_settings)
-        # deal with only running precheck
-        if trigger_settings['ONLY_PRECHECK']:
-            print_process('Only running apero precheck')
-            sys.exit(0)
-    # ----------------------------------------------------------------------
     # run apero processing on all profiles
     if trigger_settings['APERO_PROCESSING']:
         print_process('Running apero processing')
@@ -682,15 +651,6 @@ if __name__ == "__main__":
         run_apero_get(trigger_settings)
         # deal with only running processing
         if trigger_settings['ONLY_APEROGET']:
-            print_process('Only running apero get')
-            sys.exit(0)
-    # ----------------------------------------------------------------------
-    # run the apero reduction interface
-    if trigger_settings['LBL_PROCESSING']:
-        print_process('Running lbl processing')
-        run_lbl_processing(trigger_settings)
-        # deal with only running processing
-        if trigger_settings['ONLY_LBLPROCESSING']:
             print_process('Only running apero get')
             sys.exit(0)
     # ----------------------------------------------------------------------

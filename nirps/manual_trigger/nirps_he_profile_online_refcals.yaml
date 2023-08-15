@@ -84,9 +84,12 @@ nirps he online:
             - science
             - telluric
             - calib
-    # lbl settings
-    lbl:
-        wrap script:
+    # ari-settings
+    ari:
+        # ari path
+        path: /comos99/nirps/git-bin/apero-utils/general/apero_reduction_interface/
+        # ari profile
+        profile: nirps_profiles.yaml
     # check settings
     check:
         # define the raw sheet name for the google sheet

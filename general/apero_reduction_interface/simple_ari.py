@@ -9,6 +9,7 @@ Created on 2023-02-20 at 9:35
 
 @author: cook
 """
+import argparse
 import copy
 import glob
 import os
@@ -1036,6 +1037,28 @@ class ObjectData:
 # =============================================================================
 # Define functions
 # =============================================================================
+def get_args():
+    """
+    Define the command line arguments
+
+    :return: argparse namespace object containing arguments
+    """
+    parser = argparse.ArgumentParser(description='Simple ARI interface')
+    # add obs dir
+    parser.add_argument('profile', type=str, default='None',
+                        help='The profile yaml to use')
+    parser.add_argument('--filter', type=str, default='None',
+                        help='The specific profile to use in yaml')
+    # test mode - do not run apero recipes just test
+    parser.add_argument('--debug', type=bool, default=False,
+                        help='Run in debug mode (no parallel filters objs)')
+    # load arguments with parser
+    args = parser.parse_args()
+    # return arguments
+    return args
+
+
+
 def get_settings(settings: Dict[str, Any],
                  profile_name: Union[str, None] = None) -> dict:
     # storage for settings
@@ -3787,11 +3810,11 @@ class ArrowHandler(HandlerPatch):
 # Main code here
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
-    # assume the first argument is the profile filename
-    if len(sys.argv) < 2:
-        raise IOError('Please supply the profile filename')
-    profile_filename = sys.argv[1]
-    if len(sys.argv) > 2 and sys.argv[2].startswith('--debug'):
+    # get the args
+    args = get_args()
+    profile_filename = args.profile
+    # deal with debug
+    if args.debug:
         debug = True
     else:
         debug = False
@@ -3802,6 +3825,18 @@ if __name__ == "__main__":
     header_settings = dict(apero_profiles['headers'])
     del apero_profiles['settings']
     del apero_profiles['headers']
+    # -------------------------------------------------------------------------
+    # deal with filter
+    if args.filter not in [None, 'None']:
+        # get a list of current profiles
+        current_profiles = list(apero_profiles.keys())
+        # if filter in this list we remove all other profiles
+        if args.filter in current_profiles:
+            # loop around profiles
+            for profile in current_profiles:
+                if profile != args.filter:
+                    del apero_profiles[profile]
+    # -------------------------------------------------------------------------
     # deal with a reset
     if ari_gsettings['reset']:
         # remove working directory
