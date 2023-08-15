@@ -3814,7 +3814,7 @@ if __name__ == "__main__":
         print('=' * 50)
         print('Syncing docs...')
         print('=' * 50)
-        upload_docs(ari_gsettings, ari_settings)
+        sync_docs(ari_gsettings, ari_settings)
     # deal with debug mode
     ari_gsettings = debug_mode(debug, ari_gsettings)
     # ----------------------------------------------------------------------
