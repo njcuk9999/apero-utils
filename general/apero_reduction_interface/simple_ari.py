@@ -442,33 +442,34 @@ class ObjectData:
             spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
             spec_props['LAST_PP'] = Time(np.max(hdict['PP_MJDMID'])).iso
             spec_props['LAST_PP_PROC'] = Time(np.max(hdict['PP_PROC'])).iso
+            spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
         else:
             spec_props['FIRST_PP'] = None
             spec_props['LAST_PP'] = None
             spec_props['LAST_PP_PROC'] = None
+            spec_props['PP_VERSION'] = None
             # Add first / last ext files
         if ftypes['ext'].num_passed > 0:
             spec_props['FIRST_EXT'] = Time(np.min(hdict['EXT_MJDMID'])).iso
             spec_props['LAST_EXT'] = Time(np.max(hdict['EXT_MJDMID'])).iso
             spec_props['LAST_EXT_PROC'] = Time(np.max(hdict['EXT_PROC'])).iso
+            spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
         else:
             spec_props['FIRST_EXT'] = None
             spec_props['LAST_EXT'] = None
             spec_props['LAST_EXT_PROC'] = None
+            spec_props['EXT_VERSION'] = None
         # Add first / last tcorr files
         if ftypes['tcorr'].num_passed > 0:
             spec_props['FIRST_TCORR'] = Time(np.min(hdict['TCORR_MJDMID'])).iso
             spec_props['LAST_TCORR'] = Time(np.max(hdict['TCORR_MJDMID'])).iso
             spec_props['LAST_TCORR_PROC'] = Time(np.max(hdict['TCORR_PROC'])).iso
+            spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
         else:
             spec_props['FIRST_TCORR'] = None
             spec_props['LAST_TCORR'] = None
             spec_props['LAST_TCORR_PROC'] = None
-        # -----------------------------------------------------------------
-        # add versions
-        spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
-        spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
-        spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
+            spec_props['TCORR_VERSION'] = None
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
