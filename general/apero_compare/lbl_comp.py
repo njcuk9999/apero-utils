@@ -29,7 +29,7 @@ name6 = 'lam'
 name7 = 'cfht'
 
 
-names = [name1, name2, name3, name4, name6, name7]
+names = [name1, name2, name3, name4, name5, name6, name7]
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
@@ -46,8 +46,8 @@ outpaths[name2] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupit
 outpaths[name3] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_nb19/lblrdb/'
 outpaths[name4] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_maestria/lblrdb/'
 outpaths[name5] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_newworld/lblrdb'
-outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/lblrdb'
-outpaths[name7] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_cfht/lblrdb'
+outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/lblrdb/'
+outpaths[name7] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_cfht/lblrdb/'
 
 paths = outpaths
 
@@ -60,6 +60,7 @@ COLORS[name3] = 'g'
 COLORS[name4] = 'orange'
 COLORS[name5] = 'purple'
 COLORS[name6] = 'k'
+COLORS[name7] = 'm'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[name1] = 'o'
@@ -68,6 +69,7 @@ MARKERS[name3] = '+'
 MARKERS[name4] = '^'
 MARKERS[name5] = 'x'
 MARKERS[name6] = 'v'
+MARKERS[name7] = 'd'
 # markers needing facecolor
 has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------

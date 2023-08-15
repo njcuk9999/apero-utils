@@ -1,0 +1,11 @@
+NIRPS-HA:
+  online: ../manual_trigger/nirps_ha_profile_online
+  offline: ../manual_trigger/nirps_ha_profile_offline
+
+NIRPS-HE:
+  online: ../manual_trigger/nirps_he_profile_online
+  offline: ../manual_trigger/nirps_he_profile_offline
+
+SPIROU:
+  online: ../manual_trigger/spirou_online
+  offline: ../manual_trigger/spirou_offline
