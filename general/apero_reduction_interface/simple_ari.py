@@ -1535,9 +1535,12 @@ def compile_docs(settings: dict):
     copy_files = ['conf.py', 'make.bat', 'Makefile']
     # loop around files and copy
     for copy_file in copy_files:
+        outpath = os.path.join(settings['WORKING'], copy_file)
+        # remove file if it exists
+        if os.path.exists(outpath):
+            os.remove(outpath)
         # copy conf.py make.bat and Makefile to the working directory
-        shutil.copy(__file__.replace('simple_ari.py', copy_file),
-                    os.path.join(settings['WORKING'], copy_file))
+        shutil.copy(__file__.replace('simple_ari.py', copy_file), outpath)
     # get _static directory
     static_outdir = os.path.join(settings['WORKING'], '_static')
     # deal with static_outdir existing
