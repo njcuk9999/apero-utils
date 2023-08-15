@@ -91,9 +91,6 @@ def get_args():
     # link switch
     parser.add_argument('--links', type=bool, default=True)
     parser.add_argument('--only_links', type=bool, default=False)
-    # precheck switch
-    parser.add_argument('--precheck', type=bool, default=True)
-    parser.add_argument('--only_precheck', type=bool, default=False)
     # apero process switch
     parser.add_argument('--apero_process', type=bool, default=True)
     parser.add_argument('--only_apero_process', type=bool, default=False)
@@ -103,9 +100,6 @@ def get_args():
     # apero reduction interface switch
     parser.add_argument('--ari', type=bool, default=True)
     parser.add_argument('--only_ari', type=bool, default=False)
-    # apero lbl switch
-    parser.add_argument('--lbl_process', type=bool, default=True)
-    parser.add_argument('--only_lbl_process', type=bool, default=False)
     # apero get --since parameter
     parser.add_argument('--since', type=str, default='None',
                         help='APERO get - only copy files processed since this date')
