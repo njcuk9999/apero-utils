@@ -61,10 +61,10 @@ test_dict['APERO_START'] = manual_trigger_tests.test_apero_start
 test_dict['APERO_END'] = manual_trigger_tests.test_apero_end
 
 # Test that LBL started
-test_dict['LBL_START'] = manual_trigger_tests.test_lbl_start
+test_dict['ARI_START'] = manual_trigger_tests.test_ari_start
 
 # Test that LBL ended
-test_dict['LBL_END'] = manual_trigger_tests.test_lbl_end
+test_dict['ARI_END'] = manual_trigger_tests.test_ari_end
 
 # test 1 - explanation
 

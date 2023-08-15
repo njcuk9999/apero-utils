@@ -32,10 +32,12 @@ MANUAL_END = 'MANUAL_END'
 APERO_START = 'APERO_START'
 APERO_ERR = 'APERO_ERR'
 APERO_END = 'APERO_END'
+ARI_START = 'ARI_START'
+ARI_END = 'ARI_END'
 
 
-MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END]
-
+MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
+            ARI_START, ARI_END]
 
 # =============================================================================
 # Define classes
@@ -593,6 +595,8 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         if 'simple_ari.py' not in os.listdir(ari_path):
             print('\t\tERROR: simple_ari.py not found in {0}'.format(ari_path))
             continue
+        # log that APERO started
+        settings['LOG'][profile].write(ARI_START)
         # change to ari path
         os.chdir(ari_path)
         # set up command
@@ -600,6 +604,8 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         # run simple ari interface
         # TODO: This is terrible - do not use os.system
         os.system(ari_cmd.format(ari_profile, profile))
+        # log that APERO started
+        settings['LOG'][profile].write(ARI_END)
     # change back to original path
     os.chdir(cwd)
 
