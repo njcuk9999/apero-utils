@@ -45,8 +45,6 @@ HAS_POLAR = dict(SPIROU=True, NIRPS_HE=False, NIRPS_HA=False)
 LOG_LEVELS = ['error', 'warning']
 # list tables to load
 TABLE_NAMES = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
-# define whether to reprocess stats
-REPROCESS = True
 # Define output path
 OUTPUT_PATH = '.'
 # define sphinx directories
@@ -3828,16 +3826,20 @@ if __name__ == "__main__":
     del apero_profiles['settings']
     del apero_profiles['headers']
     # -------------------------------------------------------------------------
-    # deal with filter
-    if args.filter not in [None, 'None']:
-        # get a list of current profiles
-        current_profiles = list(apero_profiles.keys())
-        # if filter in this list we remove all other profiles
-        if args.filter in current_profiles:
-            # loop around profiles
-            for profile in current_profiles:
-                if profile != args.filter:
-                    del apero_profiles[profile]
+    # deal with reprocessing
+    reprocess = dict()
+    # list current profiles
+    current_profiles = list(apero_profiles.keys())
+    # if filter in this list we remove all other profiles
+    if args.filter not in [None, 'None'] and args.filter in current_profiles:
+        for profile in current_profiles:
+            if profile == args.filter:
+                reprocess[profile] = True
+            else:
+                reprocess[profile] = False
+    else:
+        for profile in current_profiles:
+            reprocess[profile] = True
     # -------------------------------------------------------------------------
     # deal with a reset
     if ari_gsettings['reset']:
@@ -3865,7 +3867,7 @@ if __name__ == "__main__":
         # add profile name to settings
         apero_profiles[_apero_profname]['profile name'] = _apero_profname
         # we reprocess if the file does not exist or if REPROCESS is True
-        if REPROCESS:
+        if reprocess[_apero_profname]:
             # print progress
             print('=' * 50)
             print('Compiling stats for profile: {0}'.format(_apero_profname))
