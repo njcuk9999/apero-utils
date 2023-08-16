@@ -1638,13 +1638,13 @@ def sync_docs(gsettings: dict, settings: dict):
     rdict['SSH'] = gsettings['ssh']['options']
     rdict['USER'] = gsettings['ssh']['user']
     rdict['HOST'] = gsettings['ssh']['host']
-    rdict['OUTPATH'] = settings['WORKING'] + os.sep
     rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
                                     f'ari/profile/')
+    rdict['OUTPATH'] = settings['WORKING'] + os.sep
     # print command to rsync
-    wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
+    wlog(params, '', RSYNC_CMD_IN.format(**rdict))
     # run command (will require password)
-    os.system(RSYNC_CMD_OUT.format(**rdict))
+    os.system(RSYNC_CMD_IN.format(**rdict))
 
 
 def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
