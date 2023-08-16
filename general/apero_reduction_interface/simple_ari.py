@@ -1644,9 +1644,9 @@ def sync_docs(gsettings: dict, settings: dict):
         rdict['SSH'] = gsettings['ssh']['options']
         rdict['USER'] = gsettings['ssh']['user']
         rdict['HOST'] = gsettings['ssh']['host']
+        rdict['OUTPATH'] = os.path.dirname(p_ari_settings['DATA']) + os.sep
         rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                        f'ari/profile/{cpn}')
-        rdict['OUTPATH'] = os.path.dirname(p_ari_settings['DATA'])
+                                       f'ari/profile/')
         # print command to rsync
         wlog(params, '', RSYNC_CMD_IN.format(**rdict))
         # run command (will require password)
@@ -1707,9 +1707,9 @@ def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
         rdict['SSH'] = gsettings['ssh']['options']
         rdict['USER'] = gsettings['ssh']['user']
         rdict['HOST'] = gsettings['ssh']['host']
-        rdict['INPATH'] = os.path.dirname(p_ari_settings['DATA'])
+        rdict['INPATH'] = os.path.dirname(p_ari_settings['DATA']) + os.sep
         rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                        f'ari/profile/{cpn}')
+                                        f'ari/profile/')
         # print command to rsync
         wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
         # run command (will require password)
