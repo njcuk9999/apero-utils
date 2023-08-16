@@ -496,17 +496,28 @@ class ObjectData:
                                   files=spec_props['S1D'].get_files(qc=True))
             pos_sc1d = _match_file(reffile=file_ext,
                                    files=spec_props['SC1D'].get_files(qc=True))
+            # three conditions that have to be met for a match
+            cond1 = pos_raw is not None
+            cond2 = pos_s1d is not None
+            cond3 = pos_sc1d is not None
             # we only stop is a match is found
-            if pos_raw is not None and pos_sc1d is not None:
+            if cond1 and cond2 and cond3:
                 matched = True
             else:
                 all_snr_pos = all_snr_pos[1:]
         # ---------------------------------------------------------------------
+        cond1 = pos_raw is None
+        cond2 = pos_s1d is None
+        cond3 = pos_sc1d is None
         # deal with case we have no matching raw file we have a big problem
         #   extracted file cannot exist without a raw file
-        if pos_raw is None:
-            raise ValueError(f'No raw file matching {file_ext}. '
-                             f'This should not be possible')
+        if cond1 or cond2 or cond3:
+            if cond1:
+                print(f'No raw file matching {file_ext}. '
+                      f'This should not be possible')
+            if cond2 or cond3:
+                print(f'No s1d file matching {file_ext}')
+            return
         # ---------------------------------------------------------------------
         # get the extracted spectrum for the spectrum with the highest SNR
         ext_file = spec_props['S1D'].get_files(qc=True)[pos_s1d]
