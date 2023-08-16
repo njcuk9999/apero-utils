@@ -1621,8 +1621,27 @@ def sync_docs(gsettings: dict, settings: dict):
     wlog(params, '', RSYNC_CMD_IN.format(**rdict))
     # run command (will require password)
     os.system(RSYNC_CMD_IN.format(**rdict))
+    # ------------------------------------------------------------------
+    # copy profile data (so we can sync next time)
+    for _apero_profname in apero_profiles:
+        # sort out settings
+        p_ari_settings = get_settings(ari_gsettings, _apero_profname)
+        # add profile name to settings
+        apero_profiles[_apero_profname]['profile name'] = _apero_profname
+        # get rsync dict
+        rdict = dict()
+        rdict['SSH'] = gsettings['ssh']['options']
+        rdict['USER'] = gsettings['ssh']['user']
+        rdict['HOST'] = gsettings['ssh']['host']
+        rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                        f'ari/profile/{_apero_profname}')
+        rdict['OUTPATH'] = p_ari_settings['DATA']
+        # print command to rsync
+        wlog(params, '', RSYNC_CMD_IN.format(**rdict))
+        # run command (will require password)
+        os.system(RSYNC_CMD_IN.format(**rdict))
 
-def upload_docs(gsettings: dict, settings: dict):
+def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
     """
     Upload the documentation to the web server
 
@@ -1666,6 +1685,25 @@ def upload_docs(gsettings: dict, settings: dict):
     wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
     # run command (will require password)
     os.system(RSYNC_CMD_OUT.format(**rdict))
+    # ------------------------------------------------------------------
+    # copy profile data (so we can sync next time)
+    for _apero_profname in apero_profiles:
+        # sort out settings
+        p_ari_settings = get_settings(ari_gsettings, _apero_profname)
+        # add profile name to settings
+        apero_profiles[_apero_profname]['profile name'] = _apero_profname
+        # get rsync dict
+        rdict = dict()
+        rdict['SSH'] = gsettings['ssh']['options']
+        rdict['USER'] = gsettings['ssh']['user']
+        rdict['HOST'] = gsettings['ssh']['host']
+        rdict['INPATH'] = p_ari_settings['DATA']
+        rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                        f'ari/profile/{_apero_profname}')
+        # print command to rsync
+        wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
+        # run command (will require password)
+        os.system(RSYNC_CMD_OUT.format(**rdict))
 
 
 # =============================================================================
@@ -3923,6 +3961,8 @@ if __name__ == "__main__":
     print('=' * 50)
     print('Uploading docs...')
     print('=' * 50)
-    upload_docs(ari_gsettings, ari_settings)
+    upload_docs(ari_gsettings, ari_settings, apero_profiles)
+
+
 
 # =============================================================================
