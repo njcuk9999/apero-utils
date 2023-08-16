@@ -1633,24 +1633,19 @@ def sync_docs(gsettings: dict, settings: dict):
     # run command (will require password)
     os.system(RSYNC_CMD_IN.format(**rdict))
     # ------------------------------------------------------------------
-    # copy profile data (so we can sync next time)
-    for _apero_profname in apero_profiles:
-        # sort out settings
-        p_ari_settings = get_settings(ari_gsettings, _apero_profname)
-        # add profile name to settings
-        cpn = p_ari_settings['CPN']
-        # get rsync dict
-        rdict = dict()
-        rdict['SSH'] = gsettings['ssh']['options']
-        rdict['USER'] = gsettings['ssh']['user']
-        rdict['HOST'] = gsettings['ssh']['host']
-        rdict['OUTPATH'] = os.path.dirname(p_ari_settings['DATA']) + os.sep
-        rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                       f'ari/profile/')
-        # print command to rsync
-        wlog(params, '', RSYNC_CMD_IN.format(**rdict))
-        # run command (will require password)
-        os.system(RSYNC_CMD_IN.format(**rdict))
+    # rsync compiled files
+    rdict = dict()
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
+    rdict['OUTPATH'] = ari_gsettings['WORKING'] + os.sep
+    rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                    f'ari/profile/')
+    # print command to rsync
+    wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
+    # run command (will require password)
+    os.system(RSYNC_CMD_OUT.format(**rdict))
+
 
 def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
     """
@@ -1696,24 +1691,18 @@ def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
     # run command (will require password)
     os.system(RSYNC_CMD_OUT.format(**rdict))
     # ------------------------------------------------------------------
-    # copy profile data (so we can sync next time)
-    for _apero_profname in apero_profiles:
-        # sort out settings
-        p_ari_settings = get_settings(ari_gsettings, _apero_profname)
-        # add profile name to settings
-        cpn = p_ari_settings['CPN']
-        # get rsync dict
-        rdict = dict()
-        rdict['SSH'] = gsettings['ssh']['options']
-        rdict['USER'] = gsettings['ssh']['user']
-        rdict['HOST'] = gsettings['ssh']['host']
-        rdict['INPATH'] = os.path.dirname(p_ari_settings['DATA']) + os.sep
-        rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                        f'ari/profile/')
-        # print command to rsync
-        wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
-        # run command (will require password)
-        os.system(RSYNC_CMD_OUT.format(**rdict))
+    # rsync compiled files
+    rdict = dict()
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
+    rdict['INPATH'] = ari_gsettings['WORKING'] + os.sep
+    rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                    f'ari/profile/')
+    # print command to rsync
+    wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
+    # run command (will require password)
+    os.system(RSYNC_CMD_OUT.format(**rdict))
 
 
 # =============================================================================
