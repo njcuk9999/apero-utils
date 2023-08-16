@@ -510,7 +510,7 @@ class ObjectData:
         # ---------------------------------------------------------------------
         # get the extracted spectrum for the spectrum with the highest SNR
         ext_file = spec_props['S1D'].get_files(qc=True)[pos_s1d]
-        ext_table = Table.read(ext_file, hdu=1)
+        ext_table = load_table(ext_file, hdu=1)
         # get wavelength masks for plotting
         wavemap = ext_table['wavelength']
         limits = self.gsettings['SpecWave']
@@ -544,7 +544,7 @@ class ObjectData:
             # get the telluric corrected spectrum for the spectrum with the
             # highest SNR
             tcorr_file = spec_props['SC1D'].get_files(qc=True)[pos_sc1d]
-            tcorr_table = Table.read(tcorr_file, hdu=1)
+            tcorr_table = load_table(tcorr_file, hdu=1)
             # push into spec_props
             spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
             spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
@@ -681,7 +681,7 @@ class ObjectData:
             # get the plot file for this objname+template
             lbl_pfile = lbl_objtmps[lbl_objtmp][plot_file]
             # load rdb file
-            rdb_table = Table.read(lbl_pfile, format='ascii.rdb')
+            rdb_table = load_table(lbl_pfile, format='ascii.rdb')
             # get the values required
             lbl_props['rjd'] = np.array(rdb_table['rjd'])
             lbl_props['vrad'] = np.array(rdb_table['vrad'])
@@ -812,7 +812,7 @@ class ObjectData:
         # select ccf files to use
         ccf_props = choose_ccf_files(ccf_props)
         # load the first file to get the rv vector
-        ccf_table0 = Table.read(ccf_props['select_files'][0], format='fits',
+        ccf_table0 = load_table(ccf_props['select_files'][0], format='fits',
                                 hdu=1)
         # get the rv vector
         ccf_props['rv_vec'] = ccf_table0['RV']
@@ -820,7 +820,7 @@ class ObjectData:
         all_ccf = np.zeros((len(ccf_props['select_files']), len(ccf_table0)))
         # loop around all other files, load them and load into all_ccf
         for row, select_file in enumerate(ccf_props['select_files']):
-            table_row = Table.read(select_file, format='fits', hdu=1)
+            table_row = load_table(select_file, format='fits', hdu=1)
             # get the combined CCF for this file
             ccf_row = table_row['Combined']
             # normalize ccf
@@ -1159,7 +1159,7 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # ------------------------------------------------------------------
     # deal with skipping object table
     if skip_obj_table and os.path.exists(object_table_file):
-        profile_stats['TABLES'][TABLE_NAMES[0]] = Table.read(object_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[0]] = load_table(object_table_file)
     elif skip_obj_table:
         profile_stats['TABLES'][TABLE_NAMES[0]] = None
     else:
@@ -1178,7 +1178,7 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # ------------------------------------------------------------------
     # deal with skipping recipe table
     if skip_recipe_table and os.path.exists(recipe_table_file):
-        profile_stats['TABLES'][TABLE_NAMES[1]] = Table.read(recipe_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[1]] = load_table(recipe_table_file)
     elif skip_recipe_table:
         profile_stats['TABLES'][TABLE_NAMES[1]] = None
     else:
@@ -1187,7 +1187,7 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # ------------------------------------------------------------------
     # deal with skipping message table
     if skip_msg_table and os.path.exists(message_table_file):
-        profile_stats['TABLES'][TABLE_NAMES[2]] = Table.read(message_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[2]] = load_table(message_table_file)
     elif skip_msg_table:
         profile_stats['TABLES'][TABLE_NAMES[2]] = None
     else:
@@ -3589,6 +3589,15 @@ def split_line(parts, rawstring):
         return None
 
 
+def load_table(filename, **kwargs):
+    # attempt to load astropy table
+    try:
+        return Table.read(filename, **kwargs)
+    except Exception as e:
+        emsg = 'Cannot load table from: {0}\n\t{1}: {2}'
+        eargs = [filename, type(e), str(e)]
+        raise ValueError(emsg.format(*eargs))
+
 def save_stats(settings: dict, stats: dict):
     """
     Save the stats for a given profile
@@ -3644,7 +3653,7 @@ def load_stats(settings: dict) -> dict:
             profile_stats['TABLES'][table_name] = None
             continue
         # load the table
-        profile_stats['TABLES'][table_name] = Table.read(table_path)
+        profile_stats['TABLES'][table_name] = load_table(table_path)
     # return the profile stats
     return profile_stats
 
