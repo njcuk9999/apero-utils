@@ -1635,7 +1635,7 @@ def sync_docs(gsettings: dict, settings: dict):
         rdict['HOST'] = gsettings['ssh']['host']
         rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
                                         f'ari/profile/{cpn}')
-        rdict['OUTPATH'] = p_ari_settings['DATA']
+        rdict['OUTPATH'] = os.path.dirname(p_ari_settings['DATA'])
         # print command to rsync
         wlog(params, '', RSYNC_CMD_IN.format(**rdict))
         # run command (will require password)
@@ -1653,7 +1653,6 @@ def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
-    from apero.tools.module.documentation import drs_documentation
     from apero.core.utils import drs_startup
     from apero.core.core import drs_log
     # ------------------------------------------------------------------
@@ -1697,7 +1696,7 @@ def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
         rdict['SSH'] = gsettings['ssh']['options']
         rdict['USER'] = gsettings['ssh']['user']
         rdict['HOST'] = gsettings['ssh']['host']
-        rdict['INPATH'] = p_ari_settings['DATA']
+        rdict['INPATH'] = os.path.dirname(p_ari_settings['DATA'])
         rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
                                         f'ari/profile/{cpn}')
         # print command to rsync
