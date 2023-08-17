@@ -184,6 +184,9 @@ def load_params(yaml_file: Optional[str] = None,
             # add key to params
             params[profile][parameter] = copy.deepcopy(value)
     # -------------------------------------------------------------------------
+    # add yaml file to params
+    params['YAML'] = yaml_file
+    # -------------------------------------------------------------------------
     # print message on which observation directory we are processing
     msg = f'Parameters used:'
     log_msg(msg, level='info')

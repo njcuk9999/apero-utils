@@ -9,6 +9,7 @@ Created on 2023-02-20 at 9:35
 
 @author: cook
 """
+import argparse
 import copy
 import glob
 import os
@@ -119,7 +120,9 @@ DEFAULT_COL_WIDTH = 10
 # define table width info
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
-
+# define rsync commands
+RSYNC_CMD_IN = 'rsync -avuz -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
+RSYNC_CMD_OUT = 'rsync -avuz -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
 
 # =============================================================================
 # Classes
@@ -442,33 +445,34 @@ class ObjectData:
             spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
             spec_props['LAST_PP'] = Time(np.max(hdict['PP_MJDMID'])).iso
             spec_props['LAST_PP_PROC'] = Time(np.max(hdict['PP_PROC'])).iso
+            spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
         else:
             spec_props['FIRST_PP'] = None
             spec_props['LAST_PP'] = None
             spec_props['LAST_PP_PROC'] = None
+            spec_props['PP_VERSION'] = None
             # Add first / last ext files
         if ftypes['ext'].num_passed > 0:
             spec_props['FIRST_EXT'] = Time(np.min(hdict['EXT_MJDMID'])).iso
             spec_props['LAST_EXT'] = Time(np.max(hdict['EXT_MJDMID'])).iso
             spec_props['LAST_EXT_PROC'] = Time(np.max(hdict['EXT_PROC'])).iso
+            spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
         else:
             spec_props['FIRST_EXT'] = None
             spec_props['LAST_EXT'] = None
             spec_props['LAST_EXT_PROC'] = None
+            spec_props['EXT_VERSION'] = None
         # Add first / last tcorr files
         if ftypes['tcorr'].num_passed > 0:
             spec_props['FIRST_TCORR'] = Time(np.min(hdict['TCORR_MJDMID'])).iso
             spec_props['LAST_TCORR'] = Time(np.max(hdict['TCORR_MJDMID'])).iso
             spec_props['LAST_TCORR_PROC'] = Time(np.max(hdict['TCORR_PROC'])).iso
+            spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
         else:
             spec_props['FIRST_TCORR'] = None
             spec_props['LAST_TCORR'] = None
             spec_props['LAST_TCORR_PROC'] = None
-        # -----------------------------------------------------------------
-        # add versions
-        spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
-        spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
-        spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
+            spec_props['TCORR_VERSION'] = None
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
@@ -1033,6 +1037,28 @@ class ObjectData:
 # =============================================================================
 # Define functions
 # =============================================================================
+def get_args():
+    """
+    Define the command line arguments
+
+    :return: argparse namespace object containing arguments
+    """
+    parser = argparse.ArgumentParser(description='Simple ARI interface')
+    # add obs dir
+    parser.add_argument('profile', type=str, default='None',
+                        help='The profile yaml to use')
+    parser.add_argument('--filter', type=str, default='None',
+                        help='The specific profile to use in yaml')
+    # test mode - do not run apero recipes just test
+    parser.add_argument('--debug', type=bool, default=False,
+                        help='Run in debug mode (no parallel filters objs)')
+    # load arguments with parser
+    args = parser.parse_args()
+    # return arguments
+    return args
+
+
+
 def get_settings(settings: Dict[str, Any],
                  profile_name: Union[str, None] = None) -> dict:
     # storage for settings
@@ -1521,9 +1547,11 @@ def compile_docs(settings: dict):
         shutil.rmtree(static_outdir)
     # copy the static directory as well
     shutil.copytree(__file__.replace('simple_ari.py', '_static'),
-                    os.path.join(settings['WORKING'], '_static'))
+                    os.path.join(settings['WORKING'], '_static'),
+                    dirs_exist_ok=True)
     shutil.copytree(__file__.replace('simple_ari.py', '_templates'),
-                    os.path.join(settings['WORKING'], '_templates'))
+                    os.path.join(settings['WORKING'], '_templates'),
+                    dirs_exist_ok=True)
     # ------------------------------------------------------------------
     # get current directory
     cwd = os.getcwd()
@@ -1557,6 +1585,41 @@ def compile_docs(settings: dict):
     # change back to current directory
     os.chdir(cwd)
 
+
+def sync_docs(gsettings: dict, settings: dict):
+    # must import here (so that os.environ is set)
+    # noinspection PyPep8Naming
+    from apero.core import constants
+    from apero.tools.module.documentation import drs_documentation
+    from apero.core.utils import drs_startup
+    from apero.core.core import drs_log
+    # ------------------------------------------------------------------
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
+    # get WLOG
+    wlog = drs_log.wlog
+    # get output directory
+    out_dir = settings['OUT']
+    # get the instrument
+    instrument = settings['INSTRUMENT'].lower()
+    # ------------------------------------------------------------------
+    # make sure we copy contents not directory
+    if not out_dir.endswith(os.sep):
+        out_dir += os.sep
+    # get rsync dict
+    rdict = dict()
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
+    rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                    f'ari/{instrument}/')
+    rdict['OUTPATH'] = out_dir
+    # print command to rsync
+    wlog(params, '', RSYNC_CMD_IN.format(**rdict))
+    # run command (will require password)
+    os.system(RSYNC_CMD_IN.format(**rdict))
 
 def upload_docs(gsettings: dict, settings: dict):
     """
@@ -1599,9 +1662,9 @@ def upload_docs(gsettings: dict, settings: dict):
     rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
                                     f'ari/{instrument}/')
     # print command to rsync
-    wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
+    wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
     # run command (will require password)
-    os.system(drs_documentation.RSYNC_CMD.format(**rdict))
+    os.system(RSYNC_CMD_OUT.format(**rdict))
 
 
 # =============================================================================
@@ -3749,11 +3812,11 @@ class ArrowHandler(HandlerPatch):
 # Main code here
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
-    # assume the first argument is the profile filename
-    if len(sys.argv) < 2:
-        raise IOError('Please supply the profile filename')
-    profile_filename = sys.argv[1]
-    if len(sys.argv) > 2 and sys.argv[2].startswith('--debug'):
+    # get the args
+    args = get_args()
+    profile_filename = args.profile
+    # deal with debug
+    if args.debug:
         debug = True
     else:
         debug = False
@@ -3764,10 +3827,31 @@ if __name__ == "__main__":
     header_settings = dict(apero_profiles['headers'])
     del apero_profiles['settings']
     del apero_profiles['headers']
+    # -------------------------------------------------------------------------
+    # deal with filter
+    if args.filter not in [None, 'None']:
+        # get a list of current profiles
+        current_profiles = list(apero_profiles.keys())
+        # if filter in this list we remove all other profiles
+        if args.filter in current_profiles:
+            # loop around profiles
+            for profile in current_profiles:
+                if profile != args.filter:
+                    del apero_profiles[profile]
+    # -------------------------------------------------------------------------
     # deal with a reset
     if ari_gsettings['reset']:
         # remove working directory
         shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
+    # deal with a sync from server
+    if ari_gsettings['sync']:
+        # get global settings
+        ari_settings = get_settings(ari_gsettings)
+        # step 6: upload to hosting
+        print('=' * 50)
+        print('Syncing docs...')
+        print('=' * 50)
+        sync_docs(ari_gsettings, ari_settings)
     # deal with debug mode
     ari_gsettings = debug_mode(debug, ari_gsettings)
     # ----------------------------------------------------------------------

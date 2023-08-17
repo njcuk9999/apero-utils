@@ -13,6 +13,8 @@ Created on 2023-07-03 at 14:36
 from apero_checks.red_tests import blank_test
 from apero_checks.red_tests import obsdir_test
 from apero_checks.red_tests import calib_test
+from apero_checks.red_tests import manual_trigger_tests
+from apero_checks.red_tests import pixel_shifts_test
 
 # =============================================================================
 # Append your test here
@@ -46,6 +48,24 @@ test_dict['HAS_OBSDIR'] = obsdir_test.test
 
 # APERO calib test - test the APERO requirements on calibration
 test_dict['APERO_CALIB'] = calib_test.test
+
+# Test that manual trigger was started
+test_dict['MANUAL_START'] = manual_trigger_tests.test_manual_trigger_start
+
+# Test that manual trigger ended
+test_dict['MANUAL_END'] = manual_trigger_tests.test_manual_trigger_end
+
+# Test that APERO started
+test_dict['APERO_START'] = manual_trigger_tests.test_apero_start
+
+# Test that APERO ended
+test_dict['APERO_END'] = manual_trigger_tests.test_apero_end
+
+# Test that LBL started
+test_dict['ARI_START'] = manual_trigger_tests.test_ari_start
+
+# Test that LBL ended
+test_dict['ARI_END'] = manual_trigger_tests.test_ari_end
 
 # Pixel shifts tests - check for pixel shifts in pp files
 test_dict['PIXEL_SHIFTS'] = pixel_shifts_test.test

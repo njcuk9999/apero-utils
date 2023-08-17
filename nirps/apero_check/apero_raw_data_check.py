@@ -39,6 +39,8 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
     for profile in all_params:
         # get profile params
         params = all_params[profile]
+        # add profile name to parameters
+        params['apero profile name'] = profile
         # if we do not have a test name then we run all tests and upload
         if params['test_name'] in [None, 'None']:
             # run the tests

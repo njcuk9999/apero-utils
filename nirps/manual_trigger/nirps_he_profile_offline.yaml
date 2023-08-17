@@ -8,14 +8,14 @@ nirps he offline:
         apero profile: /cosmos99/nirps/apero-settings/nirps_he_offline
         # the install directory for apero (git hub repo)
         apero install: /cosmos99/nirps/git-bin/apero-drs-offline
-        # apero get output path
+        # directory where lbl files are processed
         lbl path: /cosmos99/nirps/lbl-data/nirps_he_offline/
         # start date if not using --obsdir argument
         start date: 2022-11-01
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: complete_run.ini
+        run file: offline_run.ini
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -85,9 +85,12 @@ nirps he offline:
             - science
             - telluric
             - calib
-    # lbl settings
-    lbl:
-        wrap script:
+    # ari-settings
+    ari:
+        # ari path
+        path: /cosmos99/nirps/git-bin/apero-utils/general/apero_reduction_interface/
+        # ari profile
+        profile: nirps_profiles.yaml
     # check settings
     check:
         # define the raw sheet name for the google sheet

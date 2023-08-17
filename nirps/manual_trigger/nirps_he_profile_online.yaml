@@ -7,7 +7,7 @@ nirps he online:
         #    apero reduced data directories)
         apero profile: /cosmos99/nirps/apero-settings/nirps_he_online
         # the install directory for apero (git hub repo)
-        apero install: /cosmos99/nirps/apero-bin/apero-drs-online
+        apero install: /cosmos99/nirps/git-bin/apero-drs-online
         # apero get output path
         lbl path: /cosmos99/nirps/lbl-data/nirps_he_online/
         # start date if not using --obsdir argument
@@ -83,9 +83,12 @@ nirps he online:
             - science
             - telluric
             - calib
-    # lbl settings
-    lbl:
-        wrap script:
+    # ari-settings
+    ari:
+        # ari path
+        path: /cosmos99/nirps/git-bin/apero-utils/general/apero_reduction_interface/
+        # ari profile
+        profile: nirps_profiles.yaml
     # check settings
     check:
         # define the raw sheet name for the google sheet
