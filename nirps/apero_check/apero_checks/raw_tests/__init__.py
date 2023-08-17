@@ -14,6 +14,7 @@ from apero_checks.raw_tests import blank_test
 from apero_checks.raw_tests import calib_test
 from apero_checks.raw_tests import eng_test
 from apero_checks.raw_tests import obsdir_test
+from apero_checks.raw_tests import qual_test
 
 # =============================================================================
 # Append your test here
