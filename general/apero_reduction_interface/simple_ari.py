@@ -3558,6 +3558,24 @@ def debug_mode(debugmode: bool, gsettings: dict):
     return gsettings
 
 
+def get_profiles_from_store(settings: dict, profiles: dict):
+    # construct profiles yaml file name
+    path = settings['WORKING']
+    profile_yaml_file = os.path.join(path, 'all_profiles.yaml')
+    # deal with all profiles existing
+    if os.path.exists(profile_yaml_file):
+        # read all_profiles.yaml
+        all_profiles = read_yaml_file(profile_yaml_file)
+        # loop around all profiles and add missing ones to list
+        for profile_name in all_profiles:
+            if profile_name not in profiles:
+                profiles[profile_name] = all_profiles[profile_name]
+    # re-create the yaml file
+    write_yaml(profiles, profile_yaml_file)
+    # return updated profiles
+    return profiles
+
+
 def split_line(parts, rawstring):
     # store list of variables
     variables = []
@@ -3675,6 +3693,22 @@ def read_yaml_file(pfilename: str) -> dict:
             raise exc
     # return the profiles
     return profiles
+
+
+def write_yaml(dictionary: dict, filename: str):
+    """
+    Write a dictionary to a yaml file
+
+    :param dictionary:
+    :param filename:
+    :return:
+    """
+    # remove file if it exists
+    if os.path.exists(filename):
+        os.remove(filename)
+    # save yaml file
+    with open(filename, 'w') as yfile:
+        yaml.dump(dictionary, yfile)
 
 
 def clean_profile_name(profile_name: str) -> str:
@@ -3894,10 +3928,10 @@ if __name__ == "__main__":
     if ari_gsettings['reset']:
         # remove working directory
         shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
+    # get settings for sync
+    ari_settings = get_settings(ari_gsettings)
     # deal with a sync from server
     if ari_gsettings['sync']:
-        # get global settings
-        ari_settings = get_settings(ari_gsettings)
         # step 6: upload to hosting
         print('=' * 50)
         print('Syncing docs...')
@@ -3905,6 +3939,10 @@ if __name__ == "__main__":
         sync_docs(ari_gsettings, ari_settings)
     # deal with debug mode
     ari_gsettings = debug_mode(debug, ari_gsettings)
+    # ----------------------------------------------------------------------
+    # look for profiles not in apero_profiles that we have to add
+    #  (i.e. they are on the server)
+    apero_profiles = get_profiles_from_store(ari_settings, apero_profiles)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
