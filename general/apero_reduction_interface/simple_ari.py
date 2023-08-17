@@ -3558,7 +3558,8 @@ def debug_mode(debugmode: bool, gsettings: dict):
     return gsettings
 
 
-def get_profiles_from_store(settings: dict, profiles: dict, reprocess: dict):
+def get_profiles_from_store(settings: dict, profiles: dict,
+                            reprocess: dict) -> Tuple[dict, dict]:
     # construct profiles yaml file name
     path = settings['WORKING']
     profile_yaml_file = os.path.join(path, 'all_profiles.yaml')
@@ -3574,7 +3575,7 @@ def get_profiles_from_store(settings: dict, profiles: dict, reprocess: dict):
     # re-create the yaml file
     write_yaml(profiles, profile_yaml_file)
     # return updated profiles
-    return profiles
+    return profiles, reprocess
 
 
 def split_line(parts, rawstring):
