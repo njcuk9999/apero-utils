@@ -46,6 +46,14 @@ test_dict['ENG_TEST'] = eng_test.test
 #            add eventual extra calibrations to the 'must have' objects
 test_dict['CALIB_TEST'] = calib_test.test
 
+# science quality test - Some basic quality checks for science files. Currently:
+#                        saturation, flux
+test_dict['SCI_QUAL'] = qual_test.sci_qual_test
+
+# calib quality test - Some basic quality checks for calibration files. Currently:
+#                      saturation, flux
+test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
+
 # test 1 - explanation
 
 # test 2 - explanation
