@@ -33,8 +33,10 @@ from apero_checks.core import misc
 
 # list of DPR TYPE for each file category
 dpr_types = {
-    'FP': ['WAVE,FP,FP', 'WAVE,UN1,UN1', 'WAVE,FP,UN1', 'WAVE,UN1,FP', 'CONTAM,DARK,FP'],
-    'FLAT': ['FLAT,LAMP,DARK', 'FLAT,DARK,LAMP', 'FLAT,LAMP,LAMP', 'ORDERDEF,DARK,LAMP', 'ORDERDEF,LAMP,DARK'],
+    'FP': ['WAVE,FP,FP', 'WAVE,UN1,UN1', 'WAVE,FP,UN1', 'WAVE,UN1,FP',
+           'CONTAM,DARK,FP'],
+    'FLAT': ['FLAT,LAMP,DARK', 'FLAT,DARK,LAMP', 'FLAT,LAMP,LAMP',
+             'ORDERDEF,DARK,LAMP', 'ORDERDEF,LAMP,DARK'],
     'TELLURIC': ['TELLURIC,SKY'],
     'SCIENCE': ['OBJECT,SKY', 'OBJECT,FP']
 }
@@ -68,7 +70,8 @@ def sat_test(files, log=False) -> bool:
     All files passed = True
     Any file failed = False
 
-    :param files: a list of files of a single DPR type, obtained in the main test function
+    :param files: a list of files of a single DPR type, obtained in the
+                  main test function
     :param log: bool, if True prints messages (all messages must be wrapped
                 in a if log: statement)
 
@@ -77,21 +80,23 @@ def sat_test(files, log=False) -> bool:
 
     failed_log = ''
 
-    for file in files:
-        h = fits.getheader(file)
-        filename = file.split('/')[-1]
-        dpr_type = h['HIERARCH ESO DPR TYPE']
+    for filename in files:
+        hdr = fits.getheader(filename)
+        basename = os.path.basename(filename)
+        dpr_type = hdr['HIERARCH ESO DPR TYPE']
         try:
             constraints_type = constraints[dpr_type]
         except KeyError:
             continue
-        nread = fits.getdata(file, ext=3)
+        nread = fits.getdata(filename, ext=3)
 
         # saturation fraction
         fsat = np.mean(nread != np.max(nread))
 
         if fsat > constraints_type[2]:
-            failed_log += '{}: fsat is too high, limit at {}, value at {:.2f}\n'.format(filename, constraints_type[2], fsat)
+            args = [basename, constraints_type[2], fsat]
+            failed_log += ('{}: fsat is too high, limit at {}, '
+                           'value at {:.2f}\n').format(*args)
 
     passed = True
     if len(failed_log) > 0:
@@ -111,14 +116,16 @@ def sat_test(files, log=False) -> bool:
 def flux_test(files, log=False) -> bool:
     """
     Flux test - check for abnormal flux level in raw files.
-    Uses the image (ext=1) extension to compute 99th percentile and compare with expected limits.
+    Uses the image (ext=1) extension to compute 99th percentile and compare
+    with expected limits.
     With log on, print failed files and the failure reason.
     Called by the main calib/sci_qual_test functions.
 
     All files passed = True
     Any file failed = False
 
-    :param files: a list of files of a single DPR type, obtained in the main test function
+    :param files: a list of files of a single DPR type, obtained in the
+                  main test function
     :param log: bool, if True prints messages (all messages must be wrapped
                 in a if log: statement)
 
@@ -127,23 +134,27 @@ def flux_test(files, log=False) -> bool:
 
     failed_log = ''
 
-    for file in files:
-        h = fits.getheader(file)
-        filename = file.split('/')[-1]
-        dpr_type = h['HIERARCH ESO DPR TYPE']
+    for filename in files:
+        hdr = fits.getheader(filename)
+        basename = filename.split('/')[-1]
+        dpr_type = hdr['HIERARCH ESO DPR TYPE']
         try:
             constraints_type = constraints[dpr_type]
         except KeyError:
             continue
-        im = fits.getdata(file, ext=1)
+        im = fits.getdata(filename, ext=1)
 
         # 99th percentile
         p99 = np.nanpercentile(im, 99)
 
         if p99 < constraints_type[0]:
-            failed_log += '{}: p99 is too low, limit at {}, value at {:.2f}\n'.format(filename, constraints_type[0], p99)
+            args = [basename, constraints_type[0], p99]
+            failed_log += ('{}: p99 is too low, limit at {}, '
+                           'value at {:.2f}\n').format(*args)
         if p99 > constraints_type[1]:
-            failed_log += '{}: p99 is too high, limit at {}, value at {:.2f}\n'.format(filename, constraints_type[1], p99)
+            args = [basename, constraints_type[1], p99]
+            failed_log += ('{}: p99 is too high, limit at {}, '
+                           'value at {:.2f}\n').format(*args)
 
     passed = True
     if len(failed_log) > 0:
@@ -162,7 +173,8 @@ def flux_test(files, log=False) -> bool:
 
 def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     """
-    Calibration quality tests - multiple basic quality checks for calibration files.
+    Calibration quality tests - multiple basic quality checks for
+    calibration files.
     Checks 3 types of raws/DPR types: FP, FLAT, and TELLURIC
     With log on, print a list of files that failed each test by category/type
 
@@ -175,7 +187,8 @@ def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     :param params: dictionary of parameters (from yaml/cmd line/ parameters.py)
     :param obsdir: str, the observation directory (e.g. the night directory)
-    :param log: bool, if True prints messages (all messages must be wrapped in a if log: statement)
+    :param log: bool, if True prints messages (all messages must be wrapped
+                in a if log: statement)
 
     :return: bool, True if passed, False otherwise
     """
@@ -210,19 +223,23 @@ def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     fp_files = []
     flat_files = []
     telluric_files = []
-    for file in files:
-        h = fits.getheader(file)
-        dpr_type = h['HIERARCH ESO DPR TYPE']
+    for filename in files:
+        hdr = fits.getheader(filename)
+        dpr_type = hdr['HIERARCH ESO DPR TYPE']
         if dpr_type in dpr_types['FP']:
-            fp_files.append(file)
+            fp_files.append(filename)
         if dpr_type in dpr_types['FLAT']:
-            flat_files.append(file)
+            flat_files.append(filename)
         if dpr_type in dpr_types['TELLURIC']:
-            telluric_files.append(file)
+            telluric_files.append(filename)
 
     # run the tests for each DPR type
     outputs = []
-    for (dpr_type, dpr_files) in [('FP', fp_files), ('FLAT', flat_files), ('TELLURIC', telluric_files)]:
+
+    dpr_tuple = [('FP', fp_files), ('FLAT', flat_files),
+                 ('TELLURIC', telluric_files)]
+
+    for (dpr_type, dpr_files) in dpr_tuple:
         if log:
             print('{} FILES:\n'.format(dpr_type))
         outputs.append(sat_test(dpr_files, log=log))
@@ -238,7 +255,8 @@ def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
 def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     """
-    Calibration quality tests - multiple basic quality checks for science files.
+    Calibration quality tests - multiple basic quality checks for science
+    files.
     Checks 1 type of raws/DPR types: SCIENCE
     With log on, print a list of files that failed each test
 
@@ -251,7 +269,8 @@ def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     :param params: dictionary of parameters (from yaml/cmd line/ parameters.py)
     :param obsdir: str, the observation directory (e.g. the night directory)
-    :param log: bool, if True prints messages (all messages must be wrapped in a if log: statement)
+    :param log: bool, if True prints messages (all messages must be wrapped
+                in a if log: statement)
 
     :return: bool, True if passed, False otherwise
     """
@@ -284,11 +303,11 @@ def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # select only the science files
     science_files = []
-    for file in files:
-        h = fits.getheader(file)
-        dpr_type = h['HIERARCH ESO DPR TYPE']
+    for filename in files:
+        hdr = fits.getheader(filename)
+        dpr_type = hdr['HIERARCH ESO DPR TYPE']
         if dpr_type in dpr_types['SCIENCE']:
-            science_files.append(file)
+            science_files.append(filename)
 
     # run the tests on the science files
     if log:
