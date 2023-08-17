@@ -3558,7 +3558,7 @@ def debug_mode(debugmode: bool, gsettings: dict):
     return gsettings
 
 
-def get_profiles_from_store(settings: dict, profiles: dict):
+def get_profiles_from_store(settings: dict, profiles: dict, reprocess: dict):
     # construct profiles yaml file name
     path = settings['WORKING']
     profile_yaml_file = os.path.join(path, 'all_profiles.yaml')
@@ -3570,6 +3570,7 @@ def get_profiles_from_store(settings: dict, profiles: dict):
         for profile_name in all_profiles:
             if profile_name not in profiles:
                 profiles[profile_name] = all_profiles[profile_name]
+                reprocess[profile_name] = False
     # re-create the yaml file
     write_yaml(profiles, profile_yaml_file)
     # return updated profiles
@@ -3942,7 +3943,9 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # look for profiles not in apero_profiles that we have to add
     #  (i.e. they are on the server)
-    apero_profiles = get_profiles_from_store(ari_settings, apero_profiles)
+    apero_profiles, reprocess = get_profiles_from_store(ari_settings,
+                                                        apero_profiles,
+                                                        reprocess)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
