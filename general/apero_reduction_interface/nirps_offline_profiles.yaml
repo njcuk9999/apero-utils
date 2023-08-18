@@ -29,7 +29,9 @@ settings:
     host: venus.astro.umontreal.ca
     options: ssh -oport=5822
   # whether to reset the working directory
-  reset: True
+  reset: False
+  # whether to sync with current working directory
+  sync: True
   # whether to filter by objects
   filter objects: False
   # objects to filter by

@@ -9,6 +9,7 @@ Created on 2023-02-20 at 9:35
 
 @author: cook
 """
+import argparse
 import copy
 import glob
 import os
@@ -44,8 +45,6 @@ HAS_POLAR = dict(SPIROU=True, NIRPS_HE=False, NIRPS_HA=False)
 LOG_LEVELS = ['error', 'warning']
 # list tables to load
 TABLE_NAMES = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
-# define whether to reprocess stats
-REPROCESS = True
 # Define output path
 OUTPUT_PATH = '.'
 # define sphinx directories
@@ -119,7 +118,9 @@ DEFAULT_COL_WIDTH = 10
 # define table width info
 DEFAULT_TABLE_WIDTH = 100
 DEFAULT_TABLE_LENGTH = 6
-
+# define rsync commands
+RSYNC_CMD_IN = 'rsync -avuz -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
+RSYNC_CMD_OUT = 'rsync -avuz -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
 
 # =============================================================================
 # Classes
@@ -442,33 +443,34 @@ class ObjectData:
             spec_props['FIRST_PP'] = Time(np.min(hdict['PP_MJDMID'])).iso
             spec_props['LAST_PP'] = Time(np.max(hdict['PP_MJDMID'])).iso
             spec_props['LAST_PP_PROC'] = Time(np.max(hdict['PP_PROC'])).iso
+            spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
         else:
             spec_props['FIRST_PP'] = None
             spec_props['LAST_PP'] = None
             spec_props['LAST_PP_PROC'] = None
+            spec_props['PP_VERSION'] = None
             # Add first / last ext files
         if ftypes['ext'].num_passed > 0:
             spec_props['FIRST_EXT'] = Time(np.min(hdict['EXT_MJDMID'])).iso
             spec_props['LAST_EXT'] = Time(np.max(hdict['EXT_MJDMID'])).iso
             spec_props['LAST_EXT_PROC'] = Time(np.max(hdict['EXT_PROC'])).iso
+            spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
         else:
             spec_props['FIRST_EXT'] = None
             spec_props['LAST_EXT'] = None
             spec_props['LAST_EXT_PROC'] = None
+            spec_props['EXT_VERSION'] = None
         # Add first / last tcorr files
         if ftypes['tcorr'].num_passed > 0:
             spec_props['FIRST_TCORR'] = Time(np.min(hdict['TCORR_MJDMID'])).iso
             spec_props['LAST_TCORR'] = Time(np.max(hdict['TCORR_MJDMID'])).iso
             spec_props['LAST_TCORR_PROC'] = Time(np.max(hdict['TCORR_PROC'])).iso
+            spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
         else:
             spec_props['FIRST_TCORR'] = None
             spec_props['LAST_TCORR'] = None
             spec_props['LAST_TCORR_PROC'] = None
-        # -----------------------------------------------------------------
-        # add versions
-        spec_props['PP_VERSION'] = ','.join(list(np.unique(hdict['PP_VERSION'])))
-        spec_props['EXT_VERSION'] = ','.join(list(np.unique(hdict['EXT_VERSION'])))
-        spec_props['TCORR_VERSION'] = ','.join(list(np.unique(hdict['TCORR_VERSION'])))
+            spec_props['TCORR_VERSION'] = None
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
@@ -494,21 +496,32 @@ class ObjectData:
                                   files=spec_props['S1D'].get_files(qc=True))
             pos_sc1d = _match_file(reffile=file_ext,
                                    files=spec_props['SC1D'].get_files(qc=True))
+            # three conditions that have to be met for a match
+            cond1 = pos_raw is not None
+            cond2 = pos_s1d is not None
+            cond3 = pos_sc1d is not None
             # we only stop is a match is found
-            if pos_raw is not None and pos_sc1d is not None:
+            if cond1 and cond2 and cond3:
                 matched = True
             else:
                 all_snr_pos = all_snr_pos[1:]
         # ---------------------------------------------------------------------
+        cond1 = pos_raw is None
+        cond2 = pos_s1d is None
+        cond3 = pos_sc1d is None
         # deal with case we have no matching raw file we have a big problem
         #   extracted file cannot exist without a raw file
-        if pos_raw is None:
-            raise ValueError(f'No raw file matching {file_ext}. '
-                             f'This should not be possible')
+        if cond1 or cond2 or cond3:
+            if cond1:
+                print(f'No raw file matching {file_ext}. '
+                      f'This should not be possible')
+            if cond2 or cond3:
+                print(f'No s1d file matching {file_ext}')
+            return
         # ---------------------------------------------------------------------
         # get the extracted spectrum for the spectrum with the highest SNR
         ext_file = spec_props['S1D'].get_files(qc=True)[pos_s1d]
-        ext_table = Table.read(ext_file, hdu=1)
+        ext_table = load_table(ext_file, hdu=1)
         # get wavelength masks for plotting
         wavemap = ext_table['wavelength']
         limits = self.gsettings['SpecWave']
@@ -542,7 +555,7 @@ class ObjectData:
             # get the telluric corrected spectrum for the spectrum with the
             # highest SNR
             tcorr_file = spec_props['SC1D'].get_files(qc=True)[pos_sc1d]
-            tcorr_table = Table.read(tcorr_file, hdu=1)
+            tcorr_table = load_table(tcorr_file, hdu=1)
             # push into spec_props
             spec_props['TCORR_SPEC'] = np.array(tcorr_table['flux'])
             spec_props['TCORR_SPEC_ERR'] = np.array(tcorr_table['eflux'])
@@ -679,7 +692,7 @@ class ObjectData:
             # get the plot file for this objname+template
             lbl_pfile = lbl_objtmps[lbl_objtmp][plot_file]
             # load rdb file
-            rdb_table = Table.read(lbl_pfile, format='ascii.rdb')
+            rdb_table = load_table(lbl_pfile, format='ascii.rdb')
             # get the values required
             lbl_props['rjd'] = np.array(rdb_table['rjd'])
             lbl_props['vrad'] = np.array(rdb_table['vrad'])
@@ -810,7 +823,7 @@ class ObjectData:
         # select ccf files to use
         ccf_props = choose_ccf_files(ccf_props)
         # load the first file to get the rv vector
-        ccf_table0 = Table.read(ccf_props['select_files'][0], format='fits',
+        ccf_table0 = load_table(ccf_props['select_files'][0], format='fits',
                                 hdu=1)
         # get the rv vector
         ccf_props['rv_vec'] = ccf_table0['RV']
@@ -818,7 +831,7 @@ class ObjectData:
         all_ccf = np.zeros((len(ccf_props['select_files']), len(ccf_table0)))
         # loop around all other files, load them and load into all_ccf
         for row, select_file in enumerate(ccf_props['select_files']):
-            table_row = Table.read(select_file, format='fits', hdu=1)
+            table_row = load_table(select_file, format='fits', hdu=1)
             # get the combined CCF for this file
             ccf_row = table_row['Combined']
             # normalize ccf
@@ -1033,6 +1046,28 @@ class ObjectData:
 # =============================================================================
 # Define functions
 # =============================================================================
+def get_args():
+    """
+    Define the command line arguments
+
+    :return: argparse namespace object containing arguments
+    """
+    parser = argparse.ArgumentParser(description='Simple ARI interface')
+    # add obs dir
+    parser.add_argument('profile', type=str, default='None',
+                        help='The profile yaml to use')
+    parser.add_argument('--filter', type=str, default='None',
+                        help='The specific profile to use in yaml')
+    # test mode - do not run apero recipes just test
+    parser.add_argument('--debug', type=bool, default=False,
+                        help='Run in debug mode (no parallel filters objs)')
+    # load arguments with parser
+    args = parser.parse_args()
+    # return arguments
+    return args
+
+
+
 def get_settings(settings: Dict[str, Any],
                  profile_name: Union[str, None] = None) -> dict:
     # storage for settings
@@ -1135,7 +1170,7 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # ------------------------------------------------------------------
     # deal with skipping object table
     if skip_obj_table and os.path.exists(object_table_file):
-        profile_stats['TABLES'][TABLE_NAMES[0]] = Table.read(object_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[0]] = load_table(object_table_file)
     elif skip_obj_table:
         profile_stats['TABLES'][TABLE_NAMES[0]] = None
     else:
@@ -1154,7 +1189,7 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # ------------------------------------------------------------------
     # deal with skipping recipe table
     if skip_recipe_table and os.path.exists(recipe_table_file):
-        profile_stats['TABLES'][TABLE_NAMES[1]] = Table.read(recipe_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[1]] = load_table(recipe_table_file)
     elif skip_recipe_table:
         profile_stats['TABLES'][TABLE_NAMES[1]] = None
     else:
@@ -1163,7 +1198,7 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # ------------------------------------------------------------------
     # deal with skipping message table
     if skip_msg_table and os.path.exists(message_table_file):
-        profile_stats['TABLES'][TABLE_NAMES[2]] = Table.read(message_table_file)
+        profile_stats['TABLES'][TABLE_NAMES[2]] = load_table(message_table_file)
     elif skip_msg_table:
         profile_stats['TABLES'][TABLE_NAMES[2]] = None
     else:
@@ -1483,7 +1518,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         profile_page.write_page(os.path.join(settings['RST'], 'profile.rst'))
 
 
-def compile_docs(settings: dict):
+def compile_docs(gsettings: dict, settings: dict):
     """
     Compile the documentation
 
@@ -1506,24 +1541,31 @@ def compile_docs(settings: dict):
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
     wlog = drs_log.wlog
+    # get reset
+    reset = gsettings['reset']
     # ------------------------------------------------------------------
     # get list of files to copy
     copy_files = ['conf.py', 'make.bat', 'Makefile']
     # loop around files and copy
     for copy_file in copy_files:
+        outpath = os.path.join(settings['WORKING'], copy_file)
+        # remove file if it exists
+        if os.path.exists(outpath):
+            os.remove(outpath)
         # copy conf.py make.bat and Makefile to the working directory
-        shutil.copy(__file__.replace('simple_ari.py', copy_file),
-                    os.path.join(settings['WORKING'], copy_file))
+        shutil.copy(__file__.replace('simple_ari.py', copy_file), outpath)
     # get _static directory
     static_outdir = os.path.join(settings['WORKING'], '_static')
     # deal with static_outdir existing
-    if os.path.exists(static_outdir):
+    if os.path.exists(static_outdir) and reset:
         shutil.rmtree(static_outdir)
     # copy the static directory as well
     shutil.copytree(__file__.replace('simple_ari.py', '_static'),
-                    os.path.join(settings['WORKING'], '_static'))
+                    os.path.join(settings['WORKING'], '_static'),
+                    dirs_exist_ok=True)
     shutil.copytree(__file__.replace('simple_ari.py', '_templates'),
-                    os.path.join(settings['WORKING'], '_templates'))
+                    os.path.join(settings['WORKING'], '_templates'),
+                    dirs_exist_ok=True)
     # ------------------------------------------------------------------
     # get current directory
     cwd = os.getcwd()
@@ -1558,7 +1600,56 @@ def compile_docs(settings: dict):
     os.chdir(cwd)
 
 
-def upload_docs(gsettings: dict, settings: dict):
+def sync_docs(gsettings: dict, settings: dict):
+    # must import here (so that os.environ is set)
+    # noinspection PyPep8Naming
+    from apero.core import constants
+    from apero.tools.module.documentation import drs_documentation
+    from apero.core.utils import drs_startup
+    from apero.core.core import drs_log
+    # ------------------------------------------------------------------
+    # get the parameter dictionary of constants from apero
+    params = constants.load()
+    # set apero pid
+    params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
+    # get WLOG
+    wlog = drs_log.wlog
+    # get output directory
+    out_dir = settings['OUT']
+    # get the instrument
+    instrument = settings['INSTRUMENT'].lower()
+    # ------------------------------------------------------------------
+    # make sure we copy contents not directory
+    if not out_dir.endswith(os.sep):
+        out_dir += os.sep
+    # get rsync dict
+    rdict = dict()
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
+    rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                    f'ari/{instrument}/')
+    rdict['OUTPATH'] = out_dir
+    # print command to rsync
+    wlog(params, '', RSYNC_CMD_IN.format(**rdict))
+    # run command (will require password)
+    os.system(RSYNC_CMD_IN.format(**rdict))
+    # ------------------------------------------------------------------
+    # rsync compiled files
+    rdict = dict()
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
+    rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                    f'ari/profile/')
+    rdict['OUTPATH'] = settings['WORKING'] + os.sep
+    # print command to rsync
+    wlog(params, '', RSYNC_CMD_IN.format(**rdict))
+    # run command (will require password)
+    os.system(RSYNC_CMD_IN.format(**rdict))
+
+
+def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
     """
     Upload the documentation to the web server
 
@@ -1570,7 +1661,6 @@ def upload_docs(gsettings: dict, settings: dict):
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
-    from apero.tools.module.documentation import drs_documentation
     from apero.core.utils import drs_startup
     from apero.core.core import drs_log
     # ------------------------------------------------------------------
@@ -1599,9 +1689,22 @@ def upload_docs(gsettings: dict, settings: dict):
     rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
                                     f'ari/{instrument}/')
     # print command to rsync
-    wlog(params, '', drs_documentation.RSYNC_CMD.format(**rdict))
+    wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
     # run command (will require password)
-    os.system(drs_documentation.RSYNC_CMD.format(**rdict))
+    os.system(RSYNC_CMD_OUT.format(**rdict))
+    # ------------------------------------------------------------------
+    # rsync compiled files
+    rdict = dict()
+    rdict['SSH'] = gsettings['ssh']['options']
+    rdict['USER'] = gsettings['ssh']['user']
+    rdict['HOST'] = gsettings['ssh']['host']
+    rdict['INPATH'] = settings['WORKING'] + os.sep
+    rdict['OUTPATH'] = os.path.join(gsettings['ssh']['directory'],
+                                    f'ari/profile/')
+    # print command to rsync
+    wlog(params, '', RSYNC_CMD_OUT.format(**rdict))
+    # run command (will require password)
+    os.system(RSYNC_CMD_OUT.format(**rdict))
 
 
 # =============================================================================
@@ -3457,6 +3560,26 @@ def debug_mode(debugmode: bool, gsettings: dict):
     return gsettings
 
 
+def get_profiles_from_store(settings: dict, profiles: dict,
+                            reprocess: dict) -> Tuple[dict, dict]:
+    # construct profiles yaml file name
+    path = settings['WORKING']
+    profile_yaml_file = os.path.join(path, 'all_profiles.yaml')
+    # deal with all profiles existing
+    if os.path.exists(profile_yaml_file):
+        # read all_profiles.yaml
+        all_profiles = read_yaml_file(profile_yaml_file)
+        # loop around all profiles and add missing ones to list
+        for profile_name in all_profiles:
+            if profile_name not in profiles:
+                profiles[profile_name] = all_profiles[profile_name]
+                reprocess[profile_name] = False
+    # re-create the yaml file
+    write_yaml(profiles, profile_yaml_file)
+    # return updated profiles
+    return profiles, reprocess
+
+
 def split_line(parts, rawstring):
     # store list of variables
     variables = []
@@ -3486,6 +3609,15 @@ def split_line(parts, rawstring):
     else:
         return None
 
+
+def load_table(filename, **kwargs):
+    # attempt to load astropy table
+    try:
+        return Table.read(filename, **kwargs)
+    except Exception as e:
+        emsg = 'Cannot load table from: {0}\n\t{1}: {2}'
+        eargs = [filename, type(e), str(e)]
+        raise ValueError(emsg.format(*eargs))
 
 def save_stats(settings: dict, stats: dict):
     """
@@ -3542,7 +3674,7 @@ def load_stats(settings: dict) -> dict:
             profile_stats['TABLES'][table_name] = None
             continue
         # load the table
-        profile_stats['TABLES'][table_name] = Table.read(table_path)
+        profile_stats['TABLES'][table_name] = load_table(table_path)
     # return the profile stats
     return profile_stats
 
@@ -3565,6 +3697,22 @@ def read_yaml_file(pfilename: str) -> dict:
             raise exc
     # return the profiles
     return profiles
+
+
+def write_yaml(dictionary: dict, filename: str):
+    """
+    Write a dictionary to a yaml file
+
+    :param dictionary:
+    :param filename:
+    :return:
+    """
+    # remove file if it exists
+    if os.path.exists(filename):
+        os.remove(filename)
+    # save yaml file
+    with open(filename, 'w') as yfile:
+        yaml.dump(dictionary, yfile)
 
 
 def clean_profile_name(profile_name: str) -> str:
@@ -3749,11 +3897,11 @@ class ArrowHandler(HandlerPatch):
 # Main code here
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
-    # assume the first argument is the profile filename
-    if len(sys.argv) < 2:
-        raise IOError('Please supply the profile filename')
-    profile_filename = sys.argv[1]
-    if len(sys.argv) > 2 and sys.argv[2].startswith('--debug'):
+    # get the args
+    args = get_args()
+    profile_filename = args.profile
+    # deal with debug
+    if args.debug:
         debug = True
     else:
         debug = False
@@ -3764,12 +3912,43 @@ if __name__ == "__main__":
     header_settings = dict(apero_profiles['headers'])
     del apero_profiles['settings']
     del apero_profiles['headers']
+    # -------------------------------------------------------------------------
+    # deal with reprocessing
+    reprocess = dict()
+    # list current profiles
+    current_profiles = list(apero_profiles.keys())
+    # if filter in this list we remove all other profiles
+    if args.filter not in [None, 'None'] and args.filter in current_profiles:
+        for profile in current_profiles:
+            if profile == args.filter:
+                reprocess[profile] = True
+            else:
+                reprocess[profile] = False
+    else:
+        for profile in current_profiles:
+            reprocess[profile] = True
+    # -------------------------------------------------------------------------
     # deal with a reset
     if ari_gsettings['reset']:
         # remove working directory
         shutil.rmtree(ari_gsettings['working directory'], ignore_errors=True)
+    # get settings for sync
+    ari_settings = get_settings(ari_gsettings)
+    # deal with a sync from server
+    if ari_gsettings['sync']:
+        # step 6: upload to hosting
+        print('=' * 50)
+        print('Syncing docs...')
+        print('=' * 50)
+        sync_docs(ari_gsettings, ari_settings)
     # deal with debug mode
     ari_gsettings = debug_mode(debug, ari_gsettings)
+    # ----------------------------------------------------------------------
+    # look for profiles not in apero_profiles that we have to add
+    #  (i.e. they are on the server)
+    apero_profiles, reprocess = get_profiles_from_store(ari_settings,
+                                                        apero_profiles,
+                                                        reprocess)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
@@ -3781,7 +3960,7 @@ if __name__ == "__main__":
         # add profile name to settings
         apero_profiles[_apero_profname]['profile name'] = _apero_profname
         # we reprocess if the file does not exist or if REPROCESS is True
-        if REPROCESS:
+        if reprocess[_apero_profname]:
             # print progress
             print('=' * 50)
             print('Compiling stats for profile: {0}'.format(_apero_profname))
@@ -3828,12 +4007,14 @@ if __name__ == "__main__":
     print('=' * 50)
     print('Compiling docs...')
     print('=' * 50)
-    compile_docs(ari_settings)
+    compile_docs(ari_gsettings, ari_settings)
     # ----------------------------------------------------------------------
     # step 6: upload to hosting
     print('=' * 50)
     print('Uploading docs...')
     print('=' * 50)
-    upload_docs(ari_gsettings, ari_settings)
+    upload_docs(ari_gsettings, ari_settings, apero_profiles)
+
+
 
 # =============================================================================

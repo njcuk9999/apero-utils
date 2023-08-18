@@ -48,7 +48,8 @@ def get_args() -> Dict[str, Any]:
     parser.add_argument('--test_run', '--test', '--test_name', '--testrun',
                         '--testname', type=str, default='None',
                         help='If running a single test define the name of that'
-                             ' test here (the column name)')
+                             ' test here (the column name). This does not '
+                             'update the google sheet')
     parser.add_argument('--today', action='store_true', default=False,
                         help='If we do not give an --obsdir we can give '
                              'this argument to always use today\'s date as '
@@ -62,6 +63,9 @@ def get_args() -> Dict[str, Any]:
                              'observation directories are named by date) in '
                              'the form YYYY-MM-DD. Note --today takes '
                              'priority over --yesterday')
+    parser.add_argument('--testfilter', '--test_fitler', '--tf',
+                        type=str, default='None',
+                        help='Only calculate certain tests')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -136,7 +140,7 @@ def load_params(yaml_file: Optional[str] = None,
             # TODO: this will not be correct for anyone who uses
             #       observation directories that are not YYYY-MM-DD
             params['obsdir'] = base.AstropyTime.now().iso.split(' ')[0]
-
+    # deal with no obsdir
     if params['obsdir'] is None:
         # deal with getting today (bool) from input or cmd args
         yest, yest_source = add_cmd_arg(args, 'yesterday', yest, null=False)
@@ -149,10 +153,25 @@ def load_params(yaml_file: Optional[str] = None,
             timenow = base.AstropyTime.now()
             timeyest = timenow - TimeDelta(1 * uu.day)
             params['obsdir'] = timeyest.iso.split(' ')[0]
-
+    # -------------------------------------------------------------------------
     # get test name from cmd args
     params['test_name'], tname_source = add_cmd_arg(args, 'test_run', test_name)
     sources['test_name'] = add_source('today', today, tname_source)
+    # -------------------------------------------------------------------------
+    # get the test filter from cmd args
+    params['test_filter'], tfilter_source = add_cmd_arg(args, 'testfilter', 'None')
+    # deal with nulls
+    if params['test_filter'] in [None, 'None', 'Null', '']:
+        params['test_filter'] = None
+    else:
+        # clean up tests
+        raw_filtered_tests = params['test_filter'].split(',')
+        filtered_tests = []
+        # loop around raw filtered tests
+        for raw_filtered_test in raw_filtered_tests:
+            filtered_tests.append(raw_filtered_test.strip().upper())
+        # update the test_filter list
+        params['test_filter'] = filtered_tests
     # -------------------------------------------------------------------------
     # load from yaml file
     yaml_params = io.read_yaml(yaml_file, profile_mode=True)

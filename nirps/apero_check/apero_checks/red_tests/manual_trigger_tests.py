@@ -24,12 +24,12 @@ MANUAL_END = 'MANUAL_END'
 APERO_START = 'APERO_START'
 APERO_ERR = 'APERO_ERR'
 APERO_END = 'APERO_END'
-LBL_START = 'LBL_START'
-LBL_ERROR = 'LBL_ERR'
-LBL_END = 'LBL_END'
+ARI_START = 'ARI_START'
+ARI_END = 'ARI_END'
+
 
 MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
-            LBL_START, LBL_ERROR, LBL_END]
+            ARI_START, ARI_END]
 # -----------------------------------------------------------------------------
 # define the column names in the csv log file
 COLUMNS = ['TIMESTAMP', 'PROFILE', 'STATUS', 'OBSDIRS', 'COMMENT']
@@ -111,16 +111,16 @@ def test_apero_end(params: Dict[str, Any], obsdir: str,
     return test_switch(APERO_END, params, obsdir, log)
 
 
-def test_lbl_start(params: Dict[str, Any], obsdir: str,
+def test_ari_start(params: Dict[str, Any], obsdir: str,
                               log=False) -> bool:
     # run the manual start test
-    return test_switch(LBL_START, params, obsdir, log)
+    return test_switch(ARI_START, params, obsdir, log)
 
 
-def test_lbl_end(params: Dict[str, Any], obsdir: str,
+def test_ari_end(params: Dict[str, Any], obsdir: str,
                               log=False) -> bool:
     # run the manual start test
-    return test_switch(LBL_END, params, obsdir, log)
+    return test_switch(ARI_END, params, obsdir, log)
 
 
 # =============================================================================

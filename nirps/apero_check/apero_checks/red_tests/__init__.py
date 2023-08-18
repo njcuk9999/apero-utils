@@ -14,6 +14,7 @@ from apero_checks.red_tests import blank_test
 from apero_checks.red_tests import obsdir_test
 from apero_checks.red_tests import calib_test
 from apero_checks.red_tests import manual_trigger_tests
+from apero_checks.red_tests import pixel_shifts_test
 
 # =============================================================================
 # Append your test here
@@ -61,10 +62,13 @@ test_dict['APERO_START'] = manual_trigger_tests.test_apero_start
 test_dict['APERO_END'] = manual_trigger_tests.test_apero_end
 
 # Test that LBL started
-test_dict['LBL_START'] = manual_trigger_tests.test_lbl_start
+test_dict['ARI_START'] = manual_trigger_tests.test_ari_start
 
 # Test that LBL ended
-test_dict['LBL_END'] = manual_trigger_tests.test_lbl_end
+test_dict['ARI_END'] = manual_trigger_tests.test_ari_end
+
+# Pixel shifts tests - check for pixel shifts in pp files
+test_dict['PIXEL_SHIFTS'] = pixel_shifts_test.test
 
 # test 1 - explanation
 

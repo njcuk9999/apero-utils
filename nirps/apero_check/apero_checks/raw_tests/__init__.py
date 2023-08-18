@@ -14,6 +14,7 @@ from apero_checks.raw_tests import blank_test
 from apero_checks.raw_tests import calib_test
 from apero_checks.raw_tests import eng_test
 from apero_checks.raw_tests import obsdir_test
+from apero_checks.raw_tests import qual_test
 
 # =============================================================================
 # Append your test here
@@ -45,6 +46,14 @@ test_dict['ENG_TEST'] = eng_test.test
 # eng test - Are the expected calibrations present in the night folder
 #            add eventual extra calibrations to the 'must have' objects
 test_dict['CALIB_TEST'] = calib_test.test
+
+# science quality test - Some basic quality checks for science files. Currently:
+#                        saturation, flux
+test_dict['SCI_QUAL'] = qual_test.sci_qual_test
+
+# calib quality test - Some basic quality checks for calibration files. Currently:
+#                      saturation, flux
+test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
 
 # test 1 - explanation
 
