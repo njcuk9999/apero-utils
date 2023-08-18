@@ -64,7 +64,7 @@ def get_args() -> Dict[str, Any]:
                              'the form YYYY-MM-DD. Note --today takes '
                              'priority over --yesterday')
     parser.add_argument('--testfilter', '--test_fitler', '--tf',
-                        action='store_const', default='None',
+                        type=str, default='None',
                         help='Only calculate certain tests')
     # load arguments with parser
     args = parser.parse_args()
