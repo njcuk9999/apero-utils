@@ -152,6 +152,10 @@ def run_tests(params: Dict[str, Any],
         test_values[obsdir] = dict()
         # loop around all tests
         for it, test_name in enumerate(test_list):
+            # deal with skipping tests
+            if params['test_filter'] is not None:
+                if test_name not in params['test_filter']:
+                    continue
             # run the test
             output = run_test(params, obsdir, test_name, it=it,
                               num_tests=len(test_list),
