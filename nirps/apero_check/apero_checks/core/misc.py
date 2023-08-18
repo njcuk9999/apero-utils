@@ -63,7 +63,8 @@ def get_args() -> Dict[str, Any]:
                              'observation directories are named by date) in '
                              'the form YYYY-MM-DD. Note --today takes '
                              'priority over --yesterday')
-    parser.add_argument('--testfilter', actions='store_const', default='None',
+    parser.add_argument('--testfilter', '--test_fitler', '--tf',
+                        action='store_const', default='None',
                         help='Only calculate certain tests')
     # load arguments with parser
     args = parser.parse_args()
