@@ -65,7 +65,7 @@ def main():
     for r_it, request in enumerate(requests):
         # print where we are up to
         msg = 'Emailing user for request {0} / {1}'
-        misc.log_msg(msg.format(msg.format(r_it +1, len(requests))))
+        misc.log_msg(msg.format(r_it +1, len(requests)))
         # email a success
         if request.valid:
             # email user

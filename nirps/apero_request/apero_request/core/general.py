@@ -203,7 +203,7 @@ class Request:
         # ---------------------------------------------------------------------
         try:
             outpath = params['local path']
-            self.fibers_str = ','.join(get_fibers(self.fibers))
+            self.fibers_str = get_fibers(self.fibers)
             runids = get_runids(self.allowed_runids)
             test = params.get('test', False)
         except Exception as e:
@@ -312,7 +312,7 @@ class Request:
         summary = ''
         summary += f'tarfile: {self.tarfile}\n\n'
         summary += '='*50 + '\n'
-        summary += '= Request\n'
+        summary += 'Request\n'
         summary += '='*50 + '\n'
         summary += f'Timestamp: {self.timestamp_str}\n'
         summary += f'Email: {self.email}\n'
