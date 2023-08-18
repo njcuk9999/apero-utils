@@ -308,9 +308,7 @@ class Request:
                                           ndigits=20)
         return hash
 
-
     def _generate_summary(self):
-
         summary = ''
         summary += f'tarfile: {self.tarfile}\n\n'
         summary += '='*50
@@ -326,11 +324,12 @@ class Request:
         summary += f'DRSOUTID: {self.drsoutid_str}\n'
         summary += f'START_DATE: {self.start_date_str}\n'
         summary += f'END_DATE: {self.end_date_str}\n'
+        return summary
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self._generate_summary()
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return self._generate_summary()
 
     def email_success(self):
