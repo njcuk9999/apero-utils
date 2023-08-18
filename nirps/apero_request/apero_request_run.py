@@ -31,6 +31,7 @@ def main():
     # -------------------------------------------------------------------------
     # get current list of requests
     # -------------------------------------------------------------------------
+    misc.log_msg('Gettings requests')
     all_requests = general.get_sheet(params, 'response')
     # -------------------------------------------------------------------------
     # create a list of requests

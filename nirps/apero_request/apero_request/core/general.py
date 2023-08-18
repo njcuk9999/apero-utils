@@ -389,7 +389,7 @@ def get_sheet(params: Dict[str, Any], sheetkind: str) -> pd.DataFrame:
     sheet_id, sheet_name = get_sheetkind(params, sheetkind)
     # ---------------------------------------------------------------------
     # print progress
-    msg = f'Downloading google-sheet: {sheetkind}'
+    msg = f'\tDownloading google-sheet: {sheetkind}'
     misc.log_msg(msg, level='info')
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
