@@ -12,6 +12,7 @@ Created on 2023-07-03 at 14:37
 from typing import Any, Dict
 import os
 import glob
+from tqdm import tqdm
 
 from astropy.io import fits
 import numpy as np
@@ -80,7 +81,7 @@ def sat_test(files, log=False) -> bool:
 
     failed_log = ''
 
-    for filename in files:
+    for filename in tqdm(files, leave=False):
         hdr = fits.getheader(filename)
         basename = os.path.basename(filename)
         dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
@@ -134,7 +135,7 @@ def flux_test(files, log=False) -> bool:
 
     failed_log = ''
 
-    for filename in files:
+    for filename in tqdm(files, leave=False):
         hdr = fits.getheader(filename)
         basename = filename.split('/')[-1]
         dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
@@ -223,7 +224,7 @@ def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     fp_files = []
     flat_files = []
     telluric_files = []
-    for filename in files:
+    for filename in tqdm(files, leave=False):
         hdr = fits.getheader(filename)
         dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
         if dpr_type in dpr_types['FP']:
@@ -303,7 +304,7 @@ def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # select only the science files
     science_files = []
-    for filename in files:
+    for filename in tqdm(files, leave=False):
         hdr = fits.getheader(filename)
         dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
         if dpr_type in dpr_types['SCIENCE']:

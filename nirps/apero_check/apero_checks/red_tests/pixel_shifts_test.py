@@ -14,6 +14,7 @@ from typing import Any, Dict
 import os
 import glob
 from astropy.io import fits
+from tqdm import tqdm
 
 from apero_checks.core import red_functions
 from apero_checks.core import misc
@@ -79,7 +80,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     failed_msg = ''
 
     # check pixel shift header keys for all files in obsdir
-    for file in files:
+    for file in tqdm(files, leave=False):
         hdr = fits.getheader(file)
         filename = file.split('/')[-1]
         dx = float(hdr['DETOFFDX'])
