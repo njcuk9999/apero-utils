@@ -60,7 +60,7 @@ class Request:
         self.drsobjn: Union[np.chararray, None] = None
         self.dprtype: Union[np.chararray, None] = None
         self.mode: Union[str, None] = None
-        self.fibers: Union[np.chararray, None] = None
+        self.fibers: str = ''
         self.drsoutid: Union[np.chararray, None] = None
         self.passkey: Union[str, None] = None
         self.start_date: Union[pd.Timestamp, None] = None
@@ -137,7 +137,6 @@ class Request:
             self.drsobjn_str =  ','.join(list(self.drsobjn))
             self.dprtype_str = ','.join(list(self.dprtype))
             self.drsoutid_str = ','.join(list(self.drsoutid))
-            self.fibers_str = ','.join(get_fibers(self.fibers))
             if self.start_date is not None:
                 self.start_date_str = Time(self.start_date).iso
             else:
@@ -203,7 +202,8 @@ class Request:
         # sort out arguments for apero get
         # ---------------------------------------------------------------------
         try:
-            outpath = params['LOCAL_DIR']
+            outpath = params['local path']
+            self.fibers_str = ','.join(get_fibers(self.fibers))
             runids = get_runids(self.allowed_runids)
             test = params.get('test', False)
         except Exception as e:
@@ -301,7 +301,7 @@ class Request:
                                                   self.drsobjn_str,
                                                   self.dprtype_str,
                                                   self.mode,
-                                                  self.fibers_str,
+                                                  self.fibers,
                                                   self.drsoutid_str,
                                                   self.start_date_str,
                                                   self.end_date_str],
@@ -311,16 +311,20 @@ class Request:
     def _generate_summary(self):
         summary = ''
         summary += f'tarfile: {self.tarfile}\n\n'
-        summary += '='*50
-        summary += 'Request:\n'
-        summary += '='*50
+        summary += '='*50 + '\n'
+        summary += '= Request\n'
+        summary += '='*50 + '\n'
         summary += f'Timestamp: {self.timestamp_str}\n'
         summary += f'Email: {self.email}\n'
         summary += f'Passkey: {self.passkey}\n'
         summary += f'DRSOBJN: {self.drsobjn_str}\n'
         summary += f'DPRTYPE: {self.dprtype_str}\n'
         summary += f'APERO_MODE: {self.mode}\n'
-        summary += f'FIBERS: {self.fibers_str}\n'
+        if len(self.fibers_str) == 0:
+            fiber_str = self.fibers
+        else:
+            fiber_str = f'{self.fibers} ({self.fibers_str})'
+        summary += f'FIBERS: {fiber_str}\n'
         summary += f'DRSOUTID: {self.drsoutid_str}\n'
         summary += f'START_DATE: {self.start_date_str}\n'
         summary += f'END_DATE: {self.end_date_str}\n'
