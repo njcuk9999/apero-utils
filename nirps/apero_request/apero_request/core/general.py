@@ -9,14 +9,18 @@ Created on {DATE}
 
 @author: cook
 """
-from typing import Any, Dict, List, Tuple
-import pandas as pd
+import os
+import sys
+from typing import Any, Dict, List, Tuple, Union
+
 import gspread_pandas as gspd
+import numpy as np
+import pandas as pd
+from astropy.time import Time
 
 from apero_request.core import base
-from apero_request.core import misc
 from apero_request.core import io
-
+from apero_request.core import misc
 
 # =============================================================================
 # Define variables
@@ -31,8 +35,188 @@ __AUTHOR__ = base.__AUTHOR__
 # Define classes
 # =============================================================================
 class Request:
-    def __init__(self, timestamp, email, drsobjn, dprtype, online, offline,
-                 drsoutid, passkey, start_date, end_date):
+    def __init__(self, timestamp: Union[str, pd.Timestamp],
+                 email: str, drsobjn: str, dprtype: str, mode: str, fiber: str,
+                 drsoutid: str, passkey: str,
+                 start_date: Union[str, pd.Timestamp],
+                 end_date: Union[str, pd.Timestamp]):
+        """
+        Create a request instance
+
+        :param timestamp:
+        :param email:
+        :param drsobjn:
+        :param dprtype:
+        :param mode:
+        :param fiber:
+        :param drsoutid:
+        :param passkey:
+        :param start_date:
+        :param end_date:
+        """
+        self.timestamp = pd.to_datetime(timestamp)
+        self.email = email
+        self.drobjn = np.char.array(drsobjn.split(',')).strip()
+        self.drptype = np.char.array(dprtype.split(',')).strip()
+        self.mode = mode
+        self.fiber = fiber
+        self.drsoutid = np.char.array(drsoutid.split(',')).strip()
+        self.passkey = passkey
+
+        if start_date in [None, 'None', 'Null', '']:
+            self.start_date = None
+        else:
+            self.start_date = pd.to_datetime(start_date, format="%d/%m/%Y")
+        if end_date in [None, 'None', 'Null', '']:
+            self.end_date = None
+        else:
+            self.end_date = pd.to_datetime(end_date, format="%d/%m/%Y")
+
+        # other attributes
+        self.valid: bool = False
+        self.reason: str = ''
+        self.allowed_runids: set = set()
+        self.allowed_profiles: set = set()
+
+    @staticmethod
+    def from_pandas_row(row: Any) -> 'Request':
+        """
+        Create a request from a pandas row
+
+        :param row: pandas row, the row to convert to a request
+
+        :return: Request, the request instance
+        """
+        # get values from pandas row
+        timestamp = row['Timestamp']
+        email = row['Email Address']
+        drsobjn = row['DRSOBJN']
+        dprtype = row['DPRTYPE']
+        mode = row['APERO_MODE']
+        fiber = row['FIBER']
+        drsoutid = row['DRSOUTID']
+        passkey = row['Pass key']
+        start_date = row['START_DATE']
+        end_date = row['END_DATE']
+        # make the request
+        request = Request(timestamp, email, drsobjn, dprtype, mode, fiber,
+                          drsoutid, passkey, start_date, end_date)
+        # return the request
+        return request
+
+    def run_request(self, params: dict):
+        """
+
+        :return:
+        """
+        # select profile parameters
+        try:
+            profile_params = self._get_profile_params(params)
+        except Exception as e:
+            self.value = False
+            self.reason = f'Could not get profile parameters with error: {e}'
+            return
+        # update apero profile
+        try:
+            _ = update_apero_profile(profile_params)
+        except Exception as e:
+            self.value = False
+            self.reason = f'Could not update apero profile with error: {e}'
+            return
+        # ---------------------------------------------------------------------
+        # sort out arguments for apero get
+        # ---------------------------------------------------------------------
+        objnames = None
+        dprtypes = None
+        outtypes = None
+        outpath = None
+        fibers = None
+        runids = None
+        test = params['test']
+        if self.start_date is not None:
+            start = Time(self.start_date).iso
+        else:
+            start = 'None'
+        if self.end_date is not None:
+            end = Time(self.end_date).iso
+        else:
+            end = 'None'
+        # ---------------------------------------------------------------------
+        # try to run apero get
+        # ---------------------------------------------------------------------
+        try:
+            # need to import apero_get (for this profile)
+            from apero.tools.recipes.bin import apero_get
+            # run apero get to make the objects dir in apero dir
+            apero_get.main(objnames=objnames, dprtypes=dprtypes,
+                           outtypes=outtypes, outpath=outpath,
+                           fibers=fibers, runids=runids,
+                           symlinks=False, tar=True,
+                           test=test, since=start, latest=end)
+        except Exception as e:
+            self.valid = False
+            self.reason = f'Apero get failed with error: {e}'
+            return
+
+    def copy_tar(self):
+        pass
+
+
+    def _get_profile_params(self, params: dict) -> Dict[str, str]:
+        """
+        Get the profile parameters from the yaml file
+
+        :param params: parameters dictionary
+
+        :return: dictionary, the profile parameters
+        """
+        # deal with mode not in params
+        if self.mode not in params:
+            emsg = f'Profile {self.mode} not valid.'
+            raise base.AperoRequestError(emsg)
+        # ---------------------------------------------------------------------
+        # load yaml file from params
+        yaml_file = params[self.mode]
+        # read yaml file
+        yaml_params = io.read_yaml(yaml_file)
+        # ---------------------------------------------------------------------
+        # get profile name
+        profile_name = self.mode.replace('_', ' ')
+        # deal with profile name not in yaml_params
+        if profile_name not in yaml_params:
+            emsg = f'Profile name {profile_name} not in yaml file.'
+            raise base.AperoRequestError(emsg)
+        # set up storage for return
+        profile_params = dict()
+        # ---------------------------------------------------------------------
+        # deal with general not in yaml_params[profile_name]
+        if 'general' not in yaml_params[profile_name]:
+            emsg = f'"general" not in yaml file for profile {profile_name}.'
+            raise base.AperoRequestError(emsg)
+        else:
+            settings = yaml_params[profile_name]['general']
+        # ---------------------------------------------------------------------
+        # get apero profile
+        if 'apero profile' not in settings:
+            emsg = f'"apero profile" not in general for profile {profile_name}.'
+            raise base.AperoRequestError(emsg)
+        else:
+            profile_params['apero profile'] = settings['apero profile']
+        # ---------------------------------------------------------------------
+        # get apero install
+        if 'apero install' not in settings:
+            emsg = f'"apero install" not in general for profile {profile_name}.'
+            raise base.AperoRequestError(emsg)
+        else:
+            profile_params['apero install'] = settings['apero install']
+        # ---------------------------------------------------------------------
+        # return profile parameters
+        return profile_params
+
+    def email_success(self):
+        pass
+
+    def email_failure(self):
         pass
 
 
@@ -63,6 +247,7 @@ def get_sheetkind(params: Dict[str, Any], sheetkind: str) -> Tuple[str, str]:
         raise base.AperoRequestError(emsg)
     # return sheet id and sheet name
     return sheet_id, sheet_name
+
 
 def get_sheet(params: Dict[str, Any], sheetkind: str) -> pd.DataFrame:
     """
@@ -115,32 +300,167 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     misc.log_msg(msg, level='info')
 
 
-
-
 def create_requests(params: Dict[str, Any],
-                    dataframe: pd.DataFrame) -> List[Request]:
+                    dataframe: pd.DataFrame
+                    ) -> Tuple[List[Request], pd.DataFrame]:
     """
     Create a list of request instances from a dataframe
 
     final list should reject any rows older than a certain date
 
-    final list should remove any rows that are currently on disk
+    also should reject any that have the wrong password
 
     :param params:
     :param dataframe:
-    :return:
+
+    :return: the list of requests and the dataframe with the bad requests removed
     """
 
     # get pass key sheet
     pass_sheet = get_sheet(params, 'pass')
     # get the valid time period in days
-    valid_time = params['valid time']
+    valid_time = pd.Timedelta(days=-params['valid time'])
 
-    for row in dataframe:
-        pass
+    # convert timestampe to a datetime
+    dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'])
+    # get the offset
+    offset = dataframe['Timestamp'] - pd.Timestamp.now() > valid_time
+    # valid dataframe
+    valid_dataframe = dataframe[offset]
+    # mask out invalid passkeys
+    mask = valid_dataframe['Pass key'].isin(pass_sheet['PASSKEY'])
+    # cut down the valid dataframe
+    valid_dataframe = valid_dataframe[mask]
+    # -------------------------------------------------------------------------
+    # we need to match the passkey + email address for each row in dataframe
+    #   to the passkey + email address in the passkey sheet
+    #   if we find a match we add it to the list of requests
+    # -------------------------------------------------------------------------
+    # turn pass_sheet into a dictionary of passkeys with the emails as
+    #   lists for each key
+    pass_dict = dict()
+    runid_dict = dict()
+    profile_dict = dict()
+    for row in range(len(pass_sheet)):
+        # get passkey
+        passkey = str(pass_sheet['PASSKEY'][row])
+        # get run id
+        runid = np.char.array(pass_sheet['RUN_IDS'][row].split(','))
+        runid.strip()
+        # get emails
+        emails = np.char.array(pass_sheet['EMAIL'][row].split(','))
+        emails = emails.strip()
+        # get profile_dict
+        profiles = np.char.array(pass_sheet['APERO PROFILES'][row].split(','))
+        profiles = profiles.strip()
+        # push into pass_dict using a set
+        if passkey not in pass_dict:
+            pass_dict[passkey] = set(emails)
+            runid_dict[passkey] = set(runid)
+            profile_dict[passkey] = set(profiles)
+        else:
+            pass_dict[passkey] = pass_dict[passkey].union(emails)
+            runid_dict[passkey] = runid_dict[passkey].union(runid)
+            profile_dict[passkey] = profile_dict[passkey].union(profiles)
+    # -------------------------------------------------------------------------
+    # add two columns to the dataframe: ALLOWED_RUNID and ALLOWED_PROFILES
+    # -------------------------------------------------------------------------
+    valid_dataframe['ALLOWED_RUNID'] = [None] * len(valid_dataframe)
+    valid_dataframe['ALLOWED_PROFILES'] = [None] * len(valid_dataframe)
+    # store a list of requests
+    requests, valid_mask = [], np.zeros(len(valid_dataframe)).astype(bool)
+    # loop around rows in valid_dataframe
+    for it, row in enumerate(valid_dataframe.index):
+        # get passkey
+        passkey = valid_dataframe['Pass key'][row]
+        # get email
+        email = valid_dataframe['Email Address'][row]
+        # get profile requested
+        profile = valid_dataframe['APERO_MODE'][row]
+
+        # deal with passkey not in pass_dict
+        if passkey not in pass_dict:
+            # create request
+            request = Request.from_pandas_row(valid_dataframe.iloc[it])
+            # set request as invalid
+            request.valid = False
+            request.reason = f'Passkey {passkey} incorrect.'
+            # add to list of requests
+            requests.append(request)
+            continue
+
+        # check whether email is valid
+        if email not in pass_dict[passkey]:
+            # create request
+            request = Request.from_pandas_row(valid_dataframe.iloc[it])
+            # set request as invalid
+            request.valid = False
+            request.reason = f'Email {email} not in passkey {passkey}.'
+            # add to list of requests
+            requests.append(request)
+            continue
+
+        # check whether profile is valid
+        if profile not in profile_dict[passkey]:
+            # create request
+            request = Request.from_pandas_row(valid_dataframe.iloc[it])
+            # set request as invalid
+            request.valid = False
+            request.reason = f'Profile {profile} not in passkey {passkey}.'
+            # add to list of requests
+            requests.append(request)
+            continue
+        # ---------------------------------------------------------------------
+        # valid requests
+        # ---------------------------------------------------------------------
+        # create request
+        request = Request.from_pandas_row(valid_dataframe.iloc[it])
+        # update the allowed run ids and profiles
+        request.allowed_runids = runid_dict[passkey]
+        request.allowed_profiles = profile_dict[passkey]
+        # set request as valid
+        request.valid = True
+        # add to list of requests
+        requests.append(request)
+        # set valid mask
+        valid_mask[it] = True
+    # -------------------------------------------------------------------------
+    return requests, valid_dataframe[valid_mask]
 
 
-    return []
+def update_apero_profile(params: dict) -> Any:
+    """
+    Update the apero profile with the correct paths
+
+    :param profile: dict, the profile to update
+    :return:
+    """
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = params['apero profile']
+    # allow getting apero
+    sys.path.append(params['apero install'])
+    # ------------------------------------------------------------------
+    # cannot import until after DRS_UCONFIG set
+    from apero.base import base
+    from apero.core import constants
+    from apero.core.constants import param_functions
+    from apero.core.utils import drs_startup
+    # reload DPARAMS and IPARAMS
+    base.DPARAMS = base.load_database_yaml()
+    base.IPARAMS = base.load_install_yaml()
+    # ------------------------------------------------------------------
+    # invalidate cache
+    param_functions.CONFIG_CACHE = dict()
+    # make sure parameters is reloaded (and not cached)
+    apero_params = constants.load(cache=False)
+    # set apero pid
+    apero_params['PID'], apero_params['DATE_NOW'] = drs_startup.assign_pid()
+    # no inputs
+    apero_params['INPUTS'] = dict()
+    apero_params['OBS_DIR'] = None
+    # return apero parameters
+    return apero_params
+
 
 # =============================================================================
 # Start of code

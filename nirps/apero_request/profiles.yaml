@@ -1,0 +1,8 @@
+nirps_ha_online: ../manual_trigger/nirps_ha_profile_online.yaml
+nirps_ha_offline: ../manual_trigger/nirps_ha_profile_offline.yaml
+
+nirps_he_online: ../manual_trigger/nirps_he_profile_online.yaml
+nirps_ha_online: ../manual_trigger/nirps_he_profile_offline.yaml
+
+spirou_online: ../manual_trigger/spirou_online.yaml
+spirou_offline: ../manual_trigger/spirou_offline.yaml

@@ -31,27 +31,35 @@ def main():
     # -------------------------------------------------------------------------
     # get current list of requests
     # -------------------------------------------------------------------------
-    current_requests = general.get_sheet(params, 'response')
+    all_requests = general.get_sheet(params, 'response')
     # -------------------------------------------------------------------------
     # create a list of requests
     # -------------------------------------------------------------------------
-    requests, mask = general.create_requests(params, current_requests)
+    requests, valid_requests = general.create_requests(params, all_requests)
     # -------------------------------------------------------------------------
-    # loop around requests
+    # loop around requests and run requests
+    # -------------------------------------------------------------------------
     for request in requests:
-        # create directory for each request
-        request.create_dir()
-        # run apero get for each request
-        request.run()
-        # tar directory for each request
-        request.tar()
-        # copy tar to shared path
-        request.copytar()
-        # remove directory for each request
-        request.remove_dir()
+        # request might already be invalid
+        if request.valid:
+            # run apero get for each request
+            request.run_request(params)
+        # request might already be invalid (run_request might invalidate)
+        if request.valid:
+            # copy tar to shared path
+            request.copy_tar()
+    # -------------------------------------------------------------------------
+    # deal with informing users of results
+    for request in requests:
+        if request.valid:
+            # email user
+            request.email_success()
+        else:
+            # email user
+            request.email_failure()
     # -------------------------------------------------------------------------
     # update google sheet
-    general.update_response_sheet(params, current_requests[mask])
+    general.update_response_sheet(params, valid_requests)
     # -------------------------------------------------------------------------
     # finish with an end message
     misc.end_msg()

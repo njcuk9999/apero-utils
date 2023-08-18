@@ -10,6 +10,7 @@ Created on {DATE}
 @author: cook
 """
 import argparse
+import copy
 from typing import Any, Dict, Optional
 
 from apero_request.core import base
@@ -60,7 +61,7 @@ def load_params():
     yaml_params = io.read_yaml(yaml)
     # push into params
     for key in yaml_params:
-        params[key] = yaml_params[key].copy()
+        params[key] = copy.deepcopy(yaml_params[key])
     # return parameters
     return params
 
