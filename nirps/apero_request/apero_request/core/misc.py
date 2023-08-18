@@ -11,7 +11,8 @@ Created on {DATE}
 """
 import argparse
 import copy
-from typing import Any, Dict, Optional
+from hashlib import blake2b
+from typing import Any, Dict, List, Optional, Union
 
 from apero_request.core import base
 from apero_request.core import parameters
@@ -129,6 +130,32 @@ def end_msg():
     msg += '\n' + '*' * 50
     log_msg(msg, level='info')
 
+
+def generate_arg_checksum(source: Union[List[str], str],
+                          ndigits: int = 10) -> str:
+    """
+    Take a list of strings or a string and generate a unique hash from
+    them
+
+    :param source: list of strings or string - the string to generate the hash
+                   from
+    :param ndigits: int, the size of the hash (in characters) default is 10
+
+    :return: str, the hash
+    """
+    # set function name
+    # _ = display_func('generate_arg_checksum', __NAME__)
+    # flatten list into string
+    if isinstance(source, list):
+        source = ' '.join(source)
+    # need to encode string
+    encoded = source.encode('utf')
+    # we want a hash of 10 characters
+    digest = blake2b(encoded, digest_size=ndigits)
+    # create hash
+    _hash = digest.hexdigest()
+    # return hash
+    return str(_hash)
 
 
 # =============================================================================

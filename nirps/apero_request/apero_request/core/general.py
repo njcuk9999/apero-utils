@@ -38,45 +38,117 @@ class Request:
     def __init__(self, timestamp: Union[str, pd.Timestamp],
                  email: str, drsobjn: str, dprtype: str, mode: str, fibers: str,
                  drsoutid: str, passkey: str,
-                 start_date: Union[str, pd.Timestamp],
-                 end_date: Union[str, pd.Timestamp]):
+                 start_date: Union[str, pd.Timestamp, None],
+                 end_date: Union[str, pd.Timestamp, None]):
         """
         Create a request instance
 
-        :param timestamp:
-        :param email:
-        :param drsobjn:
-        :param dprtype:
-        :param mode:
-        :param fiber:
-        :param drsoutid:
-        :param passkey:
-        :param start_date:
-        :param end_date:
+        :param timestamp: str or pd.Timestamp, the timestamp of the request
+        :param email: str, the email address of the user
+        :param drsobjn: str, the drs object names (comma separated)
+        :param dprtype: str, the DPRTYPES (comma separated)
+        :param mode: str, the apero profile mode
+        :param fiber: str, the fiber option (All fibers, Science fiber,
+                      Reference fiber)
+        :param drsoutid: str, the DRSOUTIDs (comma separated) file definitions
+        :param passkey: str, the passkey
+        :param start_date: str or pd.Timestamp, the start date or None
+        :param end_date: str or pd.Timestamp, the end date or None
         """
-        self.timestamp = pd.to_datetime(timestamp)
-        self.email = email
-        self.drsobjn = np.char.array(drsobjn.split(',')).strip()
-        self.dprtype = np.char.array(dprtype.split(',')).strip()
-        self.mode = mode
-        self.fibers = fibers
-        self.drsoutid = np.char.array(drsoutid.split(',')).strip()
-        self.passkey = passkey
-
-        if start_date in [None, 'None', 'Null', '']:
-            self.start_date = None
-        else:
-            self.start_date = pd.to_datetime(start_date, format="%d/%m/%Y")
-        if end_date in [None, 'None', 'Null', '']:
-            self.end_date = None
-        else:
-            self.end_date = pd.to_datetime(end_date, format="%d/%m/%Y")
-
+        self.timestampe: Union[pd.Timestamp, None] = None
+        self.email: Union[str, None] = None
+        self.drsobjn: Union[np.chararray, None] = None
+        self.dprtype: Union[np.chararray, None] = None
+        self.mode: Union[str, None] = None
+        self.fibers: Union[np.chararray, None] = None
+        self.drsoutid: Union[np.chararray, None] = None
+        self.passkey: Union[str, None] = None
+        self.start_date: Union[pd.Timestamp, None] = None
+        self.end_date: Union[pd.Timestamp, None] = None
+        self.timestamp_str: str = ''
+        self.drsobjn_str: str = ''
+        self.dprtype_str: str = ''
+        self.drsoutid_str: str = ''
+        self.fibers_str: str = ''
+        self.start_date_str: str = ''
+        self.end_date_str: str = ''
+        # ---------------------------------------------------------------------
         # other attributes
         self.valid: bool = False
+        self.exists: bool = False
+        self.error: bool = False
         self.reason: str = ''
         self.allowed_runids: set = set()
         self.allowed_profiles: set = set()
+        # to fill the new table
+        self.df_row: Union[Any, None] = None
+        # ---------------------------------------------------------------------
+        self.set_params(timestamp, email, drsobjn, dprtype, mode, fibers,
+                        drsoutid, passkey, start_date, end_date)
+        # generate hash key for filename based on timestamp + email + passkey
+        self.hashkey: str = self._generate_hashkey()
+        # set filename from hashkey
+        self.tarfile: str = f'apero-request-{self.hashkey}.tar.gz'
+
+    def set_params(self, timestamp: Union[str, pd.Timestamp],
+                 email: str, drsobjn: str, dprtype: str, mode: str, fibers: str,
+                 drsoutid: str, passkey: str,
+                 start_date: Union[str, pd.Timestamp],
+                 end_date: Union[str, pd.Timestamp]):
+        """
+        Try to fill the request parameters - done so any error will just lead
+        to a reported error and not a crash
+
+        :param timestamp: str or pd.Timestamp, the timestamp of the request
+        :param email: str, the email address of the user
+        :param drsobjn: str, the drs object names (comma separated)
+        :param dprtype: str, the DPRTYPES (comma separated)
+        :param mode: str, the apero profile mode
+        :param fiber: str, the fiber option (All fibers, Science fiber,
+                      Reference fiber)
+        :param drsoutid: str, the DRSOUTIDs (comma separated) file definitions
+        :param passkey: str, the passkey
+        :param start_date: str or pd.Timestamp, the start date or None
+        :param end_date: str or pd.Timestamp, the end date or None
+
+        :return: None updates attrbiutes in self
+        """
+        try:
+            self.timestamp = pd.to_datetime(timestamp)
+            self.email = email
+            self.drsobjn = np.char.array(drsobjn.split(',')).strip()
+            self.dprtype = np.char.array(dprtype.split(',')).strip()
+            self.mode = mode
+            self.fibers = fibers
+            self.drsoutid = np.char.array(drsoutid.split(',')).strip()
+            self.passkey = passkey
+
+            if start_date in [None, 'None', 'Null', '']:
+                self.start_date = None
+            else:
+                self.start_date = pd.to_datetime(start_date, format="%d/%m/%Y")
+            if end_date in [None, 'None', 'Null', '']:
+                self.end_date = None
+            else:
+                self.end_date = pd.to_datetime(end_date, format="%d/%m/%Y")
+            # -----------------------------------------------------------------
+            # formatted parameters as strings (for apero get)
+            self.timestamp_str = Time(self.timestamp).iso
+            self.drsobjn_str =  ','.join(list(self.drsobjn))
+            self.dprtype_str = ','.join(list(self.dprtype))
+            self.drsoutid_str = ','.join(list(self.drsoutid))
+            self.fibers_str = ','.join(get_fibers(self.fibers))
+            if self.start_date is not None:
+                self.start_date_str = Time(self.start_date).iso
+            else:
+                self.start_date_str = 'None'
+            if self.end_date is not None:
+                self.end_date_str = Time(self.end_date).iso
+            else:
+                self.end_date_str = 'None'
+        except Exception as e:
+            self.error = True
+            self.reason = f'Could not set up apero get parameters. Error {e}'
 
     @staticmethod
     def from_pandas_row(row: Any) -> 'Request':
@@ -106,9 +178,13 @@ class Request:
 
     def run_request(self, params: dict):
         """
+        Run the request using apero_get
 
         :return:
         """
+        # deal with already existing
+        if self.exists:
+            return
         # select profile parameters
         try:
             profile_params = self._get_profile_params(params)
@@ -127,21 +203,9 @@ class Request:
         # sort out arguments for apero get
         # ---------------------------------------------------------------------
         try:
-            objnames = ','.join(list(self.drsobjn))
-            dprtypes = ','.join(list(self.dprtype))
-            outtypes = ','.join(list(self.drsoutid))
             outpath = params['LOCAL_DIR']
-            fibers = get_fibers(self.fibers)
             runids = get_runids(self.allowed_runids)
             test = params.get('test', False)
-            if self.start_date is not None:
-                start = Time(self.start_date).iso
-            else:
-                start = 'None'
-            if self.end_date is not None:
-                end = Time(self.end_date).iso
-            else:
-                end = 'None'
         except Exception as e:
             self.valid = False
             self.reason = f'Could not set up apero get parameters. Error {e}'
@@ -153,11 +217,17 @@ class Request:
             # need to import apero_get (for this profile)
             from apero.tools.recipes.bin import apero_get
             # run apero get to make the objects dir in apero dir
-            apero_get.main(objnames=objnames, dprtypes=dprtypes,
-                           outtypes=outtypes, outpath=outpath,
-                           fibers=fibers, runids=runids,
-                           symlinks=False, tar=True,
-                           test=test, since=start, latest=end)
+            apero_get.main(objnames=self.drsobjn_str,
+                           dprtypes=self.dprtype_str,
+                           outtypes=self.drsoutid_str,
+                           outpath=outpath,
+                           fibers=self.fibers_str,
+                           runids=runids,
+                           symlinks=False,
+                           tar=True, tarfile=self.tarfile,
+                           test=test,
+                           since=self.start_date_str,
+                           latest=self.end_date_str)
         except Exception as e:
             self.valid = False
             self.reason = f'Apero get failed with error: {e}'
@@ -165,7 +235,6 @@ class Request:
 
     def copy_tar(self):
         pass
-
 
     def _get_profile_params(self, params: dict) -> Dict[str, str]:
         """
@@ -218,11 +287,62 @@ class Request:
         # return profile parameters
         return profile_params
 
+    def _generate_hashkey(self) -> str:
+        """
+        Generate a hash key for the request using all the requested parameters
+        Should always be unique unless the same request was dupilcated twice
+
+        :return: str, the unique hash key
+        """
+        # create a unique hash
+        hash = misc.generate_arg_checksum(source=[self.timestamp_str,
+                                                  self.email,
+                                                  self.passkey,
+                                                  self.drsobjn_str,
+                                                  self.dprtype_str,
+                                                  self.mode,
+                                                  self.fibers_str,
+                                                  self.drsoutid_str,
+                                                  self.start_date_str,
+                                                  self.end_date_str],
+                                          ndigits=20)
+        return hash
+
+
+    def _generate_summary(self):
+
+        summary = ''
+        summary += f'tarfile: {self.tarfile}\n\n'
+        summary += '='*50
+        summary += 'Request:\n'
+        summary += '='*50
+        summary += f'Timestamp: {self.timestamp_str}\n'
+        summary += f'Email: {self.email}\n'
+        summary += f'Passkey: {self.passkey}\n'
+        summary += f'DRSOBJN: {self.drsobjn_str}\n'
+        summary += f'DPRTYPE: {self.dprtype_str}\n'
+        summary += f'APERO_MODE: {self.mode}\n'
+        summary += f'FIBERS: {self.fibers_str}\n'
+        summary += f'DRSOUTID: {self.drsoutid_str}\n'
+        summary += f'START_DATE: {self.start_date_str}\n'
+        summary += f'END_DATE: {self.end_date_str}\n'
+
+    def __str__(self):
+        return self._generate_summary()
+
+    def __repr__(self):
+        return self._generate_summary()
+
     def email_success(self):
-        pass
+        if self.valid:
+            print('Success!')
+            print(self._generate_summary())
 
     def email_failure(self):
-        pass
+        if not self.valid:
+            print('Failure!')
+            print(self.reason)
+            print(self._generate_summary())
 
 
 # =============================================================================
@@ -306,8 +426,7 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
 
 
 def create_requests(params: Dict[str, Any],
-                    dataframe: pd.DataFrame
-                    ) -> Tuple[List[Request], pd.DataFrame]:
+                    dataframe: pd.DataFrame) -> List[Request]:
     """
     Create a list of request instances from a dataframe
 
@@ -318,7 +437,7 @@ def create_requests(params: Dict[str, Any],
     :param params:
     :param dataframe:
 
-    :return: the list of requests and the dataframe with the bad requests removed
+    :return: the list of requests (valid and invalid)
     """
 
     # get pass key sheet
@@ -421,17 +540,76 @@ def create_requests(params: Dict[str, Any],
         # ---------------------------------------------------------------------
         # create request
         request = Request.from_pandas_row(valid_dataframe.iloc[it])
-        # update the allowed run ids and profiles
-        request.allowed_runids = runid_dict[passkey]
-        request.allowed_profiles = profile_dict[passkey]
-        # set request as valid
-        request.valid = True
-        # add to list of requests
-        requests.append(request)
-        # set valid mask
-        valid_mask[it] = True
+        # deal with errors
+        if request.error:
+            # request is not valid
+            request.valid = False
+            # add to list of requests
+            requests.append(request)
+        else:
+            # update the allowed run ids and profiles
+            request.allowed_runids = runid_dict[passkey]
+            request.allowed_profiles = profile_dict[passkey]
+            # add the dataframe row info
+            request.df_row = valid_dataframe.iloc[it]
+            # set request as valid
+            request.valid = True
+            # add to list of requests
+            requests.append(request)
     # -------------------------------------------------------------------------
-    return requests, valid_dataframe[valid_mask]
+    return requests
+
+
+def remove_invalid_tars(params: Dict[str, Any],
+                        requests: List[Request]) -> List[Request]:
+    # construct tar directory
+    tar_dir = params['local path']
+    # get a list of tar files
+    tar_files_on_disk = os.listdir(tar_dir)
+    # storage for valid requests
+    valid_requests = dict()
+    # get list of valid request files
+    for it, request in enumerate(requests):
+        if request.valid:
+            valid_requests[it] = request.tarfile
+    # get a list of all tar files
+    valid_request_tar_files = list(valid_requests.values())
+    # loop around tar files on disk
+    for tar_file in tar_files_on_disk:
+        # case 1: tar file valid --> we do not reprocess
+        if tar_file in valid_request_tar_files:
+            # find the request that matches this tar file
+            for it in list(valid_requests.keys()):
+                if tar_file == requests[it].tarfile:
+                    # set that this is valid
+                    requests[it].valid = True
+                    # set exists to True
+                    requests[it].exists = True
+                    break
+        # case2: tar file is not valid --> remove
+        else:
+            # remove file
+            os.remove(os.path.join(tar_dir, tar_file))
+    # return updated requests
+    return requests
+
+
+def create_dataframe(requests: List[Request]) -> pd.DataFrame:
+
+    # loop around the requests and create a list of rows
+    rows = []
+    for request in requests:
+        # only if request if valid
+        if not request.valid:
+            continue
+        # get the row from the request
+        row = request.df_row
+        # add to rows
+        rows.append(row)
+    # convert list of rows to dataframe
+    dataframe = pd.DataFrame(rows)
+    # return dataframe
+    return dataframe
 
 
 def update_apero_profile(params: dict) -> Any:
@@ -486,7 +664,7 @@ def get_fibers(fibers: str) -> str:
         fiber_list = [science]
     else:
         emsg = f'Fiber column = {fibers} is invalid'
-        return base.AperoRequestError(emsg)
+        raise base.AperoRequestError(emsg)
     # if we have got to here return a str comma separated list
     return ','.join(fiber_list)
 

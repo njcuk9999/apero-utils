@@ -35,34 +35,51 @@ def main():
     # -------------------------------------------------------------------------
     # create a list of requests
     # -------------------------------------------------------------------------
-    requests, valid_requests = general.create_requests(params, all_requests)
+    misc.log_msg('Creating requests')
+    requests = general.create_requests(params, all_requests)
     # -------------------------------------------------------------------------
-    # Remove all invalid tar files
+    # Remove all invalid tar files + find already processed requests
     # -------------------------------------------------------------------------
-
-
+    misc.log_msg('Analysing local files')
+    requests = general.remove_invalid_tars(params, requests)
     # -------------------------------------------------------------------------
     # loop around requests and run requests
     # -------------------------------------------------------------------------
-    for request in requests:
+    for r_it, request in enumerate(requests):
+        # print where we are up to
+        msg = 'Generating request {0} / {1}'
+        misc.log_msg(msg.format(r_it +1, len(requests)))
         # request might already be invalid
         if request.valid:
             # run apero get for each request
             request.run_request(params)
+        else:
+            misc.log_msg('\tSkipping request')
         # request might already be invalid (run_request might invalidate)
         if request.valid:
             # copy tar to shared path
             request.copy_tar()
     # -------------------------------------------------------------------------
     # deal with informing users of results
-    for request in requests:
+    for r_it, request in enumerate(requests):
+        # print where we are up to
+        msg = 'Emailing user for request {0} / {1}'
+        misc.log_msg(msg.format(msg.format(r_it +1, len(requests))))
+        # email a success
         if request.valid:
             # email user
+            misc.log_msg('\tEmailing success')
             request.email_success()
-        else:
+        elif not request.exists:
             # email user
+            misc.log_msg('\tEmailing failure')
             request.email_failure()
+        else:
+            misc.log_msg('Request {0} already exists')
+            print(request)
     # -------------------------------------------------------------------------
+    # recreate the dataframe from request
+    valid_requests = general.create_dataframe(requests)
     # update google sheet
     general.update_response_sheet(params, valid_requests)
     # -------------------------------------------------------------------------
