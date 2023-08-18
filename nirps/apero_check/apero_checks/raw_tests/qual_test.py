@@ -83,12 +83,12 @@ def sat_test(files, log=False) -> bool:
     for filename in files:
         hdr = fits.getheader(filename)
         basename = os.path.basename(filename)
-        dpr_type = hdr['HIERARCH ESO DPR TYPE']
+        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
         try:
             constraints_type = constraints[dpr_type]
         except KeyError:
             continue
-        nread = fits.getdata(filename, ext=3)
+        nread = np.array(fits.getdata(filename, ext=3))
 
         # saturation fraction
         fsat = np.mean(nread != np.max(nread))
@@ -137,12 +137,12 @@ def flux_test(files, log=False) -> bool:
     for filename in files:
         hdr = fits.getheader(filename)
         basename = filename.split('/')[-1]
-        dpr_type = hdr['HIERARCH ESO DPR TYPE']
+        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
         try:
             constraints_type = constraints[dpr_type]
         except KeyError:
             continue
-        im = fits.getdata(filename, ext=1)
+        im = np.array(fits.getdata(filename, ext=1))
 
         # 99th percentile
         p99 = np.nanpercentile(im, 99)
@@ -225,7 +225,7 @@ def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     telluric_files = []
     for filename in files:
         hdr = fits.getheader(filename)
-        dpr_type = hdr['HIERARCH ESO DPR TYPE']
+        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
         if dpr_type in dpr_types['FP']:
             fp_files.append(filename)
         if dpr_type in dpr_types['FLAT']:
@@ -305,7 +305,7 @@ def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     science_files = []
     for filename in files:
         hdr = fits.getheader(filename)
-        dpr_type = hdr['HIERARCH ESO DPR TYPE']
+        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
         if dpr_type in dpr_types['SCIENCE']:
             science_files.append(filename)
 

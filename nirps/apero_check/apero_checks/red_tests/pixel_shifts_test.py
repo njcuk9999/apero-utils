@@ -80,14 +80,15 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # check pixel shift header keys for all files in obsdir
     for file in files:
-        h = fits.getheader(file)
+        hdr = fits.getheader(file)
         filename = file.split('/')[-1]
-        dx = h['DETOFFDX']
-        dy = h['DETOFFDY']
+        dx = float(hdr['DETOFFDX'])
+        dy = float(hdr['DETOFFDY'])
         if dx != 0 or dy != 0:
             # there is a shift
             passed = False
-            failed_msg += 'Shift dx = {}, dy = {} detected in file {} \n'.format(dx, dy, filename)
+            failed_msg += ('Shift dx = {}, dy = {} detected in file '
+                           '{} \n').format(dx, dy, filename)
 
     if log:
         if len(failed_msg) > 0:
