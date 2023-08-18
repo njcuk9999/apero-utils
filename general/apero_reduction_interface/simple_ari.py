@@ -1518,7 +1518,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         profile_page.write_page(os.path.join(settings['RST'], 'profile.rst'))
 
 
-def compile_docs(settings: dict):
+def compile_docs(gsettings: dict, settings: dict):
     """
     Compile the documentation
 
@@ -1541,6 +1541,8 @@ def compile_docs(settings: dict):
     params['PID'], params['DATE_NOW'] = drs_startup.assign_pid()
     # get WLOG
     wlog = drs_log.wlog
+    # get reset
+    reset = gsettings['reset']
     # ------------------------------------------------------------------
     # get list of files to copy
     copy_files = ['conf.py', 'make.bat', 'Makefile']
@@ -1555,7 +1557,7 @@ def compile_docs(settings: dict):
     # get _static directory
     static_outdir = os.path.join(settings['WORKING'], '_static')
     # deal with static_outdir existing
-    if os.path.exists(static_outdir):
+    if os.path.exists(static_outdir) and reset:
         shutil.rmtree(static_outdir)
     # copy the static directory as well
     shutil.copytree(__file__.replace('simple_ari.py', '_static'),
@@ -4005,7 +4007,7 @@ if __name__ == "__main__":
     print('=' * 50)
     print('Compiling docs...')
     print('=' * 50)
-    compile_docs(ari_settings)
+    compile_docs(ari_gsettings, ari_settings)
     # ----------------------------------------------------------------------
     # step 6: upload to hosting
     print('=' * 50)
