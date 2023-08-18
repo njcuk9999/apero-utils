@@ -36,7 +36,7 @@ __AUTHOR__ = base.__AUTHOR__
 # =============================================================================
 class Request:
     def __init__(self, timestamp: Union[str, pd.Timestamp],
-                 email: str, drsobjn: str, dprtype: str, mode: str, fiber: str,
+                 email: str, drsobjn: str, dprtype: str, mode: str, fibers: str,
                  drsoutid: str, passkey: str,
                  start_date: Union[str, pd.Timestamp],
                  end_date: Union[str, pd.Timestamp]):
@@ -56,10 +56,10 @@ class Request:
         """
         self.timestamp = pd.to_datetime(timestamp)
         self.email = email
-        self.drobjn = np.char.array(drsobjn.split(',')).strip()
-        self.drptype = np.char.array(dprtype.split(',')).strip()
+        self.drsobjn = np.char.array(drsobjn.split(',')).strip()
+        self.dprtype = np.char.array(dprtype.split(',')).strip()
         self.mode = mode
-        self.fiber = fiber
+        self.fibers = fibers
         self.drsoutid = np.char.array(drsoutid.split(',')).strip()
         self.passkey = passkey
 
@@ -113,34 +113,39 @@ class Request:
         try:
             profile_params = self._get_profile_params(params)
         except Exception as e:
-            self.value = False
+            self.valid = False
             self.reason = f'Could not get profile parameters with error: {e}'
             return
         # update apero profile
         try:
             _ = update_apero_profile(profile_params)
         except Exception as e:
-            self.value = False
+            self.valid = False
             self.reason = f'Could not update apero profile with error: {e}'
             return
         # ---------------------------------------------------------------------
         # sort out arguments for apero get
         # ---------------------------------------------------------------------
-        objnames = None
-        dprtypes = None
-        outtypes = None
-        outpath = None
-        fibers = None
-        runids = None
-        test = params['test']
-        if self.start_date is not None:
-            start = Time(self.start_date).iso
-        else:
-            start = 'None'
-        if self.end_date is not None:
-            end = Time(self.end_date).iso
-        else:
-            end = 'None'
+        try:
+            objnames = ','.join(list(self.drsobjn))
+            dprtypes = ','.join(list(self.dprtype))
+            outtypes = ','.join(list(self.drsoutid))
+            outpath = params['LOCAL_DIR']
+            fibers = get_fibers(self.fibers)
+            runids = get_runids(self.allowed_runids)
+            test = params.get('test', False)
+            if self.start_date is not None:
+                start = Time(self.start_date).iso
+            else:
+                start = 'None'
+            if self.end_date is not None:
+                end = Time(self.end_date).iso
+            else:
+                end = 'None'
+        except Exception as e:
+            self.valid = False
+            self.reason = f'Could not set up apero get parameters. Error {e}'
+            return
         # ---------------------------------------------------------------------
         # try to run apero get
         # ---------------------------------------------------------------------
@@ -322,7 +327,8 @@ def create_requests(params: Dict[str, Any],
     valid_time = pd.Timedelta(days=-params['valid time'])
 
     # convert timestampe to a datetime
-    dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'])
+    dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'],
+                                            format="mixed", dayfirst=True)
     # get the offset
     offset = dataframe['Timestamp'] - pd.Timestamp.now() > valid_time
     # valid dataframe
@@ -460,6 +466,36 @@ def update_apero_profile(params: dict) -> Any:
     apero_params['OBS_DIR'] = None
     # return apero parameters
     return apero_params
+
+
+def get_fibers(fibers: str) -> str:
+    # import constants from apero
+    from apero.core import constants
+    # get pseudo constants
+    pconst = constants.pload()
+    # get fiber combinations
+    science, reference = pconst.FIBER_CCF()
+    all_fibers = pconst.INDIVIDUAL_FIBERS()
+
+    # first case: All fibers
+    if 'ALL' in fibers.upper():
+        fiber_list = list(np.unique((all_fibers + [science, reference])))
+    elif 'REFERENCE' in fibers.upper():
+        fiber_list = [reference]
+    elif 'SCIENCE' in fibers.upper():
+        fiber_list = [science]
+    else:
+        emsg = f'Fiber column = {fibers} is invalid'
+        return base.AperoRequestError(emsg)
+    # if we have got to here return a str comma separated list
+    return ','.join(fiber_list)
+
+
+def get_runids(runids: set) -> Union[str, None]:
+    if 'ALL' in runids:
+        return None
+    else:
+        return ','.join(list(runids))
 
 
 # =============================================================================
