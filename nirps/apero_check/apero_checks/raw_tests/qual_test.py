@@ -185,12 +185,12 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
     # storage of valid files
     valid_files = []
     # loop around files and get valid files
-    for filename in tqdm(files, leave=False):
+    for filename in files:
         # get the dprtype
         dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
         # if dprtype is valid add to valid files
         if dpr_type in valid_dprtypes:
-            files = valid_files.append(filename)
+            valid_files.append(filename)
     # -------------------------------------------------------------------------
     # storage for all failed outputs
     failed_outputs = dict()
