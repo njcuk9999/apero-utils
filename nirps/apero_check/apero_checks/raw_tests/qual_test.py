@@ -152,16 +152,14 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
         margs = [obsdir]
         misc.log_msg(msg.format(*margs), level='')
     # -------------------------------------------------------------------------
-
     # check if directory exists
     if not os.path.exists(obsdir_path):
         if log:
             print('Observation directory {} does not exist'.format(obsdir))
         return False
-
+    # -------------------------------------------------------------------------
     # get a list of all the files in observation directory
     files = glob.glob(os.path.join(obsdir_path, '*.fits'))
-
     # check if there are files in the directory
     if len(files) == 0:
         if log:
