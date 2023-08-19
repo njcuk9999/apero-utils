@@ -61,7 +61,7 @@ constraints['WAVE,FP,UN1'] = 5, 100, 0.0012
 constraints['WAVE,UN1,FP'] = 5, 100, 0.0023
 
 
-def sat_test(filename, nread) -> Tuple[bool, str]:
+def sat_test(filename, nread, dprtype) -> Tuple[bool, str]:
     """
     Saturation test - check for abnormal saturation in raw files.
     Uses the n_read (ext=3) extension to compute saturation fraction.
@@ -76,17 +76,11 @@ def sat_test(filename, nread) -> Tuple[bool, str]:
 
     :return: bool, True if passed, False otherwise
     """
-    dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
-
     basename = os.path.basename(filename)
-
     try:
-        constraints_type = constraints[dpr_type]
+        constraints_type = constraints[dprtype]
     except KeyError:
         return True, ''
-
-    nread = np.array(fits.getdata(filename, ext=3))
-
     # saturation fraction
     fsat = np.mean(nread != np.max(nread))
 
@@ -99,7 +93,7 @@ def sat_test(filename, nread) -> Tuple[bool, str]:
     return True, ''
 
 
-def flux_test(filename, image) -> Tuple[bool, str]:
+def flux_test(filename, image, dprtype) -> Tuple[bool, str]:
     """
     Flux test - check for abnormal flux level in raw files.
     Uses the image (ext=1) extension to compute 99th percentile and compare
@@ -120,12 +114,10 @@ def flux_test(filename, image) -> Tuple[bool, str]:
 
     failed_log = ''
 
-    dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
-
     basename = os.path.basename(filename)
 
     try:
-        constraints_type = constraints[dpr_type]
+        constraints_type = constraints[dprtype]
     except KeyError:
         return True, ''
 
@@ -187,7 +179,7 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
     # loop around files and get valid files
     for filename in files:
         # get the dprtype
-        dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
+        dpr_type = fits.getheader(filename)['HIERARCH ESO DPR TYPE']
         # if dprtype is valid add to valid files
         if dpr_type in valid_dprtypes:
             valid_files.append(filename)
@@ -210,8 +202,8 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
             dprtype = hdr['HIERARCH ESO DPR TYPE']
             for test_dprtype in dprgroups:
                 if dprtype in dpr_types[test_dprtype]:
-                    passed1, fail_msg1 = sat_test(filename, nread)
-                    passed2, fail_msg2 = flux_test(filename, image)
+                    passed1, fail_msg1 = sat_test(filename, nread, dprtype)
+                    passed2, fail_msg2 = flux_test(filename, image, dprtype)
                     # combine tests
                     passed = passed1 and passed2
                     fail_msgs = []
