@@ -80,9 +80,10 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     failed_msg = ''
 
     # check pixel shift header keys for all files in obsdir
-    for file in tqdm(files, leave=False):
-        hdr = fits.getheader(file)
-        filename = file.split('/')[-1]
+    for filename in tqdm(files, leave=False):
+
+        hdr = fits.getheader(filename)
+        filename = os.path.basename(filename)
         dx = float(hdr['DETOFFDX'])
         dy = float(hdr['DETOFFDY'])
         if dx != 0 or dy != 0:

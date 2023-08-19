@@ -18,7 +18,7 @@ from astropy.io import fits
 import numpy as np
 
 from apero_checks.core import misc
-
+from apero_checks.core import io
 
 # =============================================================================
 # Define variables
@@ -82,9 +82,11 @@ def sat_test(files, log=False) -> bool:
     failed_log = ''
 
     for filename in tqdm(files, leave=False):
-        hdr = fits.getheader(filename)
+
+        dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
+
         basename = os.path.basename(filename)
-        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
+
         try:
             constraints_type = constraints[dpr_type]
         except KeyError:
@@ -136,9 +138,11 @@ def flux_test(files, log=False) -> bool:
     failed_log = ''
 
     for filename in tqdm(files, leave=False):
-        hdr = fits.getheader(filename)
-        basename = filename.split('/')[-1]
-        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
+
+        dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
+
+        basename = os.path.basename(filename)
+
         try:
             constraints_type = constraints[dpr_type]
         except KeyError:
@@ -225,8 +229,9 @@ def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     flat_files = []
     telluric_files = []
     for filename in tqdm(files, leave=False):
-        hdr = fits.getheader(filename)
-        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
+
+        dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
+
         if dpr_type in dpr_types['FP']:
             fp_files.append(filename)
         if dpr_type in dpr_types['FLAT']:
@@ -305,8 +310,9 @@ def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # select only the science files
     science_files = []
     for filename in tqdm(files, leave=False):
-        hdr = fits.getheader(filename)
-        dpr_type = str(hdr['HIERARCH ESO DPR TYPE'])
+
+        dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE')
+
         if dpr_type in dpr_types['SCIENCE']:
             science_files.append(filename)
 
