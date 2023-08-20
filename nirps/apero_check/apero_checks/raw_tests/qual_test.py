@@ -205,18 +205,19 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
                     # combine tests
                     passed = passed1 and passed2
                     fail_msgs = []
-                    if passed1:
+                    if not passed1:
                         fail_msgs.append('\t' + fail_msg1)
-                    if passed2:
+                    if not passed2:
                         fail_msgs.append('\t' + fail_msg2)
 
                     if not passed:
                         if log:
-                            print('{0} Failed: {1}'.format(dprtype, filename))
+                            margs = [drsgroup, dprtype, filename]
+                            print('{0}={1} Failed: {2}'.format(*margs))
                             for fail_msg in fail_msgs:
                                 print(fail_msg)
 
-                        failed_outputs[test_dprtype][filename] = fail_msgs
+                        failed_outputs[drsgroup][filename] = fail_msgs
                         failed_count += 1
                     break
     # -------------------------------------------------------------------------
