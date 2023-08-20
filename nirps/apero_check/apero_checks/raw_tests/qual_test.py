@@ -211,6 +211,11 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
                         fail_msgs.append('\t' + fail_msg2)
 
                     if not passed:
+                        if log:
+                            print('{0} Failed: {1}'.format(dprtype, filename))
+                            for fail_msg in fail_msgs:
+                                print(fail_msg)
+
                         failed_outputs[test_dprtype][filename] = fail_msgs
                         failed_count += 1
                     break
