@@ -80,7 +80,7 @@ def sat_test(filename, nread, dprtype) -> Tuple[bool, str]:
     try:
         constraints_type = constraints[dprtype]
     except KeyError:
-        return True, ''
+        return False, '{} not in constraints'.format(dprtype)
     # saturation fraction
     fsat = np.mean(nread != np.max(nread))
 
@@ -119,7 +119,7 @@ def flux_test(filename, image, dprtype) -> Tuple[bool, str]:
     try:
         constraints_type = constraints[dprtype]
     except KeyError:
-        return True, ''
+        return False, '{} not in constraints'.format(dprtype)
 
     # 99th percentile
     p99 = np.nanpercentile(image, 99)
@@ -198,8 +198,8 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
             hdr = hdul[0].header
             # get dprtype
             dprtype = hdr['HIERARCH ESO DPR TYPE']
-            for test_dprtype in dprgroups:
-                if dprtype in dpr_types[test_dprtype]:
+            for drsgroup in dprgroups:
+                if dprtype in dpr_types[drsgroup]:
                     passed1, fail_msg1 = sat_test(filename, nread, dprtype)
                     passed2, fail_msg2 = flux_test(filename, image, dprtype)
                     # combine tests
