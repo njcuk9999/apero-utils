@@ -227,7 +227,8 @@ class Request:
                            tar=True, tarfile=self.tarfile,
                            test=test,
                            since=self.start_date_str,
-                           latest=self.end_date_str)
+                           latest=self.end_date_str,
+                           timekey='observed')
         except Exception as e:
             self.valid = False
             self.reason = f'Apero get failed with error: {e}'
@@ -422,7 +423,11 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     google_sheet = gspd.spread.Spread(sheet_id)
     # push dataframe back to server
     google_sheet.df_to_sheet(dataframe, index=False, replace=True,
-                             sheet=sheet_name)
+                             sheet=sheet_name, )
+
+
+    google_sheet.df_to_sheet(current_dataframe, index=False, replace=True,
+                             freeze_headers=True), # start=(2, 1))
     # print progress
     msg = 'All rows added to google-sheet'
     misc.log_msg(msg, level='info')
