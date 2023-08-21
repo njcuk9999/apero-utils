@@ -222,7 +222,7 @@ class Request:
                            outtypes=self.drsoutid_str,
                            outpath=outpath,
                            fibers=self.fibers_str,
-                           runids=runids,
+                           runid=runids,
                            symlinks=False,
                            tar=True, tarfile=self.tarfile,
                            test=test,
