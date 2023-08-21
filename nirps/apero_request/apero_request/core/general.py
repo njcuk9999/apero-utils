@@ -260,8 +260,6 @@ class Request:
         else:
             return
 
-
-
     def copy_tar(self):
         pass
 
