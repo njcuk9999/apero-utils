@@ -217,22 +217,50 @@ class Request:
             # need to import apero_get (for this profile)
             from apero.tools.recipes.bin import apero_get
             # run apero get to make the objects dir in apero dir
-            apero_get.main(objnames=self.drsobjn_str,
-                           dprtypes=self.dprtype_str,
-                           outtypes=self.drsoutid_str,
-                           outpath=outpath,
-                           fibers=self.fibers_str,
-                           runid=runids,
-                           symlinks=False,
-                           tar=True, tarfile=self.tarfile,
-                           test=test,
-                           since=self.start_date_str,
-                           latest=self.end_date_str,
-                           timekey='observed')
+            llget = apero_get.main(objnames=self.drsobjn_str,
+                                   dprtypes=self.dprtype_str,
+                                   outtypes=self.drsoutid_str,
+                                   outpath=outpath,
+                                   fibers=self.fibers_str,
+                                   runid=runids,
+                                   symlinks=False,
+                                   tar=True, tarfile=self.tarfile,
+                                   test=test,
+                                   since=self.start_date_str,
+                                   latest=self.end_date_str,
+                                   timekey='observed')
         except Exception as e:
             self.valid = False
             self.reason = f'Apero get failed with error: {e}'
             return
+
+        # ---------------------------------------------------------------------
+        # check that tar was create
+        # ---------------------------------------------------------------------
+        if not os.path.exists(self.tarfile):
+            # get variables from llget
+            get_success = llget['success']
+            get_errors = llget['params']['LOGGER_ERROR']
+            get_indict = llget['params']['INDICT']
+
+            # if apero_get ran successfully then no files were found
+            if get_success:
+                if len(get_indict) == 0:
+                    self.valid = False
+                    self.reason = f'No files found.'
+                    return
+            # else we report the error
+            elif len(get_errors) > 0:
+                self.valid = False
+                self.reason = '\n'.join(get_errors)
+                return
+            # if we get here we have an unknown error
+            self.valid = False
+            self.reason = 'Unknown error. Contact support with the query.'
+        else:
+            return
+
+
 
     def copy_tar(self):
         pass
@@ -420,10 +448,24 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     msg = 'Pushing all rows to google-sheet'
     misc.log_msg(msg, level='info')
     # load google sheet instance
-    google_sheet = gspd.spread.Spread(sheet_id)
+    google_sheet = gspd.spread.Spread(sheet_id, sheet=sheet_name)
+    # get worksheet (we need to manually delete rows for a google form
+    #   this is due to gspread_pandas trying to delete the header row
+    worksheet = google_sheet.spread.worksheet('RESPONSE')
+    # cannot delete row 1 as it is the header
+    try:
+        # hack - make sure we have at least one row
+        worksheet.add_rows(1)
+        # remove all rows
+        worksheet.delete_rows(2, worksheet.row_count+1)
+        # add a blank row
+        worksheet.add_rows(1)
+    except Exception as _:
+        # this only happens when there are no rows
+        pass
     # push dataframe back to server
-    google_sheet.df_to_sheet(dataframe, index=False, replace=True,
-                             sheet=sheet_name, )
+    if len(dataframe) > 0:
+        google_sheet.df_to_sheet(dataframe, index=False, replace=False)
     # print progress
     msg = 'All rows added to google-sheet'
     misc.log_msg(msg, level='info')
@@ -492,10 +534,6 @@ def create_requests(params: Dict[str, Any],
             runid_dict[passkey] = runid_dict[passkey].union(runid)
             profile_dict[passkey] = profile_dict[passkey].union(profiles)
     # -------------------------------------------------------------------------
-    # add two columns to the dataframe: ALLOWED_RUNID and ALLOWED_PROFILES
-    # -------------------------------------------------------------------------
-    valid_dataframe['ALLOWED_RUNID'] = [None] * len(valid_dataframe)
-    valid_dataframe['ALLOWED_PROFILES'] = [None] * len(valid_dataframe)
     # store a list of requests
     requests, valid_mask = [], np.zeros(len(valid_dataframe)).astype(bool)
     # loop around rows in valid_dataframe
