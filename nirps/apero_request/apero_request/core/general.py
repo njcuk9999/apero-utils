@@ -424,10 +424,6 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     # push dataframe back to server
     google_sheet.df_to_sheet(dataframe, index=False, replace=True,
                              sheet=sheet_name, )
-
-
-    google_sheet.df_to_sheet(current_dataframe, index=False, replace=True,
-                             freeze_headers=True), # start=(2, 1))
     # print progress
     msg = 'All rows added to google-sheet'
     misc.log_msg(msg, level='info')
