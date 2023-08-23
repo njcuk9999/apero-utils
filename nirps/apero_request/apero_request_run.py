@@ -84,7 +84,7 @@ def main():
     general.sync_data(params)
     # -------------------------------------------------------------------------
     # recreate the dataframe from request
-    valid_requests, all_requests = general.create_dataframe(requests)
+    valid_requests, all_requests = general.create_dataframe(params, requests)
     # update response google sheet
     general.update_response_sheet(params, valid_requests)
     # update archive google sheet
