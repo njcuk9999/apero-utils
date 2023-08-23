@@ -49,14 +49,14 @@ settings:
 #     skip msg table: bool: if True, skip making the msg table
 nirps he offline:
     apero profile: /cosmos99/nirps/apero-settings/nirps_he_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_he_offline/
+    lbl path: LBL_PATH
     skip obj table: False
     skip recipe table: True
     skip msg table: True
 
 nirps ha offline:
     apero profile: /cosmos99/nirps/apero-settings/nirps_ha_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/
+    lbl path: LBL_PATH
     skip obj table: False
     skip recipe table: True
     skip msg table: True

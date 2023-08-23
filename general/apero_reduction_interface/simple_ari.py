@@ -2019,6 +2019,8 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
     # -------------------------------------------------------------------------
     # get the lbl path
     lbl_path = profile['lbl path']
+    if lbl_path in params:
+        lbl_path = params[lbl_path]
     # -------------------------------------------------------------------------
     # deal with no valid lbl path
     if lbl_path is None:
