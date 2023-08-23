@@ -62,12 +62,12 @@ def read_yaml(yaml_filename: Union[str, None],
     # deal with yaml_filename being None
     if yaml_filename is None:
         emsg = 'yaml_filename must be set to a valid file'
-        raise base.AperoChecksError(emsg)
+        raise base.AperoRequestError(emsg)
     # deal with yaml_filename not existing
     if not os.path.exists(yaml_filename):
         emsg = 'yaml_filename {0} does not exist'
         eargs = [yaml_filename]
-        raise base.AperoChecksError(emsg.format(*eargs))
+        raise base.AperoRequestError(emsg.format(*eargs))
     # read the yaml file
     with open(yaml_filename, 'r') as f:
         yaml_data = yaml.load(f, Loader=yaml.FullLoader)
