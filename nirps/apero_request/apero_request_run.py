@@ -74,7 +74,7 @@ def main():
         elif not request.exists:
             # email user
             misc.log_msg('\tEmailing failure')
-            request.email_failure()
+            request.email_failure(params)
         else:
             misc.log_msg('Request {0} already exists')
             print(request)

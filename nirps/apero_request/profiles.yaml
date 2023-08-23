@@ -8,7 +8,7 @@ spirou_online: ../manual_trigger/spirou_online.yaml
 spirou_offline: ../manual_trigger/spirou_offline.yaml
 
 # whether to run in test mode
-test: True
+test: False
 # local directory to save tar files to (should not contain anything else)
 local path: /cosmos99/nirps/apero-data/misc/apero-request/
 # email address to send from
