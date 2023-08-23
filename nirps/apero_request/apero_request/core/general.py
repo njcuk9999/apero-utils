@@ -673,7 +673,7 @@ def create_requests(params: Dict[str, Any],
             request = Request.from_pandas_row(valid_dataframe.iloc[it])
             # set request as invalid
             request.valid = False
-            request.reason = f'\tEmail {email} not in passkey {passkey}.'
+            request.reason = f'\tEmail {email} not valid for passkey "{passkey}".'
             # add to list of requests
             requests.append(request)
             continue
@@ -684,7 +684,7 @@ def create_requests(params: Dict[str, Any],
             request = Request.from_pandas_row(valid_dataframe.iloc[it])
             # set request as invalid
             request.valid = False
-            request.reason = f'\tProfile {profile} not in passkey {passkey}.'
+            request.reason = f'\tProfile {profile} not valid for passkey "{passkey}".'
             # add to list of requests
             requests.append(request)
             continue
