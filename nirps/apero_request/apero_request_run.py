@@ -70,14 +70,14 @@ def main():
         if request.valid:
             # email user
             misc.log_msg('\tEmailing success')
-            request.email_success(params)
+            request.email_success(params, r_it)
         elif not request.exists:
             # email user
             misc.log_msg('\tEmailing failure')
-            request.email_failure(params)
+            request.email_failure(params, r_it)
         else:
-            misc.log_msg('Request {0} already exists')
-            print(request)
+            misc.log_msg('Request {0} already exists: \n{1}')
+            print(r_it, request)
     # -------------------------------------------------------------------------
     # recreate the dataframe from request
     valid_requests = general.create_dataframe(requests)
