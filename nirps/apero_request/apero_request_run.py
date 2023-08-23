@@ -58,10 +58,6 @@ def main():
             request.run_request(params)
         else:
             misc.log_msg('\tSkipping request')
-        # request might already be invalid (run_request might invalidate)
-        if request.valid:
-            # copy tar to shared path
-            request.copy_tar()
     # -------------------------------------------------------------------------
     # deal with informing users of results
     for r_it, request in enumerate(requests):
@@ -81,6 +77,11 @@ def main():
             msg = 'Request {0} already exists:'
             misc.log_msg(msg.format(r_it))
             print(request)
+    # -------------------------------------------------------------------------
+    # copy index.html file over
+    general.copy_index(params)
+    # rsync data to server
+    general.sync_data(params)
     # -------------------------------------------------------------------------
     # recreate the dataframe from request
     valid_requests, all_requests = general.create_dataframe(requests)

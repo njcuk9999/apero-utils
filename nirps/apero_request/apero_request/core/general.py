@@ -11,6 +11,7 @@ Created on {DATE}
 """
 import os
 import sys
+import shutil
 from typing import Any, Dict, List, Tuple, Union
 
 import gspread_pandas as gspd
@@ -29,6 +30,9 @@ from apero_request.core import misc
 __VERSION__ = base.__VERSION__
 __DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
+# define rsync commands
+RSYNC_CMD_IN = 'rsync -ah --delete -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
+RSYNC_CMD_OUT = 'rsync -ah --delete -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
 
 
 # =============================================================================
@@ -90,7 +94,7 @@ class Request:
         # set filename from hashkey
         self.tarfile: str = f'apero-request-{self.hashkey}.tar.gz'
         # set url
-        self.tar_url: str = f'http://url.here/{self.tarfile}'
+        self.tar_url: str = ''
 
     def set_params(self, timestamp: Union[str, pd.Timestamp],
                  email: str, drsobjn: str, dprtype: str, mode: str, fibers: str,
@@ -235,7 +239,9 @@ class Request:
             self.valid = False
             self.reason = f'\tApero get failed with error: {e}'
             return
-
+        # ---------------------------------------------------------------------
+        # set url (after creation)
+        self.tar_url = params['ssh']['url'] + '/' + self.tarfile
         # ---------------------------------------------------------------------
         # check that tar was create
         # ---------------------------------------------------------------------
@@ -262,9 +268,6 @@ class Request:
                 self.reason = '\tUnknown error. Contact support with the query.'
         else:
             return
-
-    def copy_tar(self):
-        pass
 
     def _get_profile_params(self, params: dict) -> Dict[str, str]:
         """
@@ -494,6 +497,29 @@ def get_sheet(params: Dict[str, Any], sheetkind: str) -> pd.DataFrame:
     return current_dataframe
 
 
+def copy_index(params: Dict[str, Any]):
+    # get path
+    path = os.path.dirname(os.path.dirname(__file__))
+    # get index file
+    index_file = os.path.join(path, 'resources', 'index.html')
+    # copy to the local path
+    if not params['test']:
+        shutil.copy(index_file, params['local path'])
+
+def sync_data(params: Dict[str, Any]):
+    rdict = dict()
+    rdict['SSH'] = params['ssh']['options']
+    rdict['USER'] = params['ssh']['user']
+    rdict['HOST'] = params['ssh']['host']
+    rdict['INPATH'] = params['local path']
+    rdict['OUTPATH'] = os.path.join(params['ssh']['directory'])
+    # print command to rsync
+    misc.log_msg(RSYNC_CMD_OUT.format(**rdict))
+    # run command (will require password)
+    if not params['test']:
+        os.system(RSYNC_CMD_IN.format(**rdict))
+
+
 def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     """
     Update the google sheet with the new dataframe
@@ -714,7 +740,7 @@ def remove_invalid_tars(params: Dict[str, Any],
                     requests[it].exists = True
                     break
         # case2: tar file is not valid --> remove
-        else:
+        elif tar_file.endswith('.tar.gz'):
             # remove file
             os.remove(os.path.join(tar_dir, tar_file))
     # return updated requests
