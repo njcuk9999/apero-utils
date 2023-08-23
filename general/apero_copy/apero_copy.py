@@ -308,23 +308,28 @@ def copy_files(params, files1: Dict[str, List[str]],
             if params['test']:
                 print('Copying {0} to {1}'.format(infilename, outfilename3))
             else:
-                # deal with file existing
-                if os.path.exists(outfilename2) and not params['overwrite']:
-                    msg = ('Skipping {0} (already exists) use '
-                           '--overwrite to copy')
-                    margs = [outfilename2]
-                    print(msg.format(*margs))
-                    continue
-                # deal with tmp file existing
-                if os.path.exists(outfilename3):
-                    msg = ('Skipping {0} (tmp file already exists) use '
-                           '--overwrite to copy')
-                    margs = [outfilename3]
-                    print(msg.format(*margs))
-                    continue
                 # need to deal with no tmp directory
                 if not os.path.exists(os.path.dirname(outfilename3)):
                     os.makedirs(os.path.dirname(outfilename3))
+                # deal with file existing
+                if os.path.exists(outfilename2) and not params['overwrite']:
+                    msg = ('Moving {0} (already exists) use '
+                           '--overwrite to copy')
+                    margs = [outfilename2]
+                    print(msg.format(*margs))
+                    # copy file
+                    if params['symlinks']:
+                        os.symlink(outfilename2, outfilename3)
+                    else:
+                        shutil.move(outfilename2, outfilename3)
+
+                    continue
+                # deal with tmp file existing
+                if os.path.exists(outfilename3):
+                    msg = ('Skipping {0} (tmp file already exists)')
+                    margs = [outfilename3]
+                    print(msg.format(*margs))
+                    continue
                 # copy file
                 if params['symlinks']:
                     os.symlink(infilename, outfilename3)
