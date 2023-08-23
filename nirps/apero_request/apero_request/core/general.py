@@ -517,7 +517,7 @@ def sync_data(params: Dict[str, Any]):
     misc.log_msg(RSYNC_CMD_OUT.format(**rdict))
     # run command (will require password)
     if not params['test']:
-        os.system(RSYNC_CMD_IN.format(**rdict))
+        os.system(RSYNC_CMD_OUT.format(**rdict))
 
 
 def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
