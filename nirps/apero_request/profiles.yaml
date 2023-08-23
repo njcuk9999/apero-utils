@@ -11,3 +11,5 @@ spirou_offline: ../manual_trigger/spirou_offline.yaml
 test: True
 # local directory to save tar files to (should not contain anything else)
 local path: /cosmos99/nirps/apero-data/misc/apero-request/
+# email address to send from
+email from: nirps-client@astro.umontreal.ca

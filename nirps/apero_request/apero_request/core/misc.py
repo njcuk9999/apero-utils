@@ -13,6 +13,9 @@ import argparse
 import copy
 from hashlib import blake2b
 from typing import Any, Dict, List, Optional, Union
+import smtplib
+from email.mime.text import MIMEText
+from socket import gethostname
 
 from apero_request.core import base
 from apero_request.core import parameters
@@ -156,6 +159,42 @@ def generate_arg_checksum(source: Union[List[str], str],
     _hash = digest.hexdigest()
     # return hash
     return str(_hash)
+
+
+def send_email(message: str,
+               people: Optional[Union[List[str], str]],
+               sender_address: str,
+               subject: Optional[str] = None,):
+    """Simple wrapper around `MIMEText()` and `smtplib` to send an email.
+
+    Note: For this to work, your account must be setup to send emails at
+    the command line, so it will likely crash on a laptop without prior config.
+
+    :param message: Text for the body of the email.
+    :param people: People to email. No email sent if None.
+    :param subject: Subject of the email
+    """
+    # deal with no people
+
+    if people is None or len(people) == 0:
+        return
+    if len(people) == 1 and people[0] is None:
+        return
+
+    if subject is None:
+        subject = "APERO REQUEST"
+
+    msg = MIMEText(message)
+    msg["Subject"] = subject
+    msg["From"] = f"APERO on {gethostname()} <{sender_address}>"
+
+    if isinstance(people, str):
+        msg["To"] = people
+    else:
+        msg["To"] = ", ".join(people)
+
+    with smtplib.SMTP("localhost") as s:
+        s.send_message(msg)
 
 
 # =============================================================================

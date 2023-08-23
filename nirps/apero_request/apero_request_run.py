@@ -70,7 +70,7 @@ def main():
         if request.valid:
             # email user
             misc.log_msg('\tEmailing success')
-            request.email_success()
+            request.email_success(params)
         elif not request.exists:
             # email user
             misc.log_msg('\tEmailing failure')

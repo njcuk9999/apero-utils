@@ -89,6 +89,8 @@ class Request:
         self.hashkey: str = self._generate_hashkey()
         # set filename from hashkey
         self.tarfile: str = f'apero-request-{self.hashkey}.tar.gz'
+        # set url
+        self.tar_url: str = f'http://url.here/{self.tarfile}'
 
     def set_params(self, timestamp: Union[str, pd.Timestamp],
                  email: str, drsobjn: str, dprtype: str, mode: str, fibers: str,
@@ -363,16 +365,48 @@ class Request:
     def __repr__(self) -> str:
         return self._generate_summary()
 
-    def email_success(self):
-        if self.valid:
-            print('Success!')
-            print(self._generate_summary())
+    def email_success(self, params: Dict[str, Any]):
 
-    def email_failure(self):
-        if not self.valid:
-            print('Failure!')
-            print(self.reason)
-            print(self._generate_summary())
+        email_string = ''
+        email_string += f'Your APERO request was successful.\n\n'
+        email_string += f'You can download your tar file from:\n'
+        email_string += f'{self.tar_url}\n\n'
+        email_string += f'Your request was:\n'
+        email_string += self._generate_summary()
+
+        # if self.valid:
+        #     print('Success!')
+        #     print(self._generate_summary())
+
+        email_kwargs = dict()
+        email_kwargs['message'] = email_string
+        email_kwargs['people'] = self.email
+        email_kwargs['sender_address'] = params['email from']
+        email_kwargs['subject'] = 'APERO request success'
+        misc.send_email(**email_kwargs)
+
+
+    def email_failure(self, params: Dict[str, Any]):
+
+        email_string = ''
+        email_string += f'Your APERO request failed.\n\n'
+        email_string += f'The reason for the failure was:\n'
+        email_string += f'{self.reason}\n\n'
+        email_string += f'Your request was:\n'
+        email_string += self._generate_summary()
+
+        # if not self.valid:
+        #     print('Failure!')
+        #     print(self.reason)
+        #     print(self._generate_summary())
+
+        email_kwargs = dict()
+        email_kwargs['message'] = email_string
+        email_kwargs['people'] = self.email
+        email_kwargs['sender_address'] = params['email from']
+        email_kwargs['subject'] = 'APERO request failure'
+
+        misc.send_email(**email_kwargs)
 
 
 # =============================================================================
