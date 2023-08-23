@@ -149,7 +149,7 @@ class Request:
                 self.end_date_str = 'None'
         except Exception as e:
             self.error = True
-            self.reason = f'Could not set up apero get parameters. Error {e}'
+            self.reason = f'\tCould not set up apero get parameters. Error {e}'
 
     @staticmethod
     def from_pandas_row(row: Any) -> 'Request':
@@ -191,14 +191,14 @@ class Request:
             profile_params = self._get_profile_params(params)
         except Exception as e:
             self.valid = False
-            self.reason = f'Could not get profile parameters with error: {e}'
+            self.reason = f'\tCould not get profile parameters with error: {e}'
             return
         # update apero profile
         try:
             _ = update_apero_profile(profile_params)
         except Exception as e:
             self.valid = False
-            self.reason = f'Could not update apero profile with error: {e}'
+            self.reason = f'\tCould not update apero profile with error: {e}'
             return
         # ---------------------------------------------------------------------
         # sort out arguments for apero get
@@ -210,7 +210,7 @@ class Request:
             test = params.get('test', False)
         except Exception as e:
             self.valid = False
-            self.reason = f'Could not set up apero get parameters. Error {e}'
+            self.reason = f'\tCould not set up apero get parameters. Error {e}'
             return
         # ---------------------------------------------------------------------
         # try to run apero get
@@ -233,7 +233,7 @@ class Request:
                                    timekey='observed')
         except Exception as e:
             self.valid = False
-            self.reason = f'Apero get failed with error: {e}'
+            self.reason = f'\tApero get failed with error: {e}'
             return
 
         # ---------------------------------------------------------------------
@@ -249,16 +249,17 @@ class Request:
             if get_success:
                 if len(get_indict) == 0:
                     self.valid = False
-                    self.reason = f'No files found.'
+                    self.reason = f'\tNo files found.'
                     return
             # else we report the error
             elif len(get_errors) > 0:
                 self.valid = False
                 self.reason = '\n'.join(get_errors)
                 return
-            # if we get here we have an unknown error
-            self.valid = False
-            self.reason = 'Unknown error. Contact support with the query.'
+            else:
+                # if we get here we have an unknown error
+                self.valid = False
+                self.reason = '\tUnknown error. Contact support with the query.'
         else:
             return
 
@@ -365,7 +366,7 @@ class Request:
     def __repr__(self) -> str:
         return self._generate_summary()
 
-    def email_success(self, params: Dict[str, Any]):
+    def email_success(self, params: Dict[str, Any], iteration: int):
 
         email_string = ''
         email_string += f'Your APERO request was successful.\n\n'
@@ -382,11 +383,18 @@ class Request:
         email_kwargs['message'] = email_string
         email_kwargs['people'] = self.email
         email_kwargs['sender_address'] = params['email from']
-        email_kwargs['subject'] = 'APERO request success'
-        misc.send_email(**email_kwargs)
+        email_kwargs['subject'] = f'APERO request successful: {self.hashkey}'
+        try:
+            misc.send_email(**email_kwargs)
+        except Exception as e:
+            msg = 'Failed to send email for request {0}'
+            msg += '\n\t{1}: {2}'
+            msg += self._generate_summary()
+            margs = [iteration, type(e), str(e)]
+            misc.log_msg(msg.format(*margs))
 
 
-    def email_failure(self, params: Dict[str, Any]):
+    def email_failure(self, params: Dict[str, Any], iteration: int):
 
         email_string = ''
         email_string += f'Your APERO request failed.\n\n'
@@ -404,9 +412,16 @@ class Request:
         email_kwargs['message'] = email_string
         email_kwargs['people'] = self.email
         email_kwargs['sender_address'] = params['email from']
-        email_kwargs['subject'] = 'APERO request failure'
+        email_kwargs['subject'] = f'APERO request failed: {self.hashkey}'
 
-        misc.send_email(**email_kwargs)
+        try:
+            misc.send_email(**email_kwargs)
+        except Exception as e:
+            msg = 'Failed to send email for request {0}'
+            msg += '\n\t{1}: {2}'
+            msg += self._generate_summary()
+            margs = [iteration, type(e), str(e)]
+            misc.log_msg(msg.format(*margs))
 
 
 # =============================================================================
@@ -556,10 +571,6 @@ def create_requests(params: Dict[str, Any],
     offset = dataframe['Timestamp'] - pd.Timestamp.now() > valid_time
     # valid dataframe
     valid_dataframe = dataframe[offset]
-    # mask out invalid passkeys
-    mask = valid_dataframe['Pass key'].isin(pass_sheet['PASSKEY'])
-    # cut down the valid dataframe
-    valid_dataframe = valid_dataframe[mask]
     # -------------------------------------------------------------------------
     # we need to match the passkey + email address for each row in dataframe
     #   to the passkey + email address in the passkey sheet
@@ -609,7 +620,7 @@ def create_requests(params: Dict[str, Any],
             request = Request.from_pandas_row(valid_dataframe.iloc[it])
             # set request as invalid
             request.valid = False
-            request.reason = f'Passkey {passkey} incorrect.'
+            request.reason = f'\tPasskey "{passkey}" incorrect.'
             # add to list of requests
             requests.append(request)
             continue
@@ -620,7 +631,7 @@ def create_requests(params: Dict[str, Any],
             request = Request.from_pandas_row(valid_dataframe.iloc[it])
             # set request as invalid
             request.valid = False
-            request.reason = f'Email {email} not in passkey {passkey}.'
+            request.reason = f'\tEmail {email} not in passkey {passkey}.'
             # add to list of requests
             requests.append(request)
             continue
@@ -631,7 +642,7 @@ def create_requests(params: Dict[str, Any],
             request = Request.from_pandas_row(valid_dataframe.iloc[it])
             # set request as invalid
             request.valid = False
-            request.reason = f'Profile {profile} not in passkey {passkey}.'
+            request.reason = f'\tProfile {profile} not in passkey {passkey}.'
             # add to list of requests
             requests.append(request)
             continue
@@ -705,6 +716,9 @@ def create_dataframe(requests: List[Request]
         all_rows.append(row)
         # only if request if valid
         if not request.valid:
+            continue
+        # do not add requests that are on disk
+        if request.exists:
             continue
         # add to rows
         valid_rows.append(row)
