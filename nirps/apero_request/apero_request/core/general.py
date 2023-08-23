@@ -499,7 +499,33 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     if len(dataframe) > 0:
         google_sheet.df_to_sheet(dataframe, index=False, replace=False)
     # print progress
-    msg = 'All rows added to google-sheet'
+    msg = 'Valid rows added to response google-sheet'
+    misc.log_msg(msg, level='info')
+
+
+def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
+    """
+    Update the google sheet with the new dataframe
+
+    :param params: dictionary, the parameter dictionary
+    :param dataframe: dataframe, the new dataframe to push to google sheet
+
+    :return: None, updates google sheet
+    """
+    # add gspread directory and auth files
+    io.gsp_setup()
+    # get sheet kind parameters
+    sheet_id, sheet_name = get_sheetkind(params, 'archive')
+    # print progress
+    msg = 'Pushing all rows to google-sheet'
+    misc.log_msg(msg, level='info')
+    # load google sheet instance
+    google_sheet = gspd.spread.Spread(sheet_id, sheet=sheet_name)
+    # push dataframe back to server
+    if len(dataframe) > 0:
+        google_sheet.df_to_sheet(dataframe, index=False, replace=True)
+    # print progress
+    msg = 'All rows added to archive google-sheet'
     misc.log_msg(msg, level='info')
 
 
@@ -668,22 +694,25 @@ def remove_invalid_tars(params: Dict[str, Any],
     return requests
 
 
-def create_dataframe(requests: List[Request]) -> pd.DataFrame:
-
+def create_dataframe(requests: List[Request]
+                     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     # loop around the requests and create a list of rows
-    rows = []
+    valid_rows, all_rows = [], []
     for request in requests:
+        # get the row from the request
+        row = request.df_row
+        # add to all rows
+        all_rows.append(row)
         # only if request if valid
         if not request.valid:
             continue
-        # get the row from the request
-        row = request.df_row
         # add to rows
-        rows.append(row)
+        valid_rows.append(row)
     # convert list of rows to dataframe
-    dataframe = pd.DataFrame(rows)
+    valid_dataframe = pd.DataFrame(valid_rows)
+    all_dataframe = pd.DataFrame(all_rows)
     # return dataframe
-    return dataframe
+    return valid_dataframe, all_dataframe
 
 
 def update_apero_profile(params: dict) -> Any:

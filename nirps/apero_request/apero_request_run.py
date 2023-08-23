@@ -80,9 +80,11 @@ def main():
             print(request)
     # -------------------------------------------------------------------------
     # recreate the dataframe from request
-    valid_requests = general.create_dataframe(requests)
-    # update google sheet
+    valid_requests, all_requests = general.create_dataframe(requests)
+    # update response google sheet
     general.update_response_sheet(params, valid_requests)
+    # update archive google sheet
+    general.update_archive_sheet(params, valid_requests)
     # -------------------------------------------------------------------------
     # finish with an end message
     misc.end_msg()
