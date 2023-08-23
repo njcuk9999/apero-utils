@@ -366,6 +366,20 @@ class Request:
     def __repr__(self) -> str:
         return self._generate_summary()
 
+    def make_row(self) -> pd.Series:
+        row = pd.Series()
+        row['Timestamp'] = self.timestamp_str
+        row['Email Address'] = self.email
+        row['DRSOBJN'] = self.drsobjn_str
+        row['DPRTYPE'] = self.drsobjn_str
+        row['APERO_MODE'] = self.mode
+        row['FIBER'] = self.fibers_str
+        row['DRSOUTID'] = self.drsoutid_str
+        row['Pass key'] = self.passkey
+        row['START_DATE'] = self.start_date_str
+        row['END_DATE'] = self.end_date_str
+        return row
+
     def email_success(self, params: Dict[str, Any], iteration: int):
 
         email_string = ''
@@ -392,7 +406,6 @@ class Request:
             msg += self._generate_summary()
             margs = [iteration, type(e), str(e)]
             misc.log_msg(msg.format(*margs))
-
 
     def email_failure(self, params: Dict[str, Any], iteration: int):
 
@@ -445,6 +458,9 @@ def get_sheetkind(params: Dict[str, Any], sheetkind: str) -> Tuple[str, str]:
     elif sheetkind == 'pass':
         sheet_id = params['pass sheet id']
         sheet_name = params['pass sheet name']
+    elif sheetkind == 'archive':
+        sheet_id = params['archive sheet id']
+        sheet_name = params['archive sheet name']
     else:
         emsg = ('Sheet kind "{0}" not recognized must be "response" '
                 'or "pass"'.format(sheetkind))
@@ -538,7 +554,7 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     google_sheet = gspd.spread.Spread(sheet_id, sheet=sheet_name)
     # push dataframe back to server
     if len(dataframe) > 0:
-        google_sheet.df_to_sheet(dataframe, index=False, replace=True)
+        google_sheet.df_to_sheet(dataframe, index=False, replace=False)
     # print progress
     msg = 'All rows added to archive google-sheet'
     misc.log_msg(msg, level='info')
@@ -712,13 +728,18 @@ def create_dataframe(requests: List[Request]
     for request in requests:
         # get the row from the request
         row = request.df_row
+        # deal with not having a row (i.e. it is None)
+        if row is None:
+            row = request.make_row()
+        # copy row (for all row dataframe)
+        all_row = row.copy()
+        # add validity and reason for failure (if failed)
+        all_row['VALID'] = request.valid
+        all_row['REASON'] = request.reason
         # add to all rows
-        all_rows.append(row)
+        all_rows.append(all_row)
         # only if request if valid
         if not request.valid:
-            continue
-        # do not add requests that are on disk
-        if request.exists:
             continue
         # add to rows
         valid_rows.append(row)

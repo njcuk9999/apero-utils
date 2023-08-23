@@ -28,6 +28,8 @@ __AUTHOR__ = base.__AUTHOR__
 def main():
     # load params
     params = misc.load_params()
+    # get splash
+    misc.splash('APERO requests')
     # -------------------------------------------------------------------------
     # get current list of requests
     # -------------------------------------------------------------------------
@@ -67,7 +69,7 @@ def main():
         msg = 'Emailing user for request {0} / {1}'
         misc.log_msg(msg.format(r_it +1, len(requests)))
         # email a success
-        if request.valid:
+        if request.valid and not request.exists:
             # email user
             misc.log_msg('\tEmailing success')
             request.email_success(params, r_it)
@@ -76,15 +78,16 @@ def main():
             misc.log_msg('\tEmailing failure')
             request.email_failure(params, r_it)
         else:
-            misc.log_msg('Request {0} already exists: \n{1}')
-            print(r_it, request)
+            msg = 'Request {0} already exists:'
+            misc.log_msg(msg.format(r_it))
+            print(request)
     # -------------------------------------------------------------------------
     # recreate the dataframe from request
     valid_requests, all_requests = general.create_dataframe(requests)
     # update response google sheet
     general.update_response_sheet(params, valid_requests)
     # update archive google sheet
-    general.update_archive_sheet(params, valid_requests)
+    general.update_archive_sheet(params, all_requests)
     # -------------------------------------------------------------------------
     # finish with an end message
     misc.end_msg()
