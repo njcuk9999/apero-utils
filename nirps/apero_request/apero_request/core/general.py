@@ -750,7 +750,7 @@ def remove_invalid_tars(params: Dict[str, Any],
     return requests
 
 
-def create_dataframe(requests: List[Request]
+def create_dataframe(params: Dict[str, Any], requests: List[Request]
                      ) -> Tuple[pd.DataFrame, pd.DataFrame]:
     # loop around the requests and create a list of rows
     valid_rows, all_rows = [], []
@@ -775,8 +775,12 @@ def create_dataframe(requests: List[Request]
     # convert list of rows to dataframe
     valid_dataframe = pd.DataFrame(valid_rows)
     all_dataframe = pd.DataFrame(all_rows)
+    # get rows from archive sheet
+    archive_sheet = get_sheet(params, 'archive')
+    # add to dataframe
+    full_dataframe = pd.concat([archive_sheet, all_dataframe], ignore_index=True)
     # return dataframe
-    return valid_dataframe, all_dataframe
+    return valid_dataframe, full_dataframe
 
 
 def update_apero_profile(params: dict) -> Any:
