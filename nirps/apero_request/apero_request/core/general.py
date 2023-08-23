@@ -31,8 +31,8 @@ __VERSION__ = base.__VERSION__
 __DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
 # define rsync commands
-RSYNC_CMD_IN = 'rsync -ah --delete -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
-RSYNC_CMD_OUT = 'rsync -ah --delete -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
+RSYNC_CMD_IN = 'rsync -avh --delete -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
+RSYNC_CMD_OUT = 'rsync -avh --delete -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
 
 
 # =============================================================================
