@@ -15,7 +15,7 @@ from typing import Any, Dict, Union
 
 import yaml
 
-from apero_checks.core import base
+from apero_request.core import base
 
 # =============================================================================
 # Define variables
