@@ -374,9 +374,9 @@ class Request:
         row['Timestamp'] = self.timestamp_str
         row['Email Address'] = self.email
         row['DRSOBJN'] = self.drsobjn_str
-        row['DPRTYPE'] = self.drsobjn_str
+        row['DPRTYPE'] = self.dprtype_str
         row['APERO_MODE'] = self.mode
-        row['FIBER'] = self.fibers_str
+        row['FIBER'] = get_fibers(self.fibers)
         row['DRSOUTID'] = self.drsoutid_str
         row['Pass key'] = self.passkey
         row['START_DATE'] = self.start_date_str
