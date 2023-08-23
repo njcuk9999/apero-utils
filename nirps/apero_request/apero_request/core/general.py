@@ -385,10 +385,13 @@ class Request:
 
     def email_success(self, params: Dict[str, Any], iteration: int):
 
+        valid_time = params['valid time']
+
         email_string = ''
         email_string += f'Your APERO request was successful.\n\n'
         email_string += f'You can download your tar file from:\n'
         email_string += f'{self.tar_url}\n\n'
+        email_string += f'Note this URL will expire in {valid_time} days\n'
         email_string += f'Your request was:\n'
         email_string += self._generate_summary()
 
