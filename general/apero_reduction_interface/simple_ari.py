@@ -1558,7 +1558,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
 
 
 def recipe_date_table(table: Table, table_name: str,
-                      ) -> Tuple[Table, List[str], List[str], List[str]]:
+                      ) -> Tuple[Table, List[str], List[str], np.ndarray]:
     """
     Create the date table which links to each date page
 
@@ -1567,40 +1567,42 @@ def recipe_date_table(table: Table, table_name: str,
     :return:
     """
     # define the columns (passed back to main code)
-    date_colnames = ['DATE', 'NUM FAILURES', 'LINK']
-    date_coltypes = ['str', 'str', 'str']
+    date_colnames = ['DATE', 'NUM TOTAL', 'NUM FAILURES', 'LINK']
+    date_coltypes = ['str', 'str', 'str', 'str']
     table_dates = []
     # dictionary for storage
     date_dict = dict()
+    # add columns
+    for col in date_colnames:
+        date_dict[col] = []
     # get table name
     table_filename = table_name.lower()
     # loop around rows in table
     for row in range(len(table)):
         # convert start time into a YYYY-MM-DD
-        date = table['DATE-OBS'][row].split(' ')[0]
-        # find if we had an error
-        has_error = False
-        if str(table['ERRORMSGS'][row]) == '0':
-            has_error = True
-        elif str(table['ENDED']) == '0':
-            has_error = True
-        # create html url link
-        html_link =  f'{table_filename}_{date.replace("-", "_")}.html'
-        # deal with populating date table
-        if date not in date_dict:
-            date_dict['DATE'] = [date]
-            if has_error:
-                date_dict['NUM FAILURES'] = 1
-            else:
-                date_dict['NUM FAILURES'] = 0
-            date_dict['LINK'] = [html_link]
-        else:
-            if has_error:
-                date_dict['NUM FAILURES'] += 1
-            else:
-                date_dict['NUM FAILURES'] = 0
+        date = table['START_TIME'][row].split(' ')[0]
         # get the date given to this row
         table_dates.append(date)
+    # make the table dates a numpy array
+    table_dates = np.array(table_dates)
+    # get a list of unique dates
+    unique_dates = list(set(table_dates))
+
+    for unique_date in unique_dates:
+        # get a mask for this date in the original table
+        mask = table_dates == unique_date
+        # count the number of entries
+        num_entries = np.sum(mask)
+        # count the number of errors
+        num_errors = np.sum(table['ENDED'][mask] == '0')
+        # create html url link
+        html_file = f'{table_filename}_{date.replace("-", "_")}.html'
+        html_link =  f'<a href="{html_file}">{"[Table Link]"}</a>'
+        # deal with populating date table
+        date_dict['DATE'].append(unique_date)
+        date_dict['NUM TOTAL'].append(num_entries)
+        date_dict['NUM FAILURES'].append(num_errors)
+        date_dict['LINK'].append(html_link)
     # convert date_dict into table
     date_table = Table(date_dict)
     # return the date_table, colnames, coltypes and the date value for each col
@@ -1626,7 +1628,7 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
         tablemask = table_dates == date
         # make the table
         subtable = table[tablemask]
-        #
+        # get the filename to create
         subtable_filename = f'{table_filename}_{date.replace("-", "_")}'
         # get html col names
         html_out_col_names = HTML_OUTCOL_NAMES[table_name]
@@ -2028,8 +2030,12 @@ def compile_apero_recipe_table() -> Table:
                                     sort_by='START_TIME',
                                     sort_descending=False,
                                     return_table=True)
+    # sort columns based on LOG_COLUMNS (not sql order) and as a table
+    out_log_table = Table()
+    for col in LOG_COLUMNS:
+        out_log_table[col] = log_table[col]
     # ------------------------------------------------------------------
-    return log_table
+    return out_log_table
 
 
 def compile_apero_message_table() -> Table:
