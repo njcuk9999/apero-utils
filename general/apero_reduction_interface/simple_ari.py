@@ -122,13 +122,17 @@ DEFAULT_TABLE_LENGTH = 6
 RSYNC_CMD_IN = 'rsync -avuz -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
 RSYNC_CMD_OUT = 'rsync -avuz -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
 # define the html col names for each table
-HTML_COL_NAMES = dict()
-HTML_COL_NAMES['OBJECT_TABLE'] = list(COLUMNS.values())
-HTML_COL_NAMES['RECIPE_TABLE'] = LOG_COLUMNS
+HTML_INCOL_NAMES = dict()
+HTML_INCOL_NAMES['OBJECT_TABLE'] = list(COLUMNS.keys())
+HTML_INCOL_NAMES['RECIPE_TABLE'] = LOG_COLUMNS
+# define the html col names for each table
+HTML_OUTCOL_NAMES = dict()
+HTML_OUTCOL_NAMES['OBJECT_TABLE'] = list(COLUMNS.values())
+HTML_OUTCOL_NAMES['RECIPE_TABLE'] = LOG_COLUMNS
 # define the html col types for each table ('str' or 'list')
 HTML_COL_TYPES = dict()
-HTML_COL_TYPES['OBJECT_TABLE'] = ['str'] * len(HTML_COL_NAMES['OBJECT_TABLE'])
-HTML_COL_TYPES['RECIPE_TABLE'] = ['str'] * len(HTML_COL_NAMES['RECIPE_TABLE'])
+HTML_COL_TYPES['OBJECT_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['OBJECT_TABLE'])
+HTML_COL_TYPES['RECIPE_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['RECIPE_TABLE'])
 
 
 # =============================================================================
@@ -1497,16 +1501,20 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             # deal with column widths for this file type
             if table is not None and len(table) > 0:
                 # get html col names
-                html_col_names = HTML_COL_NAMES[table_name]
+                html_in_col_names = HTML_INCOL_NAMES[table_name]
+                html_out_col_names = HTML_OUTCOL_NAMES[table_name]
                 html_col_types = HTML_COL_TYPES[table_name]
                 # convert table to outlist
-                outlist = error_html.table_to_outlist(table, html_col_names)
+                tout = error_html.table_to_outlist(table, html_out_col_names,
+                                                   out_types=html_col_types)
+                outlist, t_colnames, t_coltype = tout
                 # convert outlist to a html/javascript table
                 html_lines = error_html.filtered_html_table(outlist,
-                                                            html_col_names,
-                                                            html_col_types)
+                                                            t_colnames,
+                                                            t_coltype,
+                                                            clean=False)
                 # add the csv version of this table
-                table_page.add_html(html_lines)
+                table_page.add_html(html_lines.split('\n'))
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
@@ -3640,7 +3648,7 @@ def save_stats(settings: dict, stats: dict):
     :return:
     """
     # list tables to load
-    tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
+    tables = TABLE_NAMES
     # loop around tables and load them
     for table_name in tables:
         # deal with no table
