@@ -1478,7 +1478,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             # add object table
             table_filename = f'{table_name}.csv'
             table_title = table_name.lower().replace('_', ' ')
-            title = f'APERO reduction {table_title} ({cprofile_name})'
+            title = f'{table_title} ({cprofile_name})'
             table_page.add_title(title)
             # -----------------------------------------------------------------
             # Add basic text
@@ -1550,8 +1550,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     with open(table_html, 'w') as wfile:
                         wfile.write(html_content)
                     # add link to a set of links
-                    table_urls['Recipe log'] = f'../../tables/{table_filename}.html'
-
+                    table_urls[title] = f'../../tables/{table_filename}.html'
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
