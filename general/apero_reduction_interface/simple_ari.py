@@ -15,7 +15,6 @@ import glob
 import os
 import re
 import shutil
-import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -1513,19 +1512,6 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                 #                              table_filename,
                 #                              cssclass='csvtable2')
 
-                # get html col names
-                html_in_col_names = HTML_INCOL_NAMES[table_name]
-                html_out_col_names = HTML_OUTCOL_NAMES[table_name]
-                html_col_types = HTML_COL_TYPES[table_name]
-                # convert table to outlist
-                tout = error_html.table_to_outlist(table, html_out_col_names,
-                                                   out_types=html_col_types)
-                outlist, t_colnames, t_coltype = tout
-                # convert outlist to a html/javascript table
-                html_lines = error_html.filtered_html_table(outlist,
-                                                            t_colnames,
-                                                            t_coltype,
-                                                            clean=False)
                 if table_name == 'OBJECT_TABLE':
                     # add the csv version of this table
                     table_page.add_csv_table('', f'../{_DATA_DIR}/' +
@@ -1535,9 +1521,28 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     #  rst sub-dir
                     table_files.append(os.path.basename(table_markdown_file))
                 elif table_name == 'RECIPE_TABLE':
+                    # get html col names
+                    html_in_col_names = HTML_INCOL_NAMES[table_name]
+                    html_out_col_names = HTML_OUTCOL_NAMES[table_name]
+                    html_col_types = HTML_COL_TYPES[table_name]
+                    # convert table to outlist
+                    tout = error_html.table_to_outlist(table, html_out_col_names,
+                                                       out_types=html_col_types)
+                    outlist, t_colnames, t_coltype = tout
+                    # convert outlist to a html/javascript table
+                    html_lines = error_html.filtered_html_table(outlist,
+                                                                t_colnames,
+                                                                t_coltype,
+                                                                clean=False)
+                    # make path
+                    table_path = os.path.join(settings['WORKING'], 'extras',
+                                              cprofile_name, 'tables')
+                    table_filename = f'{table_name.lower()}.html'
+                    if not os.path.exists(table_path):
+                        os.makedirs(table_path)
                     # construct local path to save html to
-                    table_html = os.path.join(settings['HTML'], cprofile_name,
-                                              f'{table_name}.html')
+                    table_html = os.path.join(table_path,
+                                              f'{table_filename}.html')
                     # build html page
                     html_content = error_html.full_page_html('Recipe log',
                                                              html_lines)
@@ -1545,7 +1550,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     with open(table_html, 'w') as wfile:
                         wfile.write(html_content)
                     # add link to a set of links
-                    table_urls['Recipe log'] = f'../../tables/{table_name}.html'
+                    table_urls['Recipe log'] = f'../../tables/{table_filename}.html'
 
             else:
                 # if we have no table then add a message
@@ -1658,6 +1663,14 @@ def compile_docs(gsettings: dict, settings: dict):
     os.system(f'rm -rf {settings["OUT"]}/*')
     # copy
     drs_path.copytree(settings['HTML'], settings["OUT"])
+
+    # ------------------------------------------------------------------
+    # copy extras
+    # ------------------------------------------------------------------
+    extras_dir = os.path.join(settings['WORKING'], 'extras')
+    # copy everything from extras into output directory
+    shutil.copytree(extras_dir, os.path.join(settings['OUT']),
+                    dirs_exist_ok=True)
     # ------------------------------------------------------------------
     # change back to current directory
     os.chdir(cwd)
@@ -1667,7 +1680,6 @@ def sync_docs(gsettings: dict, settings: dict):
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
-    from apero.tools.module.documentation import drs_documentation
     from apero.core.utils import drs_startup
     from apero.core.core import drs_log
     # ------------------------------------------------------------------
@@ -3933,6 +3945,7 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
         # find all rows that have this pid
         mask = all_pids == pid
         # deal with no entries
+        # noinspection PyTypeChecker
         if len(mask) == 0:
             continue
         # if all rows pass qc passed = 1
