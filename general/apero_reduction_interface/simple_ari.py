@@ -1521,8 +1521,10 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     table_files.append(os.path.basename(table_markdown_file))
                 elif table_name == 'RECIPE_TABLE':
                     add_recipe_tables(settings, table, table_name)
+
+                    table_url_file = table_filename.replace('.csv', '.html')
                     # add link to a set of links
-                    table_urls[title] = f'../tables/{table_filename}.html'
+                    table_urls[title] = f'../tables/{table_url_file}'
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
