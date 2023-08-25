@@ -1466,6 +1466,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
         # -----------------------------------------------------------------
         # store the reference name for profile page table of contents
         table_files = []
+        # urls
+        table_urls = dict()
         # loop around tables
         for table_name in TABLE_NAMES:
             # get table
@@ -1498,8 +1500,19 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             table_page.add_newline()
             table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
             table_page.add_newline()
+
+            # save table page
+            table_markdown_file = os.path.basename(table_filename).lower()
+            table_markdown_file = table_markdown_file.replace('.csv', '.rst')
+
             # deal with column widths for this file type
             if table is not None and len(table) > 0:
+                # if table_name == 'OBJECT_TABLE':
+                #     # add the csv version of this table
+                #     table_page.add_csv_table('', f'../{_DATA_DIR}/' +
+                #                              table_filename,
+                #                              cssclass='csvtable2')
+
                 # get html col names
                 html_in_col_names = HTML_INCOL_NAMES[table_name]
                 html_out_col_names = HTML_OUTCOL_NAMES[table_name]
@@ -1513,24 +1526,56 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                                                             t_colnames,
                                                             t_coltype,
                                                             clean=False)
-                # add the csv version of this table
-                table_page.add_html(html_lines.split('\n'))
+                if table_name == 'OBJECT_TABLE':
+                    # add the csv version of this table
+                    table_page.add_html(html_lines.split('\n'))
+                    # store the reference name for profile page table of contents
+                    #  these are in the same dir as profile_page so do not add the
+                    #  rst sub-dir
+                    table_files.append(os.path.basename(table_markdown_file))
+                elif table_name == 'RECIPE_TABLE':
+                    # construct local path to save html to
+                    table_html = os.path.join(settings['OUT'], cprofile_name,
+                                              f'{table_name}.html')
+                    # build html page
+                    html_content = error_html.full_page_html('Recipe log',
+                                                             html_lines)
+                    # write html page
+                    with open(table_html, 'w') as wfile:
+                        wfile.write(html_content)
+                    # add link to a set of links
+                    table_urls['Recipe log'] = f'../../tables/{table_name}.html'
+
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
-            # save table page
-            table_markdown_file = os.path.basename(table_filename).lower()
-            table_markdown_file = table_markdown_file.replace('.csv', '.rst')
+                # store the reference name for profile page table of contents
+                #  these are in the same dir as profile_page so do not add the
+                #  rst sub-dir
+                table_files.append(os.path.basename(table_markdown_file))
             # write table page
             print('Writing table page: {0}'.format(table_markdown_file))
             table_page.write_page(os.path.join(settings['RST'],
                                                table_markdown_file))
-            # store the reference name for profile page table of contents
-            #  these are in the same dir as profile_page so do not add the
-            #  rst sub-dir
-            table_files.append(os.path.basename(table_markdown_file))
+
         # add table of contents to profile page
         profile_page.add_table_of_contents(table_files)
+
+        # add list of urls
+        if len(table_urls) > 0:
+            # add a section
+            profile_page.add_newline()
+            profile_page.add_text('Other: ')
+            profile_page.add_newline()
+            # add the urls as a list
+            for table_url in table_urls:
+                # get url from table urls
+                url = table_urls[table_url]
+                # add the url
+                profile_page.lines += f'* `{table_url} <{url}>`_'
+                # add a new line
+                profile_page.add_newline()
+            profile_page.add_newline()
         # save profile page
         profile_page.write_page(os.path.join(settings['RST'], 'profile.rst'))
 

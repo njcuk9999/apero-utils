@@ -245,9 +245,6 @@ def from_processing_log_file(save_path: str, log_filename: str):
         to_yaml_dict(save_path, pid, group_date, yaml_dict)
 
 
-
-
-
 # =============================================================================
 # Start of code
 # =============================================================================
