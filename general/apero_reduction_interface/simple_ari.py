@@ -1536,7 +1536,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     table_files.append(os.path.basename(table_markdown_file))
                 elif table_name == 'RECIPE_TABLE':
                     # construct local path to save html to
-                    table_html = os.path.join(settings['OUT'], cprofile_name,
+                    table_html = os.path.join(settings['HTML'], cprofile_name,
                                               f'{table_name}.html')
                     # build html page
                     html_content = error_html.full_page_html('Recipe log',
@@ -1573,7 +1573,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                 # get url from table urls
                 url = table_urls[table_url]
                 # add the url
-                profile_page.lines += f'* `{table_url} <{url}>`_'
+                profile_page.lines += [f'* `{table_url} <{url}>`_']
                 # add a new line
                 profile_page.add_newline()
             profile_page.add_newline()
