@@ -1370,7 +1370,6 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
 
 def write_markdown(gsettings: dict, settings: dict, stats: dict):
     from apero.tools.module.documentation import drs_markdown
-    from apero.tools.module.error import error_html
     # -------------------------------------------------------------------------
     # step 1: write a page with all the different possible profiles in a
     #         sphinx table of contents
@@ -1521,36 +1520,9 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     #  rst sub-dir
                     table_files.append(os.path.basename(table_markdown_file))
                 elif table_name == 'RECIPE_TABLE':
-                    # get html col names
-                    html_in_col_names = HTML_INCOL_NAMES[table_name]
-                    html_out_col_names = HTML_OUTCOL_NAMES[table_name]
-                    html_col_types = HTML_COL_TYPES[table_name]
-                    # convert table to outlist
-                    tout = error_html.table_to_outlist(table, html_out_col_names,
-                                                       out_types=html_col_types)
-                    outlist, t_colnames, t_coltype = tout
-                    # convert outlist to a html/javascript table
-                    html_lines = error_html.filtered_html_table(outlist,
-                                                                t_colnames,
-                                                                t_coltype,
-                                                                clean=False)
-                    # make path
-                    table_path = os.path.join(settings['WORKING'], 'extras',
-                                              cprofile_name, 'tables')
-                    table_filename = f'{table_name.lower()}.html'
-                    if not os.path.exists(table_path):
-                        os.makedirs(table_path)
-                    # construct local path to save html to
-                    table_html = os.path.join(table_path,
-                                              f'{table_filename}.html')
-                    # build html page
-                    html_content = error_html.full_page_html('Recipe log',
-                                                             html_lines)
-                    # write html page
-                    with open(table_html, 'w') as wfile:
-                        wfile.write(html_content)
+                    add_recipe_tables(table)
                     # add link to a set of links
-                    table_urls[title] = f'../../tables/{table_filename}.html'
+                    table_urls[title] = f'../tables/{table_filename}.html'
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
@@ -1583,6 +1555,122 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             profile_page.add_newline()
         # save profile page
         profile_page.write_page(os.path.join(settings['RST'], 'profile.rst'))
+
+
+def recipe_date_table(table: Table, table_name: str,
+                      ) -> Tuple[Table, List[str], List[str], List[str]]:
+    """
+    Create the date table which links to each date page
+
+    :param table:
+    :param table_name:
+    :return:
+    """
+    # define the columns (passed back to main code)
+    date_colnames = ['DATE', 'NUM FAILURES', 'LINK']
+    date_coltypes = ['str', 'str', 'str']
+    table_dates = []
+    # dictionary for storage
+    date_dict = dict()
+    # get table name
+    table_filename = table_name.lower()
+    # loop around rows in table
+    for row in range(len(table)):
+        # convert start time into a YYYY-MM-DD
+        date = table['DATE-OBS'][row].split(' ')[0]
+        # find if we had an error
+        has_error = False
+        if str(table['ERRORMSGS'][row]) == '0':
+            has_error = True
+        elif str(table['ENDED']) == '0':
+            has_error = True
+        # create html url link
+        html_link =  f'{table_filename}_{date.replace("-", "_")}.html'
+        # deal with populating date table
+        if date not in date_dict:
+            date_dict['DATE'] = [date]
+            if has_error:
+                date_dict['NUM FAILURES'] = 1
+            else:
+                date_dict['NUM FAILURES'] = 0
+            date_dict['LINK'] = [html_link]
+        else:
+            if has_error:
+                date_dict['NUM FAILURES'] += 1
+            else:
+                date_dict['NUM FAILURES'] = 0
+        # get the date given to this row
+        table_dates.append(date)
+    # convert date_dict into table
+    date_table = Table(date_dict)
+    # return the date_table, colnames, coltypes and the date value for each col
+    return date_table, date_colnames, date_coltypes, table_dates
+
+
+def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
+    # import from apero
+    from apero.tools.module.error import error_html
+    # profile name
+    cprofile_name = settings['CPN']
+    # make path
+    table_path = os.path.join(settings['WORKING'], 'extras',
+                              cprofile_name, 'tables')
+    # get table name
+    table_filename = table_name.lower()
+    # split the table into sub-tables based on start date
+    dout = recipe_date_table(table, table_name)
+    date_table, date_colnames, date_coltypes, table_dates = dout
+    # loop around sub tables
+    for date in date_table['DATE']:
+        # find all rows in table that conform to this date
+        tablemask = table_dates == date
+        # make the table
+        subtable = table[tablemask]
+        #
+        subtable_filename = f'{table_filename}_{date.replace("-", "_")}'
+        # get html col names
+        html_out_col_names = HTML_OUTCOL_NAMES[table_name]
+        html_col_types = HTML_COL_TYPES[table_name]
+        # convert table to outlist
+        tout = error_html.table_to_outlist(subtable, html_out_col_names,
+                                           out_types=html_col_types)
+        outlist, t_colnames, t_coltype = tout
+        # convert outlist to a html/javascript table
+        html_lines = error_html.filtered_html_table(outlist, t_colnames,
+                                                    t_coltype, clean=False)
+        # deal with path not existing
+        if not os.path.exists(table_path):
+            os.makedirs(table_path)
+        # construct local path to save html to
+        subtable_html = os.path.join(table_path, f'{subtable_filename}.html')
+        # build html page
+        html_title = 'Recipe log for {0}'.format(date)
+        html_content = error_html.full_page_html(html_title, html_lines)
+        # write html page
+        with open(subtable_html, 'w') as wfile:
+            wfile.write(html_content)
+
+    # -------------------------------------------------------------------------
+    # make recipe table
+    # -------------------------------------------------------------------------
+    # construct local path to save html to
+    table_html = os.path.join(table_path, f'{table_filename}.html')
+    # convert table to outlist
+    tout = error_html.table_to_outlist(date_table, date_colnames,
+                                       out_types=date_coltypes)
+    outlist, t_colnames, t_coltype = tout
+    # convert outlist to a html/javascript table
+    html_lines = error_html.filtered_html_table(outlist,
+                                                t_colnames,
+                                                t_coltype,
+                                                clean=False)
+    # build html page
+    html_title = 'Recipe log'
+    html_content = error_html.full_page_html(html_title, html_lines)
+    # write html page
+    with open(table_html, 'w') as wfile:
+        wfile.write(html_content)
+
 
 
 def compile_docs(gsettings: dict, settings: dict):
