@@ -37,14 +37,14 @@ from scipy.optimize import curve_fit
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
 # define the log database column names to get
-LOG_COLUMNS = ['RECIPE', 'SHORTNAME', 'RUNSTRING', 'START_TIME', 'END_TIME',
-               'STARTED', 'PASSED_ALL_QC', 'ENDED', 'ERRORMSGS']
+LOG_COLUMNS = ['SHORTNAME', 'RUNSTRING', 'START_TIME', 'END_TIME',
+               'STARTED', 'PASSED_ALL_QC', 'ENDED']
 # define which instruments have polar
 HAS_POLAR = dict(SPIROU=True, NIRPS_HE=False, NIRPS_HA=False)
 # define log levels to report
 LOG_LEVELS = ['error', 'warning']
 # list tables to load
-TABLE_NAMES = ['OBJECT_TABLE', 'RECIPE_TABLE']
+TABLE_NAMES = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
 # Define output path
 OUTPUT_PATH = '.'
 # define sphinx directories
@@ -69,17 +69,17 @@ COLUMNS['DEC'] = 'Dec [Deg]'
 COLUMNS['TEFF'] = 'Teff [K]'
 COLUMNS['SPTYPE'] = 'SpT'
 COLUMNS['DPRTYPE'] = 'DPRTYPE'
-COLUMNS['RAW'] = 'raw files'
-COLUMNS['PP'] = 'pp files'
-COLUMNS['EXT'] = 'ext files'
+COLUMNS['RAW'] = 'raw files  '
+COLUMNS['PP'] = 'pp files   '
+COLUMNS['EXT'] = 'ext files  '
 COLUMNS['TCORR'] = 'tcorr files'
-COLUMNS['CCF'] = 'ccf files'
-COLUMNS['POL'] = 'pol files'
-COLUMNS['efits'] = 'e.fits'
-COLUMNS['tfits'] = 't.fits'
-COLUMNS['vfits'] = 't.fits'
-COLUMNS['pfits'] = 'p.fits'
-COLUMNS['lbl'] = 'LBL'
+COLUMNS['CCF'] = 'ccf files  '
+COLUMNS['POL'] = 'pol files  '
+COLUMNS['efits'] = 'e.fits     '
+COLUMNS['tfits'] = 't.fits     '
+COLUMNS['vfits'] = 't.fits     '
+COLUMNS['pfits'] = 'p.fits     '
+COLUMNS['lbl'] = 'LBL        '
 COLUMNS['last_obs'] = 'Last observed'
 COLUMNS['last_proc'] = 'Last Processed'
 # polar columns (only used for instruments that use polarimetry)
@@ -121,15 +121,6 @@ DEFAULT_TABLE_LENGTH = 6
 # define rsync commands
 RSYNC_CMD_IN = 'rsync -avuz -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
 RSYNC_CMD_OUT = 'rsync -avuz -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
-# define the html col names for each table
-HTML_COL_NAMES = dict()
-HTML_COL_NAMES['OBJECT_TABLE'] = list(COLUMNS.values())
-HTML_COL_NAMES['RECIPE_TABLE'] = LOG_COLUMNS
-# define the html col types for each table ('str' or 'list')
-HTML_COL_TYPES = dict()
-HTML_COL_TYPES['OBJECT_TABLE'] = ['str'] * len(HTML_COL_NAMES['OBJECT_TABLE'])
-HTML_COL_TYPES['RECIPE_TABLE'] = ['str'] * len(HTML_COL_NAMES['RECIPE_TABLE'])
-
 
 # =============================================================================
 # Classes
@@ -1367,7 +1358,6 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
 
 def write_markdown(gsettings: dict, settings: dict, stats: dict):
     from apero.tools.module.documentation import drs_markdown
-    from apero.tools.module.error import error_html
     # -------------------------------------------------------------------------
     # step 1: write a page with all the different possible profiles in a
     #         sphinx table of contents
@@ -1496,17 +1486,9 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             table_page.add_newline()
             # deal with column widths for this file type
             if table is not None and len(table) > 0:
-                # get html col names
-                html_col_names = HTML_COL_NAMES[table_name]
-                html_col_types = HTML_COL_TYPES[table_name]
-                # convert table to outlist
-                outlist = error_html.table_to_outlist(table, html_col_names)
-                # convert outlist to a html/javascript table
-                html_lines = error_html.filtered_html_table(outlist,
-                                                            html_col_names,
-                                                            html_col_types)
                 # add the csv version of this table
-                table_page.add_html(html_lines)
+                table_page.add_csv_table('', f'../{_DATA_DIR}/' +
+                                         table_filename, cssclass='csvtable2')
             else:
                 # if we have no table then add a message
                 table_page.add_text('No table created.')
