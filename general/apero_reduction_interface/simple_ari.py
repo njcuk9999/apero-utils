@@ -1569,8 +1569,8 @@ def recipe_date_table(table: Table, table_name: str,
     :return:
     """
     # define the columns (passed back to main code)
-    date_colnames = ['DATE', 'NUM TOTAL', 'NUM FAILURES', 'LINK']
-    date_coltypes = ['str', 'str', 'str', 'str']
+    date_colnames = ['DATE', 'NUM_TOTAL', 'NUM_FAIL', 'LINK']
+    date_coltypes = ['str', 'str', 'str', 'url']
     table_dates = []
     # dictionary for storage
     date_dict = dict()
@@ -1599,12 +1599,11 @@ def recipe_date_table(table: Table, table_name: str,
         num_errors = np.sum(table['ENDED'][mask] == '0')
         # create html url link
         html_file = f'{table_filename}_{date.replace("-", "_")}.html'
-        html_link =  f'<a href="{html_file}">{"[Table Link]"}</a>'
         # deal with populating date table
         date_dict['DATE'].append(unique_date)
-        date_dict['NUM TOTAL'].append(num_entries)
-        date_dict['NUM FAILURES'].append(num_errors)
-        date_dict['LINK'].append(html_link)
+        date_dict['NUM_TOTAL'].append(num_entries)
+        date_dict['NUM_FAIL'].append(num_errors)
+        date_dict['LINK'].append(html_file)
     # convert date_dict into table
     date_table = Table(date_dict)
     # return the date_table, colnames, coltypes and the date value for each col
@@ -1641,7 +1640,8 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
         outlist, t_colnames, t_coltype = tout
         # convert outlist to a html/javascript table
         html_lines = error_html.filtered_html_table(outlist, t_colnames,
-                                                    t_coltype, clean=False)
+                                                    t_coltype, clean=False,
+                                                    log=False)
         # deal with path not existing
         if not os.path.exists(table_path):
             os.makedirs(table_path)
@@ -1667,7 +1667,7 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     html_lines = error_html.filtered_html_table(outlist,
                                                 t_colnames,
                                                 t_coltype,
-                                                clean=False)
+                                                clean=False, log=False)
     # build html page
     html_title = 'Recipe log'
     html_content = error_html.full_page_html(html_title, html_lines)
