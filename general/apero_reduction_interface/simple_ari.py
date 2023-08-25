@@ -1528,7 +1528,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                                                             clean=False)
                 if table_name == 'OBJECT_TABLE':
                     # add the csv version of this table
-                    table_page.add_html(html_lines.split('\n'))
+                    table_page.add_csv_table('', f'../{_DATA_DIR}/' +
+                                             table_filename, cssclass='csvtable2')
                     # store the reference name for profile page table of contents
                     #  these are in the same dir as profile_page so do not add the
                     #  rst sub-dir
