@@ -1520,7 +1520,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     #  rst sub-dir
                     table_files.append(os.path.basename(table_markdown_file))
                 elif table_name == 'RECIPE_TABLE':
-                    add_recipe_tables(table)
+                    add_recipe_tables(settings, table, table_name)
                     # add link to a set of links
                     table_urls[title] = f'../tables/{table_filename}.html'
             else:
@@ -1754,6 +1754,7 @@ def compile_docs(gsettings: dict, settings: dict):
     # ------------------------------------------------------------------
     # copy extras
     # ------------------------------------------------------------------
+    wlog(params, '', 'Copying extra files')
     extras_dir = os.path.join(settings['WORKING'], 'extras')
     # copy everything from extras into output directory
     shutil.copytree(extras_dir, os.path.join(settings['OUT']),
