@@ -1598,8 +1598,9 @@ def recipe_date_table(table: Table, table_name: str,
         mask = table_dates == unique_date
         # count the number of entries
         num_entries = np.sum(mask)
-        # count the number of errors
-        num_errors = np.sum(table['ENDED'][mask] == 0)
+        # count the number of errors (False or 0)
+        num_errors = np.sum(table['ENDED'][mask] == 'False')
+        num_errors += np.sum(table['ENDED'][mask] == 0)
         # create html url link
         html_file = f'{table_filename}_{unique_date.replace("-", "_")}.html'
         # deal with populating date table
@@ -1609,6 +1610,9 @@ def recipe_date_table(table: Table, table_name: str,
         date_dict['LINK'].append(html_file)
     # convert date_dict into table
     date_table = Table(date_dict)
+    # sort by date (newest first)
+    sortmask = np.argsort(date_dict['DATE'])[::-1]
+    date_table = date_table[sortmask]
     # return the date_table, colnames, coltypes and the date value for each col
     return date_table, date_colnames, date_coltypes, table_dates
 
