@@ -1645,10 +1645,16 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
         tout = error_html.table_to_outlist(subtable, html_out_col_names,
                                            out_types=html_col_types)
         outlist, t_colnames, t_coltype = tout
+        # set html body
+        html_body = ('<p> Note the date is the date processed NOT the '
+                     'observation directory (or night directory)</p>')
+        # set html table class
+        table_class = 'class="csvtable2"'
         # convert outlist to a html/javascript table
-        html_lines = error_html.filtered_html_table(outlist, t_colnames,
+        html_table = error_html.filtered_html_table(outlist, t_colnames,
                                                     t_coltype, clean=False,
-                                                    log=False)
+                                                    log=False,
+                                                    table_class=table_class)
         # deal with path not existing
         if not os.path.exists(table_path):
             os.makedirs(table_path)
@@ -1656,7 +1662,10 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
         subtable_html = os.path.join(table_path, f'{subtable_filename}.html')
         # build html page
         html_title = 'Recipe log for {0}'.format(date)
-        html_content = error_html.full_page_html(html_title, html_lines)
+        html_content = error_html.full_page_html(html_title,
+                                                 html_body=html_body,
+                                                 html_table=html_table,
+                                                 css='../../_static/apero.css')
         # write html page
         with open(subtable_html, 'w') as wfile:
             wfile.write(html_content)
