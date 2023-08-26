@@ -37,7 +37,8 @@ ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
 # define the log database column names to get
 LOG_COLUMNS = ['RECIPE', 'SHORTNAME', 'RUNSTRING', 'START_TIME', 'END_TIME',
-               'STARTED', 'PASSED_ALL_QC', 'ENDED', 'ERRORMSGS']
+               'PASSED_ALL_QC', 'ENDED', 'ERRORMSGS']
+LOG_TYPES = ['str', 'str', 'str', 'str', 'str', 'bool', 'bool', 'str']
 # define which instruments have polar
 HAS_POLAR = dict(SPIROU=True, NIRPS_HE=False, NIRPS_HA=False)
 # define log levels to report
@@ -1520,9 +1521,11 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     #  rst sub-dir
                     table_files.append(os.path.basename(table_markdown_file))
                 elif table_name == 'RECIPE_TABLE':
+                    # add the recipe tables
                     add_recipe_tables(settings, table, table_name)
-
+                    # create a URL to link the pages
                     table_url_file = table_filename.replace('.csv', '.html')
+                    table_url_file= table_url_file.lower()
                     # add link to a set of links
                     table_urls[title] = f'../tables/{table_url_file}'
             else:
@@ -1596,9 +1599,9 @@ def recipe_date_table(table: Table, table_name: str,
         # count the number of entries
         num_entries = np.sum(mask)
         # count the number of errors
-        num_errors = np.sum(table['ENDED'][mask] == '0')
+        num_errors = np.sum(table['ENDED'][mask] == 0)
         # create html url link
-        html_file = f'{table_filename}_{date.replace("-", "_")}.html'
+        html_file = f'{table_filename}_{unique_date.replace("-", "_")}.html'
         # deal with populating date table
         date_dict['DATE'].append(unique_date)
         date_dict['NUM_TOTAL'].append(num_entries)
@@ -1658,7 +1661,7 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     # make recipe table
     # -------------------------------------------------------------------------
     # construct local path to save html to
-    table_html = os.path.join(table_path, f'{table_filename}.html')
+    table_html = os.path.join(table_path, f'{table_filename.lower()}.html')
     # convert table to outlist
     tout = error_html.table_to_outlist(date_table, date_colnames,
                                        out_types=date_coltypes)
@@ -2034,10 +2037,28 @@ def compile_apero_recipe_table() -> Table:
                                     return_table=True)
     # sort columns based on LOG_COLUMNS (not sql order) and as a table
     out_log_table = Table()
-    for col in LOG_COLUMNS:
-        out_log_table[col] = log_table[col]
+    for c_it, col in enumerate(LOG_COLUMNS):
+        # deal with bools
+        if LOG_TYPES[c_it] == 'bool':
+            # find null values
+            mask = (log_table[col] == 1) | (log_table[col] == 0)
+            # convert log_table column to bools replacing
+            #   null values with 0 and then convert to string and fill
+            #   null values with blanks
+            vector = log_table[col]
+            vector[~mask] = 0
+            vector = np.array(vector).astype(bool)
+            vector = np.array(vector).astype(str)
+            vector[~mask] = ''
+            out_log_table[col] = vector
+        else:
+            out_log_table[col] = np.array(log_table[col]).astype(str)
+
     # ------------------------------------------------------------------
     return out_log_table
+
+
+
 
 
 def compile_apero_message_table() -> Table:
