@@ -1657,7 +1657,7 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     <p> Note the date is the date processed NOT the observation directory 
         (or night directory)</p>
     <br>
-    <p><a href="../../rst/profile.html">Back to profile page</a></p>
+    <p><a href="../rst/profile.html">Back to profile page</a></p>
     <br>
     """
 
