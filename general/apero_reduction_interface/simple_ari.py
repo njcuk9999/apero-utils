@@ -1622,7 +1622,35 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     from apero.tools.module.error import error_html
     # set html body
     html_body1 = """
-    <div class="body" role="main">
+    <div class="pageheader">
+
+    <ul>
+    <li><a title="Home" href="http://apero.exoplanets.ca">
+        <i class="fa fa-home fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="install" href="http://apero.exoplanets.ca/user/general/installation">
+        <i class="fa fa-cog fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="github" href="https://github.com/njcuk9999/apero-drs">
+        <i class="fa fa-git-square fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="download paper" href="https://ui.adsabs.harvard.edu/abs/2022PASP..134k4509C">
+        <i class="fa fa-file-pdf-o fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="UdeM" href="http://apero.exoplanets.ca/main/misc/udem.html">
+        <i class="fa fa-university fa-3x" aria-hidden="true"></i></a></li>
+  </ul>
+
+    <div>
+    <a href="http://apero.exoplanets.ca">
+      <img src="../../_static/images/apero_logo.png" alt="APERO" />
+    </a>
+    <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A PipelinE to Reduce Observations
+    </div>
+
+    </div>
+    
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
     
     <h1>{TITLE}</h1>
     <p> Note the date is the date processed NOT the observation directory 
@@ -1630,6 +1658,11 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     """
 
     html_body2 = """
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
     </div>
     """
     # set html table class
