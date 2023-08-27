@@ -1621,6 +1621,7 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     # import from apero
     from apero.tools.module.error import error_html
     # set html body
+    # Take directly from one of the sphinx pages (this is a massive hack)
     html_body1 = """
     <div class="pageheader">
 
