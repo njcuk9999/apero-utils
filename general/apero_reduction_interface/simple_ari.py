@@ -1494,8 +1494,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                                 'be the first column [OBJNAME]')
             table_page.add_newline()
             table_page.add_text('If you have any issues please report using '
-                                '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                                '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_')
             table_page.add_newline()
             table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
             table_page.add_newline()
