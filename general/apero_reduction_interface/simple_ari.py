@@ -1333,8 +1333,8 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
                             'ARI will be the first column [OBJNAME]')
     obj_index_page.add_newline()
     obj_index_page.add_text('If you have any issues please report using '
-                            '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                            '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_')
     obj_index_page.add_newline()
     # -------------------------------------------------------------------------
     # loop around objects and create a section for each
