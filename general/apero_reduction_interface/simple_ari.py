@@ -1636,7 +1636,7 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     table_class = 'class="csvtable2 docutils align-default"'
     # css to include
     ccs_files = ['../../_static/pygments.css',
-                 '../../_static/bizstyle.css'
+                 '../../_static/bizstyle.css',
                  '../../_static/apero.css']
     # profile name
     cprofile_name = settings['CPN']
