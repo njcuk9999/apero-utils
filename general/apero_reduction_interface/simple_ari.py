@@ -1657,7 +1657,7 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     <p> Note the date is the date processed NOT the observation directory 
         (or night directory)</p>
     <br>
-    <p><a href="../rst/profile.html">Back to profile page</a></p>
+    <p><a href="../rst/profile.html">Back to profile page ({PROFILE}</a></p>
     <br>
     """
 
@@ -1713,11 +1713,14 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
         subtable_html = os.path.join(table_path, f'{subtable_filename}.html')
         # build html page
 
-        html_title = 'Recipe log for {0}'.format(date)
-        html_body1_filled = html_body1.format(TITLE=html_title)
+        html_title = 'Recipe log for {0} ({1})'.format(date, cprofile_name)
+        html_body1_filled = html_body1.format(TITLE=html_title,
+                                              PROFILE=cprofile_name)
 
-        html_body1_filled += """
-        <p><a href="recipe_table.html">Back to recipe log</a></p>
+        html_body1_filled += f"""
+        <p>
+        <a href="recipe_table.html">Back to recipe log ({cprofile_name})</a>
+        </p>
         <br>
         """
 
@@ -1745,8 +1748,9 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
                                                 clean=False, log=False,
                                                 table_class=table_class)
     # build html page
-    html_title = 'Recipe log'
-    html_body1_filled = html_body1.format(TITLE=html_title)
+    html_title = 'Recipe log ({0})'.format(cprofile_name)
+    html_body1_filled = html_body1.format(TITLE=html_title,
+                                          PROFILE=cprofile_name)
     html_content = error_html.full_page_html(html_body1=html_body1_filled,
                                              html_table=html_table,
                                              html_body2=html_body2,
