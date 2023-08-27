@@ -1656,6 +1656,9 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     <h1>{TITLE}</h1>
     <p> Note the date is the date processed NOT the observation directory 
         (or night directory)</p>
+    <br>
+    <p><a href="../../rst/profile.html">Back to profile page</a></p>
+    <br>
     """
 
     html_body2 = """
@@ -1712,6 +1715,11 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
 
         html_title = 'Recipe log for {0}'.format(date)
         html_body1_filled = html_body1.format(TITLE=html_title)
+
+        html_body1_filled += """
+        <p><a href="recipe_table.html">Back to recipe log</a></p>
+        <br>
+        """
 
         html_content = error_html.full_page_html(html_body1=html_body1_filled,
                                                  html_table=html_table,
