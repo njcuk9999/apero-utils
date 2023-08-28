@@ -1659,6 +1659,15 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
     <br>
     <p><a href="../rst/profile.html">Back to profile page ({PROFILE})</a></p>
     <br>
+    <p> 
+    A list of known errors can be found 
+    <a href="https://docs.google.com/spreadsheets/d/15Gu_aY6h9Esw1uTF8Y5JCHl6m7191AviJNTPkbeTiQE/edit?usp=sharing">here</a>
+    <br>
+    Please report any errors missing.
+    </p>
+    <br>
+    
+    
     """
 
     html_body2 = """
