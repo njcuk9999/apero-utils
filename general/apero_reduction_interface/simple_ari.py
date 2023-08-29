@@ -133,6 +133,21 @@ HTML_OUTCOL_NAMES['RECIPE_TABLE'] = LOG_COLUMNS
 HTML_COL_TYPES = dict()
 HTML_COL_TYPES['OBJECT_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['OBJECT_TABLE'])
 HTML_COL_TYPES['RECIPE_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['RECIPE_TABLE'])
+# define the prefilled request link
+PREFILLED_REQUEST_LINK = 'https://docs.google.com/forms/d/e/1FAIpQLSev3v7EnHq2KyQyVWlDikA8-tDzMINYZA0SkYz93vAanpIdhA/viewform?usp=pp_url'
+# each entry has an id - we define these in a dictionary
+PREFILLED_RDICT = dict()
+PREFILLED_RDICT['OBJNAMES'] = 'entry.193319269'
+PREFILLED_RDICT['STARTDATE'] = 'entry.293060210'
+PREFILLED_RDICT['ENDDATE'] = 'entry.299959352'
+PREFILLED_RDICT['APERO_MODE'] = 'entry.923271952'
+PREFILLED_RDICT['FIBER'] = 'entry.1651377065'
+PREFILLED_RDICT['DPRTYPES'] = 'entry.298205572'
+PREFILLED_RDICT['DRSOUTID'] = 'entry.459458944'
+# define the request form fiber types
+RDICT_FIBERS = ['Science fiber', 'Reference fiber', 'All fibers']
+# define science dprtypes
+SCIENCE_DPRTYPES = 'OBJ_FP, OBJ_SKY, OBJ_DARK, POLAR_FP, POLAR_DARK'
 
 
 # =============================================================================
@@ -248,7 +263,7 @@ class ObjectData:
         # ---------------------------------------------------------------------
         # Add files as copy of filetype class
         # ---------------------------------------------------------------------
-        self.filetypes = dict()
+        self.filetypes: Dict[str, FileType] = dict()
         for key in filetypes:
             self.filetypes[key] = filetypes[key].copy_new()
         # flag for whether we have polar files
@@ -392,6 +407,58 @@ class ObjectData:
                 # set value in header dict
                 self.header_dict[keydict][pos] = value
 
+    def rlink(self, filetype: str,
+              startdate: Optional[str] = None,
+              enddate: Optional[str] = None,
+              apero_mode: Optional[str] = None,
+              fiber: Optional[str] = None,
+              dprtypes: Optional[str] = None):
+        """
+        Create a link to pre-fill the request form
+
+        :param filetype: str, the filetype (FileType.name) to use
+        :param startdate: optional str, the start date DD/MM/YYYY
+        :param enddate: optional str, the end date DD/MM/YYYY
+        :param apero_mode: optional str, the apero mode to use (e.g.
+                           nirps_he_online)
+        :param fiber: optional str, the fibers to get should be one of
+                      "Science fiber", "Reference fiber", "All fibers"
+        :param dprtypes: optional str, the dprtypes
+        :return:
+        """
+        # lets create a url
+        url = PREFILLED_REQUEST_LINK
+        # get the objname
+        url += _url_addp(PREFILLED_RDICT['OBJNAMES'], self.objname)
+        # add the start date
+        if startdate is not None:
+            url += _url_addp(PREFILLED_RDICT['STARTDATE'], startdate)
+        # add the end date
+        if enddate is not None:
+            url += _url_addp(PREFILLED_RDICT['ENDDATE'], enddate)
+        # add the apero mode
+        if apero_mode is not None:
+            url += _url_addp(PREFILLED_RDICT['APERO_MODE'], apero_mode)
+        # add the fiber
+        if fiber is not None and fiber in RDICT_FIBERS:
+            url += _url_addp(PREFILLED_RDICT['FIBER'], fiber)
+        # add the dprtypes
+        if dprtypes is not None:
+            url += _url_addp(PREFILLED_RDICT['DPRTYPES'], dprtypes)
+        else:
+            dprtypes = np.char.array(SCIENCE_DPRTYPES.split(','))
+            dprtypes = list(dprtypes.strip())
+            url += _url_addp(PREFILLED_RDICT['DPRTYPES'], dprtypes)
+        # add the drsoutids using filetype
+        if filetype in self.filetypes:
+            # get the file instance class
+            fileinst = self.filetypes[filetype]
+            # add the drsoutids
+            url += _url_addp(PREFILLED_RDICT['DRSOUTID'], fileinst.kw_output)
+        # return the url
+        return url
+
+
     def get_spec_parameters(self):
         #
         ext_files = self.filetypes['ext'].get_files()
@@ -484,6 +551,18 @@ class ObjectData:
             spec_props['LAST_TCORR'] = None
             spec_props['LAST_TCORR_PROC'] = None
             spec_props['TCORR_VERSION'] = None
+
+        # -----------------------------------------------------------------
+
+        # add the links to request data
+        spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext')
+        spec_props['RLINK_EXT_S1D_V'] = self.rlink(filetype='s1d')
+        spec_props['RLINK_EXT_TELLU_OBJ'] = self.rlink(filetype='tcorr')
+        spec_props['RLINK_EXT_TELLU_TEMP_S1DV'] = self.rlink(filetype='sc1d')
+        spec_props['RLINK_DRS_POST_E'] = self.rlink(filetype='efiles')
+        spec_props['RLINK_DRS_POST_T'] = self.rlink(filetype='tfiles')
+        spec_props['RLINK_DRS_POST_V'] = self.rlink(filetype='vfiles')
+        spec_props['RLINK_DRS_POST_P'] = self.rlink(filetype='pfiles')
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
@@ -4160,6 +4239,28 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
             passed[row] = True
     # return the passed mask
     return passed
+
+
+def _url_addp(key: str, value: Union[str, List[str], None],
+              fmt: str = '&{0}={1}') -> str:
+    # deal with value being None
+    if value is None:
+        return ''
+    # deal with a str or a list
+    if isinstance(value, str):
+        values = [value]
+    else:
+        values = value
+    # storage for output string
+    outstr = ''
+    # loop around all values
+    for value in values:
+        if ' ' in value:
+            outstr += fmt.format(key, value.replace(' ', '+'))
+        else:
+            outstr += fmt.format(key, value)
+    # return outstr
+    return outstr
 
 
 class ArrowHandler(HandlerPatch):
