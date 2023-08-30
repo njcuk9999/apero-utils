@@ -25,7 +25,6 @@ import pandas as pd
 import yaml
 from astropy.table import Table
 from astropy.time import Time, TimeDelta
-from astropy import units as uu
 from astropy.io import fits
 from astropy import units as uu
 from scipy.optimize import curve_fit
