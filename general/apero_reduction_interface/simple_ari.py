@@ -1250,11 +1250,11 @@ class ObjectData:
             # add the ext rlink
             if time_series_ext_rlink is not None:
                 rargs = ['Extracted 2D files', time_series_ext_rlink]
-                ts_props[rlink_ext_col] = '`{0} <{1}>`_'.format(*rargs)
+                ts_props[rlink_ext_col].append('`{0} <{1}>`_'.format(*rargs))
             # add the corr rlink
             if time_series_tcorr_rlink is not None:
                 rargs = ['Telluric corrected 2D files', time_series_tcorr_rlink]
-                ts_props[rlink_tcorr_col] = '`{0} <{1}>`_'.format(*rargs)
+                ts_props[rlink_tcorr_col].append('`{0} <{1}>`_'.format(*rargs))
         # -----------------------------------------------------------------
         # construct the stats
         # -----------------------------------------------------------------
