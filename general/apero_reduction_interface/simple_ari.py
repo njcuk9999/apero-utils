@@ -285,19 +285,23 @@ class ObjectData:
         # get spectrum output parameters (for page integration)
         self.spec_plot_path: Optional[str] = None
         self.spec_stats_table: Optional[str] = None
+        self.spec_rlink_table: Optional[str] = None
         self.spec_dwn_table: Optional[str] = None
         # get lbl output parameters (for page integration)
         self.lbl_combinations = []
         self.lbl_plot_path = dict()
         self.lbl_stats_table = dict()
+        self.lbl_rlink_table = dict()
         self.lbl_dwn_table = dict()
         # get ccf output parameters (for page integration)
         self.ccf_plot_path: Optional[str] = None
         self.ccf_stats_table: Optional[str] = None
+        self.ccf_rlink_table: Optional[str] = None
         self.ccf_dwn_table: Optional[str] = None
         # get time series output parameters (for page integration)
         self.time_series_plot_path: Optional[str] = None
         self.time_series_stats_table: Optional[str] = None
+        self.time_series_rlink_table: Optional[str] = None
         self.time_series_dwn_table: Optional[str] = None
         # ---------------------------------------------------------------------
         # these are only added when we need them
@@ -407,12 +411,13 @@ class ObjectData:
                 # set value in header dict
                 self.header_dict[keydict][pos] = value
 
-    def rlink(self, filetype: str,
+    def rlink(self, filetype: Optional[str] = None,
               startdate: Optional[str] = None,
               enddate: Optional[str] = None,
               apero_mode: Optional[str] = None,
               fiber: Optional[str] = None,
-              dprtypes: Optional[str] = None):
+              dprtypes: Optional[str] = None,
+              drsoutid: Optional[str] = None):
         """
         Create a link to pre-fill the request form
 
@@ -455,6 +460,9 @@ class ObjectData:
             fileinst = self.filetypes[filetype]
             # add the drsoutids
             url += _url_addp(PREFILLED_RDICT['DRSOUTID'], fileinst.kw_output)
+        elif drsoutid is not None:
+            # add the drsoutids
+            url += _url_addp(PREFILLED_RDICT['DRSOUTID'], drsoutid)
         # return the url
         return url
 
@@ -551,16 +559,17 @@ class ObjectData:
             spec_props['LAST_TCORR'] = None
             spec_props['LAST_TCORR_PROC'] = None
             spec_props['TCORR_VERSION'] = None
-
         # -----------------------------------------------------------------
-
         # add the links to request data
         spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext')
         spec_props['RLINK_EXT_S1D_V'] = self.rlink(filetype='s1d')
-        spec_props['RLINK_EXT_TELLU_OBJ'] = self.rlink(filetype='tcorr')
-        spec_props['RLINK_EXT_TELLU_TEMP_S1DV'] = self.rlink(filetype='sc1d')
+        spec_props['RLINK_TELLU_OBJ'] = self.rlink(filetype='tcorr')
+        spec_props['RLINK_TELLU_S1DV'] = self.rlink(filetype='sc1d')
+        spec_props['RLINK_TELLU_TEMP'] = self.rlink(drsoutid='TELLU_TEMP')
+        spec_props['RLINK_TELLU_TEMP_S1D'] = self.rlink(drsoutid='TELLU_TEMP_S1DV')
         spec_props['RLINK_DRS_POST_E'] = self.rlink(filetype='efiles')
         spec_props['RLINK_DRS_POST_T'] = self.rlink(filetype='tfiles')
+        spec_props['RLINK_DRS_POST_S'] = self.rlink(drsoutid='DRS_POST_S')
         spec_props['RLINK_DRS_POST_V'] = self.rlink(filetype='vfiles')
         spec_props['RLINK_DRS_POST_P'] = self.rlink(filetype='pfiles')
         # -----------------------------------------------------------------
@@ -680,6 +689,34 @@ class ObjectData:
                            self.headers, 'ext', self.header_dict,
                            ext_header_file)
         # -----------------------------------------------------------------
+        # Create the request link table for this object
+        # -----------------------------------------------------------------
+        # get the rlink base name
+        rlink_base_name = 'spec_rlink_' + self.objname + '.txt'
+        # get the rlink table path
+        rlink_item_path = os.path.join(item_save_path, rlink_base_name)
+        # define the keys in spec_props that contain rlinks to add
+        rlinks = ['RLINK_EXT_E2DSFF', 'RLINK_EXT_S1D_V',
+                  'RLINK_TELLU_OBJ', 'RLINK_TELLU_S1DV',
+                  'RLINK_TELLU_TEMP', 'RLINK_TELLU_TEMP_S1D',
+                  'RLINK_DRS_POST_E', 'RLINK_DRS_POST_T',
+                  'RLINK_DRS_POST_S', 'RLINK_DRS_POST_V',
+                  'RLINK_DRS_POST_P']
+        # define the rlink descriptions
+        rlink_text = ['Extracted 2D spectra', 'Extracted 1D spectra',
+                      'Telluric corrected 2D spectra',
+                      'Telluric corrected 1D spectra',
+                      '2D Template (after telluric correction)',
+                      '1D Template (after telluric correction)',
+                      'Packaged extraction files (e.fits)',
+                      'Packaged telluric corrected files (t.fits)',
+                      'Packaged s1d extract+tcorr (s.fits)',
+                      'Packaged velocity files (v.fits)',
+                      'Packaged polarimetry files (p.fits)']
+        # compute the rlink table
+        create_request_link_table(spec_props, rlink_item_path, rlinks,
+                                  rlink_text)
+        # -----------------------------------------------------------------
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ext files (2D)
@@ -704,7 +741,7 @@ class ObjectData:
         # get the download base name
         dwn_base_name = 'spec_download_' + self.objname + '.txt'
         # get the download table path
-        item_path = os.path.join(item_save_path, dwn_base_name)
+        dwn_item_path = os.path.join(item_save_path, dwn_base_name)
         # define the download files
         down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file,
                       ext_header_file]
@@ -714,12 +751,13 @@ class ObjectData:
                       'Telluric corrected 1D spectra',
                       'Extracted 2D header file']
         # compute the download table
-        download_table(down_files, down_descs, item_path, down_rel_path,
+        download_table(down_files, down_descs, dwn_item_path, down_rel_path,
                        down_save_path, title='Spectrum Downloads')
         # -----------------------------------------------------------------
         # update the paths
         self.spec_plot_path = item_rel_path + plot_base_name
         self.spec_stats_table = item_rel_path + stat_base_name
+        self.spec_rlink_table = item_rel_path + rlink_base_name
         self.spec_dwn_table = item_rel_path + dwn_base_name
 
     def get_lbl_parameters(self):
@@ -807,6 +845,12 @@ class ObjectData:
                     if lbl_version_hdrkey in lbl_hdr:
                         lbl_props['version'] = lbl_hdr[lbl_version_hdrkey]
             # -----------------------------------------------------------------
+            # add the links to request data
+            lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits')
+            for filetype in LBL_FILETYPES:
+                lbl_props[f'RLINK_{filetype}'] = self.rlink(filetype=filetype)
+                        
+            # -----------------------------------------------------------------
             # plot the figure
             # -----------------------------------------------------------------
             # get the plot base name
@@ -825,6 +869,25 @@ class ObjectData:
             stat_path = os.path.join(item_save_path, stat_base_name)
             # compute the stats
             lbl_stats_table(lbl_props, stat_path, title='LBL stats')
+            # -----------------------------------------------------------------
+            # Create the request link table for this object
+            # -----------------------------------------------------------------
+            # get the rlink base name
+            rlink_base_name = 'lbl_rlink_' + self.objname + '.txt'
+            # get the rlink table path
+            rlink_item_path = os.path.join(item_save_path, rlink_base_name)
+            # define the keys in spec_props that contain rlinks to add
+            rlinks = ['RLINK_LBL_FITS']
+            for filetype in LBL_FILETYPES:
+                rlinks += [f'RLINK_{filetype}']
+
+            # define the rlink descriptions
+            rlink_text = ['LBL fits files (from compute)']
+            for filetype in LBL_FILETYPES:
+                rlink_text += [f'{filetype} files (from compute)']
+            # compute the rlink table
+            create_request_link_table(lbl_props, rlink_item_path, rlinks,
+                                      rlink_text)
             # -----------------------------------------------------------------
             # construct the download table
             # -----------------------------------------------------------------
@@ -869,6 +932,7 @@ class ObjectData:
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
             self.lbl_stats_table[lbl_objtmp] = item_rel_path + stat_base_name
+            self.lbl_rlink_table[lbl_objtmp] = item_rel_path + rlink_base_name
             self.lbl_dwn_table[lbl_objtmp] = item_rel_path + dwn_base_name
         # ---------------------------------------------------------------------
         # set the lbl combinations
@@ -911,6 +975,9 @@ class ObjectData:
         # -----------------------------------------------------------------
         # ccf version
         ccf_props['CCF_VERSION'] = ','.join(list(np.unique(hdict['CCF_VERSION'])))
+        # -----------------------------------------------------------------
+        # add the links to request data
+        ccf_props['RLINK_CCF'] = self.rlink(filetype='ccf')
         # -----------------------------------------------------------------
         # select ccf files to use
         ccf_props = choose_ccf_files(ccf_props)
@@ -972,6 +1039,20 @@ class ObjectData:
         # compute the stats
         ccf_stats_table(ccf_props, stat_path, title='CCF stats')
         # -----------------------------------------------------------------
+        # Create the request link table for this object
+        # -----------------------------------------------------------------
+        # get the rlink base name
+        rlink_base_name = 'ccf_rlink_' + self.objname + '.txt'
+        # get the rlink table path
+        rlink_item_path = os.path.join(item_save_path, rlink_base_name)
+        # define the keys in spec_props that contain rlinks to add
+        rlinks = ['RLINK_CCF']
+        # define the rlink descriptions
+        rlink_text = ['CCF files']
+        # compute the rlink table
+        create_request_link_table(ccf_props, rlink_item_path, rlinks,
+                                  rlink_text)
+        # -----------------------------------------------------------------
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ccf files
@@ -996,6 +1077,7 @@ class ObjectData:
         # update the paths
         self.ccf_plot_path = item_rel_path + plot_base_name
         self.ccf_stats_table = item_rel_path + stat_base_name
+        self.ccf_rlink_table = item_rel_path + rlink_base_name
         self.ccf_dwn_table = item_rel_path + dwn_base_name
 
     def get_time_series_parameters(self):
@@ -1014,7 +1096,7 @@ class ObjectData:
         down_rel_path = f'../{_DOWN_DIR}/'
         # -----------------------------------------------------------------
         # storage for ccf values
-        time_series_props = dict()
+        ts_props = dict()
         # get labels
         snr_y_label = self.headers['ext']['EXT_Y']['label']
         snr_y_label = snr_y_label.replace(r'$\mu$', 'u')
@@ -1022,21 +1104,25 @@ class ObjectData:
         snr_h_label = snr_h_label.replace(r'$\mu$', 'u')
         ext_col = 'ext_files'
         tcorr_col = 'tcorr_files'
+        rlink_ext_col = 'Request ext files'
+        rlink_tcorr_col = 'Request tcorr files'
         # ---------------------------------------------------------------------
         # construct the stats table
         # ---------------------------------------------------------------------
         # columns
-        time_series_props['columns'] = TIME_SERIES_COLS[0:9]
-        time_series_props['columns'] += [snr_y_label, snr_h_label]
-        time_series_props['columns'] += [TIME_SERIES_COLS[9]]
-        time_series_props['columns'] += [ext_col, tcorr_col]
+        ts_props['columns'] = TIME_SERIES_COLS[0:9]
+        ts_props['columns'] += [snr_y_label, snr_h_label]
+        ts_props['columns'] += [TIME_SERIES_COLS[9]]
+        ts_props['columns'] += [ext_col, tcorr_col]
         # get values for use in time series table
         for time_series_col in TIME_SERIES_COLS:
-            time_series_props[time_series_col] = []
-        time_series_props[snr_y_label] = []
-        time_series_props[snr_h_label] = []
-        time_series_props[ext_col] = []
-        time_series_props[tcorr_col] = []
+            ts_props[time_series_col] = []
+        ts_props[snr_y_label] = []
+        ts_props[snr_h_label] = []
+        ts_props[ext_col] = []
+        ts_props[tcorr_col] = []
+        ts_props[rlink_ext_col] = []
+        ts_props[rlink_tcorr_col] = []
         # get values from self.header_dict
         mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
         seeing_vec = np.array(self.header_dict['EXT_SEEING'])
@@ -1105,20 +1191,39 @@ class ObjectData:
             tcorr_value = f'{len(tcorr_files)} {tcorr_download}'
             # -----------------------------------------------------------------
             # append to the time series properties
-            time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
-            time_series_props[TIME_SERIES_COLS[1]].append(first_mjd)
-            time_series_props[TIME_SERIES_COLS[2]].append(last_mjd)
-            time_series_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
-            time_series_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
-            time_series_props[TIME_SERIES_COLS[5]].append(seeing)
-            time_series_props[TIME_SERIES_COLS[6]].append(airmass)
-            time_series_props[TIME_SERIES_COLS[7]].append(exptime)
-            time_series_props[TIME_SERIES_COLS[8]].append(texptime)
-            time_series_props[snr_y_label].append(snry)
-            time_series_props[snr_h_label].append(snyh)
-            time_series_props[TIME_SERIES_COLS[9]].append(dprtype)
-            time_series_props[ext_col].append(ext_value)
-            time_series_props[tcorr_col].append(tcorr_value)
+            ts_props[TIME_SERIES_COLS[0]].append(obs_dir)
+            ts_props[TIME_SERIES_COLS[1]].append(first_mjd)
+            ts_props[TIME_SERIES_COLS[2]].append(last_mjd)
+            ts_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
+            ts_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
+            ts_props[TIME_SERIES_COLS[5]].append(seeing)
+            ts_props[TIME_SERIES_COLS[6]].append(airmass)
+            ts_props[TIME_SERIES_COLS[7]].append(exptime)
+            ts_props[TIME_SERIES_COLS[8]].append(texptime)
+            ts_props[snr_y_label].append(snry)
+            ts_props[snr_h_label].append(snyh)
+            ts_props[TIME_SERIES_COLS[9]].append(dprtype)
+            ts_props[ext_col].append(ext_value)
+            ts_props[tcorr_col].append(tcorr_value)
+            # -----------------------------------------------------------------
+            # add the links to request data
+            time_series_ext_rlink = self.rlink(filetype='ext',
+                                               startdate=first_mjd,
+                                               enddate=last_mjd)
+            time_series_tcorr_rlink = self.rlink(filetype='tcorr',
+                                                  startdate=first_mjd,
+                                                  enddate=last_mjd)
+            # -----------------------------------------------------------------
+            # Create the request link table for this object
+            # -----------------------------------------------------------------
+            # add the ext rlink
+            if time_series_ext_rlink is not None:
+                rargs = ['Extracted 2D files', time_series_ext_rlink]
+                ts_props[rlink_ext_col] = '`{0} <{1}>`_'.format(*rargs)
+            # add the corr rlink
+            if time_series_tcorr_rlink is not None:
+                rargs = ['Telluric corrected 2D files', time_series_tcorr_rlink]
+                ts_props[rlink_tcorr_col] = '`{0} <{1}>`_'.format(*rargs)
         # -----------------------------------------------------------------
         # construct the stats
         # -----------------------------------------------------------------
@@ -1127,7 +1232,7 @@ class ObjectData:
         # get the stat path
         stat_path = os.path.join(item_save_path, time_series_base_name)
         # compute the stats
-        time_series_stats_table(time_series_props, stat_path)
+        time_series_stats_table(ts_props, stat_path)
         # -----------------------------------------------------------------
         # update the paths
         self.time_series_plot_path = None
@@ -3098,6 +3203,30 @@ def download_table(files: List[str], descriptions: List[str],
     down_table = Table(down_dict2)
     # write to file as csv file
     down_table.write(item_path, format='ascii.csv', overwrite=True)
+
+
+def create_request_link_table(props: Dict[str, Any], save_path: str,
+                              rlinks: List[str], rlinkstxt: List[str]):
+    # rlinks
+    rlink_dict = dict()
+    rlink_dict['Request'] = []
+    # loop around rlinks
+    for r_it, rlink in enumerate(rlinks):
+        if rlink not in props:
+            continue
+        if props[rlink] is None:
+            continue
+        # get the rlink text
+        rlinktxt = rlinkstxt[r_it]
+        # construct the request link in markdown format
+        rlinkstr = '`{0} <{1}>`_'.format(rlinktxt, props[rlink])
+        # push into dictionary
+        rlink_dict['Request'].append(rlinkstr)
+    # --------------------------------------------------------------------------
+    # convert to table
+    rdict_table = Table(rlink_dict)
+    # write to file as csv file
+    rdict_table.write(save_path, format='ascii.csv', overwrite=True)
 
 
 def create_file_list(files: List[str], path: str):
