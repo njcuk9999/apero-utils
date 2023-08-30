@@ -565,7 +565,7 @@ class ObjectData:
         # -----------------------------------------------------------------
         # standard request keyword args
         rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
-                       apero_mode=self.profile['profile name'])
+                       apero_mode=self.settings['CPN'])
         # add the links to request data
         spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext', **rkwargs)
         spec_props['RLINK_EXT_S1D_V'] = self.rlink(filetype='s1d', **rkwargs)
@@ -855,7 +855,7 @@ class ObjectData:
             # -----------------------------------------------------------------
             # standard request keyword args
             rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
-                           apero_mode=self.profile['profile name'])
+                           apero_mode=self.settings['CPN'])
             # add the links to request data
             lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits',
                                                      **rkwargs)
@@ -991,7 +991,7 @@ class ObjectData:
         # -----------------------------------------------------------------
         # standard request keyword args
         rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
-                       apero_mode=self.profile['profile name'])
+                       apero_mode=self.settings['CPN'])
         # add the links to request data
         ccf_props['RLINK_CCF'] = self.rlink(filetype='ccf', **rkwargs)
         # -----------------------------------------------------------------
