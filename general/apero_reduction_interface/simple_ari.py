@@ -899,9 +899,9 @@ class ObjectData:
                 rlinks += [f'RLINK_{filetype}']
 
             # define the rlink descriptions
-            rlink_text = ['LBL fits files (from compute)']
+            rlink_text = ['LBL fits files']
             for filetype in LBL_FILETYPES:
-                rlink_text += [f'{filetype} files (from compute)']
+                rlink_text += [f'{filetype} files']
             # compute the rlink table
             create_request_link_table(lbl_props, rlink_item_path, rlinks,
                                       rlink_text)
