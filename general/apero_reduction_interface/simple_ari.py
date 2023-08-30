@@ -1620,9 +1620,6 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                         'edit?usp=sharing>`_, the name displayed in ARI will '
                         'be the first column [OBJNAME]')
     index_page.add_newline()
-    index_page.add_text('If you believe you should have the username/password '
-                        'please contact neil.james.cook@gmail.com')
-    index_page.add_newline()
     index_page.add_text('If you have any issues please report using '
                         '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
                         'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_`.')
