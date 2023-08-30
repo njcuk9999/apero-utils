@@ -574,11 +574,12 @@ class ObjectData:
         spec_props['RLINK_TELLU_S1DV'] = self.rlink(filetype='sc1d', **rkwargs)
         spec_props['RLINK_TELLU_TEMP'] = self.rlink(drsoutid='TELLU_TEMP',
                                                     **rkwargs)
-        spec_props['RLINK_TELLU_TEMP_S1D'] = self.rlink(drsoutid='TELLU_TEMP_S1DV'
-                                                        , **rkwargs)
+        spec_props['RLINK_TELLU_TEMP_S1D'] = self.rlink(drsoutid='TELLU_TEMP_S1DV',
+                                                        **rkwargs)
         spec_props['RLINK_DRS_POST_E'] = self.rlink(filetype='efiles', **rkwargs)
         spec_props['RLINK_DRS_POST_T'] = self.rlink(filetype='tfiles', **rkwargs)
-        spec_props['RLINK_DRS_POST_S'] = self.rlink(drsoutid='DRS_POST_S', **rkwargs)
+        spec_props['RLINK_DRS_POST_S'] = self.rlink(drsoutid='DRS_POST_S',
+                                                    **rkwargs)
         spec_props['RLINK_DRS_POST_V'] = self.rlink(filetype='vfiles', **rkwargs)
         spec_props['RLINK_DRS_POST_P'] = self.rlink(filetype='pfiles', **rkwargs)
         # -----------------------------------------------------------------
@@ -826,6 +827,7 @@ class ObjectData:
                 # must set these to None if no LBL files
                 self.lbl_plot_path[lbl_objtmp] = None
                 self.lbl_stats_table[lbl_objtmp] = None
+                self.lbl_rlink_table[lbl_objtmp] = None
                 self.lbl_dwn_table[lbl_objtmp] = None
                 continue
             # get the plot file for this objname+template
