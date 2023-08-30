@@ -24,7 +24,8 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy.table import Table
-from astropy.time import Time
+from astropy.time import Time, TimeDelta
+from astropy import units as uu
 from astropy.io import fits
 from astropy import units as uu
 from scipy.optimize import curve_fit
@@ -1237,6 +1238,10 @@ class ObjectData:
             # get the date YYYY-MM-DD format
             rlink_start = first_time.strftime('%Y-%m-%d')
             rlink_end = last_time.strftime('%Y-%m-%d')
+            # deal with rlink_start and end being the same
+            if rlink_end == rlink_start:
+                tdelta = TimeDelta(1 * uu.day)
+                rlink_end = (last_time + tdelta).strftime('%Y-%m-%d')
             # add the links to request data
             time_series_ext_rlink = self.rlink(filetype='ext',
                                                startdate=rlink_start,
