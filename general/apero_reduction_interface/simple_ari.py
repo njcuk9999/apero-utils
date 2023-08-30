@@ -563,18 +563,23 @@ class ObjectData:
             spec_props['LAST_TCORR_PROC'] = None
             spec_props['TCORR_VERSION'] = None
         # -----------------------------------------------------------------
+        # standard request keyword args
+        rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
+                       apero_mode=self.profile['profile name'])
         # add the links to request data
-        spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext')
-        spec_props['RLINK_EXT_S1D_V'] = self.rlink(filetype='s1d')
-        spec_props['RLINK_TELLU_OBJ'] = self.rlink(filetype='tcorr')
-        spec_props['RLINK_TELLU_S1DV'] = self.rlink(filetype='sc1d')
-        spec_props['RLINK_TELLU_TEMP'] = self.rlink(drsoutid='TELLU_TEMP')
-        spec_props['RLINK_TELLU_TEMP_S1D'] = self.rlink(drsoutid='TELLU_TEMP_S1DV')
-        spec_props['RLINK_DRS_POST_E'] = self.rlink(filetype='efiles')
-        spec_props['RLINK_DRS_POST_T'] = self.rlink(filetype='tfiles')
-        spec_props['RLINK_DRS_POST_S'] = self.rlink(drsoutid='DRS_POST_S')
-        spec_props['RLINK_DRS_POST_V'] = self.rlink(filetype='vfiles')
-        spec_props['RLINK_DRS_POST_P'] = self.rlink(filetype='pfiles')
+        spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext', **rkwargs)
+        spec_props['RLINK_EXT_S1D_V'] = self.rlink(filetype='s1d', **rkwargs)
+        spec_props['RLINK_TELLU_OBJ'] = self.rlink(filetype='tcorr', **rkwargs)
+        spec_props['RLINK_TELLU_S1DV'] = self.rlink(filetype='sc1d', **rkwargs)
+        spec_props['RLINK_TELLU_TEMP'] = self.rlink(drsoutid='TELLU_TEMP',
+                                                    **rkwargs)
+        spec_props['RLINK_TELLU_TEMP_S1D'] = self.rlink(drsoutid='TELLU_TEMP_S1DV'
+                                                        , **rkwargs)
+        spec_props['RLINK_DRS_POST_E'] = self.rlink(filetype='efiles', **rkwargs)
+        spec_props['RLINK_DRS_POST_T'] = self.rlink(filetype='tfiles', **rkwargs)
+        spec_props['RLINK_DRS_POST_S'] = self.rlink(drsoutid='DRS_POST_S', **rkwargs)
+        spec_props['RLINK_DRS_POST_V'] = self.rlink(filetype='vfiles', **rkwargs)
+        spec_props['RLINK_DRS_POST_P'] = self.rlink(filetype='pfiles', **rkwargs)
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
@@ -848,10 +853,15 @@ class ObjectData:
                     if lbl_version_hdrkey in lbl_hdr:
                         lbl_props['version'] = lbl_hdr[lbl_version_hdrkey]
             # -----------------------------------------------------------------
+            # standard request keyword args
+            rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
+                           apero_mode=self.profile['profile name'])
             # add the links to request data
-            lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits')
+            lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits',
+                                                     **rkwargs)
             for filetype in LBL_FILETYPES:
-                lbl_props[f'RLINK_{filetype}'] = self.rlink(filetype=filetype)
+                lbl_props[f'RLINK_{filetype}'] = self.rlink(filetype=filetype,
+                                                            **rkwargs)
 
             # -----------------------------------------------------------------
             # plot the figure
@@ -979,8 +989,11 @@ class ObjectData:
         # ccf version
         ccf_props['CCF_VERSION'] = ','.join(list(np.unique(hdict['CCF_VERSION'])))
         # -----------------------------------------------------------------
+        # standard request keyword args
+        rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
+                       apero_mode=self.profile['profile name'])
         # add the links to request data
-        ccf_props['RLINK_CCF'] = self.rlink(filetype='ccf')
+        ccf_props['RLINK_CCF'] = self.rlink(filetype='ccf', **rkwargs)
         # -----------------------------------------------------------------
         # select ccf files to use
         ccf_props = choose_ccf_files(ccf_props)
