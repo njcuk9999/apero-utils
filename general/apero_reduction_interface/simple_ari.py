@@ -134,7 +134,9 @@ HTML_COL_TYPES = dict()
 HTML_COL_TYPES['OBJECT_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['OBJECT_TABLE'])
 HTML_COL_TYPES['RECIPE_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['RECIPE_TABLE'])
 # define the prefilled request link
-PREFILLED_REQUEST_LINK = 'https://docs.google.com/forms/d/e/1FAIpQLSev3v7EnHq2KyQyVWlDikA8-tDzMINYZA0SkYz93vAanpIdhA/viewform?usp=pp_url'
+PREFILLED_REQUEST_LINK = ('https://docs.google.com/forms/d/e/1FAIpQLSev3v7EnHq'
+                          '2KyQyVWlDikA8-tDzMINYZA0SkYz93vAanpIdhA/'
+                          'viewform?usp=pp_url')
 # each entry has an id - we define these in a dictionary
 PREFILLED_RDICT = dict()
 PREFILLED_RDICT['OBJNAMES'] = 'entry.193319269'
@@ -429,6 +431,8 @@ class ObjectData:
         :param fiber: optional str, the fibers to get should be one of
                       "Science fiber", "Reference fiber", "All fibers"
         :param dprtypes: optional str, the dprtypes
+        :param drsoutid: optional str, the drsoutid (not used if filetype is
+                         defined)
         :return:
         """
         # lets create a url
@@ -465,7 +469,6 @@ class ObjectData:
             url += _url_addp(PREFILLED_RDICT['DRSOUTID'], drsoutid)
         # return the url
         return url
-
 
     def get_spec_parameters(self):
         #
@@ -849,7 +852,7 @@ class ObjectData:
             lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits')
             for filetype in LBL_FILETYPES:
                 lbl_props[f'RLINK_{filetype}'] = self.rlink(filetype=filetype)
-                        
+
             # -----------------------------------------------------------------
             # plot the figure
             # -----------------------------------------------------------------
@@ -1211,8 +1214,8 @@ class ObjectData:
                                                startdate=first_mjd,
                                                enddate=last_mjd)
             time_series_tcorr_rlink = self.rlink(filetype='tcorr',
-                                                  startdate=first_mjd,
-                                                  enddate=last_mjd)
+                                                 startdate=first_mjd,
+                                                 enddate=last_mjd)
             # -----------------------------------------------------------------
             # Create the request link table for this object
             # -----------------------------------------------------------------
@@ -1262,7 +1265,6 @@ def get_args():
     args = parser.parse_args()
     # return arguments
     return args
-
 
 
 def get_settings(settings: Dict[str, Any],
@@ -1359,11 +1361,11 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # get paths to tables
     object_table_file = os.path.join(settings['DATA'], 'OBJECT_TABLE.fits')
     recipe_table_file = os.path.join(settings['DATA'], 'RECIPE_TABLE.fits')
-    message_table_file = os.path.join(settings['DATA'], 'MESSAGE_TABLE.fits')
+    # message_table_file = os.path.join(settings['DATA'], 'MESSAGE_TABLE.fits')
     # get skip criteria
     skip_obj_table = profile['skip obj table']
     skip_recipe_table = profile['skip recipe table']
-    skip_msg_table = profile['skip msg table']
+    # skip_msg_table = profile['skip msg table']
     # ------------------------------------------------------------------
     # deal with skipping object table
     if skip_obj_table and os.path.exists(object_table_file):
@@ -1709,7 +1711,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                     add_recipe_tables(settings, table, table_name)
                     # create a URL to link the pages
                     table_url_file = table_filename.replace('.csv', '.html')
-                    table_url_file= table_url_file.lower()
+                    table_url_file = table_url_file.lower()
                     # add link to a set of links
                     table_urls[title] = f'../tables/{table_url_file}'
             else:
@@ -1953,11 +1955,11 @@ def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
         wfile.write(html_content)
 
 
-
 def compile_docs(gsettings: dict, settings: dict):
     """
     Compile the documentation
 
+    :param gsettings: dict, the global settings
     :param settings: dict, the settings for the documentation
     :return:
     """
@@ -2072,7 +2074,7 @@ def sync_docs(gsettings: dict, settings: dict):
     rdict['USER'] = gsettings['ssh']['user']
     rdict['HOST'] = gsettings['ssh']['host']
     rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                    f'ari/{instrument}/')
+                                   f'ari/{instrument}/')
     rdict['OUTPATH'] = out_dir
     # print command to rsync
     wlog(params, '', RSYNC_CMD_IN.format(**rdict))
@@ -2085,7 +2087,7 @@ def sync_docs(gsettings: dict, settings: dict):
     rdict['USER'] = gsettings['ssh']['user']
     rdict['HOST'] = gsettings['ssh']['host']
     rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                    f'ari/profile/')
+                                   f'ari/profile/')
     rdict['OUTPATH'] = settings['WORKING'] + os.sep
     # print command to rsync
     wlog(params, '', RSYNC_CMD_IN.format(**rdict))
@@ -2093,7 +2095,7 @@ def sync_docs(gsettings: dict, settings: dict):
     os.system(RSYNC_CMD_IN.format(**rdict))
 
 
-def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
+def upload_docs(gsettings: dict, settings: dict):
     """
     Upload the documentation to the web server
 
@@ -2330,9 +2332,6 @@ def compile_apero_recipe_table() -> Table:
 
     # ------------------------------------------------------------------
     return out_log_table
-
-
-
 
 
 def compile_apero_message_table() -> Table:
@@ -2896,6 +2895,12 @@ def objpage_spectrum(page: Any, name: str, ref: str,
         page.add_csv_table('', object_instance.spec_stats_table,
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
+    # add request table
+    if object_instance.spec_rlink_table is not None:
+        # add the stats table
+        page.add_csv_table('', object_instance.spec_rlink_table,
+                           cssclass='csvtable2')
+    # ------------------------------------------------------------------
     # add download links
     if object_instance.spec_dwn_table is not None:
         # add the stats table
@@ -2943,6 +2948,12 @@ def objpage_lbl(page: Any, name: str, ref: str,
             page.add_csv_table('', object_instance.lbl_stats_table[objcomb],
                                cssclass='csvtable2')
         # ------------------------------------------------------------------
+        # add request table
+        if object_instance.lbl_rlink_table[objcomb] is not None:
+            # add the stats table
+            page.add_csv_table('', object_instance.lbl_rlink_table[objcomb],
+                               cssclass='csvtable2')
+        # ------------------------------------------------------------------
         # add download links
         if object_instance.lbl_dwn_table is not None:
             # add the stats table
@@ -2983,6 +2994,12 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     if object_instance.ccf_stats_table is not None:
         # add the stats table
         page.add_csv_table('', object_instance.ccf_stats_table,
+                           cssclass='csvtable2')
+    # ------------------------------------------------------------------
+    # add request table
+    if object_instance.ccf_rlink_table is not None:
+        # add the stats table
+        page.add_csv_table('', object_instance.ccf_rlink_table,
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
@@ -4111,6 +4128,7 @@ def load_table(filename, **kwargs):
         eargs = [filename, type(e), str(e)]
         raise ValueError(emsg.format(*eargs))
 
+
 def save_stats(settings: dict, stats: dict):
     """
     Save the stats for a given profile
@@ -4413,10 +4431,10 @@ class ArrowHandler(HandlerPatch):
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # get the args
-    args = get_args()
-    profile_filename = args.profile
+    _args = get_args()
+    profile_filename = _args.profile
     # deal with debug
-    if args.debug:
+    if _args.debug:
         debug = True
     else:
         debug = False
@@ -4429,19 +4447,19 @@ if __name__ == "__main__":
     del apero_profiles['headers']
     # -------------------------------------------------------------------------
     # deal with reprocessing
-    reprocess = dict()
+    _reprocess = dict()
     # list current profiles
     current_profiles = list(apero_profiles.keys())
     # if filter in this list we remove all other profiles
-    if args.filter not in [None, 'None'] and args.filter in current_profiles:
-        for profile in current_profiles:
-            if profile == args.filter:
-                reprocess[profile] = True
+    if _args.filter not in [None, 'None'] and _args.filter in current_profiles:
+        for _profile in current_profiles:
+            if _profile == _args.filter:
+                _reprocess[_profile] = True
             else:
-                reprocess[profile] = False
+                _reprocess[_profile] = False
     else:
-        for profile in current_profiles:
-            reprocess[profile] = True
+        for _profile in current_profiles:
+            _reprocess[_profile] = True
     # -------------------------------------------------------------------------
     # deal with a reset
     if ari_gsettings['reset']:
@@ -4461,9 +4479,9 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # look for profiles not in apero_profiles that we have to add
     #  (i.e. they are on the server)
-    apero_profiles, reprocess = get_profiles_from_store(ari_settings,
-                                                        apero_profiles,
-                                                        reprocess)
+    apero_profiles, _reprocess = get_profiles_from_store(ari_settings,
+                                                         apero_profiles,
+                                                         _reprocess)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
@@ -4475,7 +4493,7 @@ if __name__ == "__main__":
         # add profile name to settings
         apero_profiles[_apero_profname]['profile name'] = _apero_profname
         # we reprocess if the file does not exist or if REPROCESS is True
-        if reprocess[_apero_profname]:
+        if _reprocess[_apero_profname]:
             # print progress
             print('=' * 50)
             print('Compiling stats for profile: {0}'.format(_apero_profname))
@@ -4528,8 +4546,6 @@ if __name__ == "__main__":
     print('=' * 50)
     print('Uploading docs...')
     print('=' * 50)
-    upload_docs(ari_gsettings, ari_settings, apero_profiles)
-
-
+    upload_docs(ari_gsettings, ari_settings)
 
 # =============================================================================
