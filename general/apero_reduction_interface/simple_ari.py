@@ -1552,7 +1552,7 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
     obj_index_page.add_newline()
     obj_index_page.add_text('If you have any issues please report using '
                             '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_')
+                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_`.')
     obj_index_page.add_newline()
     # -------------------------------------------------------------------------
     # loop around objects and create a section for each
@@ -1624,8 +1624,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                         'please contact neil.james.cook@gmail.com')
     index_page.add_newline()
     index_page.add_text('If you have any issues please report using '
-                        '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                        'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                        '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                        'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_`.')
     index_page.add_newline()
     index_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
     index_page.add_newline()
@@ -1675,8 +1675,8 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                               'be the first column [OBJNAME]')
         profile_page.add_newline()
         profile_page.add_text('If you have any issues please report using '
-                              '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                              'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                              '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                              'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_`')
         profile_page.add_newline()
         profile_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
         profile_page.add_newline()
@@ -1713,7 +1713,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             table_page.add_newline()
             table_page.add_text('If you have any issues please report using '
                                 '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_')
+                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_`')
             table_page.add_newline()
             table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
             table_page.add_newline()
