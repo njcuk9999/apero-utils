@@ -149,7 +149,7 @@ PREFILLED_RDICT['DRSOUTID'] = 'entry.459458944'
 # define the request form fiber types
 RDICT_FIBERS = ['Science fiber', 'Reference fiber', 'All fibers']
 # define science dprtypes
-SCIENCE_DPRTYPES = 'OBJ_FP, OBJ_SKY, OBJ_DARK, POLAR_FP, POLAR_DARK'
+SCIENCE_DPRTYPES = ['OBJ_FP', 'OBJ_SKY', 'OBJ_DARK', 'POLAR_FP', 'POLAR_DARK']
 
 
 # =============================================================================
@@ -455,7 +455,7 @@ class ObjectData:
         if dprtypes is not None:
             url += _url_addp(PREFILLED_RDICT['DPRTYPES'], dprtypes)
         else:
-            dprtypes = np.char.array(SCIENCE_DPRTYPES.split(','))
+            dprtypes = np.char.array(SCIENCE_DPRTYPES)
             dprtypes = list(dprtypes.strip())
             url += _url_addp(PREFILLED_RDICT['DPRTYPES'], dprtypes)
         # add the drsoutids using filetype
@@ -565,7 +565,7 @@ class ObjectData:
         # -----------------------------------------------------------------
         # standard request keyword args
         rkwargs = dict(fiber='Science fiber',
-                       dprtypes=SCIENCE_DPRTYPES.split(','),
+                       dprtypes=SCIENCE_DPRTYPES,
                        apero_mode=self.settings['CPN'])
         # add the links to request data
         spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext', **rkwargs)
@@ -858,7 +858,7 @@ class ObjectData:
             # -----------------------------------------------------------------
             # standard request keyword args
             rkwargs = dict(fiber='Science fiber',
-                           dprtypes=SCIENCE_DPRTYPES.split(','),
+                           dprtypes=SCIENCE_DPRTYPES,
                            apero_mode=self.settings['CPN'])
             # add the links to request data
             lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits',
@@ -995,7 +995,7 @@ class ObjectData:
         # -----------------------------------------------------------------
         # standard request keyword args
         rkwargs = dict(fiber='Science fiber',
-                       dprtypes=SCIENCE_DPRTYPES.split(','),
+                       dprtypes=SCIENCE_DPRTYPES,
                        apero_mode=self.settings['CPN'])
         # add the links to request data
         ccf_props['RLINK_CCF'] = self.rlink(filetype='ccf', **rkwargs)
@@ -1164,8 +1164,10 @@ class ObjectData:
             obs_mask_ext = obs_dirs_ext == obs_dir
             obs_mask_tcorr = obs_dirs_tcorr == obs_dir
             # get the first and last mjd for this observation directory
-            first_mjd = Time(np.min(mjd_vec[obs_mask_ext])).iso
-            last_mjd = Time(np.max(mjd_vec[obs_mask_ext])).iso
+            first_time = Time(np.min(mjd_vec[obs_mask_ext]))
+            last_time = Time(np.max(mjd_vec[obs_mask_ext]))
+            first_iso = first_time.iso
+            last_iso = last_time.iso
             # get the number of observations for this observation
             num_obs_ext = str(np.sum(obs_mask_ext))
             num_obs_tcorr = str(np.sum(obs_mask_tcorr))
@@ -1214,8 +1216,8 @@ class ObjectData:
             # -----------------------------------------------------------------
             # append to the time series properties
             ts_props[TIME_SERIES_COLS[0]].append(obs_dir)
-            ts_props[TIME_SERIES_COLS[1]].append(first_mjd)
-            ts_props[TIME_SERIES_COLS[2]].append(last_mjd)
+            ts_props[TIME_SERIES_COLS[1]].append(first_iso)
+            ts_props[TIME_SERIES_COLS[2]].append(last_iso)
             ts_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
             ts_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
             ts_props[TIME_SERIES_COLS[5]].append(seeing)
@@ -1230,11 +1232,11 @@ class ObjectData:
             # -----------------------------------------------------------------
             # standard request keyword args
             rkwargs = dict(fiber='Science fiber',
-                           dprtypes=SCIENCE_DPRTYPES.split(','),
+                           dprtypes=SCIENCE_DPRTYPES,
                            apero_mode=self.settings['CPN'])
             # get the date YYYY-MM-DD format
-            rlink_start = Time(first_mjd).strftime('%Y-%m-%d')
-            rlink_end = Time(last_mjd).strftime('%Y-%m-%d')
+            rlink_start = first_time.strftime('%Y-%m-%d')
+            rlink_end = last_time.strftime('%Y-%m-%d')
             # add the links to request data
             time_series_ext_rlink = self.rlink(filetype='ext',
                                                startdate=rlink_start,
