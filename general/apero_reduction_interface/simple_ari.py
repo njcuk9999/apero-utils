@@ -564,7 +564,8 @@ class ObjectData:
             spec_props['TCORR_VERSION'] = None
         # -----------------------------------------------------------------
         # standard request keyword args
-        rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
+        rkwargs = dict(fiber='Science fiber',
+                       dprtypes=SCIENCE_DPRTYPES.split(','),
                        apero_mode=self.settings['CPN'])
         # add the links to request data
         spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext', **rkwargs)
@@ -854,7 +855,8 @@ class ObjectData:
                         lbl_props['version'] = lbl_hdr[lbl_version_hdrkey]
             # -----------------------------------------------------------------
             # standard request keyword args
-            rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
+            rkwargs = dict(fiber='Science fiber',
+                           dprtypes=SCIENCE_DPRTYPES.split(','),
                            apero_mode=self.settings['CPN'])
             # add the links to request data
             lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits',
@@ -990,7 +992,8 @@ class ObjectData:
         ccf_props['CCF_VERSION'] = ','.join(list(np.unique(hdict['CCF_VERSION'])))
         # -----------------------------------------------------------------
         # standard request keyword args
-        rkwargs = dict(fiber='Science fiber', dprtypes=SCIENCE_DPRTYPES,
+        rkwargs = dict(fiber='Science fiber',
+                       dprtypes=SCIENCE_DPRTYPES.split(','),
                        apero_mode=self.settings['CPN'])
         # add the links to request data
         ccf_props['RLINK_CCF'] = self.rlink(filetype='ccf', **rkwargs)
@@ -1130,6 +1133,7 @@ class ObjectData:
         ts_props['columns'] += [snr_y_label, snr_h_label]
         ts_props['columns'] += [TIME_SERIES_COLS[9]]
         ts_props['columns'] += [ext_col, tcorr_col]
+        ts_props['columns'] += [rlink_ext_col, rlink_tcorr_col]
         # get values for use in time series table
         for time_series_col in TIME_SERIES_COLS:
             ts_props[time_series_col] = []
