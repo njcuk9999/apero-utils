@@ -1226,13 +1226,20 @@ class ObjectData:
             ts_props[ext_col].append(ext_value)
             ts_props[tcorr_col].append(tcorr_value)
             # -----------------------------------------------------------------
+            # standard request keyword args
+            rkwargs = dict(fiber='Science fiber',
+                           dprtypes=SCIENCE_DPRTYPES.split(','),
+                           apero_mode=self.settings['CPN'])
+            # get the date YYYY-MM-DD format
+            rlink_start = Time(first_mjd).strftime('%Y-%m-%d')
+            rlink_end = Time(last_mjd).strftime('%Y-%m-%d')
             # add the links to request data
             time_series_ext_rlink = self.rlink(filetype='ext',
-                                               startdate=first_mjd,
-                                               enddate=last_mjd)
+                                               startdate=rlink_start,
+                                               enddate=rlink_end, **rkwargs)
             time_series_tcorr_rlink = self.rlink(filetype='tcorr',
-                                                 startdate=first_mjd,
-                                                 enddate=last_mjd)
+                                                 startdate=rlink_start,
+                                                 enddate=rlink_end, **rkwargs)
             # -----------------------------------------------------------------
             # Create the request link table for this object
             # -----------------------------------------------------------------
