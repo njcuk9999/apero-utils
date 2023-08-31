@@ -32,6 +32,8 @@ from scipy.optimize import curve_fit
 # =============================================================================
 # Define variables
 # =============================================================================
+# define which parellisation mode to run in
+MULTI = 'Process'
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
@@ -2861,20 +2863,35 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             results_dict[key] = results
     # -------------------------------------------------------------------------
     elif n_cores > 1:
-        from multiprocessing import get_context
-        # list of params for each entry
-        params_per_process = []
-        for it, key in enumerate(object_classes):
-            itargs = [it, key] + args[2:]
-            params_per_process.append(itargs)
-        # start parellel jobs
-        with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
-            results = pool.starmap(add_obj_page, params_per_process)
-        # fudge back into return dictionary
-        for row in range(len(results)):
-            objname = results[row]['OBJNAME']
-            # push into results dict
-            results_dict[objname] = results[row]
+        if MULTI == 'POOL':
+            from multiprocessing import get_context
+            # list of params for each entry
+            params_per_process = []
+            for it, key in enumerate(object_classes):
+                itargs = [it, key] + args[2:]
+                params_per_process.append(itargs)
+            # start parellel jobs
+            with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
+                results = pool.starmap(add_obj_page, params_per_process)
+            # fudge back into return dictionary
+            for row in range(len(results)):
+                objname = results[row]['OBJNAME']
+                # push into results dict
+                results_dict[objname] = results[row]
+        else:
+            from multiprocessing import Process
+            # process storage
+            jobs = []
+            for it, key in enumerate(object_classes):
+                itargs = [it, key] + args[2:]
+                # get parallel process
+                process = Process(target=add_obj_page, args=itargs)
+                process.start()
+                jobs.append(process)
+            # do not continue until finished
+            for pit, proc in enumerate(jobs):
+                proc.join()
+
     # -------------------------------------------------------------------------
     # update object classes with results
     # -------------------------------------------------------------------------
