@@ -93,6 +93,8 @@ nirps ha online:
         profile: nirps_profiles.yaml
     # check settings
     check:
+        # whether to run check
+        run_check: True
         # check path
         path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
         # profile

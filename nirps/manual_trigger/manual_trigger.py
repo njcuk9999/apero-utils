@@ -641,6 +641,9 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     """
     # get the current working directory
     cwd = os.getcwd()
+    # we don't always want to do tests
+    if not pdict['check'].get('run_check', True):
+        return
     # get the observation directories
     # if we have a * we don't do the checks or more than one night we don't
     # do the checks - its not worth doing this loads of times and should be
