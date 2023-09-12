@@ -16,9 +16,6 @@ Nmax_rows = 5000
 # rejection keys if present in affiliation
 rejection_keys = ['Villanueva','Canada-France-Hawaii']
 
-# token for etienne.artigau@umontreal.ca ---> do not get too greedy with my token!
-ads.config.token = 'MOMaLYC2B6SA4nhNvgMnHeXhhNTqNkzX21ujXniI'
-
 outname='JWST_CANADA_{}_{}.xlsx'.format(year_search,'-'.join(abstract_search))
 
 # You probably should not edit below this line
