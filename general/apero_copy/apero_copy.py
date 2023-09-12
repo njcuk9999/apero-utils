@@ -443,7 +443,7 @@ def main():
     # must copy files to a temporary path first (copying can be slow)
     copy_files(params, files1, files2, files3)
     # ask after copying whether we are ready to continue
-    uinput = None
+    uinput = ''
     while uinput.lower() not in ['yes', 'no']:
         uinput = input('Are you ready to remove old data and replace with '
                        'the new data. Note this is a one way process and there '
