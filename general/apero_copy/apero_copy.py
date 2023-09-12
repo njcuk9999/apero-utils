@@ -308,21 +308,9 @@ def copy_files(params, files1: Dict[str, List[str]],
             if params['test']:
                 print('Copying {0} to {1}'.format(infilename, outfilename3))
             else:
-                # need to deal with no tmp directory
+                # need to deal with directory not existing
                 if not os.path.exists(os.path.dirname(outfilename3)):
                     os.makedirs(os.path.dirname(outfilename3))
-                # deal with file existing
-                if os.path.exists(outfilename2) and not params['overwrite']:
-                    msg = 'Copying {0} (already exists)'
-                    margs = [outfilename2]
-                    print(msg.format(*margs))
-                    # copy file
-                    if params['symlinks']:
-                        os.symlink(outfilename2, outfilename3)
-                    else:
-                        shutil.copy(outfilename2, outfilename3)
-
-                    continue
                 # deal with tmp file existing
                 if os.path.exists(outfilename3):
                     msg = ('Skipping {0} (tmp file already exists)')
