@@ -91,9 +91,12 @@ nirps he online:
         profile: nirps_profiles.yaml
     # check settings
     check:
+        # check path
+        path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
+        # profile
+        profile: nirps_he_profile_online.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
-
         # define the red sheet name for the google sheet
         red sheet name: RED-ONLINE-NIRPS-HE
 
