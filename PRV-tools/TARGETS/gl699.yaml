@@ -1,5 +1,6 @@
 name: 'GL699'
-rdbfile: '/Users/eartigau/all_rdbs/SPIROU/lbl_GL699_GL699_bervzp.rdb'
+rdbfile: '/Users/eartigau/teff_lbl/teff_gp/lbl_GL699_GL699.rdb'
+output_dir: '/Users/eartigau/all_rdbs/nirps/outputs/'
 bin_per_epoch: True
 
 # what type of activity correction do we want?
@@ -25,7 +26,14 @@ activity_correction:
         per: [130.0, 'Jeffreys', [90,200], True] # period
         perlength: [.5, 'Jeffreys', [0.1,10.0], True] # length of the periodic kernel
         # must be longer than the longest period in the model
-        explength: [300.0, 'Jeffreys', [100,1000], False] # length of the exponential kernel
+        explength: [1000.0, 'Jeffreys', [300,3000], False] # length of the exponential kernel
+
+table_manipulation:
+    rjd_min: 0
+    rjd_max: 59800
+
+plot_time_range:
+    domain1: [-1,-1] # -1 means use the min and max of the data
 
 keplerian_fit:
     dvdt: False

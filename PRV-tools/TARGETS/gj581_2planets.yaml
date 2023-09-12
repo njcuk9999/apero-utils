@@ -1,7 +1,5 @@
 name: 'GJ581'
-
-#rdbfile: '/Users/eartigau/all_rdbs/NIRPS/lbl_GJ581_GL514.rdb'
-rdbfile: 'lbl_GJ581-PCA03_GJ581-PCA03.rdb'
+rdbfile: '/Users/eartigau/all_rdbs/NIRPS/lbl_GJ581_GL514.rdb'
 bin_per_epoch: True
 
 # what type of activity correction do we want?
@@ -52,12 +50,6 @@ planet_params:
         secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
         sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
         k: [2.11, 'Jeffreys', [0.01,30.0], True]
-    planet3:
-        per: [3.14, 'Gaussian', 0.02, True]
-        tc: [2459310.32, 'Gaussian', 5.0, True]
-        secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
-        sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [1, 'Jeffreys', [0.01,30.0], True]
 
 
 mcmc_params:

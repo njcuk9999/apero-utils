@@ -1,7 +1,6 @@
-name: 'GJ581'
-
-#rdbfile: '/Users/eartigau/all_rdbs/NIRPS/lbl_GJ581_GL514.rdb'
-rdbfile: 'lbl_GJ581-PCA03_GJ581-PCA03.rdb'
+name: 'Proxima'
+rdbfile: '/Users/eartigau/all_rdbs/nirps/lbl_PROXIMA_PROXIMA.rdb'
+output_dir: '/Users/eartigau/all_rdbs/nirps/outputs/'
 bin_per_epoch: True
 
 # what type of activity correction do we want?
@@ -23,17 +22,17 @@ activity_correction:
     gp_params: # Parameters for the GP
         kernel: 'QuasiPer'
         # expressed in units of vrad, adjusted for other quantities
-        amp: [1.0, 'Jeffreys', [0.01,10], True]
-        per: [130.0, 'Gaussian', 30, True] # period
-        perlength: [5, 'Jeffreys', [0.3,10.0], False] # length of the periodic kernel
+        amp: [1.5, 'Gaussian', 0.5, True]
+        per: [90.0, 'Gaussian', 15, True] # period
+        perlength: [1.0, 'Jeffreys', [0.3,3.0], True] # length of the periodic kernel
         # must be longer than the longest period in the model
-        explength: [300.0, 'Jeffreys', [100,1000], False] # length of the exponential kernel
+        explength: [300.0, 'Gaussian', 30, False] # length of the exponential kernel
 
 keplerian_fit:
     dvdt: False
     curv: False
     gamma: [0.0, True]
-    jit: [0.01, True]
+    jit: [1.0, True]
     valid_rv_range: [-10,10]
     timestep: 0.3 # days, for plotting
 
@@ -41,28 +40,26 @@ planet_params:
     # https://radvel.readthedocs.io/en/latest/basis.html?highlight=basis
     basis: 'per tc secosw sesinw k'
     planet1:
-      per: [ 5.368, 'Gaussian', 0.001, True ]
-      tc: [ 2459308.00435, 'Gaussian', 2.0, True ]
-      secosw: [ 0.00000, 'Uniform', [ -1,1 ], False ] # sqrt(e)*cos(w)
-      sesinw: [ 0.00000, 'Uniform', [ -1,1 ], False ] # sqrt(e)*sin(w)
-      k: [ 8.2, 'Jeffreys', [ 0.01,30.0 ], True ]
+        per: [11.1881, 'Gaussian', 0.1, True]
+        tc: [2458513.209581395, 'Gaussian', 10.0, True]
+        secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
+        sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
+        k: [1.2, 'Jeffreys', [0.01,10.0], True]
     planet2:
-        per: [12.919, 'Gaussian', 0.002, True]
-        tc: [2459310.32, 'Gaussian', 5.0, True]
+        per: [4.98, 'Gaussian', 0.2, True]
+        tc: [2458518.699790062, 'Gaussian', 2.5, True]
         secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
         sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [2.11, 'Jeffreys', [0.01,30.0], True]
+        k: [0.5, 'Gaussian', 0.2, True]
     planet3:
-        per: [3.14, 'Gaussian', 0.02, True]
-        tc: [2459310.32, 'Gaussian', 5.0, True]
+        per: [8.17, 'Gaussian', 1, True]
+        tc: [2458518.699790062, 'Gaussian', 3, True]
         secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
         sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [1, 'Jeffreys', [0.01,30.0], True]
-
-
+        k: [0.5, 'Gaussian', 0.2, True]
 mcmc_params:
     thin: 1
-    burnin: 40
+    burnin: 1000
     nwalkers: 20
-    nrun: 100
+    nrun: 400
     savename: 'rawchains.h5'

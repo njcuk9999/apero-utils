@@ -1,16 +1,113 @@
 from astropy.table import Table
 from scipy import optimize
 from radvel.plot import orbit_plots, mcmc_plots
-import corner
-import matplotlib.pyplot as plt
-import numpy as np
 import os
 import radvel
 import radvel.likelihood
-import yaml
 from scipy.interpolate import InterpolatedUnivariateSpline as ius
 from tqdm import tqdm
+from astropy.stats import sigma_clip
+import numpy as np
+import matplotlib.pyplot as plt
 from astropy.table import Table
+from astropy.timeseries import LombScargle
+import emcee
+import corner
+import george
+import yaml
+
+def lnuniform(val, min_val, max_val):
+    # Define the uniform prior and return the log of its value.
+    assert max_val > min_val
+    return np.log(1 / (max_val - min_val)) if min_val <= val <= max_val else -np.inf
+
+def lngaussian(val, mean, std):
+    # Define the Gaussian prior distribution and return the log of its value.
+    return -0.5 * ((val - mean) / std)**2 - np.log(np.sqrt(2 * np.pi)) - np.log(std)
+
+def lnjeffreysprior(val, min_val, max_val):
+    '''Jeffreys prior from Gregory 2005 (see Eq 17). http://adsabs.harvard.edu/abs/2005ApJ...631.1198G.
+    Return the log of its value.'''
+    assert max_val > min_val
+    try:
+        return np.log(1./(val * np.log(max_val/min_val)))
+    except ValueError:
+        return -np.inf
+
+def find_nearest(array,value):
+    index=(np.abs(array-value)).argmin()
+    return index
+
+def sigma(tmp):
+    # return a robust estimate of 1 sigma
+    sig1 = 0.682689492137086
+    p1 = (1-(1-sig1)/2)*100
+    return (np.nanpercentile(tmp,p1) - np.nanpercentile(tmp,100-p1))/2.0
+
+def Routine(t, y, yerr, initial, initialize, nwalkers, nsteps,priors):
+    # MCMC
+
+    ndim = len(initial)
+
+    p0 = initial + initialize * np.random.randn(nwalkers, ndim)
+
+    print("Running emcee")
+    # with Pool() as pool:
+    sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args = (t, y, yerr, priors))  # , pool = pool)
+    sampler.run_mcmc(p0, nsteps, progress=True)
+
+    print("Done")
+
+    # Walkers
+
+    fig, axes = plt.subplots(5, figsize=(10, 7), sharex=True)
+    samples = sampler.get_chain()
+    labels = ['$\ln{A}$', '$\ln{\ell}$', '$\ln{\Gamma}$', '$\ln{P}$', '$\ln{s}$']
+    for i in range(ndim):
+        ax = axes[i]
+        ax.plot(samples[:, :, i], "k", alpha=0.3)
+        ax.set_xlim(0, len(samples))
+        ax.set_ylabel(labels[i])
+        ax.yaxis.set_label_coords(-0.1, 0.5)
+
+    axes[-1].set_xlabel("step number");
+    plt.show()
+
+    try:
+        tau = sampler.get_autocorr_time()
+        print("Autocorrelation time: ", tau)
+    except:
+        print("Autocorrelation time error, try with more steps!")
+
+    discard = input("Enter burn-in number: ")
+    discard = int(discard)
+    thin = input("Enter thin number: ")
+    thin = int(thin)
+
+    samples = sampler.get_chain(discard=discard, thin=thin, flat=True)
+    log_L = sampler.get_log_prob(discard=discard, thin=thin, flat=True)
+    theta_results = np.median(samples, axis=0)
+
+    corner.corner(samples, bins=40, show_titles=True, title_fmt=".5f",
+                  truths=theta_results, labels=labels, plot_datapoints=False,
+                  quantiles=(0.16, 0.84))
+    plt.show()
+
+    return samples, log_L
+
+def lnprior(theta, priors):
+
+    lnA, lnl, lngamma, lnP, lns = theta
+    lnpriors = np.zeros(5)
+    lnpriors[0] = lnuniform(lnA, priors[0][0], priors[0][1])
+    lnpriors[1] = lnuniform(lnl,  priors[1][0], priors[1][1])
+    lnpriors[2] = lnuniform(lngamma,  priors[2][0], priors[2][1])
+    lnpriors[3] = lnuniform(lnP,  priors[3][0], priors[3][1])
+    lnpriors[4] = lnuniform(lns,  priors[4][0], priors[4][1])
+
+    # return the prior
+    return np.sum(lnpriors)
+
 
 def unit(key):
     if key.upper()=='VRAD':
@@ -263,24 +360,9 @@ def approx_berv(t,tbl,timekey = 'jd'):
 
     return bervfit(t,*fit)
 
-import numpy as np
-import matplotlib.pyplot as plt
-from astropy.table import Table
-from astropy.timeseries import LombScargle
-from astropy.stats import sigma_clip
-
-def find_nearest(array,value):
-    index=(np.abs(array-value)).argmin()
-    return index
 
 def BIC(k, n, log_L):
     return k * np.log(n) - 2 * log_L
-
-def sigma(tmp):
-    # return a robust estimate of 1 sigma
-    sig1 = 0.682689492137086
-    p1 = (1-(1-sig1)/2)*100
-    return (np.nanpercentile(tmp,p1) - np.nanpercentile(tmp,100-p1))/2.0
 
 def periodogram(tbl):
     # Remove RV outliers
@@ -289,14 +371,14 @@ def periodogram(tbl):
     tbl = tbl[~index_mask]
     print('BAD RV = ', sum(index_mask))
 
-    bjd, rv, erv, dTEMP, edTEMP = tbl['rjd'].data + 2400000, tbl['vrad'].data, tbl['svrad'].data, tbl['DTEMP'].data, tbl['sDTEMP'].data
+    bjd, rv, erv, dTEMP, edTEMP = tbl['rjd'].data, tbl['vrad'].data, tbl['svrad'].data, tbl['DTEMP'].data, tbl['sDTEMP'].data
 
     # Inspect RV curve and second derivative
 
     fig, ax = plt.subplots(2, 2, figsize = (16,8))
 
     ax[0,0].set_title('RV', fontsize = 14)
-    ax[0,0].errorbar(bjd - 2400000, rv - np.nanmedian(rv), yerr = erv, color = 'k', linestyle = "none", marker = "o", alpha = 0.75, capsize = 2, zorder = 1, label = r'$\sigma_{\rm RV}$ = ' + '{0:.2f} m/s\nRMS = {1:.2f} m/s'.format(np.median(erv), sigma(rv)))
+    ax[0,0].errorbar(bjd, rv - np.nanmedian(rv), yerr = erv, color = 'k', linestyle = "none", marker = "o", alpha = 0.75, capsize = 2, zorder = 1, label = r'$\sigma_{\rm RV}$ = ' + '{0:.2f} m/s\nRMS = {1:.2f} m/s'.format(np.median(erv), sigma(rv)))
     ax[0,0].set_xlabel("BJD - 2400000", fontsize = 14)
     ax[0,0].set_ylabel("RV (m/s)", fontsize = 14)
     ax[0,0].minorticks_on()
@@ -327,7 +409,7 @@ def periodogram(tbl):
 
 
     ax[1,0].set_title('$d$TEMP', fontsize = 14)
-    ax[1,0].errorbar(bjd - 2400000, dTEMP, yerr = edTEMP, color = 'k', linestyle = "none", marker = "o", alpha = 0.75, capsize = 2, zorder = 1)
+    ax[1,0].errorbar(bjd, dTEMP, yerr = edTEMP, color = 'k', linestyle = "none", marker = "o", alpha = 0.75, capsize = 2, zorder = 1)
     ax[1,0].set_xlabel("Time (BJD - 2400000)", fontsize = 14)
     ax[1,0].set_ylabel(r"$d$TEMP (K)", fontsize = 14)
     ax[1,0].minorticks_on()
@@ -370,12 +452,25 @@ def load_table(inputs):
     if 'sig_fwhm' in tbl.colnames:
         tbl['sfwhm'] = tbl['sig_fwhm']
 
+    if 'table_manipulation' in inputs.keys():
+        print('\tRemoving data points with rjd < {} or rjd > {}'.format(inputs['table_manipulation']['rjd_min'], inputs['table_manipulation']['rjd_max']))
+        tbl = tbl[tbl['rjd']>inputs['table_manipulation']['rjd_min']]
+        tbl = tbl[tbl['rjd']<inputs['table_manipulation']['rjd_max']]
+
     if 'valid_rv_range' in inputs['keplerian_fit'].keys():
         print('\tRemoving outliers outside of valid_rv_range = {} m/s'.format(inputs['keplerian_fit'][
                                                                                   'valid_rv_range']))
         dv = tbl['vrad'] - np.nanmedian(tbl['vrad'])
         g = (dv>inputs['keplerian_fit']['valid_rv_range'][0]) & (dv<inputs['keplerian_fit']['valid_rv_range'][1])
         tbl = tbl[g]
+
+    if 'valid_dtemp_range' in inputs['keplerian_fit'].keys():
+        print('\tRemoving outliers outside of valid_dtemp_range = {} m/s'.format(inputs['keplerian_fit'][
+                                                                                  'valid_dtemp_range']))
+        dv = tbl['DTEMP'] - np.nanmedian(tbl['DTEMP'])
+        g = (dv>inputs['keplerian_fit']['valid_dtemp_range'][0]) & (dv<inputs['keplerian_fit']['valid_dtemp_range'][1])
+        tbl = tbl[g]
+
 
     if 'valid_jd_range' in inputs['keplerian_fit'].keys():
         print('\tRemoving outliers outside of valid_jd_range = {} '.format(inputs['keplerian_fit'][
@@ -391,7 +486,6 @@ def load_table(inputs):
     return tbl
 
 default_yaml_folder = '/Users/eartigau/apero-utils/PRV-tools/TARGETS/'
-yaml_file = 'proxima_2planets'
 
 def kegp(yaml_file,cornerplot = False):
 
@@ -548,6 +642,7 @@ def kegp(yaml_file,cornerplot = False):
         gp_val_train = gp_val2
         gp_var_train = gp_var2
 
+
         fig, ax = plt.subplots(2, 1, figsize=(12, 8),sharex=True)
         ax[0].errorbar(tbl['jd'], quantity, yerr=err_quantity, fmt='g.',label='data')
         ax[0].set(title=inputs['name'])
@@ -574,7 +669,10 @@ def kegp(yaml_file,cornerplot = False):
             #                     nrun=nrun,
             #                     ensembles=3,
             #                     savename=savename)
+            print('-'*80)
+
             print(post.bic())
+
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
             _ = corner.corner(df[post.name_vary_params()], labels=post.name_vary_params(), label_kwargs={"fontsize": 8},
                               plot_datapoints=False, bins=20, quantiles=[0.16, 0.5, 0.84],
@@ -666,6 +764,7 @@ def kegp(yaml_file,cornerplot = False):
 
     if inputs['activity_correction']['type'] == 'BERV':
         tbl_decorrelated['vrad'] -= gp_val2
+        print('RMS of GP correction : {:.2f} m/s'.format(np.std(gp_val2)))
 
     for ite in range(nite):
         mod, like, post = initialize_model(inputs, tbl_decorrelated)
@@ -695,7 +794,7 @@ def kegp(yaml_file,cornerplot = False):
 
 
 
-    fig, ax = plt.subplots(nrows = 2, ncols = 2, sharex = False,sharey = False,figsize=(16,8),
+    fig, ax = plt.subplots(nrows = 3, ncols = 2, sharex = False,sharey = False,figsize=(16,8),
                            gridspec_kw={'width_ratios':(8,1)})
     ax[0,0].plot_date(tbl['plot_date'],tbl['vrad'], 'k.',alpha = 0.01)
     ax[0,0].errorbar(tbl['plot_date'], tbl['vrad'], yerr=tbl['svrad'], fmt='o',color = 'r', ecolor='k', alpha=0.5)
@@ -707,10 +806,18 @@ def kegp(yaml_file,cornerplot = False):
 
         gp_val, gp_var = like.predict(ti_plot)
         gp_val2, gp_var2 = like.predict(tbl['jd'])
+
+
         offset = np.nanmedian(tbl['vrad']-gp_val2)
         gp_val += offset
         print('offset : {}'.format(offset))
         tbl_decorrelated['vrad'] -= gp_val2
+
+        print('='*30)
+        print('\tRMS of GP correction : {:.2f} m/s'.format(np.std(gp_val2)))
+        print('size GP ',len(gp_val2))
+        print('='*30)
+
 
         ax[0,0].plot(ti_plot_gp,gp_val,label = 'Rotation signal',alpha=0.9)
         #ax[0,0].fill_between(ti_plot_gp,gp_val-np.sqrt(gp_var),gp_val+np.sqrt(gp_var),color='r',alpha=0.1)
@@ -721,7 +828,18 @@ def kegp(yaml_file,cornerplot = False):
 
 
     kep_val = like.model(ti_plot)
-    kep_val -= np.nanmean(kep_val)
+    kep_moy = np.nanmean(kep_val)
+    kep_val -= kep_moy
+
+    kep_val2 = like.model(tbl['jd'])
+    kep_val2 -= kep_moy
+
+    residual_kep =     tmp =  tbl['vrad'] - kep_val2
+
+    ax[1,0].plot_date(tbl['plot_date'],residual_kep, 'k.',alpha = 0.01)
+    ax[1,0].errorbar(tbl['plot_date'], residual_kep, yerr=tbl['svrad'], fmt='o',color = 'r', ecolor='k',
+                     alpha=0.5)
+
 
     if type(gp_val) != type(None):
         ax[0,0].plot(ti_plot - zp, gp_val + kep_val, label='keplerian + rotation signal', alpha=0.5)
@@ -736,39 +854,69 @@ def kegp(yaml_file,cornerplot = False):
         else:
             ax[0,0].plot(ti_plot-zp,kep_val,label = 'keplerian',alpha=0.5)
 
-    ax[1,0].plot_date(tbl['plot_date'],post.residuals(),'k.',alpha=0.1)
-    ax[1,0].errorbar(tbl['plot_date'],post.residuals(),yerr = tbl['svrad'],fmt='o',color = 'r', ecolor='k', alpha=0.5)
-    ax[1,0].set(xlabel = 'Date')
+    ax[2,0].plot_date(tbl['plot_date'],post.residuals(),'k.',alpha=0.1)
+    ax[2,0].errorbar(tbl['plot_date'],post.residuals(),yerr = tbl['svrad'],fmt='o',color = 'r', ecolor='k', alpha=0.5)
+    ax[2,0].set(xlabel = 'Date')
     ax[0,0].grid(color = 'black',alpha = 0.2)
     ax[1,0].grid(color = 'black',alpha = 0.2)
+    ax[2,0].grid(color = 'black',alpha = 0.2)
     ax[0,0].set(ylabel ='Velocity [m/s]')
-    ax[1,0].set(ylabel ='Velocity residuals [m/s]')
+    ax[1,0].set(ylabel ='Velocity residuals\nkeplerians [m/s]')
+    ax[2,0].set(ylabel ='Velocity residuals\nkeplarians & GP [m/s]')
     print(post)
     ax[0,0].legend()
-    ylim = [1.1*np.min(tbl['vrad']-tbl['svrad']),1.1*np.max(tbl['vrad']+tbl['svrad'])]
+
+    ylim = []
+    if 'plot_params'  in inputs:
+        if 'ylim' in inputs['plot_params']:
+            ylim = inputs['plot_params']['ylim']
+    if len(ylim) != 2:
+        ylim = [1.1*np.min(tbl['vrad']-tbl['svrad']),1.1*np.max(tbl['vrad']+tbl['svrad'])]
 
     ax[0,0].set(xlim=(ti[0]-zp,ti[-1]-zp),ylim = ylim)
     ax[1,0].set(xlim=(ti[0]-zp,ti[-1]-zp),ylim = ylim)
+    ax[2,0].set(xlim=(ti[0]-zp,ti[-1]-zp),ylim = ylim)
     ax[0,1].set(ylim = ylim)
     ax[1,1].set(ylim = ylim)
+    ax[2,1].set(ylim = ylim)
 
     #xh, yh = plt.hist(post.residuals(), plot=False,xlim=ylim)
-    title = '\t$\sigma$ : {:.2f} m/s'.format(np.nanstd(tbl['vrad']))
+
+    sig1 = np.nanstd(tbl['vrad'])
+    sig2 = np.sqrt(sig1 - np.nanmean(tbl['svrad'])**2)
+    title = '\t$\sigma$ : {:.2f} m/s\nexcess : {:.2f} m/s'.format(sig1, sig2)
+
     ax[0,1].hist(tbl['vrad'], orientation='horizontal',bins=25,range=ylim,alpha = 0.6, color = 'orange')
     ax[0,1].text(0,ylim[0]+0.1*(ylim[1]-ylim[0]),title)
     #ax[0,1].set(title=title)
-    title = '\t$\sigma$ : {:.2f} m/s'.format(np.nanstd(post.residuals()))
-    ax[1,1].hist(post.residuals(), orientation='horizontal',bins=25,range=ylim,alpha = 0.6, color = 'orange')
+
+
+    sig1 = np.nanstd(residual_kep)
+    sig2 = np.sqrt(sig1 - np.nanmean(tbl['svrad'])**2)
+    title = '\t$\sigma$ : {:.2f} m/s\nexcess : {:.2f} m/s'.format(sig1, sig2)
+    ax[1,1].hist(residual_kep, orientation='horizontal',bins=25,range=ylim,alpha = 0.6, color = 'orange')
     ax[1,1].text(0,ylim[0]+0.1*(ylim[1]-ylim[0]),title)
+
+    sig1 = np.nanstd(post.residuals())
+    sig2 = np.sqrt(sig1 - np.nanmean(tbl['svrad'])**2)
+    title = '\t$\sigma$ : {:.2f} m/s\nexcess : {:.2f} m/s'.format(sig1, sig2)
+
+    ax[2,1].hist(post.residuals(), orientation='horizontal',bins=25,range=ylim,alpha = 0.6, color = 'orange')
+    ax[2,1].text(0,ylim[0]+0.1*(ylim[1]-ylim[0]),title)
     ax[0,0].set(title = '{}'.format(inputs['name']))
     #ax[1,0].set(title = 'Residuals')
+
     ax[0,0].get_xaxis().set_ticks([])
     ax[0,1].get_xaxis().set_ticks([])
     ax[0,1].get_yaxis().set_ticks([])
     ax[1,1].get_xaxis().set_ticks([])
     ax[1,1].get_yaxis().set_ticks([])
+    ax[2,1].get_xaxis().set_ticks([])
+    ax[2,1].get_yaxis().set_ticks([])
+
     ax[0,1].grid(color = 'black',alpha = 0.2)
     ax[1,1].grid(color = 'black',alpha = 0.2)
+    ax[2,1].grid(color = 'black',alpha = 0.2)
     plt.tight_layout()
     fig_file = inputs['rdbfile'].replace('.rdb', '_RVfit_2panels.pdf')
     plt.savefig(fig_file)
@@ -854,4 +1002,254 @@ def kegp(yaml_file,cornerplot = False):
         print('\t{}, {}'.format(par,post.params[par].value))
 
     print(post.bic())
+
+def lnlike(theta, t, y, yerr):
+    A, l, gamma, P, s = np.exp(theta)
+    k_sqexp = george.kernels.ExpSquaredKernel(l ** 2)  # squared exponential kernel
+    k_per = george.kernels.ExpSine2Kernel(gamma, log_period=np.log(P))  # periodic kernel
+    kernel = A ** 2 * k_sqexp * k_per
+
+    gp = george.GP(kernel, mean=np.mean(y), white_noise=np.log(s ** 2))
+    gp.compute(t, yerr)
+
+    return gp.log_likelihood(y, quiet=True)
+
+def lnprob(theta, t, y, yerr, priors):
+    lp = lnprior(theta, priors)
+
+    if not np.isfinite(lp):
+        return -np.inf
+    return lp + lnlike(theta, t, y, yerr)
+
+yaml_file = 'gl699.yaml'
+
+def rotper(yaml_file):
+    # !/usr/bin/env python
+    # coding: utf-8
+
+    params = load_yaml(default_yaml_folder + yaml_file)
+
+    # # Import RV data
+    tbl = load_table(params)
+
+    DTEMP_KEY = params['activity_correction']['quantity']
+
+    print('\t DTEMP keyord : {}'.format(DTEMP_KEY))
+    bjd, rv, erv, dET, edET = tbl['BJD'].data, tbl['vrad'].data, \
+        tbl['svrad'].data, tbl[DTEMP_KEY].data, tbl['s'+DTEMP_KEY].data
+
+    index_nan = np.isnan(rv)
+    bjd = bjd[~index_nan]
+    rv = rv[~index_nan]
+    erv = erv[~index_nan]
+    dET = dET[~index_nan]
+    edET = edET[~index_nan]
+
+
+    fig, ax = plt.subplots(2, 2, figsize=(16, 8))
+    ax[0, 0].set_title('RV', fontsize=14)
+    ax[0, 0].errorbar(bjd, rv - np.nanmedian(rv), yerr=erv, color='k', linestyle="none", marker="o",
+                      alpha=0.75, capsize=2, zorder=1,
+                      label=r'$\sigma_{\rm RV}$ = ' + '{0:.2f} m/s\nRMS = {1:.2f} m/s'.format(np.median(erv),
+                                                                                              sigma(rv)))
+    ax[0, 0].set_xlabel("BJD - 2400000", fontsize=14)
+    ax[0, 0].set_ylabel("RV (m/s)", fontsize=14)
+    ax[0, 0].minorticks_on()
+    ax[0, 0].tick_params(axis="both", labelsize=12, direction='in', length=5)
+    ax[0, 0].tick_params(axis="both", which='minor', direction='in', length=3)
+    ax[0, 0].yaxis.set_ticks_position('both')
+    ax[0, 0].xaxis.set_ticks_position('both')
+    ax[0, 0].legend(loc='best', fontsize=12)
+
+    ls = LombScargle(bjd, rv, erv)
+    frequency, power = ls.autopower()
+    fap = ls.false_alarm_level(0.001)
+    ax[0, 1].plot(1 / frequency, power, color="k", label="Lomb-Scargle periodogram")
+    ax[0, 1].axhline(y=fap, linestyle="--", color="k", label="99.9% confidence")
+    wf = LombScargle(bjd, np.ones(len(bjd)), fit_mean=False, center_data=False)
+    frequency, power = wf.autopower()
+    ax[0, 1].plot(1 / frequency, power, color="r", label="Window function")
+    ax[0, 1].set_xlabel("Period (days)", fontsize=14)
+    ax[0, 1].set_ylabel("Power", fontsize=14)
+    ax[0, 1].set_xlim([1, 1000])
+    ax[0, 1].set_ylim([0, 1])
+    ax[0, 1].set_xscale('log')
+    ax[0, 1].tick_params(axis="both", labelsize=12, direction='out', length=5)
+    ax[0, 1].tick_params(axis="both", which='minor', direction='out', length=3)
+    ax[0, 1].yaxis.set_ticks_position('both')
+    ax[0, 1].xaxis.set_ticks_position('both')
+    ax[0, 1].legend(loc='upper right', fontsize=10)
+    ax[1, 0].set_title('dET', fontsize=14)
+    ax[1, 0].errorbar(bjd, dET, yerr=edET, color='k', linestyle="none", marker="o", alpha=0.75,
+                      capsize=2, zorder=1)
+    ax[1, 0].set_xlabel("Time (BJD - 2400000)", fontsize=14)
+    ax[1, 0].set_ylabel(r"$\Delta T_{\rm eff}$ (K)", fontsize=14)
+    ax[1, 0].minorticks_on()
+    ax[1, 0].tick_params(axis="both", labelsize=12, direction='in', length=5)
+    ax[1, 0].tick_params(axis="both", which='minor', direction='in', length=3)
+    ax[1, 0].yaxis.set_ticks_position('both')
+    ax[1, 0].xaxis.set_ticks_position('both')
+
+    ls = LombScargle(bjd, dET, edET)
+    frequency, power = ls.autopower()
+    fap = ls.false_alarm_level(0.001)
+    ax[1, 1].plot(1 / frequency, power, color="k", label="Lomb-Scargle periodogram")
+    ax[1, 1].axhline(y=fap, linestyle="--", color="k", label="99.9% confidence")
+    wf = LombScargle(bjd, np.ones(len(bjd)), fit_mean=False, center_data=False)
+    frequency, power = wf.autopower()
+    ax[1, 1].plot(1 / frequency, power, color="r", label="Window function")
+    ax[1, 1].set_xlabel("Period (days)", fontsize=14)
+    ax[1, 1].set_ylabel("Power", fontsize=14)
+    ax[1, 1].set_xlim([1, 1000])
+    ax[1, 1].set_ylim([0, 1])
+    ax[1, 1].set_xscale('log')
+    ax[1, 1].tick_params(axis="both", labelsize=12, direction='out', length=5)
+    ax[1, 1].tick_params(axis="both", which='minor', direction='out', length=3)
+    ax[1, 1].yaxis.set_ticks_position('both')
+    ax[1, 1].xaxis.set_ticks_position('both')
+    ax[1, 1].legend(loc='upper left', fontsize=10)
+
+    plt.tight_layout()
+    outname = os.path.join(params['output_dir'], 'rv_dET_{}.pdf'.format(params['name']))
+    plt.savefig(outname, bbox_inches='tight')
+    plt.show()
+
+    # https://arxiv.org/pdf/2304.13381.pdf
+    # RMS, LENGTH, Gamma, PERIOD, WHITE NOISE
+    period = params['activity_correction']['gp_params']['per']
+
+    length = params['activity_correction']['gp_params']['explength']
+    perlength = params['activity_correction']['gp_params']['perlength']
+    gamma = 1/np.sqrt(perlength[0])
+    prior_gamma =  1/np.sqrt( params['activity_correction']['gp_params']['perlength'][2])[::-1]
+
+    initial = np.log(np.std(dET)), np.log(length[0]), np.log(gamma), np.log(period[0]), np.log(np.std(dET) * 0.1)
+    # error around initial values
+    initialize = np.array([0.1, 0.1, 0.1, 0.1, 0.1])
+    nwalkers = params['mcmc_params']['nwalkers']
+    nsteps = 500
+
+    priors = [(np.log(np.std(dET)*0.01),np.log( 10*np.std(dET))),
+              np.log(length[2]),
+              np.log(prior_gamma),
+              np.log(period[2]),
+              (np.log(np.std(dET)*0.01),np.log( 10*np.std(dET)))]
+
+    samples_dETGP, log_L_dETGP = Routine(bjd, dET, edET, initial, initialize, nwalkers, nsteps, priors)
+
+    theta_results = np.median(samples_dETGP, axis=0)
+
+    lnA_mcmc, lnl_mcmc, lngamma_mcmc, lnP_mcmc, lns_mcmc = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
+                                                               zip(*np.percentile(samples_dETGP, [16, 50, 84], axis=0)))
+
+    print('lnA:', lnA_mcmc[0], '+', lnA_mcmc[1], '-', lnA_mcmc[2])
+    print('lnl:', lnl_mcmc[0], '+', lnl_mcmc[1], '-', lnl_mcmc[2])
+    print('lngamma:', lngamma_mcmc[0], '+', lngamma_mcmc[1], '-', lngamma_mcmc[2])
+    print('lnP:', lnP_mcmc[0], '+', lnP_mcmc[1], '-', lnP_mcmc[2])
+    print('lns:', lns_mcmc[0], '+', lns_mcmc[1], '-', lns_mcmc[2])
+
+    A0 = np.exp(lnA_mcmc[0])
+    A1 = np.exp(lnA_mcmc[0]+lnA_mcmc[1])
+    A2 = np.exp(lnA_mcmc[0]-lnA_mcmc[2])
+    print('A : {:.2f}+{:.2f}-{:.2f} K'.format(A0,A1-A0,A2-A0))
+    l0 = np.exp(lnl_mcmc[0])
+    l1 = np.exp(lnl_mcmc[0]+lnl_mcmc[1])
+    l2 = np.exp(lnl_mcmc[0]-lnl_mcmc[2])
+    print('l : {:.2f}+{:.2f}-{:.2f}'.format(l0,l1-l0,l2-l0))
+    P0 = np.exp(lnP_mcmc[0])
+    P1 = np.exp(lnP_mcmc[0] + lnP_mcmc[1])
+    P2 = np.exp(lnP_mcmc[0] - lnP_mcmc[2])
+    print('P : {:.4f}+{:.4f}-{:.4f} days'.format(P0,P1-P0,P2-P0))
+    s0 = np.exp(lns_mcmc[0])
+    s1 = np.exp(lns_mcmc[0] + lns_mcmc[1])
+    s2 = np.exp(lns_mcmc[0] - lns_mcmc[2])
+    print('s : {:.2f}+{:.2f}-{:.2f}'.format(s0,s1-s0,s2-s0))
+
+    np.save('samples_dET.npy', samples_dETGP)
+
+    P_samples = np.exp(samples_dETGP[:, 3])
+    plt.hist(P_samples, bins=40)
+    # corner.corner(P_samples, bins = 40, show_titles = True, title_fmt = ".3f",
+    #              truths = [np.median(P_samples)],
+    #              labels = [r'$P$'], plot_datapoints=False, quantiles=(0.16, 0.84))
+    outname = os.path.join(params['output_dir'], 'hist_period_{}.pdf'.format(params['name']))
+    plt.savefig(outname, bbox_inches='tight')
+    plt.show()
+
+
+    A, l, gamma, P, s = np.exp(theta_results)
+
+    k_sqexp = george.kernels.ExpSquaredKernel(l ** 2)  # squared exponential kernel
+    k_per = george.kernels.ExpSine2Kernel(gamma ** 2, log_period=np.log(P))  # periodic kernel
+    kernel = A ** 2 * k_sqexp * k_per
+
+    gp = george.GP(kernel, mean=np.mean(dET), white_noise=np.log(s ** 2))
+    gp.compute(bjd, edET)
+
+    mu, cov = gp.predict(dET, bjd.copy())
+    sig = np.sqrt(np.diag(cov))
+
+    timespan = bjd.max() - bjd.min()
+    t1 = bjd.min() - timespan * 0.1
+    t2 = bjd.max() + timespan * 0.1
+    t = np.linspace(t1,t2, 10000)
+    mu_t, cov_t = gp.predict(dET, t)
+    sig_t = np.sqrt(np.diag(cov_t))
+
+    nplot_periods = len(params['plot_time_range'])
+    plot_keys =  [key for key in params['plot_time_range'].keys()]
+
+    for ite in range(nplot_periods):
+        xlim = params['plot_time_range'][plot_keys[ite]]
+
+        timespan = bjd.max() - bjd.min()
+        if xlim[0] == -1:
+            xlim[0] = bjd.min()-timespan*0.1
+        if xlim[1] == -1:
+            xlim[1] = bjd.max()+timespan*0.1
+
+        fig, ax = plt.subplots(figsize=(16, 8), ncols=1, nrows=2, sharey=True, sharex=True)
+        ax[0].errorbar(bjd, dET, yerr=np.sqrt(edET ** 2 + s ** 2), color='k', linestyle="none", marker="o",
+                       alpha=0.75, capsize=2, zorder=1)
+        ax[0].plot(t, mu_t, color='orange', zorder=2)
+        ax[0].fill_between(t, mu_t - sig_t, mu_t + sig_t, color='orange', alpha=.25, zorder=2)
+        ax[0].set_ylabel(r"$\Delta T_{\rm eff}$ [K]", fontsize=14)
+        ax[0].minorticks_on()
+        ax[0].tick_params(axis="both", labelsize=12, direction='in', length=5)
+        ax[0].tick_params(axis="both", which='minor', direction='in', length=3)
+        ax[0].yaxis.set_ticks_position('both')
+        ax[0].xaxis.set_ticks_position('both')
+        ax[0].set(title = params['name'])
+
+        valid = (bjd > xlim[0]) & (bjd < xlim[1])
+        maxy = np.max(dET[valid]+edET[valid])
+        miny = np.min(dET[valid]-edET[valid])
+        yspan = maxy - miny
+        ylim = [miny - 0.05 * yspan, maxy + 0.05 * yspan]
+
+        ax[0].set_ylim(ylim)
+
+        ax[0].set_xlim(xlim)
+        ax[0].grid(color='grey', alpha=0.3)
+
+        ax[1].errorbar(bjd, dET - mu, yerr=np.sqrt(edET ** 2 + s ** 2), color='k', linestyle="none",
+                       marker="o", alpha=0.75, capsize=2, zorder=1)
+        ax[1].axhline(y=0, linestyle="--", color="k", zorder=0)
+        ax[1].set_ylabel(r'$O - C$ [K]', fontsize=14)
+        ax[1].minorticks_on()
+        ax[1].tick_params(axis="both", labelsize=12, direction='in', length=5)
+        ax[1].tick_params(axis="both", which='minor', direction='in', length=3)
+        ax[1].yaxis.set_ticks_position('both')
+        ax[1].xaxis.set_ticks_position('both')
+        ax[1].set_xlabel("BJD", fontsize=14)
+        ax[1].grid(color='grey', alpha=0.3)
+
+        plt.tight_layout()
+        outname = os.path.join(params['output_dir'], 'period_gp_fit_domain{}_{}.pdf'.format(ite,params['name']))
+
+        plt.savefig(outname, bbox_inches='tight')
+        plt.show()
+
+
+
 

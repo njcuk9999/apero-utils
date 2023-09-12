@@ -1,6 +1,9 @@
 name: 'Proxima'
-rdbfile: '/Users/eartigau/all_rdbs/NIRPS/lbl_PROXIMA_PROXIMA.rdb'
-bin_per_epoch: True
+#rdbfile: '/Users/eartigau/all_rdbs/nirps/lbl_PROXIMA_PROXIMA.rdb'
+rdbfile: 'lbl_PROXIMA-PCA03_PROXIMA-PCA03.rdb'
+
+output_dir: '/Users/eartigau/all_rdbs/nirps/outputs/'
+bin_per_epoch: False
 
 # what type of activity correction do we want?
 # type and option
@@ -15,17 +18,18 @@ bin_per_epoch: True
 #       'BERV' and 'SqExp' -> a GP on the BERV without a periodic term (only square expo)
 #       'None' and 'None' -> no activity correction, only keplerian fit
 activity_correction:
-    type: 'RV' # Detrend, RV, BERV, Train, None
-    quantity: 'CONTRAST' # DTEMP, d2v, vrad
+    type: 'Train' # Detrend, RV, BERV, Train, None
+    quantity: 'DTEMP' # DTEMP, d2v, vrad
     derivative: True # For Detrend ONLY, is it the value or its time derivative?
     gp_params: # Parameters for the GP
         kernel: 'QuasiPer'
         # expressed in units of vrad, adjusted for other quantities
         amp: [1.5, 'Gaussian', 0.5, True]
-        per: [90.0, 'Gaussian', 15, True] # period
+        per: [89.0, 'Gaussian', 15, True] # period
+        #length: [90,'Gaussian',15,True]
         perlength: [1.0, 'Jeffreys', [0.3,3.0], True] # length of the periodic kernel
         # must be longer than the longest period in the model
-        explength: [300.0, 'Gaussian', 30, False] # length of the exponential kernel
+        explength: [200.0, 'Gaussian', 100, True] # length of the exponential kernel
 
 keplerian_fit:
     dvdt: False
@@ -40,20 +44,23 @@ planet_params:
     basis: 'per tc secosw sesinw k'
     planet1:
         per: [11.1881, 'Gaussian', 0.1, True]
-        tc: [2458513.209581395, 'Gaussian', 10.0, True]
+        tc: [2458513.209581395, 'Gaussian', 1.0, True]
         secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
         sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [1.2, 'Jeffreys', [0.01,10.0], True]
+        k: [1.05, 'Jeffreys', [0.01,10.0], True]
     planet2:
-        per: [5.167, 'Gaussian', 0.1, True]
-        tc: [2458518.699790062, 'Gaussian', 2.5, True]
+        per: [5.167, 'Gaussian', 0.05, True]
+        tc: [2458518.699790062, 'Gaussian', 2.0, True]
         secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
         sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [0.5, 'Gaussian', 0.2, True]
+        k: [0.5, 'Jeffreys', [0.01,10.0], True]
 
 mcmc_params:
     thin: 1
-    burnin: 1000
-    nwalkers: 20
-    nrun: 400
+    burnin: 100
+    nwalkers: 10
+    nrun: 300
     savename: 'rawchains.h5'
+
+plot_params:
+    ylim: [-6,6]
