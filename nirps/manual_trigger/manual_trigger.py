@@ -13,7 +13,7 @@ import argparse
 import os
 import shutil
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import astropy.units as uu
 import numpy as np
@@ -362,7 +362,7 @@ def run_processing(settings: Dict[str, Any]):
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
         # update reduced checks
-        run_apero_checks(pdict, mode='red')
+        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
         # update the apero profile
         params = update_apero_profile(pdict)
         # get preset
@@ -457,7 +457,7 @@ def run_apero_get(settings: Dict[str, Any]):
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
         # update reduced checks
-        run_apero_checks(pdict, mode='red')
+        run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # update the apero profile
         pparams = update_apero_profile(pdict)
         pconst = constants.pload()
@@ -615,7 +615,7 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         # log that APERO started
         settings['LOG'][profile].write(ARI_START)
         # update reduced checks
-        run_apero_checks(pdict, mode='red')
+        run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # change to ari path
         os.chdir(ari_path)
         # set up command
@@ -626,12 +626,13 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         # log that APERO started
         settings['LOG'][profile].write(ARI_END)
         # update reduced checks
-        run_apero_checks(pdict, mode='red')
+        run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
     # change back to original path
     os.chdir(cwd)
 
 
-def run_apero_checks(settings: Dict[str, Any], mode: str = 'red'):
+def run_apero_checks(pdict: Dict[str, Any], mode: str,
+                     obsdirs: Union[List[str], str]):
     """
     Run the apero reduction checks
 
@@ -640,40 +641,40 @@ def run_apero_checks(settings: Dict[str, Any], mode: str = 'red'):
     """
     # get the current working directory
     cwd = os.getcwd()
-    # get the observeration directories
-    obsdirs = settings['OBS_DIRS']
-    if isinstance(obsdirs, list):
-        obsdir = ','.join(obsdirs)
+    # get the observation directories
+    # if we have a * we don't do the checks or more than one night we don't
+    # do the checks - its not worth doing this loads of times and should be
+    #  run afterwards
+    if obsdirs == '*':
+        return
+    elif isinstance(obsdirs, list):
+        return
+    elif ',' in obsdirs:
+        return
     else:
-        obsdir = settings['OBS_DIRS']
+        obs_dir = str(obsdirs)
     # deal with mode
     if mode == 'red':
         check_code = 'apero_red_check.py'
     else:
         check_code = 'apero_raw_data_check.py'
-    # loop around profiles
-    for profile in settings['PROFILES']:
-        # get the yaml dictionary for this profile
-        pdict = settings['PROFILES'][profile]
-        # get ari path
-        check_path = pdict['check']['path']
-        # get ari profile
-        check_profile = pdict['check']['profile']
-        # deal with no ari code
-        if check_code not in os.listdir(check_path):
-            eargs = [check_code, check_path]
-            print('\t\tERROR: {0} not found in {1}'.format(*eargs))
-            continue
-        # change to ari path
-        os.chdir(check_path)
-        # set up command
-        check_cmd = 'python {0} {1} --obsdir={2}'
-        # run simple ari interface
-        # TODO: This is terrible - do not use os.system
-        os.system(check_cmd.format(check_code, check_profile, obsdir))
+    # get ari path
+    check_path = pdict['check']['path']
+    # get ari profile
+    check_profile = pdict['check']['profile']
+    # deal with no ari code
+    if check_code not in os.listdir(check_path):
+        eargs = [check_code, check_path]
+        print('\t\tERROR: {0} not found in {1}'.format(*eargs))
+    # change to ari path
+    os.chdir(check_path)
+    # set up command
+    check_cmd = 'python {0} {1} --obsdir={2}'
+    # run simple ari interface
+    # TODO: This is terrible - do not use os.system
+    os.system(check_cmd.format(check_code, check_profile, obs_dir))
     # change back to original path
     os.chdir(cwd)
-
 
 
 def run_lbl_processing(settings: Dict[str, Any]):
@@ -699,8 +700,10 @@ if __name__ == "__main__":
     for profile in trigger_settings['PROFILES']:
         trigger_settings['LOG'][profile].write(MANUAL_START)
         # run the checks
-        run_apero_checks(trigger_settings['PROFILES'][profile], mode='raw')
-        run_apero_checks(trigger_settings['PROFILES'][profile], mode='red')
+        run_apero_checks(trigger_settings['PROFILES'][profile], mode='raw',
+                         obsdirs=trigger_settings['OBS_DIRS'])
+        run_apero_checks(trigger_settings['PROFILES'][profile], mode='red',
+                         obsdirs=trigger_settings['OBS_DIRS'])
     # ----------------------------------------------------------------------
     # make symbolic links
     if trigger_settings['MAKELINKS']:
@@ -743,7 +746,9 @@ if __name__ == "__main__":
     # log that we have started manual trigger
     for profile in trigger_settings['PROFILES']:
         trigger_settings['LOG'][profile].write(MANUAL_END)
-
+        # run the checks
+        run_apero_checks(trigger_settings['PROFILES'][profile], mode='red',
+                         obsdirs=trigger_settings['OBS_DIRS'])
 # =============================================================================
 # End of code
 # =============================================================================
