@@ -9,8 +9,11 @@ Created on 2023-07-03 at 17:03
 
 @author: cook
 """
+import os
+import time
 from typing import Any, Dict, List
 
+import numpy as np
 import gspread_pandas as gspd
 import pandas as pd
 
@@ -27,8 +30,10 @@ from apero_checks.core import misc
 __VERSION__ = base.__VERSION__
 __DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
-
-
+# define lock directory
+LOCK_DIR = os.path.join(os.path.dirname(__file__), 'lock')
+# define maximum lock out time in minutes
+MAX_COUNT = 30
 # -----------------------------------------------------------------------------
 
 # =============================================================================
@@ -361,11 +366,67 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
                 results_dict[test] = []
             results_dict[test] += [results[obsdir][test]]
     # -------------------------------------------------------------------------
+    # lock codes
+    lock()
+    # -------------------------------------------------------------------------
     # turn results dictionary into dataframe
     dataframe = pd.DataFrame(results_dict, columns=columns)
     # -------------------------------------------------------------------------
     # add to sheet
     add_to_sheet(params, dataframe, test_type=test_type)
+    # -------------------------------------------------------------------------
+    # unlock codes
+    unlock()
+
+
+def lock():
+    """
+    Lock code while something is happening
+    (avoids two codes doing this at same time)
+
+    :return:
+    """
+    # get lock file
+    lock_file = os.path.join(LOCK_DIR, 'lock.lock')
+    # counter
+    counter = 0
+    # wait a very small random amount of time (to avoid two codes doing this
+    # at the same time)
+    random_time = 0.1 * np.random.random()
+    time.sleep(random_time)
+    # if lock file exists
+    while os.path.exists(lock_file):
+        # deal with a max count
+        if counter > (MAX_COUNT * 60):
+            emsg = f'Lock file timeout. Please remove: {lock_file} manually'
+            raise base.AperoChecksError(emsg)
+        # every 30 counts print a lock message
+        if counter % 30 == 0:
+            print(f'LOCKED [{counter}s]: Waiting for lock file to be removed '
+                  f'by another process')
+        # check again in 1 seconds - hopefully other process if fixed by then
+        time.sleep(1)
+        counter += 1
+    # if file doesn't exist create and return
+    if not os.path.exists(lock_file):
+        # create lock file
+        with open(lock_file, 'w') as f:
+            timenow = time.time()
+            f.write(f'LOCKED: {timenow}')
+        return
+
+
+def unlock():
+    """
+    Unlock code (remove lock.lock file)
+    :return:
+    """
+    # get lock file
+    lock_file = os.path.join(LOCK_DIR, 'lock.lock')
+    # if lock file exists
+    if os.path.exists(lock_file):
+        # delete the lock file
+        os.remove(lock_file)
 
 
 # =============================================================================
