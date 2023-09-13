@@ -406,7 +406,7 @@ def run_processing(settings: Dict[str, Any]):
         # log that APERO ended
         trigger_settings['LOG'][profile].write(APERO_END)
         # update reduced checks
-        run_apero_checks(pdict, mode='red')
+        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
 
 
 def apero_reset(params: Any, pdict: Dict[str, Any]):
@@ -636,7 +636,10 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     """
     Run the apero reduction checks
 
-    :param settings: dict, settings dictionary
+    :param pdict: dict, settings dictionary
+    :param mode: str, "raw" or "red"
+    :param obsdirs: str or list, the observation directory to check
+                    if * or multiple given check is skipped
     :return:
     """
     # get the current working directory
