@@ -10,7 +10,12 @@ Created on {DATE}
 @author: cook
 """
 import argparse
-from typing import Any, Dict, Optional
+import copy
+from hashlib import blake2b
+from typing import Any, Dict, List, Optional, Union
+import smtplib
+from email.mime.text import MIMEText
+from socket import gethostname
 
 from apero_request.core import base
 from apero_request.core import parameters
@@ -60,7 +65,7 @@ def load_params():
     yaml_params = io.read_yaml(yaml)
     # push into params
     for key in yaml_params:
-        params[key] = yaml_params[key].copy()
+        params[key] = copy.deepcopy(yaml_params[key])
     # return parameters
     return params
 
@@ -127,6 +132,69 @@ def end_msg():
     msg += f'\nCode finished successfully'
     msg += '\n' + '*' * 50
     log_msg(msg, level='info')
+
+
+def generate_arg_checksum(source: Union[List[str], str],
+                          ndigits: int = 10) -> str:
+    """
+    Take a list of strings or a string and generate a unique hash from
+    them
+
+    :param source: list of strings or string - the string to generate the hash
+                   from
+    :param ndigits: int, the size of the hash (in characters) default is 10
+
+    :return: str, the hash
+    """
+    # set function name
+    # _ = display_func('generate_arg_checksum', __NAME__)
+    # flatten list into string
+    if isinstance(source, list):
+        source = ' '.join(source)
+    # need to encode string
+    encoded = source.encode('utf')
+    # we want a hash of 10 characters
+    digest = blake2b(encoded, digest_size=ndigits)
+    # create hash
+    _hash = digest.hexdigest()
+    # return hash
+    return str(_hash)
+
+
+def send_email(message: str,
+               people: Optional[Union[List[str], str]],
+               sender_address: str,
+               subject: Optional[str] = None,):
+    """Simple wrapper around `MIMEText()` and `smtplib` to send an email.
+
+    Note: For this to work, your account must be setup to send emails at
+    the command line, so it will likely crash on a laptop without prior config.
+
+    :param message: Text for the body of the email.
+    :param people: People to email. No email sent if None.
+    :param subject: Subject of the email
+    """
+    # deal with no people
+
+    if people is None or len(people) == 0:
+        return
+    if len(people) == 1 and people[0] is None:
+        return
+
+    if subject is None:
+        subject = "APERO REQUEST"
+
+    msg = MIMEText(message)
+    msg["Subject"] = subject
+    msg["From"] = f"APERO on {gethostname()} <{sender_address}>"
+
+    if isinstance(people, str):
+        msg["To"] = people
+    else:
+        msg["To"] = ", ".join(people)
+
+    with smtplib.SMTP("localhost") as s:
+        s.send_message(msg)
 
 
 

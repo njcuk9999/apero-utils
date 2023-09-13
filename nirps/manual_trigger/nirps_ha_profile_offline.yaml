@@ -93,9 +93,14 @@ nirps ha offline:
         profile: nirps_profiles.yaml
     # check settings
     check:
+        # whether to run check
+        run_check: False
+        # check path
+        path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
+        # profile
+        profile: nirps_ha_profile_offline.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HA
-
         # define the red sheet name for the google sheet
         red sheet name: RED-OFFLINE-NIRPS-HA
 

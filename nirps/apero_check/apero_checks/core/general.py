@@ -133,6 +133,14 @@ def run_tests(params: Dict[str, Any],
     obsdirs = get_obs_dirs(params)
     # storage for test values
     test_values = dict()
+    # -------------------------------------------------------------------------
+    if params['test_filter'] is not None:
+        current_dataframe = get_current_dataframe(params, test_type)
+        # index by obsdir
+        obsdir_dataframe = current_dataframe.set_index('obsdir')
+    else:
+        obsdir_dataframe = None
+    # -------------------------------------------------------------------------
     # loop around observation directories
     for obsdir in obsdirs:
         # print message on which observation directory we are processing
@@ -155,6 +163,13 @@ def run_tests(params: Dict[str, Any],
             # deal with skipping tests
             if params['test_filter'] is not None:
                 if test_name not in params['test_filter']:
+                    if test_name in obsdir_dataframe:
+                        value = obsdir_dataframe.loc[obsdir, test_name]
+                    else:
+                        value = ''
+                    # push into test_values
+                    test_values[obsdir][test_name] = value
+                    # skip actually running the test
                     continue
             # run the test
             output = run_test(params, obsdir, test_name, it=it,
@@ -219,6 +234,25 @@ def run_single_test(params: Dict[str, Any], test_type: str):
 # =============================================================================
 # Deal with uploading tests
 # =============================================================================
+def get_current_dataframe(params, test_type='raw'):
+    # add gspread directory and auth files
+    io.gsp_setup()
+    # define the sheet id and sheet name (pending)
+    if test_type == 'raw':
+        sheet_id = params['raw sheet id']
+        sheet_name = params['raw sheet name']
+    elif test_type == 'red':
+        sheet_id = params['red sheet id']
+        sheet_name = params['red sheet name']
+    else:
+        emsg = 'ADD_TO_SHEET error: test_type must be set to "raw" or "red"'
+        raise base.AperoChecksError(emsg)
+    # load google sheet instance
+    google_sheet = gspd.spread.Spread(sheet_id)
+    # convert google sheet to pandas dataframe
+    return google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+
+
 def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
                  test_type='raw'):
     """

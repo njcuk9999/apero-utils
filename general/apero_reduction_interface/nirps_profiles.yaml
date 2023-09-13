@@ -7,7 +7,7 @@ settings:
   # Finder charts (None if not needed)
   find directory: /cosmos99/nirps/apero-data/misc/apero-find/
   # number of cores to use in multiprocessing steps
-  N_CORES: 10
+  N_CORES: 1
   # Spectrum wavelength ranges in nm
   SpecWave:
     limit0:
@@ -49,30 +49,30 @@ settings:
 #     skip msg table: bool: if True, skip making the msg table
 nirps he online:
     apero profile: /cosmos99/nirps/apero-settings/nirps_he_online
-    lbl path: /cosmos99/nirps/lbl-data/nirps_he_online/
+    lbl path: /cosmos99/nirps/apero-data/nirps_he_online/lbl/
     skip obj table: False
-    skip recipe table: True
+    skip recipe table: False
     skip msg table: True
 
 nirps ha online:
     apero profile: /cosmos99/nirps/apero-settings/nirps_ha_online
-    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_online/
+    lbl path: /cosmos99/nirps/apero-data/nirps_ha_online/lbl/
     skip obj table: False
-    skip recipe table: True
+    skip recipe table: False
     skip msg table: True
 
 nirps he offline:
     apero profile: /cosmos99/nirps/apero-settings/nirps_he_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_he_offline/
+    lbl path: /cosmos99/nirps/apero-data/nirps_he_offline/lbl/
     skip obj table: False
-    skip recipe table: True
+    skip recipe table: False
     skip msg table: True
 
 nirps ha offline:
     apero profile: /cosmos99/nirps/apero-settings/nirps_ha_offline
-    lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/
+    lbl path: /cosmos99/nirps/apero-data/nirps_ha_offline/lbl/
     skip obj table: False
-    skip recipe table: True
+    skip recipe table: False
     skip msg table: True
 
 # -----------------------------------------------------------------------------

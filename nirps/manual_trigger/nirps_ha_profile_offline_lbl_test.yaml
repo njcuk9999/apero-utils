@@ -1,35 +1,31 @@
-spirou V0.7.282 online:
+nirps ha offline:
     # general settings
     general:
         # directory where raw data is downloaded
-        raw dir: /spirou/cfht_nights/common/raw
+        raw dir: /nirps_raw/nirps/raw-data/nirps_ha
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/spirou/apero-settings/spirou_07282_online
+        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_offline
         # the install directory for apero (git hub repo)
-        apero install: /cosmos99/spirou/apero-bin/apero-drs
+        apero install: /cosmos99/nirps/git-bin/apero-drs-offline
         # directory where lbl files are processed
-        lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/
-        # ari path
-        ari path: /comos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
+        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/
         # start date if not using --obsdir argument
-        start date: 2018-01-01
+        start date: 2022-11-01
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: complete_run.ini
+        run file: lbl_run_skip.ini
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
-            - None
+            - all
     # apero_get settings
     get:
         science fibers:
-            - AB
             - A
-            - B
         calib fibers:
-            - C
+            - B
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - EXT_E2DS_FF
@@ -40,8 +36,7 @@ spirou V0.7.282 online:
             - SC1D_V_FILE
             - RC1D_V_FILE
             - TELLU_TEMP
-            - TELLU_TEMP_S1DV
-            - CCF_RV
+            - TELLU_TEMP_S1DV - CCF_RV
             - DRS_POST_E
             - DRS_POST_S
             - DRS_POST_T
@@ -49,10 +44,10 @@ spirou V0.7.282 online:
             - DRS_POST_P
         # input dpr types
         science dpr types:
-            - POLAR_FP
-            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
+            - OBJ_SKY
+            - TELLU_SKY
         # apero template types
         template out types:
             - TELLU_TEMP
@@ -65,24 +60,22 @@ spirou V0.7.282 online:
     # apero_get settings for lbl
     get-lbl:
         science fibers:
-            - AB
+            - A
         calib fibers:
-            - C
+            - B
         # input telluric
         science out types:
             - TELLU_OBJ
         # input dpr types
         science dpr types:
-            - POLAR_FP
-            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
+            - OBJ_SKY
         # apero template types
         template out types:
             - TELLU_TEMP_S1DV
         # apero simultaneous FP dprtypes
         simfp dprtypes:
-            - POLAR_FP
             - OBJ_FP
         # sym links in apero get
         symlinks: True
@@ -93,12 +86,22 @@ spirou V0.7.282 online:
             - calib
     # ari-settings
     ari:
+        # ari path
+        path: /cosmos99/nirps/git-bin/apero-utils/general/apero_reduction_interface/
+        # ari profile
+        profile: nirps_profiles.yaml
+    # check settings
+    check:
         # whether to run check
         run_check: False
-        # ari path
-        path: /comos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
-        # ari profile
-        profile: spirou_profiles.yaml
+        # check path
+        path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
+        # profile
+        profile: nirps_ha_profile_offline.yaml
+        # define the raw sheet name for the google sheet
+        raw sheet name: RAW-NIRPS-HA
+        # define the red sheet name for the google sheet
+        red sheet name: RED-OFFLINE-NIRPS-HA
 
 
 

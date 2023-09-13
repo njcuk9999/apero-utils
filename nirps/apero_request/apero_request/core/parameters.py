@@ -28,6 +28,13 @@ parameters['pass sheet id'] = '1X1nXQYI16cBxyo1ZQuDv_Ta2XAHEUP3FdTcze5we-Oc'
 # the name for the pass sheet
 parameters['pass sheet name'] = 'passkey'
 
+# the id for the pass sheet
+parameters['archive sheet id'] = '1X1nXQYI16cBxyo1ZQuDv_Ta2XAHEUP3FdTcze5we-Oc'
+
+# the name for the pass sheet
+parameters['archive sheet name'] = 'archive'
+
+
 # the valid time period for files in days
 parameters['valid time'] = 7
 

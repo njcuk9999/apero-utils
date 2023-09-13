@@ -11,7 +11,8 @@ Created on 2023-07-03 at 14:51
 """
 import os
 import platform
-from typing import Any, Dict, Union
+from typing import Any, Dict, Union, Type
+from astropy.io import fits
 
 import yaml
 
@@ -44,6 +45,9 @@ TEXT2 = ('{{"refresh_token": "{0}", "token_uri": "https://oauth2.googleap'
          '"scopes": ["openid", "https://www.googleapis.com/auth/drive", '
          '"https://www.googleapis.com/auth/userinfo.email", '
          '"https://www.googleapis.com/auth/spreadsheets"]}}')
+
+# Header cache while running
+HEADER_CACHE = dict()
 
 
 # =============================================================================
@@ -148,6 +152,27 @@ def gsp_setup():
     with open(path2, 'w') as file2:
         file2.write(TEXT2.format(''.join(PARAM4), PARAM1, PARAM3))
 
+
+def get_header_key(filename: str, key: str, dtype: Type = str,
+                   cache: bool = True) -> Any:
+    # make sure HEADER_CACHE is available to us
+    global HEADER_CACHE
+    # check cache
+    if cache:
+        if filename in HEADER_CACHE:
+            if key in HEADER_CACHE[filename]:
+                return HEADER_CACHE[filename][key]
+    # get header
+    hdr = fits.getheader(filename)
+    # return the actual value
+    value = dtype(hdr[key])
+    # add to cache
+    if filename not in HEADER_CACHE:
+        HEADER_CACHE[filename] = dict(key=value)
+    else:
+        HEADER_CACHE[filename][key] = value
+    # return the value
+    return value
 
 # =============================================================================
 # Start of code

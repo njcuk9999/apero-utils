@@ -92,6 +92,8 @@ nirps ha V0.7.275 online:
             - calib
     # ari-settings
     ari:
+        # whether to run check
+        run_check: False
         # ari path
         path: /comos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
         # ari profile

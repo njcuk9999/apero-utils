@@ -15,7 +15,6 @@ import glob
 import os
 import re
 import shutil
-import sys
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import matplotlib.pyplot as plt
@@ -25,7 +24,7 @@ import numpy as np
 import pandas as pd
 import yaml
 from astropy.table import Table
-from astropy.time import Time
+from astropy.time import Time, TimeDelta
 from astropy.io import fits
 from astropy import units as uu
 from scipy.optimize import curve_fit
@@ -33,18 +32,21 @@ from scipy.optimize import curve_fit
 # =============================================================================
 # Define variables
 # =============================================================================
+# define which parellisation mode to run in
+MULTI = 'Process'
 # define the astrometric database column names to get
 ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
 # define the log database column names to get
-LOG_COLUMNS = ['SHORTNAME', 'RUNSTRING', 'START_TIME', 'END_TIME',
-               'STARTED', 'PASSED_ALL_QC', 'ENDED']
+LOG_COLUMNS = ['RECIPE', 'SHORTNAME', 'RUNSTRING', 'START_TIME', 'END_TIME',
+               'PASSED_ALL_QC', 'ENDED', 'ERRORMSGS']
+LOG_TYPES = ['str', 'str', 'str', 'str', 'str', 'bool', 'bool', 'str']
 # define which instruments have polar
 HAS_POLAR = dict(SPIROU=True, NIRPS_HE=False, NIRPS_HA=False)
 # define log levels to report
 LOG_LEVELS = ['error', 'warning']
 # list tables to load
-TABLE_NAMES = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
+TABLE_NAMES = ['OBJECT_TABLE', 'RECIPE_TABLE']
 # Define output path
 OUTPUT_PATH = '.'
 # define sphinx directories
@@ -69,17 +71,17 @@ COLUMNS['DEC'] = 'Dec [Deg]'
 COLUMNS['TEFF'] = 'Teff [K]'
 COLUMNS['SPTYPE'] = 'SpT'
 COLUMNS['DPRTYPE'] = 'DPRTYPE'
-COLUMNS['RAW'] = 'raw files  '
-COLUMNS['PP'] = 'pp files   '
-COLUMNS['EXT'] = 'ext files  '
+COLUMNS['RAW'] = 'raw files'
+COLUMNS['PP'] = 'pp files'
+COLUMNS['EXT'] = 'ext files'
 COLUMNS['TCORR'] = 'tcorr files'
-COLUMNS['CCF'] = 'ccf files  '
-COLUMNS['POL'] = 'pol files  '
-COLUMNS['efits'] = 'e.fits     '
-COLUMNS['tfits'] = 't.fits     '
-COLUMNS['vfits'] = 't.fits     '
-COLUMNS['pfits'] = 'p.fits     '
-COLUMNS['lbl'] = 'LBL        '
+COLUMNS['CCF'] = 'ccf files'
+COLUMNS['POL'] = 'pol files'
+COLUMNS['efits'] = 'e.fits'
+COLUMNS['tfits'] = 't.fits'
+COLUMNS['vfits'] = 't.fits'
+COLUMNS['pfits'] = 'p.fits'
+COLUMNS['lbl'] = 'LBL'
 COLUMNS['last_obs'] = 'Last observed'
 COLUMNS['last_proc'] = 'Last Processed'
 # polar columns (only used for instruments that use polarimetry)
@@ -121,6 +123,36 @@ DEFAULT_TABLE_LENGTH = 6
 # define rsync commands
 RSYNC_CMD_IN = 'rsync -avuz -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
 RSYNC_CMD_OUT = 'rsync -avuz -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
+# define the html col names for each table
+HTML_INCOL_NAMES = dict()
+HTML_INCOL_NAMES['OBJECT_TABLE'] = list(COLUMNS.keys())
+HTML_INCOL_NAMES['RECIPE_TABLE'] = LOG_COLUMNS
+# define the html col names for each table
+HTML_OUTCOL_NAMES = dict()
+HTML_OUTCOL_NAMES['OBJECT_TABLE'] = list(COLUMNS.values())
+HTML_OUTCOL_NAMES['RECIPE_TABLE'] = LOG_COLUMNS
+# define the html col types for each table ('str' or 'list')
+HTML_COL_TYPES = dict()
+HTML_COL_TYPES['OBJECT_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['OBJECT_TABLE'])
+HTML_COL_TYPES['RECIPE_TABLE'] = ['str'] * len(HTML_OUTCOL_NAMES['RECIPE_TABLE'])
+# define the prefilled request link
+PREFILLED_REQUEST_LINK = ('https://docs.google.com/forms/d/e/1FAIpQLSev3v7EnHq'
+                          '2KyQyVWlDikA8-tDzMINYZA0SkYz93vAanpIdhA/'
+                          'viewform?usp=pp_url')
+# each entry has an id - we define these in a dictionary
+PREFILLED_RDICT = dict()
+PREFILLED_RDICT['OBJNAMES'] = 'entry.193319269'
+PREFILLED_RDICT['STARTDATE'] = 'entry.293060210'
+PREFILLED_RDICT['ENDDATE'] = 'entry.299959352'
+PREFILLED_RDICT['APERO_MODE'] = 'entry.923271952'
+PREFILLED_RDICT['FIBER'] = 'entry.1651377065'
+PREFILLED_RDICT['DPRTYPES'] = 'entry.298205572'
+PREFILLED_RDICT['DRSOUTID'] = 'entry.459458944'
+# define the request form fiber types
+RDICT_FIBERS = ['Science fiber', 'Reference fiber', 'All fibers']
+# define science dprtypes
+SCIENCE_DPRTYPES = ['OBJ_FP', 'OBJ_SKY', 'OBJ_DARK', 'POLAR_FP', 'POLAR_DARK']
+
 
 # =============================================================================
 # Classes
@@ -235,7 +267,7 @@ class ObjectData:
         # ---------------------------------------------------------------------
         # Add files as copy of filetype class
         # ---------------------------------------------------------------------
-        self.filetypes = dict()
+        self.filetypes: Dict[str, FileType] = dict()
         for key in filetypes:
             self.filetypes[key] = filetypes[key].copy_new()
         # flag for whether we have polar files
@@ -257,19 +289,23 @@ class ObjectData:
         # get spectrum output parameters (for page integration)
         self.spec_plot_path: Optional[str] = None
         self.spec_stats_table: Optional[str] = None
+        self.spec_rlink_table: Optional[str] = None
         self.spec_dwn_table: Optional[str] = None
         # get lbl output parameters (for page integration)
         self.lbl_combinations = []
         self.lbl_plot_path = dict()
         self.lbl_stats_table = dict()
+        self.lbl_rlink_table = dict()
         self.lbl_dwn_table = dict()
         # get ccf output parameters (for page integration)
         self.ccf_plot_path: Optional[str] = None
         self.ccf_stats_table: Optional[str] = None
+        self.ccf_rlink_table: Optional[str] = None
         self.ccf_dwn_table: Optional[str] = None
         # get time series output parameters (for page integration)
         self.time_series_plot_path: Optional[str] = None
         self.time_series_stats_table: Optional[str] = None
+        self.time_series_rlink_table: Optional[str] = None
         self.time_series_dwn_table: Optional[str] = None
         # ---------------------------------------------------------------------
         # these are only added when we need them
@@ -379,6 +415,63 @@ class ObjectData:
                 # set value in header dict
                 self.header_dict[keydict][pos] = value
 
+    def rlink(self, filetype: Optional[str] = None,
+              startdate: Optional[str] = None,
+              enddate: Optional[str] = None,
+              apero_mode: Optional[str] = None,
+              fiber: Optional[str] = None,
+              dprtypes: Optional[str] = None,
+              drsoutid: Optional[str] = None):
+        """
+        Create a link to pre-fill the request form
+
+        :param filetype: str, the filetype (FileType.name) to use
+        :param startdate: optional str, the start date DD/MM/YYYY
+        :param enddate: optional str, the end date DD/MM/YYYY
+        :param apero_mode: optional str, the apero mode to use (e.g.
+                           nirps_he_online)
+        :param fiber: optional str, the fibers to get should be one of
+                      "Science fiber", "Reference fiber", "All fibers"
+        :param dprtypes: optional str, the dprtypes
+        :param drsoutid: optional str, the drsoutid (not used if filetype is
+                         defined)
+        :return:
+        """
+        # lets create a url
+        url = PREFILLED_REQUEST_LINK
+        # get the objname
+        url += _url_addp(PREFILLED_RDICT['OBJNAMES'], self.objname)
+        # add the start date
+        if startdate is not None:
+            url += _url_addp(PREFILLED_RDICT['STARTDATE'], startdate)
+        # add the end date
+        if enddate is not None:
+            url += _url_addp(PREFILLED_RDICT['ENDDATE'], enddate)
+        # add the apero mode
+        if apero_mode is not None:
+            url += _url_addp(PREFILLED_RDICT['APERO_MODE'], apero_mode)
+        # add the fiber
+        if fiber is not None and fiber in RDICT_FIBERS:
+            url += _url_addp(PREFILLED_RDICT['FIBER'], fiber)
+        # add the dprtypes
+        if dprtypes is not None:
+            url += _url_addp(PREFILLED_RDICT['DPRTYPES'], dprtypes)
+        else:
+            dprtypes = np.char.array(SCIENCE_DPRTYPES)
+            dprtypes = list(dprtypes.strip())
+            url += _url_addp(PREFILLED_RDICT['DPRTYPES'], dprtypes)
+        # add the drsoutids using filetype
+        if filetype in self.filetypes:
+            # get the file instance class
+            fileinst = self.filetypes[filetype]
+            # add the drsoutids
+            url += _url_addp(PREFILLED_RDICT['DRSOUTID'], fileinst.kw_output)
+        elif drsoutid is not None:
+            # add the drsoutids
+            url += _url_addp(PREFILLED_RDICT['DRSOUTID'], drsoutid)
+        # return the url
+        return url
+
     def get_spec_parameters(self):
         #
         ext_files = self.filetypes['ext'].get_files()
@@ -471,6 +564,26 @@ class ObjectData:
             spec_props['LAST_TCORR'] = None
             spec_props['LAST_TCORR_PROC'] = None
             spec_props['TCORR_VERSION'] = None
+        # -----------------------------------------------------------------
+        # standard request keyword args
+        rkwargs = dict(fiber='Science fiber',
+                       dprtypes=SCIENCE_DPRTYPES,
+                       apero_mode=self.settings['CPN'])
+        # add the links to request data
+        spec_props['RLINK_EXT_E2DSFF'] = self.rlink(filetype='ext', **rkwargs)
+        spec_props['RLINK_EXT_S1D_V'] = self.rlink(filetype='s1d', **rkwargs)
+        spec_props['RLINK_TELLU_OBJ'] = self.rlink(filetype='tcorr', **rkwargs)
+        spec_props['RLINK_TELLU_S1DV'] = self.rlink(filetype='sc1d', **rkwargs)
+        spec_props['RLINK_TELLU_TEMP'] = self.rlink(drsoutid='TELLU_TEMP',
+                                                    **rkwargs)
+        spec_props['RLINK_TELLU_TEMP_S1D'] = self.rlink(drsoutid='TELLU_TEMP_S1DV',
+                                                        **rkwargs)
+        spec_props['RLINK_DRS_POST_E'] = self.rlink(filetype='efiles', **rkwargs)
+        spec_props['RLINK_DRS_POST_T'] = self.rlink(filetype='tfiles', **rkwargs)
+        spec_props['RLINK_DRS_POST_S'] = self.rlink(drsoutid='DRS_POST_S',
+                                                    **rkwargs)
+        spec_props['RLINK_DRS_POST_V'] = self.rlink(filetype='vfiles', **rkwargs)
+        spec_props['RLINK_DRS_POST_P'] = self.rlink(filetype='pfiles', **rkwargs)
         # -----------------------------------------------------------------
         # we have to match files (as ext_files, tcorr_files and raw_files may
         #   be different lengths)
@@ -588,6 +701,34 @@ class ObjectData:
                            self.headers, 'ext', self.header_dict,
                            ext_header_file)
         # -----------------------------------------------------------------
+        # Create the request link table for this object
+        # -----------------------------------------------------------------
+        # get the rlink base name
+        rlink_base_name = 'spec_rlink_' + self.objname + '.txt'
+        # get the rlink table path
+        rlink_item_path = os.path.join(item_save_path, rlink_base_name)
+        # define the keys in spec_props that contain rlinks to add
+        rlinks = ['RLINK_EXT_E2DSFF', 'RLINK_EXT_S1D_V',
+                  'RLINK_TELLU_OBJ', 'RLINK_TELLU_S1DV',
+                  'RLINK_TELLU_TEMP', 'RLINK_TELLU_TEMP_S1D',
+                  'RLINK_DRS_POST_E', 'RLINK_DRS_POST_T',
+                  'RLINK_DRS_POST_S', 'RLINK_DRS_POST_V',
+                  'RLINK_DRS_POST_P']
+        # define the rlink descriptions
+        rlink_text = ['Extracted 2D spectra', 'Extracted 1D spectra',
+                      'Telluric corrected 2D spectra',
+                      'Telluric corrected 1D spectra',
+                      '2D Template (after telluric correction)',
+                      '1D Template (after telluric correction)',
+                      'Packaged extraction files (e.fits)',
+                      'Packaged telluric corrected files (t.fits)',
+                      'Packaged s1d extract+tcorr (s.fits)',
+                      'Packaged velocity files (v.fits)',
+                      'Packaged polarimetry files (p.fits)']
+        # compute the rlink table
+        create_request_link_table(spec_props, rlink_item_path, rlinks,
+                                  rlink_text)
+        # -----------------------------------------------------------------
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ext files (2D)
@@ -612,7 +753,7 @@ class ObjectData:
         # get the download base name
         dwn_base_name = 'spec_download_' + self.objname + '.txt'
         # get the download table path
-        item_path = os.path.join(item_save_path, dwn_base_name)
+        dwn_item_path = os.path.join(item_save_path, dwn_base_name)
         # define the download files
         down_files = [ext2d_file, ext1d_file, tcorr2d_file, tcorr1d_file,
                       ext_header_file]
@@ -622,12 +763,13 @@ class ObjectData:
                       'Telluric corrected 1D spectra',
                       'Extracted 2D header file']
         # compute the download table
-        download_table(down_files, down_descs, item_path, down_rel_path,
+        download_table(down_files, down_descs, dwn_item_path, down_rel_path,
                        down_save_path, title='Spectrum Downloads')
         # -----------------------------------------------------------------
         # update the paths
         self.spec_plot_path = item_rel_path + plot_base_name
         self.spec_stats_table = item_rel_path + stat_base_name
+        self.spec_rlink_table = item_rel_path + rlink_base_name
         self.spec_dwn_table = item_rel_path + dwn_base_name
 
     def get_lbl_parameters(self):
@@ -687,6 +829,7 @@ class ObjectData:
                 # must set these to None if no LBL files
                 self.lbl_plot_path[lbl_objtmp] = None
                 self.lbl_stats_table[lbl_objtmp] = None
+                self.lbl_rlink_table[lbl_objtmp] = None
                 self.lbl_dwn_table[lbl_objtmp] = None
                 continue
             # get the plot file for this objname+template
@@ -715,6 +858,18 @@ class ObjectData:
                     if lbl_version_hdrkey in lbl_hdr:
                         lbl_props['version'] = lbl_hdr[lbl_version_hdrkey]
             # -----------------------------------------------------------------
+            # standard request keyword args
+            rkwargs = dict(fiber='Science fiber',
+                           dprtypes=SCIENCE_DPRTYPES,
+                           apero_mode=self.settings['CPN'])
+            # add the links to request data
+            lbl_props['RLINK_LBL_FITS'] = self.rlink(filetype='lbl.fits',
+                                                     **rkwargs)
+            for filetype in LBL_FILETYPES:
+                lbl_props[f'RLINK_{filetype}'] = self.rlink(filetype=filetype,
+                                                            **rkwargs)
+
+            # -----------------------------------------------------------------
             # plot the figure
             # -----------------------------------------------------------------
             # get the plot base name
@@ -733,6 +888,25 @@ class ObjectData:
             stat_path = os.path.join(item_save_path, stat_base_name)
             # compute the stats
             lbl_stats_table(lbl_props, stat_path, title='LBL stats')
+            # -----------------------------------------------------------------
+            # Create the request link table for this object
+            # -----------------------------------------------------------------
+            # get the rlink base name
+            rlink_base_name = 'lbl_rlink_' + self.objname + '.txt'
+            # get the rlink table path
+            rlink_item_path = os.path.join(item_save_path, rlink_base_name)
+            # define the keys in spec_props that contain rlinks to add
+            rlinks = ['RLINK_LBL_FITS']
+            for filetype in LBL_FILETYPES:
+                rlinks += [f'RLINK_{filetype}']
+
+            # define the rlink descriptions
+            rlink_text = ['LBL fits files']
+            for filetype in LBL_FILETYPES:
+                rlink_text += [f'{filetype} files']
+            # compute the rlink table
+            create_request_link_table(lbl_props, rlink_item_path, rlinks,
+                                      rlink_text)
             # -----------------------------------------------------------------
             # construct the download table
             # -----------------------------------------------------------------
@@ -777,6 +951,7 @@ class ObjectData:
             # update the paths
             self.lbl_plot_path[lbl_objtmp] = item_rel_path + plot_base_name
             self.lbl_stats_table[lbl_objtmp] = item_rel_path + stat_base_name
+            self.lbl_rlink_table[lbl_objtmp] = item_rel_path + rlink_base_name
             self.lbl_dwn_table[lbl_objtmp] = item_rel_path + dwn_base_name
         # ---------------------------------------------------------------------
         # set the lbl combinations
@@ -819,6 +994,13 @@ class ObjectData:
         # -----------------------------------------------------------------
         # ccf version
         ccf_props['CCF_VERSION'] = ','.join(list(np.unique(hdict['CCF_VERSION'])))
+        # -----------------------------------------------------------------
+        # standard request keyword args
+        rkwargs = dict(fiber='Science fiber',
+                       dprtypes=SCIENCE_DPRTYPES,
+                       apero_mode=self.settings['CPN'])
+        # add the links to request data
+        ccf_props['RLINK_CCF'] = self.rlink(filetype='ccf', **rkwargs)
         # -----------------------------------------------------------------
         # select ccf files to use
         ccf_props = choose_ccf_files(ccf_props)
@@ -880,6 +1062,20 @@ class ObjectData:
         # compute the stats
         ccf_stats_table(ccf_props, stat_path, title='CCF stats')
         # -----------------------------------------------------------------
+        # Create the request link table for this object
+        # -----------------------------------------------------------------
+        # get the rlink base name
+        rlink_base_name = 'ccf_rlink_' + self.objname + '.txt'
+        # get the rlink table path
+        rlink_item_path = os.path.join(item_save_path, rlink_base_name)
+        # define the keys in spec_props that contain rlinks to add
+        rlinks = ['RLINK_CCF']
+        # define the rlink descriptions
+        rlink_text = ['CCF files']
+        # compute the rlink table
+        create_request_link_table(ccf_props, rlink_item_path, rlinks,
+                                  rlink_text)
+        # -----------------------------------------------------------------
         # Create the file lists for this object
         # -----------------------------------------------------------------
         # construct the save path for ccf files
@@ -904,6 +1100,7 @@ class ObjectData:
         # update the paths
         self.ccf_plot_path = item_rel_path + plot_base_name
         self.ccf_stats_table = item_rel_path + stat_base_name
+        self.ccf_rlink_table = item_rel_path + rlink_base_name
         self.ccf_dwn_table = item_rel_path + dwn_base_name
 
     def get_time_series_parameters(self):
@@ -922,7 +1119,7 @@ class ObjectData:
         down_rel_path = f'../{_DOWN_DIR}/'
         # -----------------------------------------------------------------
         # storage for ccf values
-        time_series_props = dict()
+        ts_props = dict()
         # get labels
         snr_y_label = self.headers['ext']['EXT_Y']['label']
         snr_y_label = snr_y_label.replace(r'$\mu$', 'u')
@@ -930,21 +1127,26 @@ class ObjectData:
         snr_h_label = snr_h_label.replace(r'$\mu$', 'u')
         ext_col = 'ext_files'
         tcorr_col = 'tcorr_files'
+        rlink_ext_col = 'Request ext files'
+        rlink_tcorr_col = 'Request tcorr files'
         # ---------------------------------------------------------------------
         # construct the stats table
         # ---------------------------------------------------------------------
         # columns
-        time_series_props['columns'] = TIME_SERIES_COLS[0:9]
-        time_series_props['columns'] += [snr_y_label, snr_h_label]
-        time_series_props['columns'] += [TIME_SERIES_COLS[9]]
-        time_series_props['columns'] += [ext_col, tcorr_col]
+        ts_props['columns'] = TIME_SERIES_COLS[0:9]
+        ts_props['columns'] += [snr_y_label, snr_h_label]
+        ts_props['columns'] += [TIME_SERIES_COLS[9]]
+        ts_props['columns'] += [ext_col, tcorr_col]
+        ts_props['columns'] += [rlink_ext_col, rlink_tcorr_col]
         # get values for use in time series table
         for time_series_col in TIME_SERIES_COLS:
-            time_series_props[time_series_col] = []
-        time_series_props[snr_y_label] = []
-        time_series_props[snr_h_label] = []
-        time_series_props[ext_col] = []
-        time_series_props[tcorr_col] = []
+            ts_props[time_series_col] = []
+        ts_props[snr_y_label] = []
+        ts_props[snr_h_label] = []
+        ts_props[ext_col] = []
+        ts_props[tcorr_col] = []
+        ts_props[rlink_ext_col] = []
+        ts_props[rlink_tcorr_col] = []
         # get values from self.header_dict
         mjd_vec = np.array(self.header_dict['EXT_MJDMID'])
         seeing_vec = np.array(self.header_dict['EXT_SEEING'])
@@ -964,8 +1166,10 @@ class ObjectData:
             obs_mask_ext = obs_dirs_ext == obs_dir
             obs_mask_tcorr = obs_dirs_tcorr == obs_dir
             # get the first and last mjd for this observation directory
-            first_mjd = Time(np.min(mjd_vec[obs_mask_ext])).iso
-            last_mjd = Time(np.max(mjd_vec[obs_mask_ext])).iso
+            first_time = Time(np.min(mjd_vec[obs_mask_ext]))
+            last_time = Time(np.max(mjd_vec[obs_mask_ext]))
+            first_iso = first_time.iso
+            last_iso = last_time.iso
             # get the number of observations for this observation
             num_obs_ext = str(np.sum(obs_mask_ext))
             num_obs_tcorr = str(np.sum(obs_mask_tcorr))
@@ -1013,20 +1217,50 @@ class ObjectData:
             tcorr_value = f'{len(tcorr_files)} {tcorr_download}'
             # -----------------------------------------------------------------
             # append to the time series properties
-            time_series_props[TIME_SERIES_COLS[0]].append(obs_dir)
-            time_series_props[TIME_SERIES_COLS[1]].append(first_mjd)
-            time_series_props[TIME_SERIES_COLS[2]].append(last_mjd)
-            time_series_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
-            time_series_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
-            time_series_props[TIME_SERIES_COLS[5]].append(seeing)
-            time_series_props[TIME_SERIES_COLS[6]].append(airmass)
-            time_series_props[TIME_SERIES_COLS[7]].append(exptime)
-            time_series_props[TIME_SERIES_COLS[8]].append(texptime)
-            time_series_props[snr_y_label].append(snry)
-            time_series_props[snr_h_label].append(snyh)
-            time_series_props[TIME_SERIES_COLS[9]].append(dprtype)
-            time_series_props[ext_col].append(ext_value)
-            time_series_props[tcorr_col].append(tcorr_value)
+            ts_props[TIME_SERIES_COLS[0]].append(obs_dir)
+            ts_props[TIME_SERIES_COLS[1]].append(first_iso)
+            ts_props[TIME_SERIES_COLS[2]].append(last_iso)
+            ts_props[TIME_SERIES_COLS[3]].append(num_obs_ext)
+            ts_props[TIME_SERIES_COLS[4]].append(num_obs_tcorr)
+            ts_props[TIME_SERIES_COLS[5]].append(seeing)
+            ts_props[TIME_SERIES_COLS[6]].append(airmass)
+            ts_props[TIME_SERIES_COLS[7]].append(exptime)
+            ts_props[TIME_SERIES_COLS[8]].append(texptime)
+            ts_props[snr_y_label].append(snry)
+            ts_props[snr_h_label].append(snyh)
+            ts_props[TIME_SERIES_COLS[9]].append(dprtype)
+            ts_props[ext_col].append(ext_value)
+            ts_props[tcorr_col].append(tcorr_value)
+            # -----------------------------------------------------------------
+            # standard request keyword args
+            rkwargs = dict(fiber='Science fiber',
+                           dprtypes=SCIENCE_DPRTYPES,
+                           apero_mode=self.settings['CPN'])
+            # get the date YYYY-MM-DD format
+            rlink_start = first_time.strftime('%Y-%m-%d')
+            rlink_end = last_time.strftime('%Y-%m-%d')
+            # deal with rlink_start and end being the same
+            if rlink_end == rlink_start:
+                tdelta = TimeDelta(1 * uu.day)
+                rlink_end = (last_time + tdelta).strftime('%Y-%m-%d')
+            # add the links to request data
+            time_series_ext_rlink = self.rlink(filetype='ext',
+                                               startdate=rlink_start,
+                                               enddate=rlink_end, **rkwargs)
+            time_series_tcorr_rlink = self.rlink(filetype='tcorr',
+                                                 startdate=rlink_start,
+                                                 enddate=rlink_end, **rkwargs)
+            # -----------------------------------------------------------------
+            # Create the request link table for this object
+            # -----------------------------------------------------------------
+            # add the ext rlink
+            if time_series_ext_rlink is not None:
+                rargs = ['Extracted 2D files', time_series_ext_rlink]
+                ts_props[rlink_ext_col].append('`{0} <{1}>`_'.format(*rargs))
+            # add the corr rlink
+            if time_series_tcorr_rlink is not None:
+                rargs = ['Telluric corrected 2D files', time_series_tcorr_rlink]
+                ts_props[rlink_tcorr_col].append('`{0} <{1}>`_'.format(*rargs))
         # -----------------------------------------------------------------
         # construct the stats
         # -----------------------------------------------------------------
@@ -1035,7 +1269,7 @@ class ObjectData:
         # get the stat path
         stat_path = os.path.join(item_save_path, time_series_base_name)
         # compute the stats
-        time_series_stats_table(time_series_props, stat_path)
+        time_series_stats_table(ts_props, stat_path)
         # -----------------------------------------------------------------
         # update the paths
         self.time_series_plot_path = None
@@ -1065,7 +1299,6 @@ def get_args():
     args = parser.parse_args()
     # return arguments
     return args
-
 
 
 def get_settings(settings: Dict[str, Any],
@@ -1162,11 +1395,11 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     # get paths to tables
     object_table_file = os.path.join(settings['DATA'], 'OBJECT_TABLE.fits')
     recipe_table_file = os.path.join(settings['DATA'], 'RECIPE_TABLE.fits')
-    message_table_file = os.path.join(settings['DATA'], 'MESSAGE_TABLE.fits')
+    # message_table_file = os.path.join(settings['DATA'], 'MESSAGE_TABLE.fits')
     # get skip criteria
     skip_obj_table = profile['skip obj table']
     skip_recipe_table = profile['skip recipe table']
-    skip_msg_table = profile['skip msg table']
+    # skip_msg_table = profile['skip msg table']
     # ------------------------------------------------------------------
     # deal with skipping object table
     if skip_obj_table and os.path.exists(object_table_file):
@@ -1195,15 +1428,6 @@ def compile_stats(gsettings: dict, settings: dict, profile: dict,
     else:
         # get the recipe log table
         profile_stats['TABLES'][TABLE_NAMES[1]] = compile_apero_recipe_table()
-    # ------------------------------------------------------------------
-    # deal with skipping message table
-    if skip_msg_table and os.path.exists(message_table_file):
-        profile_stats['TABLES'][TABLE_NAMES[2]] = load_table(message_table_file)
-    elif skip_msg_table:
-        profile_stats['TABLES'][TABLE_NAMES[2]] = None
-    else:
-        # get the message log table
-        profile_stats['TABLES'][TABLE_NAMES[2]] = compile_apero_message_table()
     # ------------------------------------------------------------------
     # return the profile stats
     return profile_stats
@@ -1329,8 +1553,8 @@ def compile_obj_index_page(gsettings: dict, settings: dict,
                             'ARI will be the first column [OBJNAME]')
     obj_index_page.add_newline()
     obj_index_page.add_text('If you have any issues please report using '
-                            '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                            '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                            'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_.')
     obj_index_page.add_newline()
     # -------------------------------------------------------------------------
     # loop around objects and create a section for each
@@ -1398,12 +1622,9 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                         'edit?usp=sharing>`_, the name displayed in ARI will '
                         'be the first column [OBJNAME]')
     index_page.add_newline()
-    index_page.add_text('If you believe you should have the username/password '
-                        'please contact neil.james.cook@gmail.com')
-    index_page.add_newline()
     index_page.add_text('If you have any issues please report using '
-                        '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                        'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                        '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                        'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_.')
     index_page.add_newline()
     index_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
     index_page.add_newline()
@@ -1453,14 +1674,16 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                               'be the first column [OBJNAME]')
         profile_page.add_newline()
         profile_page.add_text('If you have any issues please report using '
-                              '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                              'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                              '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                              'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_')
         profile_page.add_newline()
         profile_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
         profile_page.add_newline()
         # -----------------------------------------------------------------
         # store the reference name for profile page table of contents
         table_files = []
+        # urls
+        table_urls = dict()
         # loop around tables
         for table_name in TABLE_NAMES:
             # get table
@@ -1472,7 +1695,7 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
             # add object table
             table_filename = f'{table_name}.csv'
             table_title = table_name.lower().replace('_', ' ')
-            title = f'APERO reduction {table_title} ({cprofile_name})'
+            title = f'{table_title} ({cprofile_name})'
             table_page.add_title(title)
             # -----------------------------------------------------------------
             # Add basic text
@@ -1488,40 +1711,286 @@ def write_markdown(gsettings: dict, settings: dict, stats: dict):
                                 'be the first column [OBJNAME]')
             table_page.add_newline()
             table_page.add_text('If you have any issues please report using '
-                                '<https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
-                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>_')
+                                '`this sheet <https://docs.google.com/spreadsheets/d/1Ea_WEFTlTCbth'
+                                'R24aaQm4KaleIteLuXLgn4RiNBnEqs/edit?usp=sharing>`_')
             table_page.add_newline()
             table_page.add_text('Last updated: {0} [UTC]'.format(Time.now()))
             table_page.add_newline()
-            # deal with column widths for this file type
-            if table is not None and len(table) > 0:
-                # add the csv version of this table
-                table_page.add_csv_table('', f'../{_DATA_DIR}/' +
-                                         table_filename, cssclass='csvtable2')
-            else:
-                # if we have no table then add a message
-                table_page.add_text('No table created.')
+
             # save table page
             table_markdown_file = os.path.basename(table_filename).lower()
             table_markdown_file = table_markdown_file.replace('.csv', '.rst')
+
+            # deal with column widths for this file type
+            if table is not None and len(table) > 0:
+                # if table_name == 'OBJECT_TABLE':
+                #     # add the csv version of this table
+                #     table_page.add_csv_table('', f'../{_DATA_DIR}/' +
+                #                              table_filename,
+                #                              cssclass='csvtable2')
+
+                if table_name == 'OBJECT_TABLE':
+                    # add the csv version of this table
+                    table_page.add_csv_table('', f'../{_DATA_DIR}/' +
+                                             table_filename, cssclass='csvtable2')
+                    # store the reference name for profile page table of contents
+                    #  these are in the same dir as profile_page so do not add the
+                    #  rst sub-dir
+                    table_files.append(os.path.basename(table_markdown_file))
+                elif table_name == 'RECIPE_TABLE':
+                    # add the recipe tables
+                    add_recipe_tables(settings, table, table_name)
+                    # create a URL to link the pages
+                    table_url_file = table_filename.replace('.csv', '.html')
+                    table_url_file = table_url_file.lower()
+                    # add link to a set of links
+                    table_urls[title] = f'../tables/{table_url_file}'
+            else:
+                # if we have no table then add a message
+                table_page.add_text('No table created.')
+                # store the reference name for profile page table of contents
+                #  these are in the same dir as profile_page so do not add the
+                #  rst sub-dir
+                table_files.append(os.path.basename(table_markdown_file))
             # write table page
             print('Writing table page: {0}'.format(table_markdown_file))
             table_page.write_page(os.path.join(settings['RST'],
                                                table_markdown_file))
-            # store the reference name for profile page table of contents
-            #  these are in the same dir as profile_page so do not add the
-            #  rst sub-dir
-            table_files.append(os.path.basename(table_markdown_file))
+
         # add table of contents to profile page
         profile_page.add_table_of_contents(table_files)
+
+        # add list of urls
+        if len(table_urls) > 0:
+            # add a section
+            profile_page.add_newline()
+            profile_page.add_text('Other: ')
+            profile_page.add_newline()
+            # add the urls as a list
+            for table_url in table_urls:
+                # get url from table urls
+                url = table_urls[table_url]
+                # add the url
+                profile_page.lines += [f'* `{table_url} <{url}>`_']
+                # add a new line
+                profile_page.add_newline()
+            profile_page.add_newline()
         # save profile page
         profile_page.write_page(os.path.join(settings['RST'], 'profile.rst'))
+
+
+def recipe_date_table(table: Table, table_name: str,
+                      ) -> Tuple[Table, List[str], List[str], np.ndarray]:
+    """
+    Create the date table which links to each date page
+
+    :param table:
+    :param table_name:
+    :return:
+    """
+    # define the columns (passed back to main code)
+    date_colnames = ['DATE', 'NUM_TOTAL', 'NUM_FAIL', 'LINK']
+    date_coltypes = ['str', 'str', 'str', 'url']
+    table_dates = []
+    # dictionary for storage
+    date_dict = dict()
+    # add columns
+    for col in date_colnames:
+        date_dict[col] = []
+    # get table name
+    table_filename = table_name.lower()
+    # loop around rows in table
+    for row in range(len(table)):
+        # convert start time into a YYYY-MM-DD
+        date = table['START_TIME'][row].split(' ')[0]
+        # get the date given to this row
+        table_dates.append(date)
+    # make the table dates a numpy array
+    table_dates = np.array(table_dates)
+    # get a list of unique dates
+    unique_dates = list(set(table_dates))
+
+    for unique_date in unique_dates:
+        # get a mask for this date in the original table
+        mask = table_dates == unique_date
+        # count the number of entries
+        num_entries = np.sum(mask)
+        # count the number of errors (False or 0)
+        num_errors = np.sum(table['ENDED'][mask] == 'False')
+        num_errors += np.sum(table['ENDED'][mask] == 0)
+        # create html url link
+        html_file = f'{table_filename}_{unique_date.replace("-", "_")}.html'
+        # deal with populating date table
+        date_dict['DATE'].append(unique_date)
+        date_dict['NUM_TOTAL'].append(num_entries)
+        date_dict['NUM_FAIL'].append(num_errors)
+        date_dict['LINK'].append(html_file)
+    # convert date_dict into table
+    date_table = Table(date_dict)
+    # sort by date (newest first)
+    sortmask = np.argsort(date_dict['DATE'])[::-1]
+    date_table = date_table[sortmask]
+    # return the date_table, colnames, coltypes and the date value for each col
+    return date_table, date_colnames, date_coltypes, table_dates
+
+
+def add_recipe_tables(settings: Dict[str, Any], table: Table, table_name: str):
+    # import from apero
+    from apero.tools.module.error import error_html
+    # set html body
+    # Take directly from one of the sphinx pages (this is a massive hack)
+    html_body1 = """
+    <div class="pageheader">
+
+    <ul>
+    <li><a title="Home" href="http://apero.exoplanets.ca">
+        <i class="fa fa-home fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="install" href="http://apero.exoplanets.ca/user/general/installation">
+        <i class="fa fa-cog fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="github" href="https://github.com/njcuk9999/apero-drs">
+        <i class="fa fa-git-square fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="download paper" href="https://ui.adsabs.harvard.edu/abs/2022PASP..134k4509C">
+        <i class="fa fa-file-pdf-o fa-3x" aria-hidden="true"></i></a></li>
+    <li><a title="UdeM" href="http://apero.exoplanets.ca/main/misc/udem.html">
+        <i class="fa fa-university fa-3x" aria-hidden="true"></i></a></li>
+  </ul>
+
+    <div>
+    <a href="http://apero.exoplanets.ca">
+      <img src="../../_static/images/apero_logo.png" alt="APERO" />
+    </a>
+    <br>
+    &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A PipelinE to Reduce Observations
+    </div>
+
+    </div>
+    
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          <div class="body" role="main">
+    
+    <h1>{TITLE}</h1>
+    <p> Note the date is the date processed NOT the observation directory 
+        (or night directory)</p>
+    <br>
+    <p><a href="../rst/profile.html">Back to profile page ({PROFILE})</a></p>
+    <br>
+    <p> 
+    A list of known errors can be found 
+    <a href="https://docs.google.com/spreadsheets/d/15Gu_aY6h9Esw1uTF8Y5JCHl6m7191AviJNTPkbeTiQE/edit?usp=sharing">here</a>
+    <br>
+    Please report any errors missing.
+    </p>
+    <br>
+    
+    
+    """
+
+    html_body2 = """
+            <div class="clearer"></div>
+          </div>
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    """
+    # set html table class
+    table_class = 'class="csvtable2 docutils align-default"'
+    # css to include
+    ccs_files = ['../../_static/pygments.css',
+                 '../../_static/bizstyle.css',
+                 '../../_static/apero.css']
+    # profile name
+    cprofile_name = settings['CPN']
+    # make path
+    table_path = os.path.join(settings['WORKING'], 'extras',
+                              cprofile_name, 'tables')
+    # get table name
+    table_filename = table_name.lower()
+    # split the table into sub-tables based on start date
+    dout = recipe_date_table(table, table_name)
+    date_table, date_colnames, date_coltypes, table_dates = dout
+    # loop around sub tables
+    for date in date_table['DATE']:
+        # find all rows in table that conform to this date
+        tablemask = table_dates == date
+        # make the table
+        subtable = table[tablemask]
+        # get the filename to create
+        subtable_filename = f'{table_filename}_{date.replace("-", "_")}'
+        # get html col names
+        html_out_col_names = HTML_OUTCOL_NAMES[table_name]
+        html_col_types = HTML_COL_TYPES[table_name]
+        # convert table to outlist
+        tout = error_html.table_to_outlist(subtable, html_out_col_names,
+                                           out_types=html_col_types)
+        outlist, t_colnames, t_coltype = tout
+
+        # convert outlist to a html/javascript table
+        html_table = error_html.filtered_html_table(outlist, t_colnames,
+                                                    t_coltype, clean=False,
+                                                    log=False,
+                                                    table_class=table_class)
+        # deal with path not existing
+        if not os.path.exists(table_path):
+            os.makedirs(table_path)
+        # construct local path to save html to
+        subtable_html = os.path.join(table_path, f'{subtable_filename}.html')
+        # build html page
+
+        html_title = 'Recipe log for {0} ({1})'.format(date, cprofile_name)
+        html_body1_filled = html_body1.format(TITLE=html_title,
+                                              PROFILE=cprofile_name)
+
+        html_body1_filled += f"""
+        <p>
+        <a href="recipe_table.html">Back to recipe log ({cprofile_name})</a>
+        </p>
+        <br>
+        """
+
+        html_content = error_html.full_page_html(html_body1=html_body1_filled,
+                                                 html_table=html_table,
+                                                 html_body2=html_body2,
+                                                 css=ccs_files)
+        # write html page
+        with open(subtable_html, 'w') as wfile:
+            wfile.write(html_content)
+
+    # -------------------------------------------------------------------------
+    # make recipe table
+    # -------------------------------------------------------------------------
+    # construct local path to save html to
+    table_html = os.path.join(table_path, f'{table_filename.lower()}.html')
+    # convert table to outlist
+    tout = error_html.table_to_outlist(date_table, date_colnames,
+                                       out_types=date_coltypes)
+    outlist, t_colnames, t_coltype = tout
+    # convert outlist to a html/javascript table
+    html_table = error_html.filtered_html_table(outlist,
+                                                t_colnames,
+                                                t_coltype,
+                                                clean=False, log=False,
+                                                table_class=table_class)
+    # build html page
+    html_title = 'Recipe log ({0})'.format(cprofile_name)
+    html_body1_filled = html_body1.format(TITLE=html_title,
+                                          PROFILE=cprofile_name)
+    html_content = error_html.full_page_html(html_body1=html_body1_filled,
+                                             html_table=html_table,
+                                             html_body2=html_body2,
+                                             css=ccs_files)
+    # write html page
+    with open(table_html, 'w') as wfile:
+        wfile.write(html_content)
 
 
 def compile_docs(gsettings: dict, settings: dict):
     """
     Compile the documentation
 
+    :param gsettings: dict, the global settings
     :param settings: dict, the settings for the documentation
     :return:
     """
@@ -1595,6 +2064,15 @@ def compile_docs(gsettings: dict, settings: dict):
     os.system(f'rm -rf {settings["OUT"]}/*')
     # copy
     drs_path.copytree(settings['HTML'], settings["OUT"])
+
+    # ------------------------------------------------------------------
+    # copy extras
+    # ------------------------------------------------------------------
+    wlog(params, '', 'Copying extra files')
+    extras_dir = os.path.join(settings['WORKING'], 'extras')
+    # copy everything from extras into output directory
+    shutil.copytree(extras_dir, os.path.join(settings['OUT']),
+                    dirs_exist_ok=True)
     # ------------------------------------------------------------------
     # change back to current directory
     os.chdir(cwd)
@@ -1604,7 +2082,6 @@ def sync_docs(gsettings: dict, settings: dict):
     # must import here (so that os.environ is set)
     # noinspection PyPep8Naming
     from apero.core import constants
-    from apero.tools.module.documentation import drs_documentation
     from apero.core.utils import drs_startup
     from apero.core.core import drs_log
     # ------------------------------------------------------------------
@@ -1628,7 +2105,7 @@ def sync_docs(gsettings: dict, settings: dict):
     rdict['USER'] = gsettings['ssh']['user']
     rdict['HOST'] = gsettings['ssh']['host']
     rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                    f'ari/{instrument}/')
+                                   f'ari/{instrument}/')
     rdict['OUTPATH'] = out_dir
     # print command to rsync
     wlog(params, '', RSYNC_CMD_IN.format(**rdict))
@@ -1641,7 +2118,7 @@ def sync_docs(gsettings: dict, settings: dict):
     rdict['USER'] = gsettings['ssh']['user']
     rdict['HOST'] = gsettings['ssh']['host']
     rdict['INPATH'] = os.path.join(gsettings['ssh']['directory'],
-                                    f'ari/profile/')
+                                   f'ari/profile/')
     rdict['OUTPATH'] = settings['WORKING'] + os.sep
     # print command to rsync
     wlog(params, '', RSYNC_CMD_IN.format(**rdict))
@@ -1649,7 +2126,7 @@ def sync_docs(gsettings: dict, settings: dict):
     os.system(RSYNC_CMD_IN.format(**rdict))
 
 
-def upload_docs(gsettings: dict, settings: dict, apero_profiles: dict):
+def upload_docs(gsettings: dict, settings: dict):
     """
     Upload the documentation to the web server
 
@@ -1865,8 +2342,27 @@ def compile_apero_recipe_table() -> Table:
                                     sort_by='START_TIME',
                                     sort_descending=False,
                                     return_table=True)
+    # sort columns based on LOG_COLUMNS (not sql order) and as a table
+    out_log_table = Table()
+    for c_it, col in enumerate(LOG_COLUMNS):
+        # deal with bools
+        if LOG_TYPES[c_it] == 'bool':
+            # find null values
+            mask = (log_table[col] == 1) | (log_table[col] == 0)
+            # convert log_table column to bools replacing
+            #   null values with 0 and then convert to string and fill
+            #   null values with blanks
+            vector = log_table[col]
+            vector[~mask] = 0
+            vector = np.array(vector).astype(bool)
+            vector = np.array(vector).astype(str)
+            vector[~mask] = ''
+            out_log_table[col] = vector
+        else:
+            out_log_table[col] = np.array(log_table[col]).astype(str)
+
     # ------------------------------------------------------------------
-    return log_table
+    return out_log_table
 
 
 def compile_apero_message_table() -> Table:
@@ -2019,6 +2515,8 @@ def add_lbl_count(profile: dict, object_classes: Dict[str, ObjectData]
     # -------------------------------------------------------------------------
     # get the lbl path
     lbl_path = profile['lbl path']
+    if lbl_path in params:
+        lbl_path = params[lbl_path]
     # -------------------------------------------------------------------------
     # deal with no valid lbl path
     if lbl_path is None:
@@ -2365,20 +2863,35 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             results_dict[key] = results
     # -------------------------------------------------------------------------
     elif n_cores > 1:
-        from multiprocessing import get_context
-        # list of params for each entry
-        params_per_process = []
-        for it, key in enumerate(object_classes):
-            itargs = [it, key] + args[2:]
-            params_per_process.append(itargs)
-        # start parellel jobs
-        with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
-            results = pool.starmap(add_obj_page, params_per_process)
-        # fudge back into return dictionary
-        for row in range(len(results)):
-            objname = results[row]['OBJNAME']
-            # push into results dict
-            results_dict[objname] = results[row]
+        if MULTI == 'POOL':
+            from multiprocessing import get_context
+            # list of params for each entry
+            params_per_process = []
+            for it, key in enumerate(object_classes):
+                itargs = [it, key] + args[2:]
+                params_per_process.append(itargs)
+            # start parellel jobs
+            with get_context('spawn').Pool(n_cores, maxtasksperchild=1) as pool:
+                results = pool.starmap(add_obj_page, params_per_process)
+            # fudge back into return dictionary
+            for row in range(len(results)):
+                objname = results[row]['OBJNAME']
+                # push into results dict
+                results_dict[objname] = results[row]
+        else:
+            from multiprocessing import Process
+            # process storage
+            jobs = []
+            for it, key in enumerate(object_classes):
+                itargs = [it, key] + args[2:]
+                # get parallel process
+                process = Process(target=add_obj_page, args=itargs)
+                process.start()
+                jobs.append(process)
+            # do not continue until finished
+            for pit, proc in enumerate(jobs):
+                proc.join()
+
     # -------------------------------------------------------------------------
     # update object classes with results
     # -------------------------------------------------------------------------
@@ -2428,6 +2941,12 @@ def objpage_spectrum(page: Any, name: str, ref: str,
         page.add_csv_table('', object_instance.spec_stats_table,
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
+    # add request table
+    if object_instance.spec_rlink_table is not None:
+        # add the stats table
+        page.add_csv_table('', object_instance.spec_rlink_table,
+                           cssclass='csvtable2')
+    # ------------------------------------------------------------------
     # add download links
     if object_instance.spec_dwn_table is not None:
         # add the stats table
@@ -2475,6 +2994,12 @@ def objpage_lbl(page: Any, name: str, ref: str,
             page.add_csv_table('', object_instance.lbl_stats_table[objcomb],
                                cssclass='csvtable2')
         # ------------------------------------------------------------------
+        # add request table
+        if object_instance.lbl_rlink_table[objcomb] is not None:
+            # add the stats table
+            page.add_csv_table('', object_instance.lbl_rlink_table[objcomb],
+                               cssclass='csvtable2')
+        # ------------------------------------------------------------------
         # add download links
         if object_instance.lbl_dwn_table is not None:
             # add the stats table
@@ -2515,6 +3040,12 @@ def objpage_ccf(page: Any, name: str, ref: str, object_instance: ObjectData):
     if object_instance.ccf_stats_table is not None:
         # add the stats table
         page.add_csv_table('', object_instance.ccf_stats_table,
+                           cssclass='csvtable2')
+    # ------------------------------------------------------------------
+    # add request table
+    if object_instance.ccf_rlink_table is not None:
+        # add the stats table
+        page.add_csv_table('', object_instance.ccf_rlink_table,
                            cssclass='csvtable2')
     # ------------------------------------------------------------------
     # add download links
@@ -2735,6 +3266,30 @@ def download_table(files: List[str], descriptions: List[str],
     down_table = Table(down_dict2)
     # write to file as csv file
     down_table.write(item_path, format='ascii.csv', overwrite=True)
+
+
+def create_request_link_table(props: Dict[str, Any], save_path: str,
+                              rlinks: List[str], rlinkstxt: List[str]):
+    # rlinks
+    rlink_dict = dict()
+    rlink_dict['Request'] = []
+    # loop around rlinks
+    for r_it, rlink in enumerate(rlinks):
+        if rlink not in props:
+            continue
+        if props[rlink] is None:
+            continue
+        # get the rlink text
+        rlinktxt = rlinkstxt[r_it]
+        # construct the request link in markdown format
+        rlinkstr = '`{0} <{1}>`_'.format(rlinktxt, props[rlink])
+        # push into dictionary
+        rlink_dict['Request'].append(rlinkstr)
+    # --------------------------------------------------------------------------
+    # convert to table
+    rdict_table = Table(rlink_dict)
+    # write to file as csv file
+    rdict_table.write(save_path, format='ascii.csv', overwrite=True)
 
 
 def create_file_list(files: List[str], path: str):
@@ -3619,6 +4174,7 @@ def load_table(filename, **kwargs):
         eargs = [filename, type(e), str(e)]
         raise ValueError(emsg.format(*eargs))
 
+
 def save_stats(settings: dict, stats: dict):
     """
     Save the stats for a given profile
@@ -3629,7 +4185,7 @@ def save_stats(settings: dict, stats: dict):
     :return:
     """
     # list tables to load
-    tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
+    tables = TABLE_NAMES
     # loop around tables and load them
     for table_name in tables:
         # deal with no table
@@ -3662,7 +4218,7 @@ def load_stats(settings: dict) -> dict:
     profile_stats['TABLES'] = dict()
     profile_stats['OPROPS'] = dict()
     # list tables to load
-    tables = ['OBJECT_TABLE', 'RECIPE_TABLE', 'MESSAGE_TABLE']
+    tables = ['OBJECT_TABLE', 'RECIPE_TABLE']
     # loop around tables and load them
     for table_name in tables:
         # construct filename for table
@@ -3868,6 +4424,7 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
         # find all rows that have this pid
         mask = all_pids == pid
         # deal with no entries
+        # noinspection PyTypeChecker
         if len(mask) == 0:
             continue
         # if all rows pass qc passed = 1
@@ -3875,6 +4432,28 @@ def _filter_pids(findex_table: pd.DataFrame, logdbm: Any) -> np.ndarray:
             passed[row] = True
     # return the passed mask
     return passed
+
+
+def _url_addp(key: str, value: Union[str, List[str], None],
+              fmt: str = '&{0}={1}') -> str:
+    # deal with value being None
+    if value is None:
+        return ''
+    # deal with a str or a list
+    if isinstance(value, str):
+        values = [value]
+    else:
+        values = value
+    # storage for output string
+    outstr = ''
+    # loop around all values
+    for value in values:
+        if ' ' in value:
+            outstr += fmt.format(key, value.replace(' ', '+'))
+        else:
+            outstr += fmt.format(key, value)
+    # return outstr
+    return outstr
 
 
 class ArrowHandler(HandlerPatch):
@@ -3898,10 +4477,10 @@ class ArrowHandler(HandlerPatch):
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # get the args
-    args = get_args()
-    profile_filename = args.profile
+    _args = get_args()
+    profile_filename = _args.profile
     # deal with debug
-    if args.debug:
+    if _args.debug:
         debug = True
     else:
         debug = False
@@ -3914,19 +4493,19 @@ if __name__ == "__main__":
     del apero_profiles['headers']
     # -------------------------------------------------------------------------
     # deal with reprocessing
-    reprocess = dict()
+    _reprocess = dict()
     # list current profiles
     current_profiles = list(apero_profiles.keys())
     # if filter in this list we remove all other profiles
-    if args.filter not in [None, 'None'] and args.filter in current_profiles:
-        for profile in current_profiles:
-            if profile == args.filter:
-                reprocess[profile] = True
+    if _args.filter not in [None, 'None'] and _args.filter in current_profiles:
+        for _profile in current_profiles:
+            if _profile == _args.filter:
+                _reprocess[_profile] = True
             else:
-                reprocess[profile] = False
+                _reprocess[_profile] = False
     else:
-        for profile in current_profiles:
-            reprocess[profile] = True
+        for _profile in current_profiles:
+            _reprocess[_profile] = True
     # -------------------------------------------------------------------------
     # deal with a reset
     if ari_gsettings['reset']:
@@ -3946,9 +4525,9 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # look for profiles not in apero_profiles that we have to add
     #  (i.e. they are on the server)
-    apero_profiles, reprocess = get_profiles_from_store(ari_settings,
-                                                        apero_profiles,
-                                                        reprocess)
+    apero_profiles, _reprocess = get_profiles_from_store(ari_settings,
+                                                         apero_profiles,
+                                                         _reprocess)
     # ----------------------------------------------------------------------
     # step 2: for each profile compile all stats
     all_apero_stats = dict()
@@ -3960,7 +4539,7 @@ if __name__ == "__main__":
         # add profile name to settings
         apero_profiles[_apero_profname]['profile name'] = _apero_profname
         # we reprocess if the file does not exist or if REPROCESS is True
-        if reprocess[_apero_profname]:
+        if _reprocess[_apero_profname]:
             # print progress
             print('=' * 50)
             print('Compiling stats for profile: {0}'.format(_apero_profname))
@@ -4013,8 +4592,6 @@ if __name__ == "__main__":
     print('=' * 50)
     print('Uploading docs...')
     print('=' * 50)
-    upload_docs(ari_gsettings, ari_settings, apero_profiles)
-
-
+    upload_docs(ari_gsettings, ari_settings)
 
 # =============================================================================

@@ -13,7 +13,7 @@ import argparse
 import os
 import shutil
 import sys
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import astropy.units as uu
 import numpy as np
@@ -361,6 +361,8 @@ def run_processing(settings: Dict[str, Any]):
         print(f'\tRunning profile: {profile}')
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
+        # update reduced checks
+        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
         # update the apero profile
         params = update_apero_profile(pdict)
         # get preset
@@ -382,6 +384,8 @@ def run_processing(settings: Dict[str, Any]):
 
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_processing
+        from apero.tools.module.error import error_html
+
         # run apero processing
         if obs_dirs == '*':
             ll = apero_processing.main(runfile=runfile,
@@ -390,11 +394,19 @@ def run_processing(settings: Dict[str, Any]):
             ll = apero_processing.main(runfile=runfile,
                                        include_obs_dirs=obsdir_str,
                                        test=settings['TEST'])
-        # TODO: log apero errors using ll
-        _ = ll
+        # ---------------------------------------------------------------------
+        # push the errors into yaml format for html
+        # ---------------------------------------------------------------------
+        # get outlist from the return of apero_processing.main
+        outlist = ll['outlist']
+        # construct path to yaml dicts
+        yaml_path = os.path.join(params['DRS_DATA_MSG'], 'yamls')
+        # push into yaml dicts
+        error_html.from_outlist(yaml_path, outlist)
         # log that APERO ended
         trigger_settings['LOG'][profile].write(APERO_END)
-
+        # update reduced checks
+        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
 
 
 def apero_reset(params: Any, pdict: Dict[str, Any]):
@@ -444,6 +456,8 @@ def run_apero_get(settings: Dict[str, Any]):
         print(f'\tRunning profile: {profile}')
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
+        # update reduced checks
+        run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # update the apero profile
         pparams = update_apero_profile(pdict)
         pconst = constants.pload()
@@ -600,6 +614,8 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
             continue
         # log that APERO started
         settings['LOG'][profile].write(ARI_START)
+        # update reduced checks
+        run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # change to ari path
         os.chdir(ari_path)
         # set up command
@@ -609,6 +625,64 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         os.system(ari_cmd.format(ari_profile, profile))
         # log that APERO started
         settings['LOG'][profile].write(ARI_END)
+        # update reduced checks
+        run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
+    # change back to original path
+    os.chdir(cwd)
+
+
+def run_apero_checks(pdict: Dict[str, Any], mode: str,
+                     obsdirs: Union[List[str], str]):
+    """
+    Run the apero reduction checks
+
+    :param pdict: dict, settings dictionary
+    :param mode: str, "raw" or "red"
+    :param obsdirs: str or list, the observation directory to check
+                    if * or multiple given check is skipped
+    :return:
+    """
+    # get the current working directory
+    cwd = os.getcwd()
+    # we don't always want to do tests
+    if not pdict['check'].get('run_check', True):
+        print('Skipping {0} check: run_check=False'.format(mode))
+        return
+    # get the observation directories
+    # if we have a * we don't do the checks or more than one night we don't
+    # do the checks - its not worth doing this loads of times and should be
+    #  run afterwards
+    if obsdirs == '*':
+        print('Skipping {0} check: obsdir==*'.format(mode))
+        return
+    elif isinstance(obsdirs, list):
+        obsdirs = ','.join(obsdirs)
+    # if there are multiple nights defined skip
+    if ',' in obsdirs:
+        print('Skipping {0} check: obsdir==multi'.format(mode))
+        return
+    else:
+        obs_dir = str(obsdirs)
+    # deal with mode
+    if mode == 'red':
+        check_code = 'apero_red_check.py'
+    else:
+        check_code = 'apero_raw_data_check.py'
+    # get ari path
+    check_path = pdict['check']['path']
+    # get ari profile
+    check_profile = pdict['check']['profile']
+    # deal with no ari code
+    if check_code not in os.listdir(check_path):
+        eargs = [check_code, check_path]
+        print('\t\tERROR: {0} not found in {1}'.format(*eargs))
+    # change to ari path
+    os.chdir(check_path)
+    # set up command
+    check_cmd = 'python {0} {1} --obsdir={2}'
+    # run simple ari interface
+    # TODO: This is terrible - do not use os.system
+    os.system(check_cmd.format(check_code, check_profile, obs_dir))
     # change back to original path
     os.chdir(cwd)
 
@@ -635,6 +709,11 @@ if __name__ == "__main__":
     # log that we have started manual trigger
     for profile in trigger_settings['PROFILES']:
         trigger_settings['LOG'][profile].write(MANUAL_START)
+        # run the checks
+        run_apero_checks(trigger_settings['PROFILES'][profile], mode='raw',
+                         obsdirs=trigger_settings['OBS_DIRS'])
+        run_apero_checks(trigger_settings['PROFILES'][profile], mode='red',
+                         obsdirs=trigger_settings['OBS_DIRS'])
     # ----------------------------------------------------------------------
     # make symbolic links
     if trigger_settings['MAKELINKS']:
@@ -677,7 +756,9 @@ if __name__ == "__main__":
     # log that we have started manual trigger
     for profile in trigger_settings['PROFILES']:
         trigger_settings['LOG'][profile].write(MANUAL_END)
-
+        # run the checks
+        run_apero_checks(trigger_settings['PROFILES'][profile], mode='red',
+                         obsdirs=trigger_settings['OBS_DIRS'])
 # =============================================================================
 # End of code
 # =============================================================================

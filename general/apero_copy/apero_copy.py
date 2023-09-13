@@ -308,23 +308,15 @@ def copy_files(params, files1: Dict[str, List[str]],
             if params['test']:
                 print('Copying {0} to {1}'.format(infilename, outfilename3))
             else:
-                # deal with file existing
-                if os.path.exists(outfilename2) and not params['overwrite']:
-                    msg = ('Skipping {0} (already exists) use '
-                           '--overwrite to copy')
-                    margs = [outfilename2]
-                    print(msg.format(*margs))
-                    continue
+                # need to deal with directory not existing
+                if not os.path.exists(os.path.dirname(outfilename3)):
+                    os.makedirs(os.path.dirname(outfilename3))
                 # deal with tmp file existing
                 if os.path.exists(outfilename3):
-                    msg = ('Skipping {0} (tmp file already exists) use '
-                           '--overwrite to copy')
+                    msg = ('Skipping {0} (tmp file already exists)')
                     margs = [outfilename3]
                     print(msg.format(*margs))
                     continue
-                # need to deal with no tmp directory
-                if not os.path.exists(os.path.dirname(outfilename3)):
-                    os.makedirs(os.path.dirname(outfilename3))
                 # copy file
                 if params['symlinks']:
                     os.symlink(infilename, outfilename3)
@@ -450,6 +442,15 @@ def main():
     # copy files from profile 1 to profile 2 for each block kind
     # must copy files to a temporary path first (copying can be slow)
     copy_files(params, files1, files2, files3)
+    # ask after copying whether we are ready to continue
+    uinput = ''
+    while uinput.lower() not in ['yes', 'no']:
+        uinput = input('Are you ready to remove old data and replace with '
+                       'the new data. Note this is a one way process and there '
+                       'is no undo \n\tType "yes" or "no"?\t')
+    if uinput.lower() ==  'no':
+        print('\n\tStopping copy.')
+        return
     # may need to update profile 2 (via git) to match profile 1
     update_git_profile2(params)
     # remove all old files from profile 2 blocks
