@@ -31,7 +31,7 @@ __VERSION__ = base.__VERSION__
 __DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
 # define lock directory
-LOCK_DIR = os.path.join(os.path.dirname(__file__), 'lock')
+LOCK_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # define maximum lock out time in minutes
 MAX_COUNT = 30
 # -----------------------------------------------------------------------------
