@@ -643,16 +643,20 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     cwd = os.getcwd()
     # we don't always want to do tests
     if not pdict['check'].get('run_check', True):
+        print('Skipping {0} check: run_check=False'.format(mode))
         return
     # get the observation directories
     # if we have a * we don't do the checks or more than one night we don't
     # do the checks - its not worth doing this loads of times and should be
     #  run afterwards
     if obsdirs == '*':
+        print('Skipping {0} check: obsdir==*'.format(mode))
         return
     elif isinstance(obsdirs, list):
-        return
-    elif ',' in obsdirs:
+        obsdirs = ','.join(obsdirs)
+    # if there are multiple nights defined skip
+    if ',' in obsdirs:
+        print('Skipping {0} check: obsdir==multi'.format(mode))
         return
     else:
         obs_dir = str(obsdirs)
