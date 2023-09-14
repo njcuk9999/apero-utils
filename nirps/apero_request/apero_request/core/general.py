@@ -589,6 +589,9 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     for row in range(len(dataframe)):
         source = ''
         for col in dataframe.columns:
+            # skip these columns (can change)
+            if col in ['VALID', 'REASON', 'HASHKEY']:
+                continue
             source += str(dataframe[col][row])
         # get hashkey
         hashkey = misc.generate_arg_checksum(source)
