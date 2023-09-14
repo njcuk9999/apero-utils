@@ -584,8 +584,29 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     # print progress
     msg = 'Pushing all rows to google-sheet'
     misc.log_msg(msg, level='info')
+    # make a hash key for each row in dataframe
+    hashkeys = []
+    for row in range(len(dataframe)):
+        source = ''
+        for col in dataframe.columns:
+            source += str(dataframe[col][row])
+        # get hashkey
+        hashkey = misc.generate_arg_checksum(source)
+        # append to list
+        hashkeys.append(hashkey)
+    # push hashkeys into dataframe
+    dataframe['HASHKEY'] = hashkeys
+
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id, sheet=sheet_name)
+
+    # get current data frame
+    current_dataframe = google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+
+    # remove all rows from dataframe that are already in current_dataframe
+    mask = np.in1d(dataframe['HASHKEY'], current_dataframe['HASHKEY'])
+    dataframe = dataframe[~mask]
+
     # push dataframe back to server
     if len(dataframe) > 0:
         google_sheet.df_to_sheet(dataframe, index=False, replace=False)
