@@ -379,7 +379,7 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
     unlock()
 
 
-def lock():
+def lock(stop: bool = False) -> bool:
     """
     Lock code while something is happening
     (avoids two codes doing this at same time)
@@ -396,6 +396,9 @@ def lock():
     time.sleep(random_time)
     # if lock file exists
     while os.path.exists(lock_file):
+        # if stop we assume we return straight away with a False
+        if stop:
+            return False
         # deal with a max count
         if counter > (MAX_COUNT * 60):
             emsg = f'Lock file timeout. Please remove: {lock_file} manually'
@@ -413,7 +416,7 @@ def lock():
         with open(lock_file, 'w') as f:
             timenow = time.time()
             f.write(f'LOCKED: {timenow}')
-        return
+        return True
 
 
 def unlock():

@@ -9,6 +9,7 @@ Created on {DATE}
 
 @author: cook
 """
+import time
 import os
 import sys
 import shutil
@@ -33,6 +34,10 @@ __AUTHOR__ = base.__AUTHOR__
 # define rsync commands
 RSYNC_CMD_IN = 'rsync -avh --delete -e "{SSH}" {USER}@{HOST}:{INPATH} {OUTPATH}'
 RSYNC_CMD_OUT = 'rsync -avh --delete -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}'
+# define lock directory
+LOCK_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+# define maximum lock out time in minutes
+MAX_COUNT = 60
 
 
 # =============================================================================
@@ -845,6 +850,61 @@ def get_runids(runids: set) -> Union[str, None]:
         return None
     else:
         return ','.join(list(runids))
+
+
+
+
+def lock(stop: bool = False) -> bool:
+    """
+    Lock code while something is happening
+    (avoids two codes doing this at same time)
+
+    :return:
+    """
+    # get lock file
+    lock_file = os.path.join(LOCK_DIR, 'lock.lock')
+    # counter
+    counter = 0
+    # wait a very small random amount of time (to avoid two codes doing this
+    # at the same time)
+    random_time = 0.1 * np.random.random()
+    time.sleep(random_time)
+    # if lock file exists
+    while os.path.exists(lock_file):
+        # if stop we assume we return straight away with a False
+        if stop:
+            return False
+        # deal with a max count
+        if counter > (MAX_COUNT * 60):
+            emsg = f'Lock file timeout. Please remove: {lock_file} manually'
+            raise base.AperoRequestError(emsg)
+        # every 30 counts print a lock message
+        if counter % 30 == 0:
+            print(f'LOCKED [{counter}s]: Waiting for lock file to be removed '
+                  f'by another process')
+        # check again in 1 seconds - hopefully other process if fixed by then
+        time.sleep(1)
+        counter += 1
+    # if file doesn't exist create and return
+    if not os.path.exists(lock_file):
+        # create lock file
+        with open(lock_file, 'w') as f:
+            timenow = time.time()
+            f.write(f'LOCKED: {timenow}')
+        return True
+
+
+def unlock():
+    """
+    Unlock code (remove lock.lock file)
+    :return:
+    """
+    # get lock file
+    lock_file = os.path.join(LOCK_DIR, 'lock.lock')
+    # if lock file exists
+    if os.path.exists(lock_file):
+        # delete the lock file
+        os.remove(lock_file)
 
 
 # =============================================================================

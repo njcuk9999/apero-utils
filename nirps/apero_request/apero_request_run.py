@@ -26,6 +26,29 @@ __AUTHOR__ = base.__AUTHOR__
 # Define functions
 # =============================================================================
 def main():
+    """
+    Wrapper around main code to catch errors (and exit nicely)
+    i.e. deal with the lock file
+    :return:
+    """
+    # lets lock (or not run if locked)
+    not_running = general.lock(stop=True)
+    # if running then we exit
+    if not not_running:
+        misc.log_msg('Request already running - exiting')
+    # try to run main code
+    try:
+        __main__()
+        # unlock the code
+        general.unlock()
+    except Exception as e:
+        # unlock the code
+        general.unlock()
+        # raise exception
+        raise e
+
+
+def __main__():
     # load params
     params = misc.load_params()
     # get splash
