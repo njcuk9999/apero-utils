@@ -38,7 +38,8 @@ parameters['archive sheet name'] = 'archive'
 # the valid time period for files in days
 parameters['valid time'] = 7
 
-# the path to the shared directory
+# the file size limit in GB
+parameters['file size limit'] = 10
 
 
 # =============================================================================

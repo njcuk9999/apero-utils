@@ -9,6 +9,10 @@ spirou_offline: ../manual_trigger/spirou_offline.yaml
 
 # whether to run in test mode
 test: False
+# the valid time period for files in days
+valid time: 7
+# the file size limit in GB
+file size limit: 10
 # local directory to save tar files to (should not contain anything else)
 local path: /cosmos99/nirps/apero-data/misc/apero-request/
 # email address to send from

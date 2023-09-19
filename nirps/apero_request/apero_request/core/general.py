@@ -38,6 +38,9 @@ RSYNC_CMD_OUT = 'rsync -avh --delete -e "{SSH}" {INPATH} {USER}@{HOST}:{OUTPATH}
 LOCK_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # define maximum lock out time in minutes
 MAX_COUNT = 60
+# contact emails
+CONTACT = ['neil.cook@umontreal.ca', 'etienne.artigau@umontreal.ca',
+           'charles.cadieux.1@umontreal.ca']
 
 
 # =============================================================================
@@ -239,7 +242,8 @@ class Request:
                                    test=test,
                                    since=self.start_date_str,
                                    latest=self.end_date_str,
-                                   timekey='observed')
+                                   timekey='observed',
+                                   sizelimit=params['file size limit'])
         except Exception as e:
             self.valid = False
             self.reason = f'\tApero get failed with error: {e}'
@@ -426,6 +430,9 @@ class Request:
         email_string += f'{self.reason}\n\n'
         email_string += f'Your request was:\n'
         email_string += self._generate_summary()
+        email_string += ('\n\nIf you believe your query was valid '
+                         '(or file size was too large) please contact the '
+                         'admins: {0}'.format(', '.join(CONTACT)) + '\n\n')
 
         # if not self.valid:
         #     print('Failure!')
