@@ -39,8 +39,8 @@ ASTROMETRIC_COLUMNS = ['OBJNAME', 'RA_DEG', 'DEC_DEG', 'TEFF', 'SP_TYPE']
 ASTROMETRIC_DTYPES = [str, float, float, float, str]
 # define the log database column names to get
 LOG_COLUMNS = ['RECIPE', 'SHORTNAME', 'RUNSTRING', 'START_TIME', 'END_TIME',
-               'PASSED_ALL_QC', 'ENDED', 'ERRORMSGS']
-LOG_TYPES = ['str', 'str', 'str', 'str', 'str', 'bool', 'bool', 'str']
+               'PASSED_ALL_QC', 'ENDED', 'ERRORMSGS', 'LOGFILE']
+LOG_TYPES = ['str', 'str', 'str', 'str', 'str', 'bool', 'bool', 'str', 'str']
 # define which instruments have polar
 HAS_POLAR = dict(SPIROU=True, NIRPS_HE=False, NIRPS_HA=False)
 # define log levels to report
