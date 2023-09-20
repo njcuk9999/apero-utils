@@ -103,6 +103,8 @@ class Request:
         self.tarfile: str = f'apero-request-{self.hashkey}.tar.gz'
         # set url
         self.tar_url: str = ''
+        # command that would have been run
+        self.cmd = ''
 
     def set_params(self, timestamp: Union[str, pd.Timestamp],
                  email: str, drsobjn: str, dprtype: str, mode: str, fibers: str,
@@ -228,8 +230,28 @@ class Request:
         # try to run apero get
         # ---------------------------------------------------------------------
         try:
+            # create command (for feedback)
+            cmd = 'apero_get.py'
+            cmd += f' --objnames={self.drsobjn_str}'
+            cmd += f' --dprtypes={self.dprtype_str}'
+            cmd += f' --outtypes={self.drsoutid_str}'
+            cmd += f' --outpath={outpath}'
+            cmd += f' --fibers={self.fibers_str}'
+            cmd += f' --runid="{runids}"'
+            if test:
+                cmd += ' --test'
+            if self.start_date_str not in [None, 'None', '']:
+                cmd += f' --since={self.start_date_str}'
+            if self.start_date_str not in [None, 'None', '']:
+                cmd += f' --latest={self.end_date_str}'
+            cmd += f' --timekey=observed'
+            cmd += f' --sizelimit={params["file size limit"]}'
+            self.cmd = cmd
             # need to import apero_get (for this profile)
             from apero.tools.recipes.bin import apero_get
+            # print the command we are running
+            message = f'Running command: {self.cmd}'
+            misc.log_msg(message)
             # run apero get to make the objects dir in apero dir
             llget = apero_get.main(objnames=self.drsobjn_str,
                                    dprtypes=self.dprtype_str,
@@ -370,6 +392,12 @@ class Request:
         summary += f'DRSOUTID: {self.drsoutid_str}\n'
         summary += f'START_DATE: {self.start_date_str}\n'
         summary += f'END_DATE: {self.end_date_str}\n'
+
+        if len(self.cmd) > 0:
+            summary += f''
+            summary += f'APERO GET CMD:'
+            summary += f''
+            summary += f'\t{self.cmd}'
         return summary
 
     def __str__(self) -> str:
@@ -619,7 +647,10 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
 
     # push dataframe back to server
     if len(dataframe) > 0:
-        google_sheet.df_to_sheet(dataframe, index=False, replace=False)
+        new_dataframe = pd.concat([current_dataframe, dataframe],
+                                  ignore_index=True)
+
+        google_sheet.df_to_sheet(new_dataframe, index=False, replace=True)
     # print progress
     msg = 'All rows added to archive google-sheet'
     misc.log_msg(msg, level='info')
@@ -811,12 +842,8 @@ def create_dataframe(params: Dict[str, Any], requests: List[Request]
     # convert list of rows to dataframe
     valid_dataframe = pd.DataFrame(valid_rows)
     all_dataframe = pd.DataFrame(all_rows)
-    # get rows from archive sheet
-    archive_sheet = get_sheet(params, 'archive')
-    # add to dataframe
-    full_dataframe = pd.concat([archive_sheet, all_dataframe], ignore_index=True)
     # return dataframe
-    return valid_dataframe, full_dataframe
+    return valid_dataframe, all_dataframe
 
 
 def update_apero_profile(params: dict) -> Any:
