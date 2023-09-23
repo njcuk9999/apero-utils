@@ -30,6 +30,8 @@ name7 = 'cfht'
 
 
 names = [name1, name2, name3, name4, name5, name6, name7]
+names = [name1, name2, name3, name4]
+
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
@@ -41,13 +43,13 @@ REF_NAME = str(name1)
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 outpaths = dict()
-outpaths[name1] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_rali/lblrdb/'
-outpaths[name2] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupiter/lblrdb/'
-outpaths[name3] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_nb19/lblrdb/'
-outpaths[name4] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_maestria/lblrdb/'
-outpaths[name5] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_newworld/lblrdb'
-outpaths[name6] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_lam/lblrdb/'
-outpaths[name7] = '/scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_cfht/lblrdb/'
+outpaths[name1] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_rali/lbl/lblrdb/'
+outpaths[name2] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/lbl/lblrdb/'
+outpaths[name3] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_nb19/lbl/lblrdb/'
+outpaths[name4] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_maestria/lbl/lblrdb/'
+outpaths[name5] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_newworld/lbl/lblrdb/'
+outpaths[name6] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_lam/lbl/lblrdb/'
+outpaths[name7] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_cfht/lbl/lblrdb/'
 
 paths = outpaths
 
@@ -90,6 +92,9 @@ def get_files(path: str) -> List[str]:
         for filename in files:
             if filename.endswith('.fits'):
                 fits_files.append(os.path.join(root, filename))
+
+    if len(fits_files) == 0:
+        print(f'No files for: {path}')
     return fits_files
 
 

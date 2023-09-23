@@ -26,10 +26,10 @@ name7 = 'halau'
 ref_name = 'spirou@rali'
 
 rawpaths = dict()
-rawpaths[name1] = '/spirou2/apero-data/drs-data/spirou_minidata2_07286/red/'
-rawpaths[name2] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/red/'
-rawpaths[name3] = '/scratch/apero-nb19/drs-data/spirou_minidata2_07286_nb19/red/'
-rawpaths[name4] = '/spirou2/apero-data/drs-data/spirou_minidata2_07286_maestria/red/'
+rawpaths[name1] = '/spirou2/apero-data/drs-data/spirou_minidata2_07286/lbl/'
+rawpaths[name2] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/lbl/'
+rawpaths[name3] = '/scratch/apero-nb19/drs-data/spirou_minidata2_07286_nb19/lbl/'
+rawpaths[name4] = '/spirou2/apero-data/drs-data/spirou_minidata2_07286_maestria/lbl/'
 
 rsync_info = dict()
 rsync_info[name1] = 'spirou@rali'
@@ -38,10 +38,10 @@ rsync_info[name3] = 'cook@nb19'
 rsync_info[name4] = 'spirou@maestria'
 
 inpaths = dict()
-inpaths[name1] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_rali/red/'
-inpaths[name2] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/reduced/'
-inpaths[name3] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_nb19/red/'
-inpaths[name4] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_maestria/red/'
+inpaths[name1] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_rali/lbl/'
+inpaths[name2] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/lbl/'
+inpaths[name3] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_nb19/lbl/'
+inpaths[name4] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_maestria/lbl/'
 # inpaths[name5] = '/scratch2/spirou/drs-data/minidata2_07275_newworld/red/'
 # inpaths[name6] = '/scratch2/spirou/drs-data/minidata2_07275_lam/red/'
 # inpaths[name7] = '/scratch2/spirou/drs-data/minidata2_07275_halau/red/'
