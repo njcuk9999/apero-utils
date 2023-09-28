@@ -398,11 +398,13 @@ def run_processing(settings: Dict[str, Any]):
         # push the errors into yaml format for html
         # ---------------------------------------------------------------------
         # get outlist from the return of apero_processing.main
-        outlist = ll['outlist']
-        # construct path to yaml dicts
-        yaml_path = os.path.join(params['DRS_DATA_MSG'], 'yamls')
-        # push into yaml dicts
-        error_html.from_outlist(yaml_path, outlist)
+        outlist = ll.get('outlist', None)
+        # make error yaml files (if we have an outlist)
+        if outlist is not None:
+            # construct path to yaml dicts
+            yaml_path = os.path.join(params['DRS_DATA_MSG'], 'yamls')
+            # push into yaml dicts
+            error_html.from_outlist(yaml_path, outlist)
         # log that APERO ended
         trigger_settings['LOG'][profile].write(APERO_END)
         # update reduced checks
