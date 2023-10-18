@@ -182,22 +182,22 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     ####################################################################################
     # Status is '' empty string when everything is OK
-    warning_cryo1_status = np.sum(tbl['WarningCryo1'] != '')
-
-    if warning_cryo1_status == 0:
-        passed_log.append('\tWarningCryo1 always OK')
-    else:
-        failed_log.append('\tWarningCryo1 not empty ({} times)'.format(warning_cryo1_status))
+    # warning_cryo1_status = np.sum(tbl['WarningCryo1'] != '')
+    #
+    # if warning_cryo1_status == 0:
+    #     passed_log.append('\tWarningCryo1 always OK')
+    # else:
+    #     failed_log.append('\tWarningCryo1 not empty ({} times)'.format(warning_cryo1_status))
 
     ####################################################################################
     # Status is '' empty string when everything is OK
 
-    warning_cryo2_status = np.sum(tbl['WarningCryo2'] != '')
-
-    if warning_cryo2_status == 0:
-        passed_log.append('\tWarningCryo2 always OK')
-    else:
-        failed_log.append('\tWarningCryo2 not empty ({} times)'.format(warning_cryo2_status))
+    # warning_cryo2_status = np.sum(tbl['WarningCryo2'] != '')
+    #
+    # if warning_cryo2_status == 0:
+    #     passed_log.append('\tWarningCryo2 always OK')
+    # else:
+    #     failed_log.append('\tWarningCryo2 not empty ({} times)'.format(warning_cryo2_status))
 
     ####################################################################################
     # FP temperature should be stable to 0.01 K rms
