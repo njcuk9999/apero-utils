@@ -5,11 +5,11 @@ nirps ha V0.7.275 online:
         raw dir: /spirou/cfht_nights/common/raw
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/spirou/apero-settings/spirou_07276_offline
+        apero profile: /cosmos99/spirou/apero-settings/spirou_offline
         # the install directory for apero (git hub repo)
         apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
-        lbl path: /cosmos99/spirou/lbl-data/spirou_07276_offline/
+        lbl path: /cosmos99/spirou/lbl-data/spirou_offline/
         # ari path
         ari path: /comos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
         # start date if not using --obsdir argument
@@ -17,7 +17,7 @@ nirps ha V0.7.275 online:
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: complete_run.ini
+        run file: offline_run.ini
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -92,13 +92,22 @@ nirps ha V0.7.275 online:
             - calib
     # ari-settings
     ari:
-        # whether to run check
-        run_check: False
         # ari path
-        path: /comos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
+        path: /cosmos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
         # ari profile
         profile: spirou_profiles.yaml
-
+    # check settings
+    check:
+        # whether to run check
+        run_check: False
+        # check path
+        path: /cosmos99/spirou/git-bin/apero-utils/nirps/apero_check
+        # profile
+        profile: spirou_profile_offline.yaml
+        # define the raw sheet name for the google sheet
+        raw sheet name: RAW-SPIROU-HE
+        # define the red sheet name for the google sheet
+        red sheet name: RED-OFFLINE-SPIROU-HE
 
 
 
