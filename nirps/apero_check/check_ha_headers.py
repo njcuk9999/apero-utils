@@ -6,7 +6,7 @@ FILE1 = "/nirps_raw/nirps/raw-data/nirps_he/2023-10-29/NIRPS_2023-10-30T00_15_11
 FILE2 = "/nirps_raw/nirps/raw-data/nirps_ha/2023-10-29/NIRPS_2023-10-30T00_02_55_544.fits"
 
 hdr1 = fits.getheader(FILE1)
-hdr2 = fits.getheader(FILE1)
+hdr2 = fits.getheader(FILE2)
 
 # %%
 missing_from_2 = []
