@@ -1,3 +1,4 @@
+# TODO: Implement a proper test for this. This is for quick reporting of missing header keys.
 # %%
 from astropy.io import fits
 import pprint
