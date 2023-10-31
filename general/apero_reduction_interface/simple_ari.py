@@ -1175,6 +1175,7 @@ class ObjectData:
             num_obs_ext = str(np.sum(obs_mask_ext))
             num_obs_tcorr = str(np.sum(obs_mask_tcorr))
             # get the seeing for this observation directory
+            # TODO: nanmean for all below?
             seeing = np.mean(seeing_vec[obs_mask_ext])
             seeing = '{:.3f}'.format(seeing)
             # get the airmass for this observation directory
