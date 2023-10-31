@@ -106,10 +106,12 @@ headers:
       key: HIERARCH ESO TEL AMBI FWHM START
       label: Seeing at start
       dtype: float
+      fallback: Null
     EXT_AIRMASS:
       key: HIERARCH ESO TEL AIRM START
       label: Airmass at start
       dtype: float
+      fallback: Null
     EXT_EXPTIME:
         key: EXPTIME
         label: Exposure Time
