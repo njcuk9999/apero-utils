@@ -15,6 +15,8 @@ import emcee
 import corner
 import george
 import yaml
+import shutil
+from etienne_tools import snail as tqdm
 
 def lnuniform(val, min_val, max_val):
     # Define the uniform prior and return the log of its value.
@@ -44,7 +46,7 @@ def sigma(tmp):
     p1 = (1-(1-sig1)/2)*100
     return (np.nanpercentile(tmp,p1) - np.nanpercentile(tmp,100-p1))/2.0
 
-def Routine(t, y, yerr, initial, initialize, nwalkers, nsteps,priors):
+def Routine(t, y, yerr, initial, initialize, nwalkers, nsteps,priors, pdfname = None):
     # MCMC
 
     ndim = len(initial)
@@ -62,7 +64,7 @@ def Routine(t, y, yerr, initial, initialize, nwalkers, nsteps,priors):
 
     fig, axes = plt.subplots(5, figsize=(10, 7), sharex=True)
     samples = sampler.get_chain()
-    labels = ['$\ln{A}$', '$\ln{\ell}$', '$\ln{\Gamma}$', '$\ln{P}$', '$\ln{s}$']
+    labels = ['$\ln{A}$', '$\ln{\ell}$', '$\ln{\Gamma}$', '$\ln{P}$', '$\ln{\sigma_{GP}}$']
     for i in range(ndim):
         ax = axes[i]
         ax.plot(samples[:, :, i], "k", alpha=0.3)
@@ -91,6 +93,8 @@ def Routine(t, y, yerr, initial, initialize, nwalkers, nsteps,priors):
     corner.corner(samples, bins=40, show_titles=True, title_fmt=".5f",
                   truths=theta_results, labels=labels, plot_datapoints=False,
                   quantiles=(0.16, 0.84))
+    if pdfname is not None:
+        plt.savefig(pdfname)
     plt.show()
 
     return samples, log_L
@@ -172,6 +176,9 @@ def load_yaml(param_file):
     # load the yaml file
     # return a dictionary with the inputs
 
+    if not param_file.endswith('.yaml'):
+        param_file += '.yaml'
+
     with open(param_file, "r") as yamlfile:
         inputs = yaml.load(yamlfile, Loader=yaml.FullLoader)
 
@@ -182,6 +189,13 @@ def load_yaml(param_file):
     for key in emptypar.keys():
         if key not in inputs['keplerian_fit'].keys():
             inputs['keplerian_fit'][key] = emptypar[key]
+
+    if 'plot_time_range' not in inputs.keys():
+
+        inputs['plot_time_range'] = dict()
+        inputs['plot_time_range']['domain1'] = [-1,-1]
+    if 'plot_residuals' not in inputs['plot_time_range'].keys():
+        inputs['plot_time_range']['plot_residuals'] = True
 
     return inputs
 
@@ -364,6 +378,31 @@ def approx_berv(t,tbl,timekey = 'jd'):
 def BIC(k, n, log_L):
     return k * np.log(n) - 2 * log_L
 
+def round2digit(x):
+    v = np.round(x, -int(np.floor(np.log10(x)))+1)
+    if str(v).endswith('.0'):
+        v = int(v)
+
+    return v
+
+def smarterr(med,low,high):
+    exp0 = -int(np.floor(np.log10(np.abs(med))))+1
+    exp1 = -int(np.floor(np.log10(np.abs(low))))+1
+    exp2 = -int(np.floor(np.log10(np.abs(high))))+1
+
+    exp = np.max([exp0,exp1,exp2])
+
+    med = np.round(med, exp)
+    low = np.round(low, exp)
+    high = np.round(high, exp)
+
+    med = "{:.{prec}f}".format(med, prec=exp)
+    low = "{:.{prec}f}".format(low, prec=exp)
+    high = "{:.{prec}f}".format(high,prec=exp)
+
+    return '$'+med+'^{+'+high+'}'+'_{-'+low+'}$'
+
+
 def periodogram(tbl):
     # Remove RV outliers
     rv = sigma_clip(tbl['vrad'].data, sigma = 3)
@@ -441,10 +480,14 @@ def periodogram(tbl):
 
 def load_table(inputs):
     tbl_file = inputs['rdbfile']
-
     tbl = Table.read(tbl_file, format='ascii.rdb')
-    if inputs['bin_per_epoch']:
-        tbl = bin_table(tbl)
+
+    if 'plot_time_range' not in inputs.keys():
+        duration = np.nanmax(tbl['rjd']) - np.nanmin(tbl['rjd'])
+        tmp = dict()
+        tmp['domain1'] = [np.nanmin(tbl['rjd']) - 0.05*duration,
+                                     np.nanmax(tbl['rjd']) + 0.05*duration]
+        inputs['plot_time_range'] = tmp
 
     if 'jd' not in tbl.colnames:
         tbl['jd'] = 2400000.5 + tbl['rjd']
@@ -467,8 +510,13 @@ def load_table(inputs):
     if 'valid_dtemp_range' in inputs['keplerian_fit'].keys():
         print('\tRemoving outliers outside of valid_dtemp_range = {} m/s'.format(inputs['keplerian_fit'][
                                                                                   'valid_dtemp_range']))
-        dv = tbl['DTEMP'] - np.nanmedian(tbl['DTEMP'])
-        g = (dv>inputs['keplerian_fit']['valid_dtemp_range'][0]) & (dv<inputs['keplerian_fit']['valid_dtemp_range'][1])
+
+        if 'TEMP' in inputs['activity_correction']['quantity']:
+            key = inputs['activity_correction']['quantity']
+        else:
+            key = 'DTEMP'
+        dtemp = tbl[key] - np.nanmedian(tbl[key])
+        g = (dtemp>inputs['keplerian_fit']['valid_dtemp_range'][0]) & (dtemp<inputs['keplerian_fit']['valid_dtemp_range'][1])
         tbl = tbl[g]
 
 
@@ -480,10 +528,46 @@ def load_table(inputs):
         tbl = tbl[g]
 
 
+    if 'BJD' not in tbl.colnames:
+        print('BJD *not* in table, adding it if possible')
+        if 'jd'  in tbl.colnames:
+            print('\tJD in table, adding BJD = JD - 2400000.5')
+            tbl['BJD'] = tbl['jd'] - 2400000.5
+        else:
+            print('\tJD not in table, cannot add BJD')
+
+    if 'DTEMP' in inputs['activity_correction']['quantity']:
+        key_cut =  inputs['activity_correction']['quantity']
+
+        tbl[key_cut] -= np.nanmedian(tbl[key_cut])
+
+        if 'table_manipulation' in inputs.keys():
+            if 'dtemp_min' in inputs['table_manipulation']:
+                print('We remove data points with {} < {}'.format(key_cut,inputs['table_manipulation']['dtemp_min']))
+                tbl = tbl[tbl[key_cut]>inputs['table_manipulation']['dtemp_min']]
+            if 'dtemp_max' in inputs['table_manipulation']:
+                print('We remove data points with {} > {}'.format(key_cut,inputs['table_manipulation']['dtemp_max']))
+                tbl = tbl[tbl[key_cut]<inputs['table_manipulation']['dtemp_max']]
+
     # we remove the median of the velocities
     tbl['vrad'] -= np.nanmedian(tbl['vrad'])
 
+    if inputs['bin_per_epoch']:
+        tbl = bin_table(tbl)
+
     return tbl
+
+def hline(char = '-'):
+    # for nice printing, we get the terminal size
+    terminal_size =shutil.get_terminal_size().columns
+    print(char*terminal_size)
+
+def printcntrd(chars):
+    # for nice printing, we get the terminal size
+    terminal_size =shutil.get_terminal_size().columns
+    print(chars.center(terminal_size))
+
+
 
 default_yaml_folder = '/Users/eartigau/apero-utils/PRV-tools/TARGETS/'
 
@@ -495,12 +579,15 @@ def kegp(yaml_file,cornerplot = False):
     if not yaml_file.endswith('.yaml'):
         yaml_file = '{}.yaml'.format(yaml_file)
 
+    hline('*')
+    printcntrd('Getting started with KEGP')
     # we load yaml file
     print('\tLoading {}'.format(yaml_file))
     inputs = load_yaml(yaml_file)
     # we load the rdb file
     print('\tLoading {}'.format(inputs['rdbfile']))
     tbl = load_table(inputs)
+    hline(' ')
 
     if  inputs['activity_correction']['type'] == 'Detrend':
         key_detrend = inputs['activity_correction']['quantity']
@@ -593,7 +680,8 @@ def kegp(yaml_file,cornerplot = False):
     if inputs['activity_correction']['type'] == 'Train':
         key_detrend = inputs['activity_correction']['quantity']
 
-        print('\tTraining on {}'.format(key_detrend))
+        hline('*')
+        printcntrd('\tTraining on {}'.format(key_detrend))
         quantity = tbl[key_detrend]
         err_quantity = tbl['s' + key_detrend]
         quantity -= np.average(quantity,weights=1/err_quantity**2)
@@ -669,9 +757,11 @@ def kegp(yaml_file,cornerplot = False):
             #                     nrun=nrun,
             #                     ensembles=3,
             #                     savename=savename)
-            print('-'*80)
 
+            hline('*')
+            printcntrd('Best fit for detrending GP')
             print(post.bic())
+            hline(' ')
 
             fig, ax = plt.subplots(nrows=1, ncols=1, figsize=(8, 8))
             _ = corner.corner(df[post.name_vary_params()], labels=post.name_vary_params(), label_kwargs={"fontsize": 8},
@@ -725,7 +815,6 @@ def kegp(yaml_file,cornerplot = False):
             gp_val2, gp_var2 = like.predict(tbl['BERV'])
             offset = np.nanmedian(quantity-gp_val2)
             quantity -= offset
-            print('offset : {}'.format(offset))
 
         fig, ax = plt.subplots(2, 1, figsize=(12, 8),sharex=True)
         ax[0].errorbar(tbl['BERV'], quantity, yerr=err_quantity, fmt='g.',label='data')
@@ -764,7 +853,7 @@ def kegp(yaml_file,cornerplot = False):
 
     if inputs['activity_correction']['type'] == 'BERV':
         tbl_decorrelated['vrad'] -= gp_val2
-        print('RMS of GP correction : {:.2f} m/s'.format(np.std(gp_val2)))
+        print('\tRMS of GP correction : {:.2f} m/s'.format(np.std(gp_val2)))
 
     for ite in range(nite):
         mod, like, post = initialize_model(inputs, tbl_decorrelated)
@@ -781,7 +870,7 @@ def kegp(yaml_file,cornerplot = False):
             fit = np.polyfit(decorrelation_spline(tbl_decorrelated['jd']),post.residuals(),1,w=1/tbl['svrad']**2)
             tbl_decorrelated['vrad'] -= np.polyval(fit,decorrelation_spline(tbl_decorrelated['jd']))
             decorrelation_fit+=fit
-            print(fit)
+            print('\t\tDetrend fit : {} '.format(fit))
 
 
 
@@ -810,13 +899,16 @@ def kegp(yaml_file,cornerplot = False):
 
         offset = np.nanmedian(tbl['vrad']-gp_val2)
         gp_val += offset
-        print('offset : {}'.format(offset))
+
+        hline('*')
+        printcntrd('GP correction')
+        print('\toffset of GP : {}'.format(offset))
         tbl_decorrelated['vrad'] -= gp_val2
 
-        print('='*30)
+
         print('\tRMS of GP correction : {:.2f} m/s'.format(np.std(gp_val2)))
-        print('size GP ',len(gp_val2))
-        print('='*30)
+        print('\tNumber of points over which GP has been evaluated : {} '.format(len(gp_val2)))
+        hline(' ')
 
 
         ax[0,0].plot(ti_plot_gp,gp_val,label = 'Rotation signal',alpha=0.9)
@@ -834,7 +926,7 @@ def kegp(yaml_file,cornerplot = False):
     kep_val2 = like.model(tbl['jd'])
     kep_val2 -= kep_moy
 
-    residual_kep =     tmp =  tbl['vrad'] - kep_val2
+    residual_kep  =  tbl['vrad'] - kep_val2
 
     ax[1,0].plot_date(tbl['plot_date'],residual_kep, 'k.',alpha = 0.01)
     ax[1,0].errorbar(tbl['plot_date'], residual_kep, yerr=tbl['svrad'], fmt='o',color = 'r', ecolor='k',
@@ -863,6 +955,9 @@ def kegp(yaml_file,cornerplot = False):
     ax[0,0].set(ylabel ='Velocity [m/s]')
     ax[1,0].set(ylabel ='Velocity residuals\nkeplerians [m/s]')
     ax[2,0].set(ylabel ='Velocity residuals\nkeplarians & GP [m/s]')
+
+    printcntrd('Model properties after first fitting')
+    print('BIC after fitting : {}'.format(post.bic()))
     print(post)
     ax[0,0].legend()
 
@@ -1021,11 +1116,41 @@ def lnprob(theta, t, y, yerr, priors):
         return -np.inf
     return lp + lnlike(theta, t, y, yerr)
 
-yaml_file = 'gl699.yaml'
+
+def latexerrors(val,low,high):
+    val = float(val)
+    low = float(low)
+    high = float(high)
+
+    i1 = int(np.round(np.log10(np.abs(low))) + 1)
+    i2 = int(np.round(np.log10(np.abs(val))) + 1)
+    i3 = int(np.round(np.log10(np.abs(high))) + 1)
+    i = np.min([i1,i2,i3])
+
+    errm = '{:.{prec}f}'.format(low, prec=i)
+    errn = '{:.{prec}f}'.format(high, prec=i)
+
+    radvel.utils.round_sig(val)
+
+    txt = '${}_{{-{}}}^{{+{}}}$'.format(val, errm, errn)
+
+
+    return txt
 
 def rotper(yaml_file):
     # !/usr/bin/env python
     # coding: utf-8
+
+    """
+
+    :param yaml_file:
+    :return: None
+
+    This codes provides information on the rotation period of the star as determined with the DTEMP (or any quatity
+    flagged as 'quantity' in the 'activity_correction' variable). It provides the periodogram of the RVs and the DTEMP
+    as well as the periodogram of the DTEMP.
+
+    """
 
     params = load_yaml(default_yaml_folder + yaml_file)
 
@@ -1044,7 +1169,6 @@ def rotper(yaml_file):
     erv = erv[~index_nan]
     dET = dET[~index_nan]
     edET = edET[~index_nan]
-
 
     fig, ax = plt.subplots(2, 2, figsize=(16, 8))
     ax[0, 0].set_title('RV', fontsize=14)
@@ -1114,6 +1238,10 @@ def rotper(yaml_file):
     plt.savefig(outname, bbox_inches='tight')
     plt.show()
 
+
+
+
+
     # https://arxiv.org/pdf/2304.13381.pdf
     # RMS, LENGTH, Gamma, PERIOD, WHITE NOISE
     period = params['activity_correction']['gp_params']['per']
@@ -1121,26 +1249,50 @@ def rotper(yaml_file):
     length = params['activity_correction']['gp_params']['explength']
     perlength = params['activity_correction']['gp_params']['perlength']
     gamma = 1/np.sqrt(perlength[0])
-    prior_gamma =  1/np.sqrt( params['activity_correction']['gp_params']['perlength'][2])[::-1]
+
+    if params['activity_correction']['gp_params']['perlength'][1] == 'Gaussian':
+        period0 = params['activity_correction']['gp_params']['perlength'][1][0]
+        prior_gamma =  1/np.sqrt(period0)
+    else:
+        prior_gamma =  1/np.sqrt( params['activity_correction']['gp_params']['perlength'][2])[::-1]
 
     initial = np.log(np.std(dET)), np.log(length[0]), np.log(gamma), np.log(period[0]), np.log(np.std(dET) * 0.1)
     # error around initial values
     initialize = np.array([0.1, 0.1, 0.1, 0.1, 0.1])
     nwalkers = params['mcmc_params']['nwalkers']
-    nsteps = 500
+    nsteps = params['mcmc_params']['nsteps']
 
-    priors = [(np.log(np.std(dET)*0.01),np.log( 10*np.std(dET))),
+
+    amp_prior = round2digit(np.std(dET)*0.01), round2digit(100*np.std(dET))
+
+    priors = [np.log(amp_prior),
               np.log(length[2]),
               np.log(prior_gamma),
               np.log(period[2]),
-              (np.log(np.std(dET)*0.01),np.log( 10*np.std(dET)))]
+              np.log(amp_prior)]
 
-    samples_dETGP, log_L_dETGP = Routine(bjd, dET, edET, initial, initialize, nwalkers, nsteps, priors)
+    ptxt = []
+    for p in priors:
+        ptxt.append('$\mathcal{U}({\\rm ln}\,'+str(round2digit(np.exp(p[0]))) + ', {\\rm ln}\,' + str(round2digit(
+            np.exp(p[1])))+')$')
+
+
+    pdfname = os.path.join(params['output_dir'], 'rv_dET_{}.pdf'.format(params['name'].replace(' ', '_')))
+    samples_dETGP, log_L_dETGP = Routine(bjd, dET, edET, initial, initialize, nwalkers, nsteps, priors,
+                                         pdfname = pdfname)
 
     theta_results = np.median(samples_dETGP, axis=0)
 
     lnA_mcmc, lnl_mcmc, lngamma_mcmc, lnP_mcmc, lns_mcmc = map(lambda v: (v[1], v[2] - v[1], v[1] - v[0]),
                                                                zip(*np.percentile(samples_dETGP, [16, 50, 84], axis=0)))
+
+
+    tbl_latex = Table()
+    tbl_latex['PARAMETER'] = ['ln\,$A$', 'ln\,$l$', 'ln\,$\Gamma$', 'ln\,$P$', 'ln\,$s$']
+    tbl_latex['PRIOR'] = ptxt
+    tbl_latex['POSTERIOR'] = smarterr(*lnA_mcmc), smarterr(*lnl_mcmc), smarterr(*lngamma_mcmc), smarterr(*lnP_mcmc), \
+        smarterr(*lns_mcmc)
+    tbl_latex['CONSTRAINT'] = np.zeros_like(tbl_latex['PARAMETER'], dtype='U999')
 
     print('lnA:', lnA_mcmc[0], '+', lnA_mcmc[1], '-', lnA_mcmc[2])
     print('lnl:', lnl_mcmc[0], '+', lnl_mcmc[1], '-', lnl_mcmc[2])
@@ -1151,27 +1303,50 @@ def rotper(yaml_file):
     A0 = np.exp(lnA_mcmc[0])
     A1 = np.exp(lnA_mcmc[0]+lnA_mcmc[1])
     A2 = np.exp(lnA_mcmc[0]-lnA_mcmc[2])
-    print('A : {:.2f}+{:.2f}-{:.2f} K'.format(A0,A1-A0,A2-A0))
+
+    tbl_latex['CONSTRAINT'][0] = smarterr(A0, A1-A0, A0-A2)+'\,K'
+
+
     l0 = np.exp(lnl_mcmc[0])
     l1 = np.exp(lnl_mcmc[0]+lnl_mcmc[1])
     l2 = np.exp(lnl_mcmc[0]-lnl_mcmc[2])
-    print('l : {:.2f}+{:.2f}-{:.2f}'.format(l0,l1-l0,l2-l0))
+    tbl_latex['CONSTRAINT'][1] = smarterr(l0, l1-l0, l0-l2)+'\,days'
+
+
+    g0 = np.exp(lngamma_mcmc[0])
+    g1 = np.exp(lngamma_mcmc[0]+lngamma_mcmc[1])
+    g2 = np.exp(lngamma_mcmc[0]-lngamma_mcmc[2])
+    tbl_latex['CONSTRAINT'][2] = smarterr(g0, g1-g0, g0-g2)
+
+
     P0 = np.exp(lnP_mcmc[0])
     P1 = np.exp(lnP_mcmc[0] + lnP_mcmc[1])
     P2 = np.exp(lnP_mcmc[0] - lnP_mcmc[2])
     print('P : {:.4f}+{:.4f}-{:.4f} days'.format(P0,P1-P0,P2-P0))
+    tbl_latex['CONSTRAINT'][3] = smarterr(P0, P1-P0, P0-P2)+'\,days'
+
+
     s0 = np.exp(lns_mcmc[0])
     s1 = np.exp(lns_mcmc[0] + lns_mcmc[1])
     s2 = np.exp(lns_mcmc[0] - lns_mcmc[2])
     print('s : {:.2f}+{:.2f}-{:.2f}'.format(s0,s1-s0,s2-s0))
+    tbl_latex['CONSTRAINT'][4] = smarterr(s0, s1-s0, s0-s2)+'\,K'
+
+    outname = os.path.join(params['output_dir'], 'table_constraints_{}.tex'.format(params['name'].replace(' ', '_')))
+
+    with open(outname, 'w') as f:
+        for itbl in range(len(tbl_latex)):
+
+            txt = ' & '.join(tbl_latex[itbl])+'\\\\'
+            if itbl == (len(tbl_latex)-1):
+                txt = txt+'\\hline'
+            f.write(txt+'\n')
+
 
     np.save('samples_dET.npy', samples_dETGP)
 
     P_samples = np.exp(samples_dETGP[:, 3])
     plt.hist(P_samples, bins=40)
-    # corner.corner(P_samples, bins = 40, show_titles = True, title_fmt = ".3f",
-    #              truths = [np.median(P_samples)],
-    #              labels = [r'$P$'], plot_datapoints=False, quantiles=(0.16, 0.84))
     outname = os.path.join(params['output_dir'], 'hist_period_{}.pdf'.format(params['name']))
     plt.savefig(outname, bbox_inches='tight')
     plt.show()
@@ -1208,41 +1383,61 @@ def rotper(yaml_file):
         if xlim[1] == -1:
             xlim[1] = bjd.max()+timespan*0.1
 
-        fig, ax = plt.subplots(figsize=(16, 8), ncols=1, nrows=2, sharey=True, sharex=True)
-        ax[0].errorbar(bjd, dET, yerr=np.sqrt(edET ** 2 + s ** 2), color='k', linestyle="none", marker="o",
-                       alpha=0.75, capsize=2, zorder=1)
-        ax[0].plot(t, mu_t, color='orange', zorder=2)
-        ax[0].fill_between(t, mu_t - sig_t, mu_t + sig_t, color='orange', alpha=.25, zorder=2)
-        ax[0].set_ylabel(r"$\Delta T_{\rm eff}$ [K]", fontsize=14)
-        ax[0].minorticks_on()
-        ax[0].tick_params(axis="both", labelsize=12, direction='in', length=5)
-        ax[0].tick_params(axis="both", which='minor', direction='in', length=3)
-        ax[0].yaxis.set_ticks_position('both')
-        ax[0].xaxis.set_ticks_position('both')
-        ax[0].set(title = params['name'])
 
         valid = (bjd > xlim[0]) & (bjd < xlim[1])
-        maxy = np.max(dET[valid]+edET[valid])
-        miny = np.min(dET[valid]-edET[valid])
+        maxy = np.max(dET[valid]+np.sqrt(edET[valid]**2+s**2))
+        miny = np.min(dET[valid]-np.sqrt(edET[valid]**2+s**2))
+
         yspan = maxy - miny
-        ylim = [miny - 0.05 * yspan, maxy + 0.05 * yspan]
+        ylim0 = [miny - 0.05 * yspan, maxy + 0.05 * yspan]
 
-        ax[0].set_ylim(ylim)
+        maxy = np.max(dET[valid]+np.sqrt(edET[valid]**2+s**2) - mu[valid])
+        miny = np.min(dET[valid]-np.sqrt(edET[valid]**2+s**2) - mu[valid])
 
-        ax[0].set_xlim(xlim)
-        ax[0].grid(color='grey', alpha=0.3)
+        yspan = maxy - miny
+        maxy = maxy+0.05*yspan
+        miny = miny-0.05*yspan
+        ystretch = np.max([np.abs(maxy), np.abs(miny)])
+        ylim1 = [-ystretch, ystretch]
 
-        ax[1].errorbar(bjd, dET - mu, yerr=np.sqrt(edET ** 2 + s ** 2), color='k', linestyle="none",
-                       marker="o", alpha=0.75, capsize=2, zorder=1)
-        ax[1].axhline(y=0, linestyle="--", color="k", zorder=0)
-        ax[1].set_ylabel(r'$O - C$ [K]', fontsize=14)
-        ax[1].minorticks_on()
-        ax[1].tick_params(axis="both", labelsize=12, direction='in', length=5)
-        ax[1].tick_params(axis="both", which='minor', direction='in', length=3)
-        ax[1].yaxis.set_ticks_position('both')
-        ax[1].xaxis.set_ticks_position('both')
-        ax[1].set_xlabel("BJD", fontsize=14)
-        ax[1].grid(color='grey', alpha=0.3)
+        if params['plot_time_range']['plot_residuals'] == True:
+            fig, ax = plt.subplots(figsize=(16, 6), ncols=1, nrows=2, sharey=False, sharex=True)
+            axx = ax[0]
+        else:
+            fig, ax = plt.subplots(figsize=(8,3), ncols=1, nrows=1, sharey=False, sharex=True)
+            axx = ax
+        axx.errorbar(bjd, dET, yerr=np.sqrt(edET ** 2 + s ** 2), color='k', linestyle="none", marker="o",
+                       alpha=0.75, capsize=2, zorder=1)
+        axx.plot(t, mu_t, color='orange', zorder=2)
+        axx.fill_between(t, mu_t - sig_t, mu_t + sig_t, color='orange', alpha=.25, zorder=2)
+        axx.set_ylabel(r"$\Delta T_{\rm eff}$ [K]", fontsize=14)
+        axx.minorticks_on()
+        axx.tick_params(axis="both", labelsize=12, direction='in', length=5)
+        axx.tick_params(axis="both", which='minor', direction='in', length=3)
+        axx.yaxis.set_ticks_position('both')
+        axx.xaxis.set_ticks_position('both')
+        axx.set(title = params['name'])
+
+        axx.set_ylim(ylim0)
+
+        axx.set_xlim(xlim)
+        axx.grid(color='grey', alpha=0.3)
+
+        if params['plot_time_range']['plot_residuals'] == True:
+            ax[1].errorbar(bjd, dET - mu, yerr=np.sqrt(edET ** 2 + s ** 2), color='k', linestyle="none",
+                           marker="o", alpha=0.75, capsize=2, zorder=1)
+            ax[1].axhline(y=0, linestyle="--", color="k", zorder=0)
+            ax[1].set_ylabel(r'$O - C$ [K]', fontsize=14)
+            ax[1].minorticks_on()
+            ax[1].tick_params(axis="both", labelsize=12, direction='in', length=5)
+            ax[1].tick_params(axis="both", which='minor', direction='in', length=3)
+            ax[1].yaxis.set_ticks_position('both')
+            ax[1].xaxis.set_ticks_position('both')
+            ax[1].set_xlabel("BJD", fontsize=14)
+            ax[1].grid(color='grey', alpha=0.3)
+            ax[1].set_ylim(ylim1)
+        else:
+            axx.set_xlabel("BJD", fontsize=14)
 
         plt.tight_layout()
         outname = os.path.join(params['output_dir'], 'period_gp_fit_domain{}_{}.pdf'.format(ite,params['name']))
@@ -1253,3 +1448,18 @@ def rotper(yaml_file):
 
 
 
+def simple_plot(yaml_file, key):
+    params = load_yaml(default_yaml_folder + yaml_file)
+    tbl = load_table(params)
+    bjd = tbl['BJD']
+    x = tbl[key]
+    ex = tbl['s'+key]
+
+    plt.errorbar(bjd, x, yerr=ex, color='k', linestyle="none", marker="o", alpha=0.75, capsize=2, zorder=1)
+    plt.ylabel(key, fontsize=14)
+    plt.xlabel("BJD", fontsize=14)
+    plt.minorticks_on()
+    plt.tick_params(axis="both", labelsize=12, direction='in', length=5)
+    plt.tick_params(axis="both", which='minor', direction='in', length=3)
+    plt.grid(color='grey', alpha=0.3)
+    plt.show()

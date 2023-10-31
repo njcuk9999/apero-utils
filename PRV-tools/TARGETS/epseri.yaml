@@ -1,5 +1,5 @@
-name: 'AU Mic'
-rdbfile: '/Users/eartigau/teff_lbl/teff_gp/lbl_AUMIC_AUMIC.rdb'
+name: 'epsilon Eridani'
+rdbfile: '/Users/eartigau/lbl_HARPS/lblrdb/lbl_EpsilonEridani_tc_EpsilonEridani_tc.rdb'
 output_dir: '/Users/eartigau/all_rdbs/nirps/outputs/'
 bin_per_epoch: False
 
@@ -18,23 +18,22 @@ bin_per_epoch: False
 activity_correction:
     type: 'Train' # Detrend, RV, BERV, Train, None
     quantity: 'DTEMP3000' # DTEMP, d2v, vrad
-    derivative: True # For Detrend ONLY, is it the value or its time derivative?
+    derivative: False # For Detrend ONLY, is it the value or its time derivative?
     gp_params: # Parameters for the GP
         kernel: 'QuasiPer'
         # expressed in units of vrad, adjusted for other quantities
         amp: [5.0, 'Jeffreys', [0.01,100], True]
-        per: [5.0, 'Jeffreys', [4,7], True] # period
-        perlength: [.5, 'Jeffreys', [0.1,10.0], True] # length of the periodic kernel
+        per: [12.0, 'Uniform', [8,20], True] # period
+        perlength: [1, 'Jeffreys', [0.01,100.0], True] # length of the periodic kernel
         # must be longer than the longest period in the model
-        explength: [30.0, 'Jeffreys', [10,1000], False] # length of the exponential kernel
+        explength: [30.0, 'Jeffreys', [10,1000], True] # length of the exponential kernel
 
 table_manipulation:
-    rjd_min: 0
-    rjd_max: 1000000
+    rjd_min: 58720
+    rjd_max: 58860
 
 plot_time_range:
     domain1: [-1,-1] # -1 means use the min and max of the data
-    domain2: [2458970, 2459163] # actual domain
 
 keplerian_fit:
     dvdt: False
@@ -48,7 +47,7 @@ planet_params:
     # https://radvel.readthedocs.io/en/latest/basis.html?highlight=basis
     basis: 'per tc secosw sesinw k'
     planet1:
-        per: [3.586, 'Gaussian', 0.05, False]
+        per: [20, 'Gaussian', 5., True]
         tc: [2459308.00435, 'Gaussian', 3.0, True]
         secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
         sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
@@ -57,6 +56,7 @@ planet_params:
 mcmc_params:
     thin: 1
     burnin: 40
-    nwalkers: 20
+    nwalkers: 50
+    nsteps: 2000
     nrun: 100
     savename: 'rawchains.h5'

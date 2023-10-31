@@ -1,6 +1,8 @@
 name: 'Proxima'
-#rdbfile: '/Users/eartigau/all_rdbs/nirps/lbl_PROXIMA_PROXIMA.rdb'
-rdbfile: 'lbl_PROXIMA-PCA03_PROXIMA-PCA03.rdb'
+#rdbfile: '/Users/eartigau/all_rdbs/nirps/lbl_PROXIMA_PCA15_PROXIMA_PCA15.rdb'
+rdbfile: '/Users/eartigau/all_rdbs/nirps/lbl_PROXIMA_PCAx_PROXIMA_PCAx.rdb'
+#rdbfile: '/Users/eartigau/lbl_HARPS/lblrdb/lbl_Proxima_tc_Proxima_tc.rdb'
+#rdbfile: ''
 
 output_dir: '/Users/eartigau/all_rdbs/nirps/outputs/'
 bin_per_epoch: False
@@ -19,17 +21,17 @@ bin_per_epoch: False
 #       'None' and 'None' -> no activity correction, only keplerian fit
 activity_correction:
     type: 'Train' # Detrend, RV, BERV, Train, None
-    quantity: 'DTEMP' # DTEMP, d2v, vrad
+    quantity: 'DTEMP3000' # DTEMP, d2v, vrad
     derivative: True # For Detrend ONLY, is it the value or its time derivative?
     gp_params: # Parameters for the GP
         kernel: 'QuasiPer'
         # expressed in units of vrad, adjusted for other quantities
         amp: [1.5, 'Gaussian', 0.5, True]
-        per: [89.0, 'Gaussian', 15, True] # period
+        per: [89.0, 'Gaussian', 3, True] # period
         #length: [90,'Gaussian',15,True]
-        perlength: [1.0, 'Jeffreys', [0.3,3.0], True] # length of the periodic kernel
+        perlength: [3.0, 'Jeffreys', [0.3,10.0], True] # length of the periodic kernel
         # must be longer than the longest period in the model
-        explength: [200.0, 'Gaussian', 100, True] # length of the exponential kernel
+        explength: [400.0, 'Jeffreys', [300,1000], True] # length of the exponential kernel
 
 keplerian_fit:
     dvdt: False
@@ -53,12 +55,13 @@ planet_params:
         tc: [2458518.699790062, 'Gaussian', 2.0, True]
         secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
         sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [0.5, 'Jeffreys', [0.01,10.0], True]
+        k: [0.5, 'Jeffreys', [0.4,0.7], True]
 
 mcmc_params:
     thin: 1
     burnin: 100
     nwalkers: 10
+    nsteps: 1000
     nrun: 300
     savename: 'rawchains.h5'
 

@@ -1,8 +1,7 @@
-name: 'GJ682'
-rdbfile: '/Users/eartigau/all_rdbs/nirps/lbl_GJ682_GJ682.rdb'
-#rdbfile: '/Users/eartigau/all_rdbs/nirps/lbl_GJ682_PCAx_GJ682_PCAx.rdb'
-output_dir: '/Users/eartigau/all_rdbs/nirps/outputs/'
-bin_per_epoch: True
+name: 'GJ581'
+rdbfile: '/Users/eartigau/all_rdbs/NIRPS/lbl_GJ581_GJ581.rdb'
+#rdbfile: '/Volumes/courlan/lbl_NIRPS_HE/lblrdb/lbl_GJ581-PCA03_GJ581-PCA03.rdb'
+bin_per_epoch: False
 
 # what type of activity correction do we want?
 # type and option
@@ -19,13 +18,13 @@ bin_per_epoch: True
 activity_correction:
     type: 'Train' # Detrend, RV, BERV, Train, None
     quantity: 'DTEMP' # DTEMP, d2v, vrad
-    derivative: True# For Detrend ONLY, is it the value or its time derivative?
+    derivative: True # For Detrend ONLY, is it the value or its time derivative?
     gp_params: # Parameters for the GP
         kernel: 'QuasiPer'
         # expressed in units of vrad, adjusted for other quantities
-        amp: [1.5, 'Gaussian', 0.5, True]
-        per: [140.0, 'Jeffreys', [100,200], True] # period
-        perlength: [1.0, 'Jeffreys', [0.3,3.0], True] # length of the periodic kernel
+        amp: [1.0, 'Jeffreys', [0.01,10], True]
+        per: [130.0, 'Gaussian', 30, True] # period
+        perlength: [5, 'Jeffreys', [0.3,10.0], False] # length of the periodic kernel
         # must be longer than the longest period in the model
         explength: [300.0, 'Jeffreys', [100,1000], False] # length of the exponential kernel
 
@@ -33,33 +32,37 @@ keplerian_fit:
     dvdt: False
     curv: False
     gamma: [0.0, True]
-    jit: [1.0, True]
-    valid_rv_range: [-20,20]
-    valid_dtemp_range: [-4,4]
+    jit: [0.01, False]
+    valid_rv_range: [-10,10]
     timestep: 0.3 # days, for plotting
 
 planet_params:
     # https://radvel.readthedocs.io/en/latest/basis.html?highlight=basis
     basis: 'per tc secosw sesinw k'
-    planet1:
-        per: [4.393, 'Gaussian', 2, True]
-        tc: [2455497.426380, 'Gaussian', 0.5, True]
-        secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
-        sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [2.05, 'Jeffreys', [0.01,10.0], True]
-    planet2:
-        per: [6.5657, 'Gaussian', 3, True]
-        tc: [2455497.148652, 'Gaussian', 2.5, True]
-        secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
-        sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
-        k: [3.4, 'Jeffreys', [0.01,10.0], True]
 
-plot_time_range:
-    domain1: [-1,-1] # -1 means use the min and max of the data
+    planet1:
+        per: [3.14942, 'Gaussian', 0.02, True]
+        tc: [2459310.32, 'Gaussian', 2.0, True]
+        secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
+        sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
+        k: [1.85, 'Jeffreys', [0.01,30.0], True]
+    planet2:
+      per: [ 5.36874, 'Gaussian', 0.001, True ]
+      tc: [ 2459308.00435, 'Gaussian', 2.0, True ]
+      secosw: [ 0.00000, 'Uniform', [ -1,1 ], False ] # sqrt(e)*cos(w)
+      sesinw: [ 0.00000, 'Uniform', [ -1,1 ], False ] # sqrt(e)*sin(w)
+      k: [ 12.48, 'Jeffreys', [ 0.01,30.0 ], True ]
+    planet3:
+        per: [12.9292, 'Gaussian', 0.002, True]
+        tc: [2459310.32, 'Gaussian', 5.0, True]
+        secosw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*cos(w)
+        sesinw: [0.00000, 'Uniform', [-1,1], False] # sqrt(e)*sin(w)
+        k: [3.24, 'Jeffreys', [0.01,30.0], True]
+
 
 mcmc_params:
     thin: 1
-    burnin: 200
+    burnin: 40
     nwalkers: 20
-    nrun: 400
+    nrun: 100
     savename: 'rawchains.h5'
