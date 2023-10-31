@@ -2866,7 +2866,7 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             # run the pool
             results = add_obj_page(*itargs)
             # push result to result storage
-            results_dict[key] = results
+            results_dict[key] = results[it]
     # -------------------------------------------------------------------------
     elif n_cores > 1:
         if MULTI == 'POOL':
