@@ -1175,6 +1175,7 @@ class ObjectData:
             num_obs_ext = str(np.sum(obs_mask_ext))
             num_obs_tcorr = str(np.sum(obs_mask_tcorr))
             # get the seeing for this observation directory
+            # TODO: nanmean for all below?
             seeing = np.mean(seeing_vec[obs_mask_ext])
             seeing = '{:.3f}'.format(seeing)
             # get the airmass for this observation directory
@@ -2865,7 +2866,7 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
             # run the pool
             results = add_obj_page(*itargs)
             # push result to result storage
-            results_dict[key] = results
+            results_dict[key] = results[it]
     # -------------------------------------------------------------------------
     elif n_cores > 1:
         if MULTI == 'POOL':
@@ -4346,8 +4347,24 @@ def _header_value(keydict: Dict[str, str], header: fits.Header,
     rawvalue = header.get(key, None)
     # deal with no value
     if rawvalue is None:
-        raise ValueError(f'HeaderKey: {key} not found in header'
-                         f'\n\tFile: {filename}')
+        if "fallback" in keydict:
+            rawvalue = keydict["fallback"]
+            if rawvalue is None:
+                if dtype == 'float':
+                    rawvalue = np.nan
+                elif dtype == 'str':
+                    rawvalue = "N.A."
+                else:
+                    # Hard to define an unambiguous value for other types.
+                    # Leaving as unsupported until the need arises.
+                    raise TypeError('Null (None) fallback value unsupported'
+                                    f' for dtype {dtype} (key {key})'
+                                    f'\n\tFile: {filename}'
+                    )
+        else:
+            raise ValueError(f'HeaderKey: {key} not found in header'
+                             ' and no fallback specified in config'
+                             f'\n\tFile: {filename}')
     # -------------------------------------------------------------------------
     # deal with dtype
     if dtype is not None:

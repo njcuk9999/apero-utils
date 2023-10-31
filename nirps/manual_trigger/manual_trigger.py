@@ -751,7 +751,7 @@ if __name__ == "__main__":
         run_apero_reduction_interface(trigger_settings)
         # deal with only running processing
         if trigger_settings['ONLY_REDUCTIONINTERFACE']:
-            print_process('Only running apero get')
+            print_process('Only running ARI')
             sys.exit(0)
     # ----------------------------------------------------------------------
     # log that we have finished
