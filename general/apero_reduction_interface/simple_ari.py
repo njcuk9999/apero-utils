@@ -4346,8 +4346,24 @@ def _header_value(keydict: Dict[str, str], header: fits.Header,
     rawvalue = header.get(key, None)
     # deal with no value
     if rawvalue is None:
-        raise ValueError(f'HeaderKey: {key} not found in header'
-                         f'\n\tFile: {filename}')
+        if "fallback" in keydict:
+            rawvalue = keydict["fallback"]
+            if rawvalue is None:
+                if dtype == 'float':
+                    rawvalue = np.nan
+                elif dtype == 'str':
+                    rawvalue = "N.A."
+                else:
+                    # Hard to define an unambiguous value for other types.
+                    # Leaving as unsupported until the need arises.
+                    raise TypeError('Null (None) fallback value unsupported'
+                                    f' for dtype {dtype} (key {key})'
+                                    f'\n\tFile: {filename}'
+                    )
+        else:
+            raise ValueError(f'HeaderKey: {key} not found in header'
+                             ' and no fallback specified in config'
+                             f'\n\tFile: {filename}')
     # -------------------------------------------------------------------------
     # deal with dtype
     if dtype is not None:

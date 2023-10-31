@@ -102,14 +102,18 @@ headers:
       key: DPRTYPE
       label: 'DPR TYPE'
       dtype: str
+    # Added fallback values because key missing from some files
+    # (2023-10-29 NIRPS HA, as of 2023-10-30)
     EXT_SEEING:
       key: HIERARCH ESO TEL AMBI FWHM START
       label: Seeing at start
       dtype: float
+      fallback: Null
     EXT_AIRMASS:
       key: HIERARCH ESO TEL AIRM START
       label: Airmass at start
       dtype: float
+      fallback: Null
     EXT_EXPTIME:
         key: EXPTIME
         label: Exposure Time
