@@ -58,7 +58,7 @@ constraints['CONTAM,DARK,FP'] = 10, 1000, 0.0004
 constraints['WAVE,FP,FP'] = 10, 1000, 0.0004
 constraints['WAVE,UN1,UN1'] = 5, 100, 0.0025
 constraints['WAVE,FP,UN1'] = 5, 100, 0.0012
-constraints['WAVE,UN1,FP'] = 5, 100, 0.0023
+constraints['WAVE,UN1,FP'] = 4, 100, 0.0023
 
 
 def sat_test(filename, nread, dprtype) -> Tuple[bool, str]:
