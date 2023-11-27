@@ -2855,7 +2855,9 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # set up the arguments for the multiprocessing
     args = [0, '', profile, gsettings, settings, headers, object_classes]
     # get the number of cores
-    n_cores = gsettings['N_CORES']
+    n_cores = gsettings.get('N_CORES', profile.get('N_CORES', None))
+    if n_cores is None:
+        raise ValueError('Must define N_CORES in settings or profile')
     # storage for results
     results_dict = dict()
     # -------------------------------------------------------------------------
