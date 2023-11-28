@@ -110,6 +110,8 @@ LBL_STAT_FILES['LBL Diagnostic Plots'] = 'lbl_{0}_plots.pdf'
 LBL_STAT_FILES['LBL BERV zp RDB file'] = 'lbl_{0}_bervzp.rdb'
 LBL_STAT_FILES['LBL BERV zp RDB2 file'] = 'lbl2_{0}_bervzp.rdb'
 LBL_STAT_FILES['LBL BERV Zp Diaganostic Plots'] = 'lbl_{0}_bervzp_plots.pdf'
+LBL_STAT_FILES['LBL-PCA RDB file'] = 'lbl_{0}_PCAx.rdb'
+LBL_STAT_FILES['LBL-PCA RDB2 file'] = 'lbl2_{0}_PCAx.rdb'
 # define how many ccf files to use
 MAX_NUM_CCF = 100
 # object page styling
@@ -2853,7 +2855,9 @@ def add_obj_pages(gsettings: dict, settings: dict, profile: dict,
     # set up the arguments for the multiprocessing
     args = [0, '', profile, gsettings, settings, headers, object_classes]
     # get the number of cores
-    n_cores = gsettings['N_CORES']
+    n_cores = gsettings.get('N_CORES', profile.get('N_CORES', None))
+    if n_cores is None:
+        raise ValueError('Must define N_CORES in settings or profile')
     # storage for results
     results_dict = dict()
     # -------------------------------------------------------------------------
