@@ -39,7 +39,7 @@ if __name__ == "__main__":
     astrom_dataframe = pd.concat([main_dataframe,
                                   pending_dataframe]).drop_duplicates()
 
-    # if you prefer a astropy table
+    # if you prefer an astropy table
     astrom_table = Table.from_pandas(astrom_dataframe)
 
 
