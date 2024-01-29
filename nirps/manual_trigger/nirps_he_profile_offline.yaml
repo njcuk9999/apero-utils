@@ -87,10 +87,8 @@ nirps he offline:
             - calib
     # ari-settings
     ari:
-        # ari path
-        path: /cosmos99/nirps/git-bin/apero-utils/general/apero_reduction_interface/
         # ari profile
-        profile: nirps_profiles.yaml
+        profile: nirps_he_offline_udem.yaml
     # check settings
     check:
         # whether to run check

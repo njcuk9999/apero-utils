@@ -600,31 +600,22 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
 
     :param settings: dict, settings dictionary
     """
+    # import ari from apero
+    from apero.tools.recipes.bin import apero_ri
     # get the current working directory
     cwd = os.getcwd()
     # loop around profiles
     for profile in settings['PROFILES']:
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
-        # get ari path
-        ari_path = pdict['ari']['path']
         # get ari profile
         ari_profile = pdict['ari']['profile']
-        # deal with no ari code
-        if 'simple_ari.py' not in os.listdir(ari_path):
-            print('\t\tERROR: simple_ari.py not found in {0}'.format(ari_path))
-            continue
         # log that APERO started
         settings['LOG'][profile].write(ARI_START)
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
-        # change to ari path
-        os.chdir(ari_path)
-        # set up command
-        ari_cmd = 'python simple_ari.py {0} --filter="{1}"'
-        # run simple ari interface
-        # TODO: This is terrible - do not use os.system
-        os.system(ari_cmd.format(ari_profile, profile))
+        # run ari
+        apero_ri.main(profile=ari_profile)
         # log that APERO started
         settings['LOG'][profile].write(ARI_END)
         # update reduced checks
@@ -747,7 +738,7 @@ if __name__ == "__main__":
     # run the apero reduction interface
     if trigger_settings['REDUCTION_INTERFACE']:
         print_process('Running apero reduction interface')
-        # TODO: flag only to do this night
+        # run apero reduction interface
         run_apero_reduction_interface(trigger_settings)
         # deal with only running processing
         if trigger_settings['ONLY_REDUCTIONINTERFACE']:

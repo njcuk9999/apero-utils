@@ -1,4 +1,4 @@
-nirps ha V0.7.275 online:
+spirou offline:
     # general settings
     general:
         # directory where raw data is downloaded
@@ -92,22 +92,13 @@ nirps ha V0.7.275 online:
             - calib
     # ari-settings
     ari:
-        # ari path
-        path: /cosmos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
         # ari profile
-        profile: spirou_profiles.yaml
+        profile: spirou_offline_udem.yaml
     # check settings
     check:
         # whether to run check
         run_check: False
-        # check path
-        path: /cosmos99/spirou/git-bin/apero-utils/nirps/apero_check
-        # profile
-        profile: spirou_profile_offline.yaml
-        # define the raw sheet name for the google sheet
-        raw sheet name: RAW-SPIROU-HE
-        # define the red sheet name for the google sheet
-        red sheet name: RED-OFFLINE-SPIROU-HE
+
 
 
 

@@ -93,12 +93,14 @@ spirou V0.7.282 online:
             - calib
     # ari-settings
     ari:
+        # ari profile
+        profile: spirou_online_udem.yaml
+    # check settings
+    check:
         # whether to run check
         run_check: False
-        # ari path
-        path: /comos99/spirou/git-bin/apero-utils/general/apero_reduction_interface/
-        # ari profile
-        profile: spirou_profiles.yaml
+
+
 
 
 
