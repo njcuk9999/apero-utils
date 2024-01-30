@@ -103,6 +103,9 @@ def get_args():
     # apero get --since parameter
     parser.add_argument('--since', type=str, default='None',
                         help='APERO get - only copy files processed since this date')
+    # add a parameter to override the run.ini file provided by the yaml
+    parser.add_argument('--run', type=str, default='None',
+                        help='Override the run.ini file provided by the yaml')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -197,6 +200,11 @@ def get_settings():
         logclass = TriggerLog(logfile, profile=profile, obsdirs=obs_dirs)
         # push into settings
         settings['LOG'][profile] = logclass
+    # ----------------------------------------------------------------------
+    # deal with run override
+    if args.run not in ['None', 'Null', '', None]:
+        for profile in settings['PROFILES']:
+            settings['PROFILES'][profile]['processing']['run file'] = args.run
     # ----------------------------------------------------------------------
     # return the settings
     return settings
