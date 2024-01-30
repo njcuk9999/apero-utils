@@ -57,6 +57,8 @@ def get_obs_dirs(params) -> List[str]:
         if 'y' not in user_input.lower():
             return []
         obsdirs = io.get_obs_dirs(params['raw dir'])
+    elif isinstance(params['obsdir'], list):
+        obsdirs = params['obsdir']
     else:
         obsdirs = [params['obsdir']]
 
@@ -197,9 +199,9 @@ def run_single_test(params: Dict[str, Any], test_type: str):
     :return:
     """
     # get observation directories
-    obsdir = params['obsdir']
+    obsdirs = get_obs_dirs(params)
     # deal with no obsdir
-    if obsdir is None:
+    if obsdirs is None:
         emsg = ('Must define observation directory for single '
                 'test (Either in yaml file or --obsdir')
         raise base.AperoChecksError(emsg)
@@ -226,14 +228,15 @@ def run_single_test(params: Dict[str, Any], test_type: str):
             emsg += f'\n\t- "{_test_name}"'
         raise base.AperoChecksError(emsg)
     # -------------------------------------------------------------------------
-    # print message on which observation directory we are processing
-    msg = '*' * 50
-    msg += f'\nProcessing single test on observatory directory {obsdir}'
-    msg += '*' * 50
-    misc.log_msg(msg, level='info')
-    # run single test
-    _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
-                 test_type=test_type)
+    for obsdir in obsdirs:
+        # print message on which observation directory we are processing
+        msg = '*' * 50
+        msg += f'\nProcessing single test on observatory directory {obsdir}'
+        msg += '*' * 50
+        misc.log_msg(msg, level='info')
+        # run single test
+        _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
+                     test_type=test_type)
 
 
 # =============================================================================

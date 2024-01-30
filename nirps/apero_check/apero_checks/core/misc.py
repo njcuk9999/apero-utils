@@ -154,6 +154,14 @@ def load_params(yaml_file: Optional[str] = None,
             timeyest = timenow - TimeDelta(1 * uu.day)
             params['obsdir'] = timeyest.iso.split(' ')[0]
     # -------------------------------------------------------------------------
+    # deal with obsdir being a comma separated list
+    if params['obsdir'] is not None:
+        # split obsdir into a list
+        params['obsdir'] = params['obsdir'].split(',')
+        # clean up obsdir
+        for it, obs in enumerate(params['obsdir']):
+            params['obsdir'][it] = obs.strip()
+    # -------------------------------------------------------------------------
     # get test name from cmd args
     params['test_name'], tname_source = add_cmd_arg(args, 'test_run', test_name)
     sources['test_name'] = add_source('today', today, tname_source)
