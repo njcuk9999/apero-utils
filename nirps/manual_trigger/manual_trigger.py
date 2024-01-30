@@ -650,12 +650,8 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
         return
     elif isinstance(obsdirs, list):
         obsdirs = ','.join(obsdirs)
-    # if there are multiple nights defined skip
-    if ',' in obsdirs:
-        print('Skipping {0} check: obsdir==multi'.format(mode))
-        return
-    else:
-        obs_dir = str(obsdirs)
+    # make sure obs_dir is a string
+    obs_dir = str(obsdirs)
     # deal with mode
     if mode == 'red':
         check_code = 'apero_red_check.py'
