@@ -17,7 +17,7 @@ from astropy.io import fits
 from tqdm import tqdm
 import numpy as np
 
-from apero_checks.core import red_functions
+from apero_checks.core import apero_functions
 from apero_checks.core import misc
 
 def sigma(sp):
@@ -58,7 +58,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
 
     # update apero-profile
-    apero_params = red_functions.update_apero_profile(params)
+    apero_params = apero_functions.update_apero_profile(params)
     # tmp directory
     tmp_dir = apero_params['DRS_DATA_WORKING']
     # directory to check
