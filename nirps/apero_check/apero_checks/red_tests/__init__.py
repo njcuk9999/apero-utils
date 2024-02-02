@@ -15,6 +15,7 @@ from apero_checks.red_tests import obsdir_test
 from apero_checks.red_tests import calib_test
 from apero_checks.red_tests import manual_trigger_tests
 from apero_checks.red_tests import pixel_shifts_test
+from apero_checks.red_tests import excess_modal
 
 # =============================================================================
 # Append your test here
@@ -69,6 +70,9 @@ test_dict['ARI_END'] = manual_trigger_tests.test_ari_end
 
 # Pixel shifts tests - check for pixel shifts in pp files
 test_dict['PIXEL_SHIFTS'] = pixel_shifts_test.test
+
+# Test excess modal noise in telluric stars
+test_dict['EXCESS_MODAL'] = excess_modal.test
 
 # test 1 - explanation
 
