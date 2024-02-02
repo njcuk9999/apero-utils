@@ -9,6 +9,7 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
+import warnings
 from typing import Any, Dict
 
 import os
@@ -107,8 +108,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         rms_pixel_to_pixel_20 = sigma(sp-np.roll(sp,20))
         # quadratic subtraction of the two
         if rms_pixel_to_pixel_20 > rms_pixel_to_pixel:
-            rms_pixel_to_pixel = np.sqrt(rms_pixel_to_pixel**2-
-                                         rms_pixel_to_pixel_20**2)
+            with warnings.catch_warnings(record=True) as _:
+                rms_pixel_to_pixel = np.sqrt(rms_pixel_to_pixel**2-
+                                             rms_pixel_to_pixel_20**2)
         else:
             rms_pixel_to_pixel = 0
 
