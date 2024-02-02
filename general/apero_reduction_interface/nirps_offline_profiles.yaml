@@ -33,7 +33,7 @@ settings:
   # whether to sync with current working directory
   sync: True
   # whether to filter by objects
-  filter objects: True
+  filter objects: False
   # objects to filter by
   objects:
     - PROXIMA

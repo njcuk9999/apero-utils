@@ -11,6 +11,8 @@ Created on 2023-07-03 at 14:37
 """
 from typing import Any, Dict
 
+from apero_checks.core import base
+from apero_checks.core import apero_functions
 
 # =============================================================================
 # Define variables
@@ -23,7 +25,7 @@ from typing import Any, Dict
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Any, obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     """
     Blank test - this tests whether test was run (should always return True)
     All other tests should return True or False, and only print messages if
@@ -38,6 +40,20 @@ def test(params: Any, obsdir: str, log=False) -> bool:
 
     :return: bool, True if passed, False otherwise
     """
+    # get the apero profiles run.ini file
+    runfile = params['processing']['run file']
+    # deal with no run file
+    if runfile is None:
+        emsg = ('APERO_CALIB_TEST error: "processing.run file" must be '
+                'defined in yaml')
+        raise base.AperoChecksError(emsg)
+    # update apero profile
+    apero_params = apero_functions.update_apero_profile(params)
+    # get the proxy apero recipe
+    apero_recipe = apero_functions.get_apero_proxy_recipe(apero_params)
+    # update apero params with parameters that normally come from run.ini file
+    apero_params = apero_functions.add_run_ini_params(apero_params,
+                                                      apero_recipe, runfile)
     # we do not use obsdir here
     _ = obsdir
     # imports after apero profile update
@@ -48,14 +64,16 @@ def test(params: Any, obsdir: str, log=False) -> bool:
     findexdbm = drs_database.FileIndexDatabase(params)
     findexdbm.load_db()
     # get the unfound table
-    unfound_table = drs_precheck.obj_check(params, findexdbm, log=False)
+    unfound_table = drs_precheck.obj_check(apero_params, findexdbm, log=False)
     # -------------------------------------------------------------------------
     # We get a False condition if there are unfound objects
     if len(unfound_table) > 0:
         # all print out messages must be wrapped in if log
         if log:
-            print('UNFOUND TABLE: {0}'.format(unfound_table))
-
+            # print error
+            print('\nSome objects must be added to astrometric database '
+                  '(via apero_astrometrics) or added to the reject list.\n')
+            # loop around the rows
             for row in range(len(unfound_table)):
                 # print the object
                 msg = ('\t{0}\t{1:30s}\t(APERO: {2})'
@@ -73,7 +91,7 @@ def test(params: Any, obsdir: str, log=False) -> bool:
     else:
         # all print out messages must be wrapped in if log
         if log:
-            print('UNFOUND TABLE: No unfound objects found')
+            print('No unfound objects.')
         # return True
         return True
 

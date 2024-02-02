@@ -13,7 +13,7 @@ from typing import Any, Dict
 
 from apero_checks.core import io
 from apero_checks.core import misc
-from apero_checks.core import red_functions
+from apero_checks.core import apero_functions
 
 # =============================================================================
 # Define variables
@@ -42,7 +42,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     :return: bool, True if passed, False otherwise
     """
     # update apero profile
-    apero_params = red_functions.update_apero_profile(params)
+    apero_params = apero_functions.update_apero_profile(params)
     # define parameters we use here
     raw_directory = apero_params['DRS_DATA_RAW']
     # -------------------------------------------------------------------------

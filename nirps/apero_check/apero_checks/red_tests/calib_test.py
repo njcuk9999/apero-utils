@@ -15,7 +15,7 @@ import numpy as np
 import git
 
 from apero_checks.core import base
-from apero_checks.core import red_functions
+from apero_checks.core import apero_functions
 
 # =============================================================================
 # Define variables
@@ -123,12 +123,12 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
                 'defined in yaml')
         raise base.AperoChecksError(emsg)
     # update apero profile
-    apero_params = red_functions.update_apero_profile(params)
+    apero_params = apero_functions.update_apero_profile(params)
     # get the proxy apero recipe
-    apero_recipe = red_functions.get_apero_proxy_recipe(apero_params)
+    apero_recipe = apero_functions.get_apero_proxy_recipe(apero_params)
     # update apero params with parameters that normally come from run.ini file
-    apero_params = red_functions.add_run_ini_params(apero_params,
-                                                    apero_recipe, runfile)
+    apero_params = apero_functions.add_run_ini_params(apero_params,
+                                                      apero_recipe, runfile)
     # do the apero calib file check
     cout = calib_check(apero_params, apero_recipe, obsdir, log=log)
     calib_count, calib_times, bad_calib_nights = cout
