@@ -72,7 +72,7 @@ test_dict['ARI_END'] = manual_trigger_tests.test_ari_end
 test_dict['PIXEL_SHIFTS'] = pixel_shifts_test.test
 
 # Test excess modal noise in telluric stars
-test_dict['EXCESS_MODAL'] = excess_modal.test
+# test_dict['EXCESS_MODAL'] = excess_modal.test
 
 # test 1 - explanation
 

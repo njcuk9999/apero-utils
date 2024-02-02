@@ -21,9 +21,9 @@ import numpy as np
 from apero_checks.core import apero_functions
 from apero_checks.core import misc
 
-def sigma(sp):
+def estimate_sigma(sp):
     # returns the standard deviation of a spectrum
-    n1,p1 = np.percentile(sp, [16,84])
+    n1,p1 = np.nanpercentile(sp, [16,84])
     return (p1-n1)/2
 
 
@@ -103,14 +103,13 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         # keep only the central 50% of the 4088 spectrum
         sp = sp[2048-1024:2048+1024]
         sp/=np.median(sp)
-        rms_pixel_to_pixel = sigma(sp-np.roll(sp,1))
+        rms_pixel_to_pixel = estimate_sigma(sp-np.roll(sp,1))
         # rms with a strid of 20 pixel
-        rms_pixel_to_pixel_20 = sigma(sp-np.roll(sp,20))
+        rms_pixel_to_pixel_20 = estimate_sigma(sp-np.roll(sp,20))
         # quadratic subtraction of the two
         if rms_pixel_to_pixel_20 > rms_pixel_to_pixel:
-            with warnings.catch_warnings(record=True) as _:
-                rms_pixel_to_pixel = np.sqrt(rms_pixel_to_pixel**2-
-                                             rms_pixel_to_pixel_20**2)
+            rms_pixel_to_pixel = np.sqrt(rms_pixel_to_pixel**2-
+                                         rms_pixel_to_pixel_20**2)
         else:
             rms_pixel_to_pixel = 0
 
