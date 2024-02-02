@@ -15,6 +15,7 @@ from apero_checks.raw_tests import calib_test
 from apero_checks.raw_tests import eng_test
 from apero_checks.raw_tests import obsdir_test
 from apero_checks.raw_tests import qual_test
+from apero_checks.raw_tests import astrom_test
 
 # =============================================================================
 # Append your test here
@@ -54,6 +55,10 @@ test_dict['SCI_QUAL'] = qual_test.sci_qual_test
 # calib quality test - Some basic quality checks for calibration files. Currently:
 #                      saturation, flux
 test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
+
+# astrometric object test - If we have any objects missing from the astrometric
+#                           database this should return False
+test_dict['ASTROM_TEST'] = astrom_test.test
 
 # test 1 - explanation
 
