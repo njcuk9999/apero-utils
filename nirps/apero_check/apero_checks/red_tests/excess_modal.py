@@ -60,9 +60,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # update apero-profile
     apero_params = apero_functions.update_apero_profile(params)
     # tmp directory
-    tmp_dir = apero_params['DRS_DATA_WORKING']
+    red_dir = apero_params['DRS_DATA_REDUC']
     # directory to check
-    obsdir_path = os.path.join(tmp_dir, obsdir)
+    obsdir_path = os.path.join(red_dir, obsdir)
 
     # -------------------------------------------------------------------------
     if log:
@@ -116,6 +116,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             threshold = threshold_HA
         elif hdr['DRSMODE'] == 'HE':
             threshold = threshold_HE
+        else:
+            # no threshold for other modes
+            return True
 
         if rms_pixel_to_pixel > threshold:
             passed = False
