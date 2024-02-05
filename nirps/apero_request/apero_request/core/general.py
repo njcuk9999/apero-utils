@@ -251,7 +251,7 @@ class Request:
             from apero.tools.recipes.bin import apero_get
             # print the command we are running
             message = f'Running command: {self.cmd}'
-            misc.log_msg(message)
+            misc.log_msg(params, message)
             # run apero get to make the objects dir in apero dir
             llget = apero_get.main(objnames=self.drsobjn_str,
                                    dprtypes=self.dprtype_str,
@@ -448,7 +448,7 @@ class Request:
             msg += '\n\t{1}: {2}'
             msg += self._generate_summary()
             margs = [iteration, type(e), str(e)]
-            misc.log_msg(msg.format(*margs))
+            misc.log_msg(params, msg.format(*margs))
 
     def email_failure(self, params: Dict[str, Any], iteration: int):
 
@@ -480,7 +480,7 @@ class Request:
             msg += '\n\t{1}: {2}'
             msg += self._generate_summary()
             margs = [iteration, type(e), str(e)]
-            misc.log_msg(msg.format(*margs))
+            misc.log_msg(params, msg.format(*margs))
 
 
 # =============================================================================
@@ -531,7 +531,7 @@ def get_sheet(params: Dict[str, Any], sheetkind: str) -> pd.DataFrame:
     # ---------------------------------------------------------------------
     # print progress
     msg = f'\tDownloading google-sheet: {sheetkind}'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
@@ -557,7 +557,7 @@ def sync_data(params: Dict[str, Any]):
     rdict['INPATH'] = params['local path']
     rdict['OUTPATH'] = os.path.join(params['ssh']['directory'])
     # print command to rsync
-    misc.log_msg(RSYNC_CMD_OUT.format(**rdict))
+    misc.log_msg(params, RSYNC_CMD_OUT.format(**rdict))
     # run command (will require password)
     if not params['test']:
         os.system(RSYNC_CMD_OUT.format(**rdict))
@@ -578,7 +578,7 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     sheet_id, sheet_name = get_sheetkind(params, 'response')
     # print progress
     msg = 'Pushing all rows to google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id, sheet=sheet_name)
     # get worksheet (we need to manually delete rows for a google form
@@ -600,7 +600,7 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
         google_sheet.df_to_sheet(dataframe, index=False, replace=False)
     # print progress
     msg = 'Valid rows added to response google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
 
 
 def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
@@ -618,7 +618,7 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     sheet_id, sheet_name = get_sheetkind(params, 'archive')
     # print progress
     msg = 'Pushing all rows to google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
     # make a hash key for each row in dataframe
     hashkeys = []
     for row in range(len(dataframe)):
@@ -653,7 +653,7 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
         google_sheet.df_to_sheet(new_dataframe, index=False, replace=True)
     # print progress
     msg = 'All rows added to archive google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
 
 
 def create_requests(params: Dict[str, Any],

@@ -9,6 +9,7 @@ Created on {DATE}
 
 @author: cook
 """
+import os
 import argparse
 import copy
 from hashlib import blake2b
@@ -70,7 +71,7 @@ def load_params():
     return params
 
 
-def log_msg(message, level: str = '', color: Optional[str] = None):
+def log_msg(params, message, level: str = '', color: Optional[str] = None):
 
     # we want to print all lines with prefix
     if '\n' in message:
@@ -114,24 +115,30 @@ def log_msg(message, level: str = '', color: Optional[str] = None):
     else:
         print(start + print_string + end)
 
+    # construct log file path
+    log_file = os.path.join(params['local path'], 'apero_request.log')
+    # save to log file
+    with open(log_file, 'a') as f:
+        f.write(print_string + '\n')
 
-def splash(codename):
+
+def splash(params, codename):
     msg1 = '*' * 50
-    log_msg(msg1, color='cyan')
+    log_msg(params, msg1, color='cyan')
     msg2 = '*  ' + codename
-    log_msg(msg2, color='magenta')
+    log_msg(params, msg2, color='magenta')
     msg3 = '*' * 50
     msg3 += f'\nVersion={__VERSION__}   Date={__DATE__}'
     msg3 += '\n' + '*' * 50
-    log_msg(msg3, color='cyan')
+    log_msg(params, msg3, color='cyan')
 
 
-def end_msg():
+def end_msg(params):
     # print message on which observation directory we are processing
     msg = '*' * 50
     msg += f'\nCode finished successfully'
     msg += '\n' + '*' * 50
-    log_msg(msg, level='info')
+    log_msg(params, msg, level='info')
 
 
 def generate_arg_checksum(source: Union[List[str], str],
