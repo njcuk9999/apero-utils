@@ -71,7 +71,8 @@ def load_params():
     return params
 
 
-def log_msg(params, message, level: str = '', color: Optional[str] = None):
+def log_msg(params, message, level: str = '', color: Optional[str] = None,
+            log_only: bool = False):
 
     # we want to print all lines with prefix
     if '\n' in message:
@@ -109,11 +110,13 @@ def log_msg(params, message, level: str = '', color: Optional[str] = None):
         end = base.COLOURS['ENDC']
     else:
         start, end = '', ''
-    # print message
-    if level == 'error':
-        raise base.AperoRequestError(print_string)
-    else:
-        print(start + print_string + end)
+
+    if not log_only:
+        # print message
+        if level == 'error':
+            raise base.AperoRequestError(print_string)
+        else:
+            print(start + print_string + end)
 
     # construct log file path
     log_file = os.path.join(params['local path'], 'apero_request.log')
@@ -202,7 +205,6 @@ def send_email(message: str,
 
     with smtplib.SMTP("localhost") as s:
         s.send_message(msg)
-
 
 
 # =============================================================================

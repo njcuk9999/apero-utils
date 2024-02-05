@@ -443,6 +443,10 @@ class Request:
         email_kwargs['subject'] = f'APERO request successful: {self.hashkey}'
         try:
             misc.send_email(**email_kwargs)
+            msg = 'Succeeded to send email for request {0}'
+            msg += self._generate_summary()
+            margs = [iteration]
+            misc.log_msg(params, msg.format(*margs), log_only=True)
         except Exception as e:
             msg = 'Failed to send email for request {0}'
             msg += '\n\t{1}: {2}'
