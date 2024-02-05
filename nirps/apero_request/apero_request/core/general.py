@@ -206,6 +206,7 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tCould not get profile parameters with error: {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # update apero profile
         try:
@@ -213,6 +214,7 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tCould not update apero profile with error: {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # ---------------------------------------------------------------------
         # sort out arguments for apero get
@@ -225,6 +227,7 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tCould not set up apero get parameters. Error {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # ---------------------------------------------------------------------
         # try to run apero get

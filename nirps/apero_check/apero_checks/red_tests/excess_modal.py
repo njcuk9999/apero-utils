@@ -9,22 +9,22 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
-import warnings
+import glob
+import os
 from typing import Any, Dict
 
-import os
-import glob
+import numpy as np
 from astropy.io import fits
 from tqdm import tqdm
-import numpy as np
 
 from apero_checks.core import apero_functions
 from apero_checks.core import misc
 
+
 def estimate_sigma(sp):
     # returns the standard deviation of a spectrum
-    n1,p1 = np.nanpercentile(sp, [16,84])
-    return (p1-n1)/2
+    n1, p1 = np.nanpercentile(sp, [16, 84])
+    return (p1 - n1) / 2
 
 
 # =============================================================================
@@ -50,13 +50,12 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # featureless telluric stars
     vetted_stars = ['15_PEG', 'HR1903', 'HR3117', 'HR3131', 'HR3314', 'HR4023',
-           'HR4467', 'HR4468', 'HR4889', 'HR5671', 'HR6743', 'HR7590',
-           'HR8709', 'ZETVIR']
+                    'HR4467', 'HR4468', 'HR4889', 'HR5671', 'HR6743', 'HR7590',
+                    'HR8709', 'ZETVIR']
 
-    sample_order = 58 # order in the middle of H band, clean from tellurics
-    threshold_HA = 0.012 # excess noise in HA mode
-    threshold_HE = 0.007 # same in HE mode
-
+    sample_order = 58  # order in the middle of H band, clean from tellurics
+    threshold_HA = 0.012  # excess noise in HA mode
+    threshold_HE = 0.007  # same in HE mode
 
     # update apero-profile
     apero_params = apero_functions.update_apero_profile(params)
@@ -101,17 +100,16 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
         sp = fits.getdata(filename)[sample_order]
         # keep only the central 50% of the 4088 spectrum
-        sp = sp[2048-1024:2048+1024]
-        sp/=np.median(sp)
-        rms_pixel_to_pixel = estimate_sigma(sp-np.roll(sp,1))
+        sp = sp[2048 - 1024:2048 + 1024]
+        sp /= np.median(sp)
+        rms_pixel_to_pixel = estimate_sigma(sp - np.roll(sp, 1))
         # rms with a strid of 20 pixel
-        rms_pixel_to_pixel_20 = estimate_sigma(sp-np.roll(sp,20))
+        rms_pixel_to_pixel_20 = estimate_sigma(sp - np.roll(sp, 20))
         # quadratic subtraction of the two
         if rms_pixel_to_pixel_20 > rms_pixel_to_pixel:
-            rms_pixel_to_pixel = np.sqrt(rms_pixel_to_pixel**2-
-                                         rms_pixel_to_pixel_20**2)
+            rms_pixel_to_pixel_20 = np.sqrt(rms_pixel_to_pixel_20 ** 2 - rms_pixel_to_pixel ** 2)
         else:
-            rms_pixel_to_pixel = 0
+            rms_pixel_to_pixel_20 = 0
 
         if hdr['DRSMODE'] == 'HA':
             threshold = threshold_HA
@@ -121,16 +119,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             # no threshold for other modes
             return True
 
-        if rms_pixel_to_pixel > threshold:
+        if rms_pixel_to_pixel_20 > threshold:
             passed = False
             msg = 'Excess modal noise detected in {} (rms = {:.3f})\n'
-            failed_msg += msg.format(hdr['DRSOBJN'], rms_pixel_to_pixel)
+            failed_msg += msg.format(hdr['DRSOBJN'], rms_pixel_to_pixel_20)
+        else:
+            msg = 'No excess noise detected in {} (rms = {:.3f})\n'
+            if log:
+                print(msg.format(hdr['DRSOBJN'], rms_pixel_to_pixel_20))
 
     if no_telluric_stars:
         if log:
             print('No telluric stars in directory {}'.format(obsdir))
         return False
-
 
     if log:
         if len(failed_msg) > 0:
