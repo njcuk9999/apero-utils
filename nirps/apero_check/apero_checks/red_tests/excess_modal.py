@@ -121,10 +121,10 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
         if rms_pixel_to_pixel_20 > threshold:
             passed = False
-            msg = 'Excess modal noise detected in {} (rms = {:.3f})\n'
+            msg = 'Excess modal noise detected in {} (rms = {:.4f})\n'
             failed_msg += msg.format(hdr['DRSOBJN'], rms_pixel_to_pixel_20)
         else:
-            msg = 'No excess noise detected in {} (rms = {:.3f})\n'
+            msg = 'No excess noise detected in {} (rms = {:.4f})\n'
             if log:
                 print(msg.format(hdr['DRSOBJN'], rms_pixel_to_pixel_20))
 
