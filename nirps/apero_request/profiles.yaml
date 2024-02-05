@@ -1,11 +1,11 @@
-nirps_ha_online: ../manual_trigger/nirps_ha_profile_online.yaml
-nirps_ha_offline: ../manual_trigger/nirps_ha_profile_offline.yaml
+nirps_ha_online_udem: ../manual_trigger/nirps_ha_profile_online.yaml
+nirps_ha_offline_udem: ../manual_trigger/nirps_ha_profile_offline.yaml
 
-nirps_he_online: ../manual_trigger/nirps_he_profile_online.yaml
-nirps_ha_online: ../manual_trigger/nirps_he_profile_offline.yaml
+nirps_he_online_udem: ../manual_trigger/nirps_he_profile_online.yaml
+nirps_ha_online_udem: ../manual_trigger/nirps_he_profile_offline.yaml
 
-spirou_online: ../manual_trigger/spirou_online.yaml
-spirou_offline: ../manual_trigger/spirou_offline.yaml
+spirou_online_udem: ../manual_trigger/spirou_online.yaml
+spirou_offline_udem: ../manual_trigger/spirou_offline.yaml
 
 # whether to run in test mode
 test: False
