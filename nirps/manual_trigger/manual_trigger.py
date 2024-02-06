@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Union
 import astropy.units as uu
 import numpy as np
 import yaml
-from astropy.time import Time
+from astropy.time import Time, TimeDelta
 
 # =============================================================================
 # Define variables
@@ -470,7 +470,9 @@ def run_apero_get(settings: Dict[str, Any]):
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # update the apero profile
         pparams = update_apero_profile(pdict)
-        pconst = constants.pload()
+        # get the earliest raw file (we do not get files older than this)
+        settings['SINCE'] = get_earliest_raw_file(pparams,
+                                                  obsdirs=settings['OBS_DIRS'])
         # get the output types
         red_outtypes = ','.join(pdict['get']['science out types'])
         lbl_outtypes = ','.join(pdict['get-lbl']['science out types'])
@@ -693,6 +695,35 @@ def run_lbl_processing(settings: Dict[str, Any]):
     _ = settings
     print('\tNot implemented.')
     return
+
+
+def get_earliest_raw_file(apero_params, obsdirs):
+
+    from apero.core.core import drs_database
+    # get the index database
+    indexdbm = drs_database.FileIndexDatabase(apero_params)
+    # -------------------------------------------------------------------------
+    # create condition
+    condition = 'BLOCK_KIND="raw"'
+    # -------------------------------------------------------------------------
+    if obsdirs != '*':
+         sub_conditions = []
+         for obsdir in obsdirs:
+             sub_conditions.append(f'OBS_DIR="{obsdir}"')
+         # if we have sub conditions then we add them as a list of ors to c
+         #   condition
+         if len(sub_conditions) > 0:
+             condition += ' AND '
+             condition += '({0})'.format(' OR '.join(sub_conditions))
+    # -------------------------------------------------------------------------
+    # get times on these specific nights
+    last_modified = indexdbm.get_entries('LAST_MODIFIED', condition=condition)
+    # find the earliest time in these
+    earliest_time = Time(np.min(last_modified), format='unix')
+    # take 1 hour before this (just to be safe)
+    earliest_time -= TimeDelta(1 * uu.hour)
+    # return this time as an iso time
+    return earliest_time.iso
 
 
 # =============================================================================
