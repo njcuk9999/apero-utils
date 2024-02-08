@@ -47,17 +47,12 @@ class EngTest:
             raw_value = hdr[self.header_key]
         else:
             raw_value = None
-
-        if raw_value is None:
-            self.value = None
-        else:
-            self.in_header = True
         # try to interpret the header key with the given dtype
         try:
 
             if self.dtype == 'time.iso':
                 if raw_value is None:
-                    self.value = None
+                    self.value = ''
                 else:
                     self.value = str(raw_value)
             elif self.dtype == 'time.mjd':
@@ -67,12 +62,12 @@ class EngTest:
                     self.value = float(raw_value)
             elif self.dtype == 'str':
                 if raw_value is None:
-                    self.value = None
+                    self.value = ''
                 else:
                     return str(raw_value)
             elif self.dtype == 'bool':
                 if raw_value is None:
-                    self.value = None
+                    self.value = False
                 elif raw_value in ['True', 'TRUE', 'true', 1, True]:
                     self.value = True
                 else:
@@ -124,7 +119,8 @@ ENG_TESTS.append(EngTest('EncloserHeaterPower', header='ESO INS SENS121 VAL',
 # =============================================================================
 # Define test functions
 # =============================================================================
-def test_enclosure_temperature(tbl_dict: Dict[str, Any],
+def test_enclosure_temperature(tbl_dict: Dict[str, np.ndarray],
+                               mask_dict: Dict[str, np.ndarray],
                                logger: List[str], passer: List[bool]
                                ) -> Tuple[List[str], List[bool]]:
     """
@@ -136,8 +132,11 @@ def test_enclosure_temperature(tbl_dict: Dict[str, Any],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    rms = np.nanstd(tbl_dict['EncloserTemperature'] -
-                    tbl_dict['EncloserTemperatureSetpoint'])
+    key1 = 'EncloserTemperature'
+    key2 = 'EncloserTemperatureSetpoint'
+
+    rms = np.nanstd(tbl_dict[key1][mask_dict[key1]] -
+                    tbl_dict[key2][mask_dict[key1]])
     # Enclosure temperature should be stable to 0.1 K rms
     qc_rms = 0.1
     qc_passed = rms < qc_rms
@@ -453,77 +452,90 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # -------------------------------------------------------------------------
     # create table to store keywords
     tbl_dict = dict()
+    mask_dict = dict()
     # fill table looping through files
     for ifile in tqdm(range(len(files))):
         # get the header
         hdr = fits.getheader(files[ifile])
         # loop around keys and fill the table dictionary
-        for key in ENG_TESTS:
+        for it, key in enumerate(ENG_TESTS):
             key.read_header(hdr, files[ifile])
             if key.in_header:
                 if key.name not in tbl_dict:
                     tbl_dict[key.name] = []
+                    mask_dict[key.name] = []
                 tbl_dict[key.name].append(key.value)
+                mask_dict[key.name].append(True)
             else:
                 if key.name not in tbl_dict:
                     tbl_dict[key.name] = []
+                    mask_dict[key.name] = []
                 tbl_dict[key.name].append(np.nan)
+                mask_dict[key.name].append(False)
+
+    # convert lists to numpy arrays
+    for it, key in enumerate(ENG_TESTS):
+        tbl_dict[key] = np.array(tbl_dict[key])
+        mask_dict[key] = np.array(mask_dict[key]).astype(bool)
+
     # -------------------------------------------------------------------------
     # We add prints on the status of raw keywords:
     passer = []
     logger = []
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
 
     # -------------------------------------------------------------------------
     # Test Enclosure Temperature
     # -------------------------------------------------------------------------
-    logger, passer = test_enclosure_temperature(tbl_dict, logger, passer)
+    logger, passer = test_enclosure_temperature(*test_args)
 
     # -------------------------------------------------------------------------
     # Test Enclosure temperature should be within 0.1 K of setpoint
     # -------------------------------------------------------------------------
-    logger, passer = test_enclosure_temperature(tbl_dict, logger, passer)
+    logger, passer = test_enclosure_temperature(*test_args)
 
     # -------------------------------------------------------------------------
     # Test the VacuumGauge1 should see a really good vacuum otherwise there
     # is a leak
     # -------------------------------------------------------------------------
-    logger, passer = test_vacuum_gauge1(tbl_dict, logger, passer)
+    logger, passer = test_vacuum_gauge1(*test_args)
 
     # -------------------------------------------------------------------------
     # The IsolationValve should be closed, that's super bad if it's open
     # -------------------------------------------------------------------------
-    logger, passer = test_isolation_valve(tbl_dict, logger, passer)
+    logger, passer = test_isolation_valve(*test_args)
 
     # -------------------------------------------------------------------------
     # The TurboPumpStatus should be 'off' on the fast majority of occurences
     # (ask Philippe for details)
     # -------------------------------------------------------------------------
-    logger, passer = test_turbo_pump_status(tbl_dict, logger, passer)
+    logger, passer = test_turbo_pump_status(*test_args)
 
     # -------------------------------------------------------------------------
     # Test the Cryo1 warning
     # -------------------------------------------------------------------------
-    # logger, passer = test_warning_cryo1(tbl_dict, logger, passer)
+    # logger, passer = test_warning_cryo1(*test_args)
 
     # -------------------------------------------------------------------------
     # Test the Cryo2 warning
     # -------------------------------------------------------------------------
-    # logger, passer = test_warning_cryo2(tbl_dict, logger, passer)
+    # logger, passer = test_warning_cryo2(*test_args)
 
     # -------------------------------------------------------------------------
     # Test FP temperature should be stable to 0.01 K rms
     # -------------------------------------------------------------------------
-    logger, passer = test_fp_temperature(tbl_dict, logger, passer)
+    logger, passer = test_fp_temperature(*test_args)
 
     # -------------------------------------------------------------------------
     # FP temperature should be within 0.005 K of setpoint
     # -------------------------------------------------------------------------
-    logger, passer = test_fp_temperature_setpoint(tbl_dict, logger, passer)
+    logger, passer = test_fp_temperature_setpoint(*test_args)
 
     # -------------------------------------------------------------------------
     # Test Encloser heater power should be less than 80%
     # -------------------------------------------------------------------------
-    logger, passer = test_encloser_heater_power(tbl_dict, logger, passer)
+    logger, passer = test_encloser_heater_power(*test_args)
 
     # -------------------------------------------------------------------------
     # construct a string for printing output
