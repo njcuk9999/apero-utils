@@ -12,7 +12,7 @@ Created on 2023-07-03 at 14:37
 import copy
 import glob
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Optional
 
 import numpy as np
 from astropy.io import fits
@@ -26,6 +26,27 @@ from apero_checks.core import misc
 # define any other constants here that you want moving to the parameters.py
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
+class EngTest:
+    def __init__(self, name: str, header: Optional[str] = None,
+                 dtype: Optional[str] = None):
+
+        self.name = str(name)
+
+        if header is None:
+            self.header_key = str(self.name)
+        else:
+            self.header_key = str(header)
+
+        self.dtype = dtype
+
+
+ENG_TESTS = []
+ENG_TESTS.append(EngTest('DATE-OBS', dtype='time.iso'))
+ENG_TESTS.append(EngTest('MJD-OBS', dtype='time.mjd'))
+ENG_TESTS.append(EngTest('OBJECT', dtype='str'))
+ENG_TESTS.append(EngTest('DPRTYPE', header='HIERARCH ESO DPR TYPE',
+                         dtype='str'))
+
 
 
 # =============================================================================
@@ -100,7 +121,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         # if not present, we store a dummy value not to raise an error
         # TODO: do not use "no value" as 0.0
         if key not in h0.keys():
-            val = 0.0
+            val = np.nan
         else:
             val = h0[key]
 

@@ -276,7 +276,11 @@ class Request:
             return
         # ---------------------------------------------------------------------
         # set url (after creation)
-        self.tar_url = params['ssh']['url'] + '/' + self.tarfile
+        ssh_url = params['ssh']['url']
+        if ssh_url.endswith('/'):
+            self.tar_url = params['ssh']['url'] + self.tarfile
+        else:
+            self.tar_url = params['ssh']['url'] + '/' + self.tarfile
         # ---------------------------------------------------------------------
         # check that tar was create
         # ---------------------------------------------------------------------
@@ -321,12 +325,12 @@ class Request:
             raise base.AperoRequestError(emsg)
         # ---------------------------------------------------------------------
         # load yaml file from params
-        yaml_file = params[self.mode]
+        yaml_file = params[self.mode]['yaml']
         # read yaml file
         yaml_params = io.read_yaml(yaml_file)
         # ---------------------------------------------------------------------
         # get profile name
-        profile_name = self.mode.replace('_', ' ')
+        profile_name = params[self.mode]['profile']
         # deal with profile name not in yaml_params
         if profile_name not in yaml_params:
             emsg = f'Profile name {profile_name} not in yaml file.'
@@ -852,7 +856,7 @@ def create_dataframe(params: Dict[str, Any], requests: List[Request]
         valid_rows.append(row)
     # convert list of rows to dataframe
     valid_dataframe = pd.DataFrame(valid_rows)
-    all_dataframe = pd.DataFrame(all_rows)
+    all_dataframe = pd.DataFrame(all_rows).reset_index(drop=True)
     # return dataframe
     return valid_dataframe, all_dataframe
 
