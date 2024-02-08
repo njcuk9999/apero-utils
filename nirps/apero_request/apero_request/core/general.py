@@ -272,6 +272,7 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tApero get failed with error: {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # ---------------------------------------------------------------------
         # set url (after creation)
@@ -290,16 +291,19 @@ class Request:
                 if len(get_indict) == 0:
                     self.valid = False
                     self.reason = f'\tNo files found.'
+                    misc.log_msg(params, self.reason, log_only=True)
                     return
             # else we report the error
             elif len(get_errors) > 0:
                 self.valid = False
                 self.reason = '\n'.join(get_errors)
+                misc.log_msg(params, self.reason, log_only=True)
                 return
             else:
                 # if we get here we have an unknown error
                 self.valid = False
                 self.reason = '\tUnknown error. Contact support with the query.'
+                misc.log_msg(params, self.reason, log_only=True)
         else:
             return
 
