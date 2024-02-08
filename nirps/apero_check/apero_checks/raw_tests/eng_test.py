@@ -45,8 +45,10 @@ class EngTest:
 
         if self.header_key in hdr:
             raw_value = hdr[self.header_key]
+            self.in_header = True
         else:
             raw_value = None
+            self.in_header = False
         # try to interpret the header key with the given dtype
         try:
 
@@ -90,29 +92,40 @@ ENG_TESTS = []
 ENG_TESTS.append(EngTest('DATE-OBS', dtype='time.iso'))
 ENG_TESTS.append(EngTest('MJD-OBS', dtype='time.mjd'))
 ENG_TESTS.append(EngTest('OBJECT', dtype='str'))
-ENG_TESTS.append(EngTest('DPRTYPE', header='HIERARCH ESO DPR TYPE',
+ENG_TESTS.append(EngTest('DPRTYPE',
+                         header='HIERARCH ESO DPR TYPE',
                          dtype='str'))
-ENG_TESTS.append(EngTest('TurboPumpStatus', header='ESO INS SENS102 STAT',
+ENG_TESTS.append(EngTest('TurboPumpStatus',
+                         header='HIERARCH ESO INS SENS102 STAT',
                          dtype='bool'))
-ENG_TESTS.append(EngTest('EncloserTemperature', header='ESO INS TEMP185 VAL',
+ENG_TESTS.append(EngTest('EncloserTemperature',
+                         header='HIERARCH ESO INS TEMP185 VAL',
                          dtype='float'))
 ENG_TESTS.append(EngTest('EncloserTemperatureSetpoint',
                          header='ESO INS TEMP187 VAL', dtype='float'))
-ENG_TESTS.append(EngTest('VacuumGauge1', header='ESO INS PRES104 VAL',
+ENG_TESTS.append(EngTest('VacuumGauge1',
+                         header='HIERARCH ESO INS PRES104 VAL',
                          dtype='float'))
-ENG_TESTS.append(EngTest('IsolationValve', header='ESO INS SENS100 STAT',
+ENG_TESTS.append(EngTest('IsolationValve',
+                         header='HIERARCH ESO INS SENS100 STAT',
                          dtype='bool'))
-ENG_TESTS.append(EngTest('WarningCryo1', header='ESO INS SENS144 STAT',
+ENG_TESTS.append(EngTest('WarningCryo1',
+                         header='HIERARCH ESO INS SENS144 STAT',
                          dtype='str'))
-ENG_TESTS.append(EngTest('WarningCryo2', header='ESO INS SENS146 STAT',
+ENG_TESTS.append(EngTest('WarningCryo2',
+                         header='HIERARCH ESO INS SENS146 STAT',
                          dtype='str'))
-ENG_TESTS.append(EngTest('FPtemperature_interior', header='ESO INS TEMP14 VAL',
+ENG_TESTS.append(EngTest('FPtemperature_interior',
+                         header='HIERARCH ESO INS TEMP14 VAL',
                          dtype='float'))
-ENG_TESTS.append(EngTest('FPtemperature_exterior', header='ESO INS TEMP13 VAL',
+ENG_TESTS.append(EngTest('FPtemperature_exterior',
+                         header='HIERARCH ESO INS TEMP13 VAL',
                          dtype='float'))
-ENG_TESTS.append(EngTest('FPtemperature_setpoint', header='ESO INS TEMP188 VAL',
+ENG_TESTS.append(EngTest('FPtemperature_setpoint',
+                         header='HIERARCH ESO INS TEMP188 VAL',
                          dtype='float'))
-ENG_TESTS.append(EngTest('EncloserHeaterPower', header='ESO INS SENS121 VAL',
+ENG_TESTS.append(EngTest('EncloserHeaterPower',
+                         header='HIERARCH ESO INS SENS121 VAL',
                          dtype='float'))
 
 
@@ -132,11 +145,17 @@ def test_enclosure_temperature(tbl_dict: Dict[str, np.ndarray],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
+    # define keys
     key1 = 'EncloserTemperature'
     key2 = 'EncloserTemperatureSetpoint'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0 or np.sum(mask_dict[key2]) == 0:
+        logger.append(f'No header entries for {key1} or {key2}')
+        passer.append(True)
+        return logger, passer
+    # work out rms
     rms = np.nanstd(tbl_dict[key1][mask_dict[key1]] -
-                    tbl_dict[key2][mask_dict[key1]])
+                    tbl_dict[key2][mask_dict[key2]])
     # Enclosure temperature should be stable to 0.1 K rms
     qc_rms = 0.1
     qc_passed = rms < qc_rms
@@ -170,7 +189,12 @@ def test_enclosure_temperature_setpoint(tbl_dict: Dict[str, Any],
     """
     key1 = 'EncloserTemperature'
     key2 = 'EncloserTemperatureSetpoint'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0 or np.sum(mask_dict[key2]) == 0:
+        logger.append(f'No header entries for {key1} or {key2}')
+        passer.append(True)
+        return logger, passer
+    # work out mean diff
     mean_diff = np.nanmean(tbl_dict[key1][mask_dict[key1]] -
                            tbl_dict[key2][mask_dict[key1]])
 
@@ -190,8 +214,9 @@ def test_enclosure_temperature_setpoint(tbl_dict: Dict[str, Any],
     return logger, passer
 
 
-def test_vacuum_gauge1(tbl_dict: Dict[str, Any], logger: List[str],
+def test_vacuum_gauge1(tbl_dict: Dict[str, Any],
                        mask_dict: Dict[str, np.ndarray],
+                       logger: List[str],
                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     Test the VacuumGauge1 should see a really good vacuum otherwise there
@@ -203,8 +228,14 @@ def test_vacuum_gauge1(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
+    # define key
     key1 = 'VacuumGauge1'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out max
     vacuum_gauge1 = np.nanmax(tbl_dict[key1][mask_dict[key1]])
 
     qc_vacuum_gauge1 = 1e-4
@@ -223,8 +254,9 @@ def test_vacuum_gauge1(tbl_dict: Dict[str, Any], logger: List[str],
     return logger, passer
 
 
-def test_isolation_valve(tbl_dict: Dict[str, Any], logger: List[str],
+def test_isolation_valve(tbl_dict: Dict[str, Any],
                          mask_dict: Dict[str, np.ndarray],
+                         logger: List[str],
                          passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     The IsolationValve should be closed, that's super bad if it's open
@@ -235,8 +267,14 @@ def test_isolation_valve(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
+    # set key
     key1 = 'IsolationValve'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
     isolation_valve = np.nansum(tbl_dict[key1][mask_dict[key1]])
 
     qc_passed = isolation_valve == 0
@@ -254,8 +292,9 @@ def test_isolation_valve(tbl_dict: Dict[str, Any], logger: List[str],
     return logger, passer
 
 
-def test_turbo_pump_status(tbl_dict: Dict[str, Any], logger: List[str],
+def test_turbo_pump_status(tbl_dict: Dict[str, Any],
                            mask_dict: Dict[str, np.ndarray],
+                           logger: List[str],
                            passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     The TurboPumpStatus should be 'off' on the fast majority of occurences
@@ -267,8 +306,14 @@ def test_turbo_pump_status(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
+    # set key
     key1 = 'TurboPumpStatus'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
     turbo_status = np.nansum(tbl_dict[key1][mask_dict[key1]])
 
     qc_passed = turbo_status == 0
@@ -286,8 +331,9 @@ def test_turbo_pump_status(tbl_dict: Dict[str, Any], logger: List[str],
     return logger, passer
 
 
-def test_warning_cryo1(tbl_dict: Dict[str, Any], logger: List[str],
+def test_warning_cryo1(tbl_dict: Dict[str, Any],
                        mask_dict: Dict[str, np.ndarray],
+                       logger: List[str],
                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     Test the Cryo1 warning
@@ -298,8 +344,14 @@ def test_warning_cryo1(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
+    # set key
     key1 = 'WarningCryo1'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
     warning_cryo1_status = np.nansum(tbl_dict[key1][mask_dict[key1]] != '')
 
     qc_passed = warning_cryo1_status == 0
@@ -331,7 +383,12 @@ def test_warning_cryo2(tbl_dict: Dict[str, Any],
     :return: Tuple, the updated 1. logger and 2. passer
     """
     key1 = 'WarningCryo2'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
     warning_cryo2_status = np.nansum(tbl_dict[key1][mask_dict[key1]] != '')
 
     qc_passed = warning_cryo2_status == 0
@@ -362,8 +419,14 @@ def test_fp_temperature(tbl_dict: Dict[str, Any],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
+    # set key
     key1 = 'FPtemperature_interior'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out rms
     rms_fp_temperature = np.nanstd(tbl_dict[key1][mask_dict[key1]])
 
     qc_f_ptemperature = 1e-2
@@ -397,7 +460,12 @@ def test_fp_temperature_setpoint(tbl_dict: Dict[str, Any],
     """
     key1 = 'FPtemperature_interior'
     key2 = 'FPtemperature_setpoint'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0 or np.sum(mask_dict[key2]) == 0:
+        logger.append(f'No header entries for {key1} or {key2}')
+        passer.append(True)
+        return logger, passer
+    # work out rms
     rms = np.nanstd(tbl_dict[key1][mask_dict[key1]] -
                     tbl_dict[key2][mask_dict[key1]])
 
@@ -430,8 +498,14 @@ def test_encloser_heater_power(tbl_dict: Dict[str, Any],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
+    # set key
     key1 = 'EncloserHeaterPower'
-
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out max
     max_heater_power = np.nanmax(tbl_dict[key1][mask_dict[key1]])
 
     heater_power_thres = 80.0
@@ -494,30 +568,23 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     tbl_dict = dict()
     mask_dict = dict()
     # fill table looping through files
-    for ifile in tqdm(range(len(files))):
+    for ifile in tqdm(range(len(files)), leave=False):
         # get the header
         hdr = fits.getheader(files[ifile])
         # loop around keys and fill the table dictionary
         for it, key in enumerate(ENG_TESTS):
             key.read_header(hdr, files[ifile])
-            if key.in_header:
-                if key.name not in tbl_dict:
-                    tbl_dict[key.name] = []
-                    mask_dict[key.name] = []
-                tbl_dict[key.name].append(key.value)
-                mask_dict[key.name].append(True)
-            else:
-                if key.name not in tbl_dict:
-                    tbl_dict[key.name] = []
-                    mask_dict[key.name] = []
-                tbl_dict[key.name].append(np.nan)
-                mask_dict[key.name].append(False)
-
+            # deal with new dictionary entry
+            if key.name not in tbl_dict:
+                tbl_dict[key.name] = []
+                mask_dict[key.name] = []
+            # push in value
+            tbl_dict[key.name].append(key.value)
+            mask_dict[key.name].append(key.in_header)
     # convert lists to numpy arrays
-    for it, key in enumerate(ENG_TESTS):
+    for it, key in enumerate(tbl_dict):
         tbl_dict[key] = np.array(tbl_dict[key])
         mask_dict[key] = np.array(mask_dict[key]).astype(bool)
-
     # -------------------------------------------------------------------------
     # We add prints on the status of raw keywords:
     passer = []
