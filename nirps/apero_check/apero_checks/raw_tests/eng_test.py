@@ -156,6 +156,7 @@ def test_enclosure_temperature(tbl_dict: Dict[str, np.ndarray],
 
 
 def test_enclosure_temperature_setpoint(tbl_dict: Dict[str, Any],
+                                        mask_dict: Dict[str, np.ndarray],
                                         logger: List[str], passer: List[bool]
                                         ) -> Tuple[List[str], List[bool]]:
     """
@@ -167,8 +168,12 @@ def test_enclosure_temperature_setpoint(tbl_dict: Dict[str, Any],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    mean_diff = np.nanmean(tbl_dict['EncloserTemperature'] -
-                           tbl_dict['EncloserTemperatureSetpoint'])
+    key1 = 'EncloserTemperature'
+    key2 = 'EncloserTemperatureSetpoint'
+
+    mean_diff = np.nanmean(tbl_dict[key1][mask_dict[key1]] -
+                           tbl_dict[key2][mask_dict[key1]])
+
     qc_mean = 0.1
     qc_passed = np.abs(mean_diff) < qc_mean
 
@@ -186,6 +191,7 @@ def test_enclosure_temperature_setpoint(tbl_dict: Dict[str, Any],
 
 
 def test_vacuum_gauge1(tbl_dict: Dict[str, Any], logger: List[str],
+                       mask_dict: Dict[str, np.ndarray],
                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     Test the VacuumGauge1 should see a really good vacuum otherwise there
@@ -197,7 +203,10 @@ def test_vacuum_gauge1(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    vacuum_gauge1 = np.nanmax(tbl_dict['VacuumGauge1'])
+    key1 = 'VacuumGauge1'
+
+    vacuum_gauge1 = np.nanmax(tbl_dict[key1][mask_dict[key1]])
+
     qc_vacuum_gauge1 = 1e-4
     qc_passed = vacuum_gauge1 < qc_vacuum_gauge1
 
@@ -215,6 +224,7 @@ def test_vacuum_gauge1(tbl_dict: Dict[str, Any], logger: List[str],
 
 
 def test_isolation_valve(tbl_dict: Dict[str, Any], logger: List[str],
+                         mask_dict: Dict[str, np.ndarray],
                          passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     The IsolationValve should be closed, that's super bad if it's open
@@ -225,7 +235,10 @@ def test_isolation_valve(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    isolation_valve = np.nansum(tbl_dict['IsolationValve'])
+    key1 = 'IsolationValve'
+
+    isolation_valve = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
     qc_passed = isolation_valve == 0
     if qc_passed:
         msg = 'Isolation valve always closed'
@@ -242,6 +255,7 @@ def test_isolation_valve(tbl_dict: Dict[str, Any], logger: List[str],
 
 
 def test_turbo_pump_status(tbl_dict: Dict[str, Any], logger: List[str],
+                           mask_dict: Dict[str, np.ndarray],
                            passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     The TurboPumpStatus should be 'off' on the fast majority of occurences
@@ -253,7 +267,10 @@ def test_turbo_pump_status(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    turbo_status = np.sum(tbl_dict['TurboPumpStatus'])
+    key1 = 'TurboPumpStatus'
+
+    turbo_status = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
     qc_passed = turbo_status == 0
     if qc_passed:
         msg = 'TurboPumpStatus always closed'
@@ -270,6 +287,7 @@ def test_turbo_pump_status(tbl_dict: Dict[str, Any], logger: List[str],
 
 
 def test_warning_cryo1(tbl_dict: Dict[str, Any], logger: List[str],
+                       mask_dict: Dict[str, np.ndarray],
                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     Test the Cryo1 warning
@@ -280,7 +298,10 @@ def test_warning_cryo1(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    warning_cryo1_status = np.nansum(tbl_dict['WarningCryo1'] != '')
+    key1 = 'WarningCryo1'
+
+    warning_cryo1_status = np.nansum(tbl_dict[key1][mask_dict[key1]] != '')
+
     qc_passed = warning_cryo1_status == 0
     if qc_passed:
         msg = 'WarningCryo1 always OK'
@@ -296,8 +317,10 @@ def test_warning_cryo1(tbl_dict: Dict[str, Any], logger: List[str],
     return logger, passer
 
 
-def test_warning_cryo2(tbl_dict: Dict[str, Any], logger: List[str],
-                       passer: List[bool]) -> Tuple[List[str], List[bool]]:
+def test_warning_cryo2(tbl_dict: Dict[str, Any],
+                       mask_dict: Dict[str, np.ndarray],
+                       logger: List[str], passer: List[bool]
+                       ) -> Tuple[List[str], List[bool]]:
     """
     Test the Cryo2 warning
 
@@ -307,7 +330,10 @@ def test_warning_cryo2(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    warning_cryo2_status = np.nansum(tbl_dict['WarningCryo2'] != '')
+    key1 = 'WarningCryo2'
+
+    warning_cryo2_status = np.nansum(tbl_dict[key1][mask_dict[key1]] != '')
+
     qc_passed = warning_cryo2_status == 0
     if qc_passed:
         msg = 'WarningCryo2 always OK'
@@ -323,7 +349,9 @@ def test_warning_cryo2(tbl_dict: Dict[str, Any], logger: List[str],
     return logger, passer
 
 
-def test_fp_temperature(tbl_dict: Dict[str, Any], logger: List[str],
+def test_fp_temperature(tbl_dict: Dict[str, Any],
+                        mask_dict: Dict[str, np.ndarray],
+                        logger: List[str],
                         passer: List[bool]) -> Tuple[List[str], List[bool]]:
     """
     Test FP temperature should be stable to 0.01 K rms
@@ -334,7 +362,10 @@ def test_fp_temperature(tbl_dict: Dict[str, Any], logger: List[str],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    rms_fp_temperature = np.nanstd(tbl_dict['FPtemperature_interior'])
+    key1 = 'FPtemperature_interior'
+
+    rms_fp_temperature = np.nanstd(tbl_dict[key1][mask_dict[key1]])
+
     qc_f_ptemperature = 1e-2
     qc_passed = rms_fp_temperature < qc_f_ptemperature
     if qc_passed:
@@ -352,6 +383,7 @@ def test_fp_temperature(tbl_dict: Dict[str, Any], logger: List[str],
 
 
 def test_fp_temperature_setpoint(tbl_dict: Dict[str, Any],
+                                 mask_dict: Dict[str, np.ndarray],
                                  logger: List[str], passer: List[bool]
                                  ) -> Tuple[List[str], List[bool]]:
     """
@@ -363,8 +395,12 @@ def test_fp_temperature_setpoint(tbl_dict: Dict[str, Any],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    rms = np.nanstd(tbl_dict['FPtemperature_interior'] -
-                    tbl_dict['FPtemperature_setpoint'])
+    key1 = 'FPtemperature_interior'
+    key2 = 'FPtemperature_setpoint'
+
+    rms = np.nanstd(tbl_dict[key1][mask_dict[key1]] -
+                    tbl_dict[key2][mask_dict[key1]])
+
     qc_rms = 0.005
     qc_passed = rms < qc_rms
     if qc_passed:
@@ -382,6 +418,7 @@ def test_fp_temperature_setpoint(tbl_dict: Dict[str, Any],
 
 
 def test_encloser_heater_power(tbl_dict: Dict[str, Any],
+                               mask_dict: Dict[str, np.ndarray],
                                logger: List[str], passer: List[bool]
                                ) -> Tuple[List[str], List[bool]]:
     """
@@ -393,7 +430,10 @@ def test_encloser_heater_power(tbl_dict: Dict[str, Any],
 
     :return: Tuple, the updated 1. logger and 2. passer
     """
-    max_heater_power = np.nanmax(tbl_dict['EncloserHeaterPower'])
+    key1 = 'EncloserHeaterPower'
+
+    max_heater_power = np.nanmax(tbl_dict[key1][mask_dict[key1]])
+
     heater_power_thres = 80.0
     qc_passed = max_heater_power < heater_power_thres
     if qc_passed:
@@ -482,59 +522,87 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # We add prints on the status of raw keywords:
     passer = []
     logger = []
-    # set up arguments for the sub-test functions
-    test_args = [tbl_dict, mask_dict, logger, passer]
 
     # -------------------------------------------------------------------------
     # Test Enclosure Temperature
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_enclosure_temperature(*test_args)
 
     # -------------------------------------------------------------------------
     # Test Enclosure temperature should be within 0.1 K of setpoint
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_enclosure_temperature(*test_args)
 
     # -------------------------------------------------------------------------
     # Test the VacuumGauge1 should see a really good vacuum otherwise there
     # is a leak
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_vacuum_gauge1(*test_args)
 
     # -------------------------------------------------------------------------
     # The IsolationValve should be closed, that's super bad if it's open
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_isolation_valve(*test_args)
 
     # -------------------------------------------------------------------------
     # The TurboPumpStatus should be 'off' on the fast majority of occurences
     # (ask Philippe for details)
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_turbo_pump_status(*test_args)
 
     # -------------------------------------------------------------------------
     # Test the Cryo1 warning
     # -------------------------------------------------------------------------
+    # # set up arguments for the sub-test functions
+    # test_args = [tbl_dict, mask_dict, logger, passer]
+    # # run test
     # logger, passer = test_warning_cryo1(*test_args)
 
     # -------------------------------------------------------------------------
     # Test the Cryo2 warning
     # -------------------------------------------------------------------------
+    # # set up arguments for the sub-test functions
+    # test_args = [tbl_dict, mask_dict, logger, passer]
+    # # run test
     # logger, passer = test_warning_cryo2(*test_args)
 
     # -------------------------------------------------------------------------
     # Test FP temperature should be stable to 0.01 K rms
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_fp_temperature(*test_args)
 
     # -------------------------------------------------------------------------
     # FP temperature should be within 0.005 K of setpoint
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_fp_temperature_setpoint(*test_args)
 
     # -------------------------------------------------------------------------
     # Test Encloser heater power should be less than 80%
     # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
     logger, passer = test_encloser_heater_power(*test_args)
 
     # -------------------------------------------------------------------------
