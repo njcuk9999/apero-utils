@@ -85,8 +85,8 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             ['ESO INS SENS146 STAT', 'WarningCryo2'],
             ['ESO INS TEMP14 VAL', 'FPtemperature_interior'],
             ['ESO INS TEMP13 VAL', 'FPtemperature_exterior'],
-            ['ESO INS TEMP188 VAL', 'FPtemperature_setpoint']  # ''
-            ]
+            ['ESO INS TEMP188 VAL', 'FPtemperature_setpoint'], # ''
+            ['ESO INS SENS121 VAL', 'EncloserHeaterPower']]
     keys = np.array(keys)
 
     # define table columns
@@ -98,13 +98,14 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         key2 = keys[i, 1]
 
         # if not present, we store a dummy value not to raise an error
+        # TODO: do not use "no value" as 0.0
         if key not in h0.keys():
             val = 0.0
         else:
             val = h0[key]
 
         # pad strings to avoid error if there are long strings in later files
-        if type(val) == str:
+        if isinstance(val, str):
             val = ' ' * 100
         tbl[key2] = np.array([val] * len(files))
 
@@ -208,7 +209,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         passed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_fp_temperature,
                                                                                        qc_f_ptemperature))
     else:
-        failed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_fp_temperature,
+        failed_log.append('\tRMS FP temperature interior {:.2E} K  (>{:.2E} K)'.format(rms_fp_temperature,
                                                                                        qc_f_ptemperature))
     ####################################################################################
     # FP temperature should be within 0.005 K of setpoint
@@ -218,8 +219,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     if qc:
         passed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
     else:
-        failed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
+        failed_log.append('\tRMS FP to setpoint {:.1E} K  (>{:.1E} K)'.format(rms, qc_rms))
+    ####################################################################################
 
+    max_heater_power = np.nanmax(tbl['EncloserHeaterPower'])
+
+    heater_power_thres = 80.0
+    qc = max_heater_power < heater_power_thres
+    if qc:
+        passed_log.append('\tEncloser heater power {:.1f}% (<{:.1f}%)'.format(max_heater_power, heater_power_thres))
+    else:
+        failed_log.append('\tEncloser heater power {:.1f}% (>{:.1f}%)'.format(max_heater_power, heater_power_thres))
+
+    ####################################################################################
     # construct a string for printing output
     passed_log = '\n'.join(passed_log)
     if len(passed_log) == 0:
