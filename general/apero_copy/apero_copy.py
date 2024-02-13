@@ -268,6 +268,67 @@ def get_files_profile2(params, files1: Dict[str, List[str]],
     return files2, files3, paths2, paths3
 
 
+def fast_copy(params, files1: Dict[str, List[str]],
+              paths1: Dict[str, str]):
+
+    # deal with symlinks --> return
+    if params['symlinks']:
+        return False
+    # flag for fast copy
+    did_fast_copy = True
+    # load parameters from profile 2
+    apero_params = update_apero_profile(params, profile=2)
+    # import database
+    from apero.core.constants import path_definitions
+    # get block definitions
+    blocks = path_definitions.BLOCKS
+    # loop around block definitions
+    for block in blocks:
+        # skip if not in files1
+        if block.name not in files1:
+            continue
+        # get block instance
+        block_inst = block(apero_params)
+        # get block name
+        block_name = block.name
+        # get path1 from paths1
+        path1 = paths1[block_name]
+        # get block path
+        path2 = block_inst.path
+        # get path3 the temporary path to copy things to first
+        block_base = os.path.basename(path2)
+        block_dir = os.path.dirname(path2)
+
+        # get the input and output paths
+        inpath = str(path1)
+        outpath = os.path.join(block_dir, TMP_DIR_PREFIX + block_base)
+        # check if the input path exists
+        if not os.path.exists(outpath):
+            # create path
+            os.makedirs(outpath)
+        # now add os.sep to inpath and outpath
+        if not inpath.endswith(os.sep):
+            inpath += os.sep
+        if not outpath.endswith(os.sep):
+            outpath += os.sep
+        # get the rsync command
+        rsync_cmd = 'rsync -avu {0} {1}'.format(inpath, outpath)
+        # print progress
+        print('\n\n' + '-' * 50)
+        print('Copying files for block={0}'.format(block_name))
+        print('Using rsync command:')
+        print('\t', rsync_cmd)
+        print('-' * 50 + '\n')
+        # run the command
+        try:
+            os.system(rsync_cmd)
+        except Exception as e:
+            print('Error: {0}'.format(e))
+            did_fast_copy = False
+    # return whether we did fast copy for all directories
+    return did_fast_copy
+
+
 def copy_files(params, files1: Dict[str, List[str]],
                files2: Dict[str, List[str]],
                files3: Dict[str, List[str]]):
@@ -439,9 +500,13 @@ def main():
     files1, paths1 = get_files_profile1(params)
     # get the output files for profile 2 for each block kind
     files2, files3, paths2, paths3 = get_files_profile2(params, files1, paths1)
+
+    # try a fast copy using rsync
+    did_fast_copy = fast_copy(params, files1, paths1)
     # copy files from profile 1 to profile 2 for each block kind
     # must copy files to a temporary path first (copying can be slow)
-    copy_files(params, files1, files2, files3)
+    if not did_fast_copy:
+        copy_files(params, files1, files2, files3)
     # ask after copying whether we are ready to continue
     uinput = ''
     while uinput.lower() not in ['yes', 'no']:
