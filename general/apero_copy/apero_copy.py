@@ -459,7 +459,10 @@ def rename_directories(params: Dict[str, Any], paths2: Dict[str, str],
         print(msg.format(*margs))
         if not params['test']:
             if os.path.exists(paths2[block_name]):
-                shutil.rmtree(paths2[block_name])
+                if os.path.islink(paths2[block_name]):
+                    os.remove(paths2[block_name])
+                else:
+                    shutil.rmtree(paths2[block_name])
             os.rename(paths3[block_name], paths2[block_name])
     return True
 
