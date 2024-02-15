@@ -323,7 +323,7 @@ def fast_copy(params, files1: Dict[str, List[str]],
         try:
             os.system(rsync_cmd)
         except Exception as e:
-            print('Error: {0}'.format(e))
+            print('Skipping rsync. Error: {0}'.format(e))
             did_fast_copy = False
     # return whether we did fast copy for all directories
     return did_fast_copy
