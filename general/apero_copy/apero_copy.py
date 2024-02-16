@@ -474,12 +474,39 @@ def update_databases_profile2(params):
     if params['test']:
         return
     # load parameters from profile 1
-    apero_params = update_apero_profile(params, profile=2)
+    apero_params1 = update_apero_profile(params, profile=1).copy()
+    apero_params2 = update_apero_profile(params, profile=2).copy()
     # apero imports
     from apero.tools.module.database import database_update
     # update the databases
-    dbkind = 'all'
-    database_update.update_database(apero_params, dbkind=dbkind)
+    copy_database(apero_params1, apero_params2)
+
+
+def copy_database(params_old: Any, params_new: Any):
+    """
+    Copy the calib/tellu/log and index databases from one location to another
+
+    :param params:
+
+    :return:
+    """
+    print('stop')
+    # get table names for each old table
+
+    # get table names for each new table
+
+    # get old block paths
+
+    # get new block paths
+
+    # delete new tables
+
+    # duplicate all databases
+
+    # loop around block kinds
+
+    # Deal with findex database
+
 
 
 def main():
