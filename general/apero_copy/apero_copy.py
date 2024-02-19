@@ -63,7 +63,7 @@ def update_apero_profile(params: Dict[str, Any], profile: int) -> Any:
     os.environ['DRS_UCONFIG'] = profile_path
     # allow getting apero
     if install_path is not None:
-        sys.path.append(install_path)
+        sys.path.append(str(install_path))
     # load apero modules
     from apero.base import base
     from apero.core import constants
@@ -263,7 +263,7 @@ def get_files_profile2(params, files1: Dict[str, List[str]],
             files3[block_name].append(outfilename3)
         # add to path dict
         paths2[block_name] = path2
-        paths3[block_name] = path3
+        paths3[block_name] = str(path3)
     # return files
     return files2, files3, paths2, paths3
 
@@ -374,7 +374,7 @@ def copy_files(params, files1: Dict[str, List[str]],
                     os.makedirs(os.path.dirname(outfilename3))
                 # deal with tmp file existing
                 if os.path.exists(outfilename3):
-                    msg = ('Skipping {0} (tmp file already exists)')
+                    msg = 'Skipping {0} (tmp file already exists)'
                     margs = [outfilename3]
                     print(msg.format(*margs))
                     continue
@@ -467,22 +467,35 @@ def rename_directories(params: Dict[str, Any], paths2: Dict[str, str],
     return True
 
 
-def update_databases_profile2(params):
-    # print progress
-    print('Updating APERO databases')
-    # if test mode do nothing here
-    if params['test']:
-        return
+def get_db_and_blocks(params, profile_num: int):
     # load parameters from profile 1
-    apero_params1 = update_apero_profile(params, profile=1).copy()
-    apero_params2 = update_apero_profile(params, profile=2).copy()
-    # apero imports
-    from apero.tools.module.database import database_update
-    # update the databases
-    copy_database(apero_params1, apero_params2)
+    apero_params = update_apero_profile(params, profile=profile_num).copy()
+    # imports
+    from apero.base import drs_db
+    from apero.tools.module.database import manage_databases
+    from apero.core.constants import path_definitions
+    # get database defintiions
+    dbs = manage_databases.list_databases(apero_params)
+    # get the db classes
+    db_classes = dict()
+    for dbkey in dbs:
+        db_def = dbs[dbkey]
+        db_class = drs_db.database_wrapper(db_def.kind, db_def.path)
+        db_classes[dbkey] = db_class
+
+    # get old block classes
+    block_classes = path_definitions.BLOCKS
+
+    # get old block paths
+    block_paths = dict()
+    for block_class in block_classes:
+        block = block_class(apero_params)
+        block_paths[block.name] = block.path
+
+    return db_classes, block_paths
 
 
-def copy_database(params_old: Any, params_new: Any):
+def update_databases_profile2(params: Any):
     """
     Copy the calib/tellu/log and index databases from one location to another
 
@@ -490,23 +503,53 @@ def copy_database(params_old: Any, params_new: Any):
 
     :return:
     """
-    print('stop')
-    # get table names for each old table
-
-    # get table names for each new table
-
-    # get old block paths
-
-    # get new block paths
-
-    # delete new tables
-
+    # print progress
+    print('Updating APERO databases')
+    # get test param
+    test = params['test']
+    # dict of database keys which contains path that may need updating
+    file_path_cols = dict()
+    file_path_cols['findex'] = ['ABSPATH']
+    file_path_cols['log'] = ['INPATH', 'OUTPATH', 'LOGFILE', 'PLOTDIR']
+    # -------------------------------------------------------------------------
+    # get old dbs and blocks
+    old_dbs, old_blocks = get_db_and_blocks(params, profile_num=1)
+    # get new dbs and blocks
+    new_dbs, new_blocks = get_db_and_blocks(params, profile_num=2)
+    # -------------------------------------------------------------------------
     # duplicate all databases
-
-    # loop around block kinds
-
-    # Deal with findex database
-
+    for dbkey in old_dbs:
+        # get old database
+        old_db = old_dbs[dbkey]
+        # get new database
+        new_db = new_dbs[dbkey]
+        # copy old to new
+        if test:
+            print('Duplicating {0} to {1}'.format(old_db.tname, new_db.tname))
+        else:
+            new_db.duplicate(old_db)
+    # -------------------------------------------------------------------------
+    # Deal with updating paths
+    for dbkey in file_path_cols:
+        # get new database
+        new_db = new_dbs[dbkey]
+        # loop around
+        for col in file_path_cols[dbkey]:
+            # loop around blocks (we need to update all blocks seperately)
+            for block_name in old_blocks:
+                # get the old path
+                old_path = old_blocks[block_name]
+                # get the new path
+                new_path = new_blocks[block_name]
+                # skip if old and new are the same
+                if old_path == new_path:
+                    continue
+                # update the paths
+                if test:
+                    margs = [col, old_path, new_path]
+                    print('Updating {0} in {1} from {2} to {3}'.format(*margs))
+                else:
+                    new_db.replace_paths(old_path, new_path, col)
 
 
 def main():
@@ -543,7 +586,7 @@ def main():
         uinput = input('Are you ready to remove old data and replace with '
                        'the new data. Note this is a one way process and there '
                        'is no undo \n\tType "yes" or "no"?\t')
-    if uinput.lower() ==  'no':
+    if uinput.lower() == 'no':
         print('\n\tStopping copy.')
         return
     # may need to update profile 2 (via git) to match profile 1
