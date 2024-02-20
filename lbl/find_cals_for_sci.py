@@ -13,6 +13,7 @@ import glob
 from tqdm import tqdm
 import os
 import shutil
+from astropy.io import fits
 
 # =============================================================================
 # Define variables
@@ -61,6 +62,8 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     cal_files = []
     wave_files = []
+    fp_fp_files = []
+    read_files = []
 
     # remove duplicates from sci_filelist
     sci_filelist = list(set(SCI_FILELIST))
@@ -82,6 +85,22 @@ if __name__ == "__main__":
                                                   '*wave_night*AB.fits')))
         wave_files += list(glob.glob(os.path.join(found_path,
                                                   '*wave_night*C.fits')))
+        # get the all files in the directory
+        all_files = list(glob.glob(os.path.join(found_path, '*_e2dsff_AB.fits')))
+        all_files += list(glob.glob(os.path.join(found_path, '*_e2dsff_C.fits')))
+        # loop around all files and add to list
+        for all_file in all_files:
+            # do not read files we have already read
+            if all_file in read_files or all_file in fp_fp_files:
+                continue
+            # read the header
+            hdr = fits.getheader(all_file)
+            # check the DPRTYPE
+            if hdr['DPRTYPE'] == 'FP_FP':
+                fp_fp_files.append(all_file)
+            else:
+                read_files.append(all_file)
+
     # make sure we don't have duplicates
     cal_files = list(set(cal_files))
     wave_files = list(set(wave_files))
@@ -96,6 +115,11 @@ if __name__ == "__main__":
     # copy files
     for wave_file in tqdm(wave_files):
         shutil.copy(wave_file, os.path.join(COPY_PATH, 'calib'))
+    # print progress
+    print('\n\nCopying FP_FP e2dsff files to {0}'.format(COPY_PATH))
+    # copy files
+    for fp_fp_file in tqdm(fp_fp_files):
+        shutil.copy(fp_fp_file, os.path.join(COPY_PATH, 'science', 'FP'))
 
 # =============================================================================
 # End of code
