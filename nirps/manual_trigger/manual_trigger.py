@@ -618,6 +618,8 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     for profile in settings['PROFILES']:
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
+        # update the apero profile
+        _ = update_apero_profile(pdict)
         # get ari profile
         ari_profile = pdict['ari']['profile']
         # log that APERO started
