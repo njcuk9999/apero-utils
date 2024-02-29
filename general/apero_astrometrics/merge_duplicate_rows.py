@@ -275,20 +275,20 @@ if __name__ == "__main__":
     astrometric_dataframe = get_google_sheet()
 
     # ---------------------------------------------------------------------
-    # fix for bad K column
-    # TODO: remove this when fixed in google sheet
-    source1 = astrometric_dataframe['SP_SOURCE']
-    source2 = astrometric_dataframe['K']
-    source_comb = []
-    for s1, s2 in zip(source1, source2):
-        if s1 == s2:
-            source_comb.append(s1)
-        elif s1 != '':
-            source_comb.append(s1)
-        else:
-            source_comb.append(s2)
-    astrometric_dataframe['SP_SOURCE'] = source_comb
-    astrometric_dataframe['K'] = [''] * len(source_comb)
+    # # fix for bad K column
+    # # TODO: remove this when fixed in google sheet
+    # source1 = astrometric_dataframe['SP_SOURCE']
+    # source2 = astrometric_dataframe['K']
+    # source_comb = []
+    # for s1, s2 in zip(source1, source2):
+    #     if s1 == s2:
+    #         source_comb.append(s1)
+    #     elif s1 != '':
+    #         source_comb.append(s1)
+    #     else:
+    #         source_comb.append(s2)
+    # astrometric_dataframe['SP_SOURCE'] = source_comb
+    # astrometric_dataframe['K'] = [''] * len(source_comb)
     # ----------------------------------------------------------------------
     # loop around bad objects
     for b_it, bad_object in enumerate(bad_objects):
