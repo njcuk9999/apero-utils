@@ -11,7 +11,7 @@ Created on 2023-07-03 at 14:37
 """
 import glob
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 from astropy import units as uu
@@ -47,12 +47,20 @@ def get_files_prefix(path: str, suffix: str,
     """
     # storage of prefixes and paths
     file_prefixes, file_paths = [], []
+    # rejected dirs
+    rejected_dirs = []
     # walk around all subdirectories with root = path
-    for root, dirs, files in os.walk(path):
+    for root, dirs, files in os.walk(path, followlinks=True):
         # loop around files
         for filename in files:
+            # get obsdir
+            obsdir = str(root)
             # make sure it is a file
             if filename.endswith(suffix):
+                # do not add files for observation directories that were
+                #    previous rejected
+                if obsdir in rejected_dirs:
+                    continue
                 # get the absolute path
                 abspath = os.path.join(root, filename)
                 # get the last modified time
@@ -63,18 +71,21 @@ def get_files_prefix(path: str, suffix: str,
                     last_mod = 0
                 # only keep files in the time range
                 if first is not None and last_mod < first.unix:
+                    # add to rejected (to skip check in future
+                    rejected_dirs.append(obsdir)
                     continue
                 elif last is not None and last_mod > last.unix:
+                    # add to rejected (to skip check in future
+                    rejected_dirs.append(obsdir)
                     continue
                 # make sure it is a file
-                if filename.endswith(suffix):
-                    file_prefixes.append(filename.split(suffix)[0])
-                    file_paths.append(abspath)
+                file_prefixes.append(filename.split(suffix)[0])
+                file_paths.append(abspath)
     # return the prefixes and paths
     return file_prefixes, file_paths
 
 
-def get_last_file_time(path: str) -> Time:
+def get_last_file_time(path: str) -> Union[Time, None]:
     """
     Get the newest file in a directory
 
@@ -82,8 +93,21 @@ def get_last_file_time(path: str) -> Time:
 
     :return:
     """
-    # list all files in this path
-    files = glob.glob(path)
+    while True:
+        # list all files in this path
+        files = glob.glob(os.path.join(path, '*.fits'))
+        # deal with no files
+        if len(files) == 0:
+            directories = glob.glob(os.path.join(os.path.dirname(path), '*'))
+            directories.sort(key=os.path.getmtime)
+            # deal with no directories
+            if len(directories) == 0:
+                return None
+            # set the path to the last directory
+            path = directories[-1]
+        else:
+            break
+
     # sort these by last modified time
     files.sort(key=os.path.getmtime)
     # get the last file
@@ -116,6 +140,13 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # get the last modified time of the last file in the raw directory +
     #   obs dir
     last_modified = get_last_file_time(os.path.join(raw_directory, obsdir))
+    # deal with no last_modified --> raw directory is empty
+    if last_modified is None:
+        if log:
+            msg = 'Raw directory is empty: {0}'.format(raw_directory)
+            misc.log_msg(msg, level='warning')
+        return False
+    # -------------------------------------------------------------------------
     # get the first and last time (we check for the last 7 days only)
     first = last_modified - TimeDelta(7 * uu.day)
     last = last_modified
