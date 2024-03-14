@@ -54,11 +54,15 @@ def get_files_prefix(path: str, suffix: str,
                 # get the absolute path
                 abspath = os.path.join(root, filename)
                 # get the last modified time
-                last_mod = os.path.getmtime(abspath)
+                if first is not None and last is not None:
+                    last_mod = os.path.getmtime(abspath)
+                # not required
+                else:
+                    last_mod = 0
                 # only keep files in the time range
-                if last_mod < first.unix:
+                if first is not None and last_mod < first.unix:
                     continue
-                elif last_mod > last.unix:
+                elif last is not None and last_mod > last.unix:
                     continue
                 # make sure it is a file
                 if filename.endswith(suffix):
@@ -69,11 +73,17 @@ def get_files_prefix(path: str, suffix: str,
 
 
 def get_last_file_time(path: str) -> Time:
+    """
+    Get the newest file in a directory
 
+    :param path: str, the absolute path to the directory
+
+    :return:
+    """
     # list all files in this path
     files = os.listdir(path)
     # sort these by last modified time
-    files.sort(key=lambda x: os.path.getmtime(x))
+    files.sort(key=os.path.getmtime)
     # get the last file
     last_file = files[-1]
     # return the last modified time
@@ -111,15 +121,14 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # get all raw files prefix
     raw_prefixes, raw_files = get_files_prefix(raw_directory, '.fits',
                                                first=first, last=last)
-    pp_prefixes, _ = get_files_prefix(tmp_directory, '_pp.fits',
-                                      first=first, last=last)
+    pp_prefixes, _ = get_files_prefix(tmp_directory, '_pp.fits')
     # -------------------------------------------------------------------------
     # loop around all files and find any raw files that are not in pp
     no_reduction = ~np.in1d(raw_prefixes, pp_prefixes)
     # if we have any files that are not in reduction we log an error
     if np.sum(no_reduction) > 0:
         if log:
-            msg = ('Missing files from reduction (not pp files): ')
+            msg = 'Missing pp files in last 7 days: '
             for row in range(len(raw_prefixes)):
                 if no_reduction[row]:
                     msg += '\n\t{0}'.format(raw_files[row])
@@ -128,7 +137,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         return False
     # -------------------------------------------------------------------------
     if log:
-        msg = ('No files from reduction missing.')
+        msg = ('No missing pp files in the last 7 days.')
         misc.log_msg(msg, level='')
     # -------------------------------------------------------------------------
     return True
