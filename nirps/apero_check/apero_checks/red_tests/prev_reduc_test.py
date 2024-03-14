@@ -9,15 +9,17 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
+import glob
 import os
 from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
-from astropy.time import Time, TimeDelta
 from astropy import units as uu
+from astropy.time import Time, TimeDelta
 
-from apero_checks.core import misc
 from apero_checks.core import apero_functions
+from apero_checks.core import misc
+
 
 # =============================================================================
 # Define variables
@@ -81,7 +83,7 @@ def get_last_file_time(path: str) -> Time:
     :return:
     """
     # list all files in this path
-    files = os.listdir(path)
+    files = glob.glob(path)
     # sort these by last modified time
     files.sort(key=os.path.getmtime)
     # get the last file
