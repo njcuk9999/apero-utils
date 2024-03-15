@@ -35,7 +35,7 @@ GSHEET_URL = ('https://docs.google.com/spreadsheets/d/{0}/'
 # =============================================================================
 # Define functions
 # =============================================================================
-def get_reject_list(apero_params) -> np.ndarray:
+def get_reject_list(apero_params) -> List[str]:
     """
     Get the reject list from the google sheet
 
@@ -51,8 +51,10 @@ def get_reject_list(apero_params) -> np.ndarray:
     url = GSHEET_URL.format(sheet_url, sheet_id)
     # get reject list
     reject_list = pd.read_csv(StringIO(url))
+    # get unique identifiers
+    uidentifiers = set(list(np.array(reject_list['IDENTIFIER']).astype(str)))
     # return just the identifiers
-    return np.array(reject_list['IDENTIFIER'])
+    return list(uidentifiers)
 
 
 def get_files_prefix(path: str, suffix: str,
@@ -173,6 +175,8 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # define parameters we use here
     raw_directory = apero_params['DRS_DATA_RAW']
     tmp_directory = apero_params['DRS_DATA_WORKING']
+    # get the reject list
+    reject_list = get_reject_list(apero_params)
     # -------------------------------------------------------------------------
     # get the last modified time of the last file in the raw directory +
     #   obs dir
