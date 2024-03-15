@@ -46,7 +46,7 @@ def get_reject_list(apero_params) -> List[str]:
     # define the sheet id and sheet name
     sheet_url = apero_params['REJECT_LIST_GOOGLE_SHEET_URL']
     # get the google sheet name
-    sheet_id = apero_params['REJECT_LIST_GSHEET_SHEET_NAME']
+    sheet_id = apero_params['REJECT_LIST_GSHEET_MAIN_LIST_ID']
     # construct google sheet url to get a csv
     url = GSHEET_URL.format(sheet_url, sheet_id)
     # get reject list
