@@ -10,10 +10,12 @@ Created on 2023-07-03 at 14:37
 @author: cook
 """
 import glob
+from io import StringIO
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
+import pandas as pd
 from astropy import units as uu
 from astropy.time import Time, TimeDelta
 
@@ -27,14 +29,36 @@ from apero_checks.core import misc
 # define any other constants here that you want moving to the parameters.py
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
-
+GSHEET_URL = ('https://docs.google.com/spreadsheets/d/{0}/'
+              'export?format=csv&gid={1}')
 
 # =============================================================================
 # Define functions
 # =============================================================================
+def get_reject_list(apero_params) -> np.ndarray:
+    """
+    Get the reject list from the google sheet
+
+    :param apero_params: ParamDict, the parameter dictionary of constants
+
+    :return: np.ndarray, the list of identifiers that are rejected
+    """
+    # define the sheet id and sheet name
+    sheet_url = apero_params['REJECT_LIST_GOOGLE_SHEET_URL']
+    # get the google sheet name
+    sheet_id = apero_params['REJECT_LIST_GSHEET_SHEET_NAME']
+    # construct google sheet url to get a csv
+    url = GSHEET_URL.format(sheet_url, sheet_id)
+    # get reject list
+    reject_list = pd.read_csv(StringIO(url))
+    # return just the identifiers
+    return np.array(reject_list['IDENTIFIER'])
+
+
 def get_files_prefix(path: str, suffix: str,
                      last: Optional[Time] = None,
-                     first: Optional[Time] = None
+                     first: Optional[Time] = None,
+                     reject_list: Optional[List[str]] = None
                      ) -> Tuple[List[str], List[str]]:
     """
     Get the prefixes for all files in a directory with a given suffix
@@ -78,6 +102,19 @@ def get_files_prefix(path: str, suffix: str,
                     # add to rejected (to skip check in future
                     rejected_dirs.append(obsdir)
                     continue
+                # check if file prefix is in reject list
+                if reject_list is not None:
+                    # assume we aren't rejecting file
+                    reject = False
+                    # loop around all prefixes
+                    for reject_prefix in reject_list:
+                        # if prefix is in filename reject it and stop looking
+                        if filename.startswith(reject_prefix):
+                            reject = True
+                            break
+                    # skip this file if it is rejected
+                    if reject:
+                        continue
                 # make sure it is a file
                 file_prefixes.append(filename.split(suffix)[0])
                 file_paths.append(abspath)
@@ -153,7 +190,8 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # -------------------------------------------------------------------------
     # get all raw files prefix
     raw_prefixes, raw_files = get_files_prefix(raw_directory, '.fits',
-                                               first=first, last=last)
+                                               first=first, last=last,
+                                               reject_list=reject_list)
     pp_prefixes, _ = get_files_prefix(tmp_directory, '_pp.fits')
     # -------------------------------------------------------------------------
     # loop around all files and find any raw files that are not in pp
