@@ -13,6 +13,7 @@ import glob
 from io import StringIO
 import os
 from typing import Any, Dict, List, Optional, Tuple, Union
+import requests
 
 import numpy as np
 import pandas as pd
@@ -49,8 +50,10 @@ def get_reject_list(apero_params) -> List[str]:
     sheet_id = apero_params['REJECT_LIST_GSHEET_MAIN_LIST_ID']
     # construct google sheet url to get a csv
     url = GSHEET_URL.format(sheet_url, sheet_id)
+    # request the csv from a url
+    request = requests.get(url)
     # get reject list
-    reject_list = pd.read_csv(StringIO(url))
+    reject_list = pd.read_csv(StringIO(request.text))
     # get unique identifiers
     uidentifiers = set(list(np.array(reject_list['IDENTIFIER']).astype(str)))
     # return just the identifiers
