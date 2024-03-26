@@ -221,6 +221,7 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     for root, dirs, files in os.walk(apero_params['DRS_DATA_ASSETS']):
         for filename in files:
             files1['asset'].append(os.path.join(root, filename))
+    paths1['asset'] = apero_params['DRS_DATA_ASSETS']
 
     # add to path dict
     return files1, paths1
