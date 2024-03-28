@@ -392,27 +392,26 @@ def run_processing(settings: Dict[str, Any]):
 
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_processing
-        from apero.tools.module.error import error_html
-
         # run apero processing
         if obs_dirs == '*':
-            ll = apero_processing.main(runfile=runfile,
+            apero_processing.main(runfile=runfile,
                                        test=settings['TEST'])
         else:
-            ll = apero_processing.main(runfile=runfile,
+            apero_processing.main(runfile=runfile,
                                        include_obs_dirs=obsdir_str,
                                        test=settings['TEST'])
         # ---------------------------------------------------------------------
         # push the errors into yaml format for html
         # ---------------------------------------------------------------------
-        # get outlist from the return of apero_processing.main
-        outlist = ll.get('outlist', None)
-        # make error yaml files (if we have an outlist)
-        if outlist is not None:
-            # construct path to yaml dicts
-            yaml_path = os.path.join(params['DRS_DATA_MSG'], 'yamls')
-            # push into yaml dicts
-            error_html.from_outlist(yaml_path, outlist)
+        # from apero.tools.module.error import error_html
+        # # get outlist from the return of apero_processing.main
+        # outlist = ll.get('outlist', None)
+        # # make error yaml files (if we have an outlist)
+        # if outlist is not None:
+        #     # construct path to yaml dicts
+        #     yaml_path = os.path.join(params['DRS_DATA_MSG'], 'yamls')
+        #     # push into yaml dicts
+        #     error_html.from_outlist(yaml_path, outlist)
         # log that APERO ended
         trigger_settings['LOG'][profile].write(APERO_END)
         # update reduced checks
