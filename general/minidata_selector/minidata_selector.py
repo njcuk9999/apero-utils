@@ -72,8 +72,8 @@ OBSERVATION_DIRS['SPIROU'] = ["2020-05-14", "2020-06-30", "2020-07-29",
                               "2020-07-30", "2020-08-01", "2020-08-02",
                               "2020-08-03", "2020-08-04", "2020-08-10",
                               "2020-09-23", "2020-10-07", "2020-11-01"]
-OBSERVATION_DIRS['NIRPS_HE'] = os.listdir('/cosmos99/nirps/apero-data/nirps_he_online/raw/nirps_he')
-OBSERVATION_DIRS['NIRPS_HA'] = os.listdir('/cosmos99/nirps/apero-data/nirps_ha_online/raw/nirps_he')
+OBSERVATION_DIRS['NIRPS_HE'] = None
+OBSERVATION_DIRS['NIRPS_HA'] = None
 # -----------------------------------------------------------------------------
 # Set the reference observation directory for each instrument (this night must
 #   be included)
@@ -132,6 +132,21 @@ SELECTED_OBS_DIRS['NIRPS_HA'] = []
 # =============================================================================
 # Define functions
 # =============================================================================
+def obs_from_raw_dir(params) -> List[str]:
+    # get the raw directory
+    raw_dir = params['DRS_DATA_RAW']
+    # get everything in the raw directory
+    raw_obs_dirs = os.listdir(raw_dir)
+    # filter these to make sure they are directories
+    obs_dirs = []
+    for raw_obs_dir in raw_obs_dirs:
+        raw_obs_path = os.path.join(raw_dir, raw_obs_dir)
+        if os.path.isdir(raw_obs_path):
+            obs_dirs.append(raw_obs_dir)
+    # return obs_dirs
+    return obs_dirs
+
+
 def clean_objs(params, pconst, database, raw_objs) -> List[str]:
     # print progress
     WLOG(params, '', 'Cleaning {0} objects'.format(len(raw_objs)))
@@ -147,6 +162,9 @@ def clean_objs(params, pconst, database, raw_objs) -> List[str]:
 def get_valid_obs_dirs(params, obs_dirs: List[str]) -> List[str]:
     # get the instrument
     instrument = params['INSTRUMENT']
+    # deal with None
+    if obs_dirs is None:
+        obs_dirs = obs_from_raw_dir(params)
     # get the database
     findexdb = drs_database.FileIndexDatabase(params)
     # load the database
@@ -485,6 +503,7 @@ def main(params: ParamDict):
     objdb = drs_database.AstrometricDatabase(params)
     # load the object database
     objdb.load_db()
+
     # ----------------------------------------------------------------------
     # step 1: get a valid list of observation directories
     # ----------------------------------------------------------------------
