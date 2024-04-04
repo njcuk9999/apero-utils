@@ -72,12 +72,8 @@ OBSERVATION_DIRS['SPIROU'] = ["2020-05-14", "2020-06-30", "2020-07-29",
                               "2020-07-30", "2020-08-01", "2020-08-02",
                               "2020-08-03", "2020-08-04", "2020-08-10",
                               "2020-09-23", "2020-10-07", "2020-11-01"]
-OBSERVATION_DIRS['NIRPS_HE'] = ['2023-01-19', '2023-03-05', '2023-04-28',
-                                '2023-05-05', '2023-06-07', '2023-08-25',
-                                '2024-01-30', '2024-02-09', '2024-03-22', ]
-OBSERVATION_DIRS['NIRPS_HA'] = ['2023-01-19', '2023-03-05', '2023-03-09',
-                                '2023-04-07', '2023-04-28', '2023-05-04',
-                                '2023-05-31', '2023-06-07']
+OBSERVATION_DIRS['NIRPS_HE'] = os.listdir('/cosmos99/nirps/apero-data/raw/nirps_he')
+OBSERVATION_DIRS['NIRPS_HA'] = os.listdir('/cosmos99/nirps/apero-data/raw/nirps_he')
 # -----------------------------------------------------------------------------
 # Set the reference observation directory for each instrument (this night must
 #   be included)
@@ -205,29 +201,56 @@ def get_valid_obs_dirs(params, obs_dirs: List[str]) -> List[str]:
 
 
 def display_obs_dirs(params, obs_dirs, count_sci_obj, count_tellu_obj,
-                     best_sci_objs, best_tellu_objs):
+                     best_sci_objs, best_tellu_objs) -> List[str]:
     # print progress
     WLOG(params, '', 'Listing number of files for each object')
-
-
+    # storage for options (these are the numbers the user is choosing from)
+    options = []
+    # need a counter to tell user which option they are selecting
+    option_counter = 0
+    # loop around observation directories
     for o_it, obsdir in enumerate(obs_dirs):
-        # print progress
-        wmsg = '{0}: OBSDIR = {1}'
-        wargs = [o_it + 1, obsdir]
-        WLOG(params, 'info', wmsg.format(*wargs))
-
+        # storage for targets found
+        printouts = []
+        # storage for number of science and telluric objects found in each
+        #   observation directory
+        sci_obj_found = 0
+        tellu_obj_found = 0
+        # loop around science directories
         for sci_obj in best_sci_objs:
             if count_sci_obj[obsdir][sci_obj] == 0:
                 continue
-            wmsg1 = '\t{0} = {1}'
-            wargs1 = [sci_obj, count_sci_obj[obsdir][sci_obj]]
-            WLOG(params, '', wmsg1.format(*wargs1))
+            sci_obj_found += count_sci_obj[obsdir][sci_obj]
+            if sci_obj_found > 0:
+                wmsg1 = '\t{0} = {1}'
+                wargs1 = [sci_obj, count_sci_obj[obsdir][sci_obj]]
+                printouts.append(wmsg1.format(*wargs1))
+        # loop around telluric directories
         for tellu_obj in best_tellu_objs:
             if count_tellu_obj[obsdir][tellu_obj] == 0:
                 continue
-            wmsg2 = '\t{0} = {1}'
-            wargs2 = [tellu_obj, count_tellu_obj[obsdir][tellu_obj]]
-            WLOG(params, '', wmsg2.format(*wargs2))
+            tellu_obj_found += count_tellu_obj[obsdir][tellu_obj]
+            if tellu_obj_found > 0:
+                wmsg2 = '\t{0} = {1}'
+                wargs2 = [tellu_obj, count_tellu_obj[obsdir][tellu_obj]]
+                printouts.append(wmsg2.format(*wargs2))
+        # do not show observation directory if no science or telluric objects
+        #   present
+        if sci_obj_found == 0 or tellu_obj_found == 0:
+            continue
+        else:
+            # print progress
+            wmsg = '{0}: OBSDIR = {1}'
+            wargs = [option_counter + 1, obsdir]
+            WLOG(params, 'info', wmsg.format(*wargs))
+
+            for printout in printouts:
+                WLOG(params, '', printout)
+
+            options.append(obsdir)
+            option_counter += 1
+
+    return options
 
 
 def count_files(params, obs_dirs, condition, sci_objs, tellu_objs):
@@ -295,18 +318,19 @@ def select_obs_dirs(params, obs_dirs, count_sci_obj, count_tellu_obj,
         margs = [MAX_OBSERVATION_DIRS[instrument] - len(selected)]
         WLOG(params, '', msg.format(*margs), colour='magenta')
 
-        display_obs_dirs(params, left_obs_dirs, count_sci_obj, count_tellu_obj,
-                         best_sci_objs, best_tellu_objs)
+        options = display_obs_dirs(params, left_obs_dirs, count_sci_obj,
+                                   count_tellu_obj, best_sci_objs,
+                                   best_tellu_objs)
 
         qmsg = ('Enter the number of the observation directory you want to '
                 'select [1 - {0}]: ')
-        qargs = [len(left_obs_dirs)]
+        qargs = [len(options)]
         uinput = input(qmsg.format(*qargs))
 
         try:
             uinput = int(uinput) - 1
-            selected.append(str(left_obs_dirs[uinput]))
-            left_obs_dirs.remove(left_obs_dirs[uinput])
+            selected.append(str(options[uinput]))
+            left_obs_dirs.remove(options[uinput])
         except Exception as _:
             wmsg = 'Input = {0} is not a valid integer between 1 and {1}'
             wargs = [uinput, len(left_obs_dirs)]
