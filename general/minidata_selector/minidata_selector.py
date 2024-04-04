@@ -72,8 +72,8 @@ OBSERVATION_DIRS['SPIROU'] = ["2020-05-14", "2020-06-30", "2020-07-29",
                               "2020-07-30", "2020-08-01", "2020-08-02",
                               "2020-08-03", "2020-08-04", "2020-08-10",
                               "2020-09-23", "2020-10-07", "2020-11-01"]
-OBSERVATION_DIRS['NIRPS_HE'] = os.listdir('/cosmos99/nirps/apero-data/raw/nirps_he')
-OBSERVATION_DIRS['NIRPS_HA'] = os.listdir('/cosmos99/nirps/apero-data/raw/nirps_he')
+OBSERVATION_DIRS['NIRPS_HE'] = os.listdir('/cosmos99/nirps/apero-data/nirps_he_online/raw/nirps_he')
+OBSERVATION_DIRS['NIRPS_HA'] = os.listdir('/cosmos99/nirps/apero-data/nirps_ha_online/raw/nirps_he')
 # -----------------------------------------------------------------------------
 # Set the reference observation directory for each instrument (this night must
 #   be included)
