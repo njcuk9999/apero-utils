@@ -286,7 +286,7 @@ def count_files(params, obs_dirs, condition, sci_objs, tellu_objs):
     count_sci_obj = dict()
     count_tellu_obj = dict()
     # loop around each observation directory
-    for obsdir in obs_dirs:
+    for obsdir in tqdm(obs_dirs):
         # set up condition to add this observation directory
         condition1 = condition + f' AND OBS_DIR="{obsdir}"'
         # add obsdir to count dict
