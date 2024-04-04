@@ -35,7 +35,7 @@ __release__ = base.__release__
 WLOG = drs_log.wlog
 ParamDict = constants.ParamDict
 # whether we are in test mode
-TEST = True
+TEST = False
 # Define the required science targets for a mini dataset
 SCIENCE_TARGETS = dict()
 SCIENCE_TARGETS['SPIROU'] = ['GL699']
@@ -118,6 +118,13 @@ REQCALS['NIRPS_HE'].append(('FP_FP', 1))
 REQCALS['NIRPS_HE'].append(('HCONE_HCONE', 1))
 
 REQCALS['NIPRS_HA'] = list(REQCALS['NIRPS_HE'])
+
+# Do not ask for directories (only for use after a test)
+SELECTED_OBS_DIRS = dict()
+SELECTED_OBS_DIRS['SPIROU'] = ['2020-08-31', '2020-08-10', '2020-07-30',
+                               '2020-05-14', '2020-10-07']
+SELECTED_OBS_DIRS['NIRPS_HE'] = []
+SELECTED_OBS_DIRS['NIRPS_HA'] = []
 
 
 # =============================================================================
@@ -391,7 +398,6 @@ class ObsDir:
         return inpaths, outpaths
 
 
-
 def get_selected_files(params, selected_obsdirs, best_sci_objs, best_tellu_objs,
                        reqcals) -> List[ObsDir]:
     # get the database
@@ -439,12 +445,12 @@ def get_selected_files(params, selected_obsdirs, best_sci_objs, best_tellu_objs,
     return file_list
 
 
-
 def main(params: ParamDict):
     # load pconst
     pconst = constants.pload()
     # get the instrument
     instrument = params['INSTRUMENT']
+
     # get the object database
     objdb = drs_database.AstrometricDatabase(params)
     # load the object database
@@ -490,11 +496,15 @@ def main(params: ParamDict):
     best_tellu_objs = np.array(tellu_keys)[tellu_sort]
 
     # -------------------------------------------------------------------------
-    # Ask use to select best observation directories
+    # Ask user to select best observation directories
     # -------------------------------------------------------------------------
-    selected_obsdirs = select_obs_dirs(params, obs_dirs, count_sci_obj,
-                                       count_tellu_obj, best_sci_objs,
-                                       best_tellu_objs)
+    if len(SELECTED_OBS_DIRS[instrument]) == 0:
+
+        selected_obsdirs = select_obs_dirs(params, obs_dirs, count_sci_obj,
+                                           count_tellu_obj, best_sci_objs,
+                                           best_tellu_objs)
+    else:
+        selected_obsdirs = SELECTED_OBS_DIRS[instrument]
 
     # -------------------------------------------------------------------------
     # get files for this night
@@ -506,6 +516,10 @@ def main(params: ParamDict):
     file_list = get_selected_files(params, selected_obsdirs, best_sci_objs,
                                    best_tellu_objs, REQCALS[instrument])
 
+    # print which nights were selected
+    WLOG(params, '', 'Selected observation directories:')
+    for obsdir_inst in file_list:
+        WLOG(params, '', '\t - {0}'.format(obsdir_inst.obsdir))
 
     # -------------------------------------------------------------------------
     # copy files to destination
