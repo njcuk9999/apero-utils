@@ -119,14 +119,16 @@ REQCALS['NIRPS_HE'].append(('FLAT_DARK', 1))
 REQCALS['NIRPS_HE'].append(('FP_FP', 1))
 REQCALS['NIRPS_HE'].append(('HCONE_HCONE', 1))
 
-REQCALS['NIPRS_HA'] = list(REQCALS['NIRPS_HE'])
+REQCALS['NIRPS_HA'] = list(REQCALS['NIRPS_HE'])
 
 # Do not ask for directories (only for use after a test)
 SELECTED_OBS_DIRS = dict()
 SELECTED_OBS_DIRS['SPIROU'] = ['2020-08-31', '2020-08-10', '2020-07-30',
                                '2020-05-14', '2020-10-07']
-SELECTED_OBS_DIRS['NIRPS_HE'] = []
-SELECTED_OBS_DIRS['NIRPS_HA'] = []
+SELECTED_OBS_DIRS['NIRPS_HE'] = ['2022-11-24', '2023-04-07', '2024-02-15',
+                                 '2024-03-10', '2024-03-25', '2024-03-28']
+SELECTED_OBS_DIRS['NIRPS_HA'] = ['2022-11-24', '2023-03-03', '2023-04-04',
+                                 '2023-04-07', '2023-05-02', '2023-06-24']
 
 
 # =============================================================================
