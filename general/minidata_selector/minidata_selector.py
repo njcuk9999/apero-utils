@@ -42,7 +42,10 @@ SCIENCE_TARGETS['SPIROU'] = ['GL699']
 SCIENCE_TARGETS['NIRPS_HE'] = ['PROXIMA']
 SCIENCE_TARGETS['NIRPS_HA'] = ['PROXIMA']
 # Directory to copy files to
-OUTPUTDIR = '/scratch2/spirou/drs-data/common/minidata2_xxs'
+OUTPUTDIR = dict()
+OUTPUTDIR['SPIROU'] = '/scratch2/spirou/drs-data/common/minidata2_xxs'
+OUTPUTDIR['NIRPS_HE'] = '/cosmos99/nirps/apero-data/misc/common/nirps_he_xxs'
+OUTPUTDIR['NIRPS_HA'] = '/cosmos99/nirps/apero-data/misc/common/nirps_ha_xxs'
 # -----------------------------------------------------------------------------
 # define a list of hot stars
 TELLURIC_TARGETS = dict()
@@ -65,13 +68,16 @@ TELLURIC_TARGETS['NIRPS_HA'] = list(TELLURIC_TARGETS['NIRPS_HE'])
 # -----------------------------------------------------------------------------
 # set the list of observation directories to check for each instrument
 OBSERVATION_DIRS = dict()
-OBSERVATION_DIRS['SPIROU'] = [
-    "2020-05-14", "2020-06-30", "2020-07-29", "2020-07-30", "2020-08-01",
-    "2020-08-02", "2020-08-03", "2020-08-04", "2020-08-10",
-    "2020-09-23", "2020-10-07", "2020-11-01"
-]
-OBSERVATION_DIRS['NIRPS_HE'] = []
-OBSERVATION_DIRS['NIRPS_HA'] = []
+OBSERVATION_DIRS['SPIROU'] = ["2020-05-14", "2020-06-30", "2020-07-29",
+                              "2020-07-30", "2020-08-01", "2020-08-02",
+                              "2020-08-03", "2020-08-04", "2020-08-10",
+                              "2020-09-23", "2020-10-07", "2020-11-01"]
+OBSERVATION_DIRS['NIRPS_HE'] = ['2023-01-19', '2023-03-05', '2023-04-28',
+                                '2023-05-05', '2023-06-07', '2023-08-25',
+                                '2024-01-30', '2024-02-09', '2024-03-22', ]
+OBSERVATION_DIRS['NIRPS_HA'] = ['2023-01-19', '2023-03-05', '2023-03-09',
+                                '2023-04-07', '2023-04-28', '2023-05-04',
+                                '2023-05-31', '2023-06-07']
 # -----------------------------------------------------------------------------
 # Set the reference observation directory for each instrument (this night must
 #   be included)
@@ -524,19 +530,20 @@ def main(params: ParamDict):
     # -------------------------------------------------------------------------
     # copy files to destination
     # -------------------------------------------------------------------------
+    outdir = OUTPUTDIR[instrument]
+    # loop around each observation directory
     for obsdir_inst in file_list:
-
         # make directory if it doesn't exist
         if not TEST:
-            obsdir_path = os.path.join(OUTPUTDIR, obsdir_inst.obsdir)
+            obsdir_path = os.path.join(outdir, obsdir_inst.obsdir)
             if not os.path.exists(obsdir_path):
                 msg = 'Creating directory {0}'
                 margs = [obsdir_path]
                 WLOG(params, '', msg.format(*margs))
                 os.makedirs(obsdir_path)
-
-        inpaths, outpaths = obsdir_inst.get_copy_paths(OUTPUTDIR)
-
+        # construct inpaths and outpaths
+        inpaths, outpaths = obsdir_inst.get_copy_paths(outdir)
+        # copy files
         for inpath, outpath in zip(inpaths, outpaths):
             msg = 'Copying {0} to {1}'
             margs = [inpath, outpath]
@@ -544,7 +551,6 @@ def main(params: ParamDict):
             # copy file
             if not TEST:
                 shutil.copy(inpath, outpath)
-
 
     return 0
 
