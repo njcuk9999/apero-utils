@@ -355,6 +355,10 @@ def select_obs_dirs(params, obs_dirs, count_sci_obj, count_tellu_obj,
             WLOG(params, 'warning', wmsg.format(*wargs))
             continue
 
+    # deal with reference observation directory not selected (add it in)
+    if REF_OBSERVATION_DIRS[instrument] not in selected:
+        selected.append(REF_OBSERVATION_DIRS[instrument])
+
     return selected
 
 
@@ -606,6 +610,7 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # load apero parameters
     _params = constants.load()
+    _params.set('PID', 'Unknown')
     # run the main function
     main(_params)
 
