@@ -16,6 +16,7 @@ from apero_checks.raw_tests import eng_test
 from apero_checks.raw_tests import obsdir_test
 from apero_checks.raw_tests import qual_test
 from apero_checks.raw_tests import astrom_test
+from apero_checks.raw_tests import prev_sci_test
 
 # =============================================================================
 # Append your test here
@@ -59,6 +60,11 @@ test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
 # astrometric object test - If we have any objects missing from the astrometric
 #                           database this should return False
 test_dict['ASTROM_TEST'] = astrom_test.test
+
+
+# previous science data test - this tests whether the previous 3 nights had
+#                              science data
+test_dict['PREV_SCI'] = prev_sci_test.test
 
 # test 1 - explanation
 
