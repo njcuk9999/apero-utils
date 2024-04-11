@@ -16,6 +16,7 @@ from typing import Any, Dict
 
 import numpy as np
 from astropy.io import fits
+from tqdm import tqdm
 
 from apero_checks.core import misc
 
@@ -97,7 +98,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         tbl[key2] = np.array([val] * len(files))
 
     # fill table looping through files
-    for ifile in range(len(files)):
+    for ifile in tqdm(range(len(files))):
         hdr = fits.getheader(files[ifile])
 
         for i in range(len(keys[:, 0])):
