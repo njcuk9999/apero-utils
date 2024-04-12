@@ -36,6 +36,7 @@ LOCK_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 MAX_COUNT = 30
 # -----------------------------------------------------------------------------
 
+
 # =============================================================================
 # Define functions
 # =============================================================================
@@ -287,8 +288,12 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     elif test_type == 'red':
         sheet_id = params['red sheet id']
         sheet_name = params['red sheet name']
+    elif test_type == 'override':
+        sheet_id = params['over sheet id']
+        sheet_name = params['over sheet name']
     else:
-        emsg = 'ADD_TO_SHEET error: test_type must be set to "raw" or "red"'
+        emsg = ('ADD_TO_SHEET error: test_type must be set to "raw" or "red" '
+                'or "override"')
         raise base.AperoChecksError(emsg)
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
@@ -303,30 +308,39 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     # sort the dataframe by date column in descending order
     current_dataframe = current_dataframe.sort_values(by='date',
                                                       ascending=False)
-    # Group the dataframe by obsdir and get hte index of the maximum date
-    # (i.e. the most recent date)
-    idx = current_dataframe.groupby('obsdir')['date'].idxmax()
-    # filter the dataframe using the obtained index values
-    current_dataframe = current_dataframe.loc[idx]
-    # reset the index of the filtered dataframe
-    current_dataframe = current_dataframe.reset_index(drop=True)
+    # deal with grouping by date
+    if test_type in ['red', 'raw']:
+        # Group the dataframe by obsdir and get hte index of the maximum date
+        # (i.e. the most recent date)
+        idx = current_dataframe.groupby('obsdir')['date'].idxmax()
+        # filter the dataframe using the obtained index values
+        current_dataframe = current_dataframe.loc[idx]
+        # reset the index of the filtered dataframe
+        current_dataframe.reset_index(drop=True)
+    elif test_type in 'override':
+        # Drop dulicates based on
+        dkwargs = dict(subset=['obsdir', 'test_type', 'test_name'],
+                       keep='first', inplace=True)
+        current_dataframe.drop_duplicates(**dkwargs)
+        # reset the index of the filtered dataframe
+        current_dataframe.reset_index(drop=True, inplace=True)
     # -------------------------------------------------------------------------
     # resort values ascending in date
     current_dataframe = current_dataframe.sort_values(by='obsdir',
                                                       ascending=False)
     # -------------------------------------------------------------------------
     # print progress
-    msg = 'Pushing all rows to google-sheet'
+    msg = 'Pushing all rows to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
     # push dataframe back to server
     google_sheet.df_to_sheet(current_dataframe, index=False, replace=True)
     # print progress
-    msg = 'All rows added to google-sheet'
+    msg = 'All rows added to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
 
 
 def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
-                 test_type: str ='raw'):
+                 test_type: str = 'raw'):
     """
     Upload test results to google sheet
 
@@ -376,10 +390,86 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
     dataframe = pd.DataFrame(results_dict, columns=columns)
     # -------------------------------------------------------------------------
     # add to sheet
-    add_to_sheet(params, dataframe, test_type=test_type)
+    try:
+        add_to_sheet(params, dataframe, test_type=test_type)
+        # ---------------------------------------------------------------------
+        # unlock codes
+        unlock()
+    except Exception as e:
+        # ---------------------------------------------------------------------
+        # unlock codes
+        unlock()
+        # raise exception
+        raise e
+
+
+def store_overrides(params: Dict[str, Any],
+                    overrides: Dict[str, Dict[str, Any]],
+                    test_type: str = 'raw'):
+    # deal with no results
+    if len(overrides) == 0:
+        msg = 'No override rows to add to google sheet'
+        misc.log_msg(msg, level='warning')
+        return
+
+    # define the sheet id and sheet name (pending)
+    if test_type == 'raw':
+        sheet_name = params['raw sheet name']
+    elif test_type == 'red':
+        sheet_name = params['red sheet name']
+    else:
+        return
+
+    # print message on which observation directory we are processing
+    msg = '*' * 50
+    msg += f'\nUploading to override google sheet'
+    msg += '\n' + '*' * 50
+    misc.log_msg(msg, level='info')
+    # get time now
+    time_now = base.AstropyTime.now().iso
+    # remove the decimal seconds
+    time_now = time_now.split('.')[0]
+    # store columns
+    columns = ['obsdir', 'date', 'test_type', 'test_name', 'test_value']
+    # turn results dictionary into a single dictionary
+    results_dict = dict()
+    results_dict['obsdir'] = []
+    results_dict['date'] = []
+    results_dict['test_type'] = []
+    results_dict['test_name'] = []
+    results_dict['test_value'] = []
+    for obsdir in overrides:
+        # loop around tests
+        for test_name in overrides[obsdir]:
+            results_dict['obsdir'] += [obsdir]
+            results_dict['date'] += [time_now]
+            results_dict['test_type'] += [sheet_name]
+            results_dict['test_name'] += [test_name]
+            results_dict['test_value'] += [overrides[obsdir][test_name]]
     # -------------------------------------------------------------------------
-    # unlock codes
-    unlock()
+    # lock codes
+    lock()
+    # -------------------------------------------------------------------------
+    # turn results dictionary into dataframe
+    dataframe = pd.DataFrame(results_dict, columns=columns)
+    # -------------------------------------------------------------------------
+    # add to sheet
+    try:
+        add_to_sheet(params, dataframe, test_type='override')
+        # ---------------------------------------------------------------------
+        # unlock codes
+        unlock()
+    except Exception as e:
+        # ---------------------------------------------------------------------
+        # unlock codes
+        unlock()
+        # raise exception
+        raise e
+
+
+def get_overrides(params: Dict[str, Any]):
+    # TODO: fill out
+    return 0
 
 
 def lock(stop: bool = False) -> bool:

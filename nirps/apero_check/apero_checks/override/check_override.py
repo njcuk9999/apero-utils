@@ -10,13 +10,12 @@ Created on 2024-04-12 at 09:59
 @author: cook
 """
 
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from apero_checks import raw_tests
 from apero_checks import red_tests
 from apero_checks.core import general
 from apero_checks.core import base
-from apero_checks.core import io
 from apero_checks.core import misc
 
 # =============================================================================
@@ -42,12 +41,16 @@ def find_override_test(params: Dict[str, Any]):
         return False, None
 
 
+DictReturn = Dict[str, Dict[str, Any]]
+
 def override_tests(params: Dict[str, Any],
-                   test_type: str) -> Dict[str, Dict[str, Any]]:
+                   test_type: str) -> Tuple[DictReturn, DictReturn]:
     # get observation directories
     obsdirs = general.get_obs_dirs(params)
     # storage for test values
     test_values = dict()
+    # store overrides
+    overrides = dict()
     # get current data
     current_dataframe = general.get_current_dataframe(params, test_type)
     # index by obsdir
@@ -72,10 +75,12 @@ def override_tests(params: Dict[str, Any],
             raise base.AperoChecksError(emsg)
         # storage for this observation directory
         test_values[obsdir] = dict()
+        # value
+        overrides[obsdir] = dict()
         # loop around all tests
         for it, test_name in enumerate(test_list):
             # get the test function
-            if test_name in obsdir_dataframe:
+            if test_name in obsdir_dataframe.columns:
                 value = obsdir_dataframe.loc[obsdir, test_name]
             else:
                 value = ''
@@ -96,19 +101,21 @@ def override_tests(params: Dict[str, Any],
             # construct the question to ask user
             question = (f'Current value for test {test_name} is '
                         f'{current_value}. Change to {not current_value}?'
-                        f'[Y]es or [N]o\t')
+                        f'\n [Y]es or [N]o\t')
             # ask user
             uinput = str(input(question))
             # deal with user input
             if 'y' in uinput.lower():
                 new_value = not current_value
+                # add to overrides
+                overrides[obsdir][test_name] = new_value
             else:
                 new_value = current_value
             # push new value into test_values
             test_values[obsdir][test_name] = new_value
-        # ---------------------------------------------------------------------
+    # ---------------------------------------------------------------------
     # return the test values
-    return test_values
+    return test_values, overrides
 
 
 # =============================================================================

@@ -49,9 +49,12 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
             misc.log_msg(msg.format(*margs), level='info')
             continue
         # run the tests
-        test_results = override.override_tests(params, test_type=test_type)
+        test_results, overrides = override.override_tests(params,
+                                                          test_type=test_type)
         # upload the tests
         apero_checks.upload_tests(params, test_results, test_type=test_type)
+        # overrides must be saved
+        apero_checks.store_overrides(params, overrides, test_type=test_type)
     # finish with an end message
     apero_checks.end_msg()
 

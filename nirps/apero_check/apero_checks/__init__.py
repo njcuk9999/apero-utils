@@ -28,6 +28,10 @@ splash = misc.splash
 
 upload_tests = general.upload_tests
 
+store_overrides = general.store_overrides
+
+get_overrides = general.get_overrides
+
 # =============================================================================
 # End of code
 # =============================================================================
