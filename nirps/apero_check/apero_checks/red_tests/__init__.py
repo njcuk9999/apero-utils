@@ -84,6 +84,12 @@ test_dict['PREV_REDUC'] = prev_reduc_test.test
 
 # test 3 - explanation
 
+# =============================================================================
+# If and only if you want the user to be able to override test
+# =============================================================================
+# dictionary to store all tests
+override_list = []
+
 
 # =============================================================================
 # End of code

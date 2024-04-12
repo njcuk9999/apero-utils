@@ -667,7 +667,7 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     if mode == 'red':
         check_code = 'apero_red_check.py'
     else:
-        check_code = 'apero_raw_data_check.py'
+        check_code = 'apero_raw_check.py'
     # get ari path
     check_path = pdict['check']['path']
     # get ari profile

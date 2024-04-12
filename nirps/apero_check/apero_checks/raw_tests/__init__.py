@@ -73,6 +73,18 @@ test_dict['PREV_SCI'] = prev_sci_test.test
 # test 3 - explanation
 
 
+
+# =============================================================================
+# If and only if you want the user to be able to override test
+# =============================================================================
+# dictionary to store all tests
+override_list = []
+
+# PREV_SCI: There could be nights which do not have science data but should
+#           not be flagged as bad
+override_list.append('PREV_SCI')
+
+
 # =============================================================================
 # End of code
 # =============================================================================
