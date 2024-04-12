@@ -106,9 +106,20 @@ def override_tests(params: Dict[str, Any],
             uinput = str(input(question))
             # deal with user input
             if 'y' in uinput.lower():
+                name, reason = '', ''
+
+                while len(name) == 0:
+                    # ask for name
+                    question = 'Please enter your name:\t'
+                    name = str(input(question))
+                while len(reason) == 0:
+                    # ask for reason
+                    question = 'Please enter the reason for the override:\t'
+                    reason = str(input(question))
+                # set the new value opposite to the old value
                 new_value = not current_value
                 # add to overrides
-                overrides[obsdir][test_name] = new_value
+                overrides[obsdir][test_name] = (new_value, name, reason)
             else:
                 new_value = current_value
             # push new value into test_values

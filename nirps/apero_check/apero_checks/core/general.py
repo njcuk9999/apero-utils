@@ -433,14 +433,13 @@ def store_overrides(params: Dict[str, Any],
     # remove the decimal seconds
     time_now = time_now.split('.')[0]
     # store columns
-    columns = ['obsdir', 'date', 'test_type', 'test_name', 'test_value']
+    columns = ['obsdir', 'date', 'test_type', 'test_name', 'test_value',
+               'who', 'comment']
     # turn results dictionary into a single dictionary
     results_dict = dict()
-    results_dict['obsdir'] = []
-    results_dict['date'] = []
-    results_dict['test_type'] = []
-    results_dict['test_name'] = []
-    results_dict['test_value'] = []
+    for col in columns:
+        results_dict[col] = []
+    # loop around all overrides and populate results_dict
     for obsdir in overrides:
         # loop around tests
         for test_name in overrides[obsdir]:
@@ -448,7 +447,12 @@ def store_overrides(params: Dict[str, Any],
             results_dict['date'] += [time_now]
             results_dict['test_type'] += [sheet_name]
             results_dict['test_name'] += [test_name]
-            results_dict['test_value'] += [overrides[obsdir][test_name]]
+            # get the values from the tuple
+            value, name, reason = overrides[obsdir][test_name]
+            # push into results
+            results_dict['test_value'] += [value]
+            results_dict['who'] += [name]
+            results_dict['comment'] += [reason]
     # -------------------------------------------------------------------------
     # lock codes
     lock()
