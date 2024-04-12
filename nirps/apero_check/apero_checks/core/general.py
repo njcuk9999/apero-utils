@@ -508,9 +508,10 @@ def check_override(params: Dict[str, Any],
         # if the test_name is not in the results we skip
         if override_test_name not in results[override_obsdir]:
             continue
-        # update the test value
-        results[override_obsdir][override_test_name] = override_test_value
-        counter += 1
+        # update the test value - if it has changed
+        if results[override_obsdir][override_test_name] != override_test_value:
+            results[override_obsdir][override_test_name] = override_test_value
+            counter += 1
     # log that we updated "counter" values
     msg = 'Updated {0} override values'.format(counter)
     misc.log_msg(msg, level='info')
