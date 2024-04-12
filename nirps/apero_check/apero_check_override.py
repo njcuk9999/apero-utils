@@ -40,21 +40,18 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
         params = all_params[profile]
         # add profile name to parameters
         params['apero profile name'] = profile
-        # if we do not have a test name then we run all tests and upload
-        if params['test_name'] in [None, 'None']:
-            # find test
-            allowed, test_type = override.find_override_test(params)
-            # if not allowed
-            if not allowed:
-                msg = '\tCannot override test="{0}"'
-                margs = [params['test_name']]
-                misc.log_msg(msg.format(*margs), level='info')
-                continue
-
-            # run the tests
-            test_results = override.override_tests(params, test_type=test_type)
-            # upload the tests
-            apero_checks.upload_tests(params, test_results, test_type=test_type)
+        # find test
+        allowed, test_type = override.find_override_test(params)
+        # if not allowed
+        if not allowed:
+            msg = '\tCannot override test="{0}"'
+            margs = [params['test_name']]
+            misc.log_msg(msg.format(*margs), level='info')
+            continue
+        # run the tests
+        test_results = override.override_tests(params, test_type=test_type)
+        # upload the tests
+        apero_checks.upload_tests(params, test_results, test_type=test_type)
     # finish with an end message
     apero_checks.end_msg()
 
