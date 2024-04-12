@@ -29,6 +29,9 @@ DPRTYPE_KEY = 'HIERARCH ESO DPR TYPE'
 # dprtype key that defines science files
 SCIENCE_DPRTYPES = ['OBJECT,SKY', 'OBJECT,FP']
 
+# We define this manually as we need to check HE and HA
+PATHS_TO_RAW = ['/nirps_raw/nirps/raw-data/nirps_ha',
+                '/nirps_raw/nirps/raw-data/nirps_he']
 
 # =============================================================================
 # Define functions
@@ -48,20 +51,32 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     :return: bool, True if passed, False otherwise
     """
+    # we don't use params
+    _ = params
     # define parameters we use here
-    raw_directory = params['raw dir']
-
-    # get a list of all files
-    obsdir_path = os.path.join(raw_directory, obsdir)
-
-    if not os.path.exists(obsdir_path):
+    files = []
+    # loop around all raw directories
+    for raw_directory in PATHS_TO_RAW:
+        # get a list of all files
+        obsdir_path = os.path.join(raw_directory, obsdir)
+        # skip if path doesn't exist
+        if not os.path.exists(obsdir_path):
+            continue
+        # get all files for this night
+        files += glob.glob(os.path.join(obsdir_path, '*.fits'))
+    # no files is bad
+    if len(files) == 0:
         if log:
-            print('Observation directory {0} does not exist - TEST FAILED')
+            # pass a True if no file is found on that night
+            print('No files found for night {}'.format(obsdir))
+            for raw_directory in PATHS_TO_RAW:
+                # get a list of all files
+                obsdir_path = os.path.join(raw_directory, obsdir)
+                # print paths checked
+                print('\tChecked: {0}'.format(obsdir_path))
+        # no files mean we fail
         return False
-
-    # get all files for this night
-    files = glob.glob(os.path.join(obsdir_path, '*.fits'))
-
+    # -------------------------------------------------------------------------
     # storage for counter
     science_files = dict()
     other_files = dict()
@@ -90,12 +105,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             else:
                 other_files[dprtype] = 1
     # -------------------------------------------------------------------------
-    # no files is bad
-    if len(files) == 0:
-        if log:
-            # pass a True if no file is found on that night
-            print('No files found for night {}'.format(obsdir))
-        return False
+
     # no science files might be bad
     if len(science_files) == 0:
         if log:
