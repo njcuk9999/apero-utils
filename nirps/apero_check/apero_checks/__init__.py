@@ -30,7 +30,8 @@ upload_tests = general.upload_tests
 
 store_overrides = general.store_overrides
 
-get_overrides = general.get_overrides
+check_override = general.check_override
+
 
 # =============================================================================
 # End of code

@@ -253,6 +253,9 @@ def get_current_dataframe(params, test_type='raw'):
     elif test_type == 'red':
         sheet_id = params['red sheet id']
         sheet_name = params['red sheet name']
+    elif test_type == 'override':
+        sheet_id = params['over sheet id']
+        sheet_name = params['over sheet name']
     else:
         emsg = 'ADD_TO_SHEET error: test_type must be set to "raw" or "red"'
         raise base.AperoChecksError(emsg)
@@ -467,9 +470,52 @@ def store_overrides(params: Dict[str, Any],
         raise e
 
 
-def get_overrides(params: Dict[str, Any]):
-    # TODO: fill out
-    return 0
+def check_override(params: Dict[str, Any],
+                   results: Dict[str, Dict[str, Any]],
+                   test_type: str = 'raw'):
+    # get any overrides we have
+    override_dataframe = get_current_dataframe(params, 'override')
+    # define the sheet id and sheet name (pending)
+    if test_type == 'raw':
+        sheet_name = params['raw sheet name']
+    elif test_type == 'red':
+        sheet_name = params['red sheet name']
+    else:
+        emsg = 'ADD_TO_SHEET error: test_type must be set to "raw" or "red"'
+        raise base.AperoChecksError(emsg)
+    # filter dataframe by sheet_name
+    type_mask = override_dataframe['test_type'] == sheet_name
+    override_dataframe = override_dataframe[type_mask]
+    # get the override obsdirs
+    override_obsdirs = np.array(override_dataframe['obsdir'])
+    # get the test names
+    override_test_names = np.array(override_dataframe['test_name'])
+    # get the test values
+    override_test_values = np.array(override_dataframe['test_value'])
+    # keep a counter of how many values we updated
+    counter = 0
+    # loop around all rows we are overriding
+    for row in range(len(override_obsdirs)):
+        # get the obsdir we are overriding
+        override_obsdir = override_obsdirs[row]
+        # get the test name
+        override_test_name = override_test_names[row]
+        # get the test value
+        override_test_value = override_test_values[row]
+        # if the obsdir is not in the results we skip
+        if override_obsdir not in results:
+            continue
+        # if the test_name is not in the results we skip
+        if override_test_name not in results[override_obsdir]:
+            continue
+        # update the test value
+        results[override_obsdir][override_test_name] = override_test_value
+        counter += 1
+    # log that we updated "counter" values
+    msg = 'Updated {0} override values'.format(counter)
+    misc.log_msg(msg, level='info')
+    # return the updated results
+    return results
 
 
 def lock(stop: bool = False) -> bool:
