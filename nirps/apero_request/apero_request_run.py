@@ -38,6 +38,7 @@ def main():
     # if running then we exit
     if not not_running:
         misc.log_msg(params, 'Request already running - exiting')
+        return
     # try to run main code
     try:
         __main__(params)
