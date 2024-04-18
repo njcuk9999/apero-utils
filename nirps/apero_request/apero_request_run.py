@@ -9,9 +9,12 @@ Created on {DATE}
 
 @author: cook
 """
+import pandas as pd
+
 from apero_request.core import base
 from apero_request.core import general
 from apero_request.core import misc
+
 
 # =============================================================================
 # Define variables
@@ -59,6 +62,12 @@ def __main__(params):
     # -------------------------------------------------------------------------
     misc.log_msg(params, 'Gettings requests')
     all_requests = general.get_sheet(params, 'response')
+
+    # convert timestampe to a datetime
+    all_requests['Timestamp'] = pd.to_datetime(all_requests['Timestamp'],
+                                               format="mixed", dayfirst=True)
+    # store the timestamp of the most recent request
+    params['MOST_RECENT'] = all_requests['Timestamp'].max()
     # -------------------------------------------------------------------------
     # create a list of requests
     # -------------------------------------------------------------------------

@@ -591,6 +591,24 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     io.gsp_setup()
     # get sheet kind parameters
     sheet_id, sheet_name = get_sheetkind(params, 'response')
+    # get the current data from the google sheet (in case it has been updated)
+    current_dataframe = get_sheet(params, 'response')
+    # convert timestampe to a datetime
+    current_dataframe['Timestamp'] = pd.to_datetime(current_dataframe['Timestamp'],
+                                                    format="mixed", dayfirst=True)
+    # -------------------------------------------------------------------------
+    # get all entries after MOST RECENT
+    new_entries = current_dataframe['Timestamp'] > params['MOST_RECENT']
+    # if we have new entries add them
+    if np.sum(new_entries) > 0:
+        # print progress
+        msg = ('New entries found since running request script.'
+               '\n\tAdding {0} new entries').format(np.sum(new_entries))
+        misc.log_msg(params, msg, level='info')
+        # add the new entries
+        dataframe = pd.concat([dataframe, current_dataframe[new_entries]],
+                              ignore_index=True)
+    # -------------------------------------------------------------------------
     # print progress
     msg = 'Pushing all rows to google-sheet'
     misc.log_msg(params, msg, level='info')
@@ -690,10 +708,6 @@ def create_requests(params: Dict[str, Any],
     pass_sheet = get_sheet(params, 'pass')
     # get the valid time period in days
     valid_time = pd.Timedelta(days=-params['valid time'])
-
-    # convert timestampe to a datetime
-    dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'],
-                                            format="mixed", dayfirst=True)
     # get the offset
     offset = dataframe['Timestamp'] - pd.Timestamp.now() > valid_time
     # valid dataframe
