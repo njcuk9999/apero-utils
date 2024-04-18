@@ -19,6 +19,13 @@ spirou_offline_udem:
   yaml: ../manual_trigger/spirou_offline.yaml
   profile: spirou offline
 
+spirou_online:
+  yaml: ../manual_trigger/spirou_online.yaml
+  profile: spirou online
+spirou_offline:
+  yaml: ../manual_trigger/spirou_offline.yaml
+  profile: spirou offline
+
 # whether to run in test mode
 test: False
 # the valid time period for files in days
