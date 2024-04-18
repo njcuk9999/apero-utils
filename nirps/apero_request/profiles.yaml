@@ -13,17 +13,17 @@ nirps_he_offline_udem:
   profile: nirps he offline
 
 spirou_online_udem:
-  yaml: ../manual_trigger/spirou_online.yaml
+  yaml: ../manual_trigger/spirou_profile_online.yaml
   profile: spirou online
 spirou_offline_udem:
-  yaml: ../manual_trigger/spirou_offline.yaml
+  yaml: ../manual_trigger/spirou_profile_offline.yaml
   profile: spirou offline
 
 spirou_online:
-  yaml: ../manual_trigger/spirou_online.yaml
+  yaml: ../manual_trigger/spirou_profile_online.yaml
   profile: spirou online
 spirou_offline:
-  yaml: ../manual_trigger/spirou_offline.yaml
+  yaml: ../manual_trigger/spirou_profile_offline.yaml
   profile: spirou offline
 
 # whether to run in test mode
