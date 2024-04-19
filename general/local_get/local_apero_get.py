@@ -88,14 +88,14 @@ def get_args():
     
     # Get all PROXIMA s1d for NIRPS HE online for fiber A
     #    downloads into current working directory
-    >> local_get.py -o PROXIMA -p nirps_he_online -f *_s1d_v_A.fits
+    >> local_apero_get.py -o PROXIMA -p nirps_he_online -f *_s1d_v_A.fits
     
     # Get all GL699 e2dsff fiber=AB for SPIROU offline
-    >> local_get.py -o GL699 -p spirou_offline -f *e2dsff_AB.fits -d /home/cook/downloads/
+    >> local_apero_get.py -o GL699 -p spirou_offline -f *e2dsff_AB.fits -d /home/cook/downloads/
     
     # Set the username and host used in rsync
     # Prompts for all arguments
-    >> local_get.py -u spirou-client -s rali.astro.umontreal.ca  
+    >> local_apero_get.py -u spirou-client -s rali.astro.umontreal.ca  
     """
 
     parser = argparse.ArgumentParser(description='Get APERO data from remote '
