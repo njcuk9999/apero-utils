@@ -1,20 +1,26 @@
 #!/usr/bin/env python
 """
-# CODE NAME HERE
+Locally get APERO files from the /cosmos99 drive using rsync
 
-# CODE DESCRIPTION HERE
+for any spirou or nirps profile
 
-Created on 2023-02-20 at 9:35
+Requires the manual_trigger to be run to symlink to objects directory
+
+Not all files are copied
+
+Created on 2024-04-19 18:19
 
 @author: cook
 """
 import argparse
 import os
-from typing import Optional
 
 # =============================================================================
 # Define variables
 # =============================================================================
+__NAME__ = 'local_apero_get.py'
+__VERSION__ = '0.0.1'
+__DATE__ = '2024-04-19'
 # PATH ON SERVER
 PATH = '/cosmos99/{INSTRUMENT}/apero-data/{PROFILE}/objects/{OBJECT}/'
 # SERVER TO USE
@@ -28,26 +34,44 @@ RSYNC_CMD = 'rsync --copy-links -avu -e "ssh -oport=5822" {REMOTE} {LOCAL}'
 # =============================================================================
 class AperoProfile:
     def __init__(self, name: str, instrument: str,
-                 user: str, host: str, mode: Optional[str] = None):
+                 user: str, host: str):
+        """
+        Construct the AperoProfile class
+        :param name: str, the profile name of this APERO profile
+        :param instrument: str, the instrument (spirou or nirps)
+        :param user: str, the default username used for ssh (i.e. ssh user@host)
+        :param host: str, the default host used for ssh  (i.e. ssh user@host)
+        """
         self.name = name
         self.user = user
         self.host = host
         self.instrument = instrument
-        self.mode = mode
 
     def get_data(self, objname: str, local_path: str, filestring: str,
                  test: bool = False):
+        """
+        Create the remote_path and rsync command and run it
+
+        :param objname: str, the object name (as in APERO astrometric database)
+        :param local_path: str, the local path to save files to
+        :param filestring: str, the file search string to use
+        :param test: bool, whether we are in test mode, if True does not run
+                     the rsync command
+        :return: None
+        """
+        # construc the remove path
         remote_path = PATH.format(INSTRUMENT=self.instrument,
                                   PROFILE=self.name,
                                   OBJECT=objname)
-
+        # add the search string to the remote path
         remote_path += filestring
-
+        # the remote path must have format "user@host:path"
         remote_path = f'{self.user}@{self.host}:{remote_path}'
-
+        # construct the rsync command
         rsync_cmd = RSYNC_CMD.format(REMOTE=remote_path, LOCAL=local_path)
-
+        # print the rsync command
         print(rsync_cmd)
+        # if not in test mode run the rsync command
         if not test:
             os.system(rsync_cmd)
 
@@ -55,11 +79,11 @@ class AperoProfile:
 # Define the apero profiles here (after class definition)
 APROFS = dict()
 APROFS['nirps_he_online'] = AperoProfile(name='nirps_he_online',
-                                         instrument='nirps', mode='he',
+                                         instrument='nirps',
                                          user='nirps-client', host=SERVER)
 
 APROFS['nirps_ha_online'] = AperoProfile(name='nirps_ha_online',
-                                         instrument='nirps', mode='ha',
+                                         instrument='nirps',
                                          user='nirps-client', host=SERVER)
 
 APROFS['spirou_online'] = AperoProfile(name='spirou_online',
@@ -80,6 +104,15 @@ def get_args():
 
     :return: argparse namespace object containing arguments
     """
+    description = """
+    Locally get APERO files from the /cosmos99 drive using rsync
+    
+    for any spirou or nirps profile
+    
+    Requires the manual_trigger to be run to symlink to objects directory
+    
+    Not all files are copied
+    """
 
     examples = """
     ==================================
@@ -97,9 +130,8 @@ def get_args():
     # Prompts for all arguments
     >> local_apero_get.py -u spirou-client -s rali.astro.umontreal.ca  
     """
-
-    parser = argparse.ArgumentParser(description='Get APERO data from remote '
-                                                 'server',
+    # create the parser class
+    parser = argparse.ArgumentParser(description=description,
                                      formatter_class=argparse.RawDescriptionHelpFormatter,
                                      epilog=examples)
     # add obs dir
@@ -147,6 +179,7 @@ def main():
             print('Invalid apero profile. Please select from the following')
             for p_it, profile in APROFS.keys():
                 print(p_it + 1, profile)
+            # noinspection PyBroadException
             try:
                 uinput = int(input(f'Enter 0 - {len(APROFS) - 1}:\t'))
             except Exception as _:
@@ -168,20 +201,20 @@ def main():
 
     # deal with invalid path
     if not os.path.exists(params.path):
+        # noinspection PyBroadException
         try:
             os.makedirs(str(params.path))
         except Exception as _:
-            print('Could not make path')
-
+            print('Path (--path --dir -d) invalid. Could not make path.')
+            return
     # get the apero profile instance
     apero_profile = APROFS[params.profile.lower()]
-
+    # deal with a host override
     if params.host.lower() not in ['', 'null', 'none']:
         apero_profile.host = params.host
-
+    # deal with a username override
     if params.user.lower() not in ['', 'null', 'none']:
         apero_profile.user = params.user
-
     # get the data
     apero_profile.get_data(objname=params.object,
                            local_path=params.path,
@@ -194,7 +227,7 @@ def main():
 # =============================================================================
 # Main code here
 if __name__ == "__main__":
+    # run the main function to process args and create/run the rsync
     main()
-
 
 # =============================================================================
