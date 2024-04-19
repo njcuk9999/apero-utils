@@ -165,31 +165,31 @@ def main():
     params = get_args()
     # deal with object not set (ask)
     if str(params.object).lower() in ['', 'null', 'none']:
-        question = 'Please choose an APERO object name:\t'
+        question = '\nPlease choose an APERO object name:\t'
         params.object = input(question)
     # deal with profile not set (ask)
     if params.profile.lower() in ['', 'null', 'none']:
-        question = 'Please choose an APERO profile name:\t'
+        question = '\nPlease choose an APERO profile name:\t'
         params.profile = input(question)
     # check that apero profile is valid
     if params.profile.lower() not in APROFS.keys():
         # need a valid number between 0 and
         uinput = -1
         while uinput not in list(range(len(APROFS))):
-            print('Invalid apero profile. Please select from the following')
-            for p_it, profile in APROFS.keys():
-                print(p_it + 1, profile)
+            print('\nInvalid apero profile. Please select from the following')
+            for p_it, profile in enumerate(APROFS.keys()):
+                print(f'{p_it + 1}. {profile}')
             # noinspection PyBroadException
             try:
-                uinput = int(input(f'Enter 0 - {len(APROFS) - 1}:\t'))
+                uinput = int(input(f'Enter 1 - {len(APROFS)}:\t'))
             except Exception as _:
                 continue
-
-        params.profile = list(APROFS.keys())[int(uinput)]
+        # set profile based on user input
+        params.profile = list(APROFS.keys())[int(uinput)-1]
 
     # deal with no file search string given
     if params.filestring.lower() in ['', 'null', 'none']:
-        question = 'Please provide a search string:\t'
+        question = '\nPlease provide a search string:\t'
         params.filestring = input(question)
 
     # deal with no path given
@@ -205,7 +205,7 @@ def main():
         try:
             os.makedirs(str(params.path))
         except Exception as _:
-            print('Path (--path --dir -d) invalid. Could not make path.')
+            print('\nPath (--path --dir -d) invalid. Could not make path.')
             return
     # get the apero profile instance
     apero_profile = APROFS[params.profile.lower()]
