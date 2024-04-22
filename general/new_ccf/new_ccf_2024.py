@@ -1,5 +1,6 @@
 # ius spline
 import glob
+import os
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -10,6 +11,18 @@ from scipy.constants import c
 from scipy.interpolate import InterpolatedUnivariateSpline
 from scipy.optimize import curve_fit
 from tqdm import tqdm
+
+CASE = 2
+if CASE == 1:
+    LINELIST = '/Users/eartigau/ccf/PROXIMA_neg_ccf.fits'
+    DATAPATH = '/Users/eartigau/ccf/data/*fits'
+    WAVEPATH = '/Users/eartigau/ccf/wavesol/'
+elif CASE == 2:
+    LINELIST = '/scratch2/spirou/misc/ea_ccf/nirps_he/PROXIMA_neg.fits'
+    DATAPATH = '/scratch2/spirou/misc/ea_ccf/nirps_he/data/*fits'
+    WAVEPATH = '/scratch2/spirou/misc/ea_ccf/nirps_he/wavesol/'
+else:
+    raise ValueError('Case must be 1 or 2')
 
 
 def gauss_slope(x, cen, w, depth, slope, amp):
@@ -40,13 +53,10 @@ def doppler(wave0, v):
     v = np.array(v)
     return wave0 * np.sqrt((1 - v / c) / (1 + v / c))
 
-
-linelist = '/Users/eartigau/ccf/PROXIMA_neg_ccf.fits'
-tbl = dict(Table.read(linelist))
+tbl = dict(Table.read(LINELIST))
 
 # find all files
-search_path = '/Users/eartigau/ccf/data/*fits'
-files = np.array(glob.glob(search_path))
+files = np.array(glob.glob(DATAPATH))
 files.sort()
 
 v0 = -5e4  # m/s
@@ -68,7 +78,7 @@ for ifile, f in enumerate(files):
     h = fits.getheader(f)
     rjd[ifile] = h['MJD-OBS']
     berv = h['BERV'] * 1e3
-    wave = fits.getdata('/Users/eartigau/ccf/wavesol/' + h['WAVEFILE'])
+    wave = fits.getdata(os.path.join(WAVEPATH, h['WAVEFILE']))
     wave = doppler(wave, -berv)
 
     ccfs = np.zeros((len(dvs), sp.shape[0]))
