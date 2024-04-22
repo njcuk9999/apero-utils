@@ -14,20 +14,82 @@ Created on 2024-04-19 18:19
 """
 import argparse
 import os
+import string
 
 # =============================================================================
 # Define variables
 # =============================================================================
 __NAME__ = 'local_apero_get.py'
-__VERSION__ = '0.0.1'
-__DATE__ = '2024-04-19'
+__VERSION__ = '0.0.2'
+__DATE__ = '2024-04-22'
 # PATH ON SERVER
 PATH = '/cosmos99/{INSTRUMENT}/apero-data/{PROFILE}/objects/{OBJECT}/'
 # SERVER TO USE
 SERVER = 'maestria'
 # rsync command
 RSYNC_CMD = 'rsync --copy-links -avu -e "ssh -oport=5822" {REMOTE} {LOCAL}'
+# define bad characters for objects (alpha numeric + "_")
+BAD_OBJ_CHARS = [' '] + list(string.punctuation.replace('_', ''))
+# Define colours for printing
+COLOURS = dict()
+COLOURS['BLACK'] = '\033[90;1m'
+COLOURS['RED'] = '\033[1;91;1m'
+COLOURS['GREEN'] = '\033[92;1m'
+COLOURS['YELLOW'] = '\033[1;93;1m'
+COLOURS['BLUE'] = '\033[94;1m'
+COLOURS['MAGENTA'] = '\033[1;95;1m'
+COLOURS['CYAN'] = '\033[1;96;1m'
+COLOURS['WHITE'] = '\033[97;1m'
+COLOURS['ENDC'] = '\033[0;0m'
+# logo
+LOGO = ["\t\033[1;91;1m  █████\033[1;37m╗\033[1;91;1m ██████\033[1;37m╗"
+        "\033[1;91;1m ███████\033[1;37m╗\033[1;91;1m██████\033[1;37m╗"
+        "\033[1;91;1m  ██████\033[1;37m╗\033[1;91;1m  ",
 
+        "\t ██\033[1;37m╔\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m██\033[1;37m╗\033[1;91;1m██\033[1;37m╔"
+        "\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m██"
+        "\033[1;37m╗\033[1;91;1m██\033[1;37m╔\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m"
+        "\033[1;37m═\033[1;91;1m\033[1;37m╝\033[1;91;1m██\033[1;37m╔"
+        "\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m██"
+        "\033[1;37m╗\033[1;91;1m██\033[1;37m╔\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m██"
+        "\033[1;37m╗\033[1;91;1m ",
+
+        "\t ███████\033[1;37m║\033[1;91;1m██████\033[1;37m╔\033[1;91;1m"
+        "\033[1;37m╝\033[1;91;1m█████\033[1;37m╗\033[1;91;1m  ██████"
+        "\033[1;37m╔\033[1;91;1m\033[1;37m╝\033[1;91;1m██\033[1;37m║"
+        "\033[1;91;1m   ██\033[1;37m║\033[1;91;1m ",
+
+        "\t ██\033[1;37m╔\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m██\033[1;37m║\033[1;91;1m██\033[1;37m╔\033[1;91;1m"
+        "\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m\033[1;37m╝\033[1;91;1m ██\033[1;37m╔\033[1;91;1m"
+        "\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m╝"
+        "\033[1;91;1m  ██\033[1;37m╔\033[1;91;1m\033[1;37m═\033[1;91;1m"
+        "\033[1;37m═\033[1;91;1m██\033[1;37m╗\033[1;91;1m██\033[1;37m║"
+        "\033[1;91;1m   ██\033[1;37m║\033[1;91;1m ",
+
+        "\t ██\033[1;37m║\033[1;91;1m  ██\033[1;37m║\033[1;91;1m██"
+        "\033[1;37m║\033[1;91;1m     ███████\033[1;37m╗\033[1;91;1m██"
+        "\033[1;37m║\033[1;91;1m  ██\033[1;37m║\033[1;91;1m\033[1;37m╚"
+        "\033[1;91;1m██████\033[1;37m╔\033[1;91;1m\033[1;37m╝"
+        "\033[1;91;1m ",
+
+        "\t \033[1;37m╚\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m╝"
+        "\033[1;91;1m  \033[1;37m╚\033[1;91;1m\033[1;37m═\033[1;91;1m"
+        "\033[1;37m╝\033[1;91;1m\033[1;37m╚\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m\033[1;37m╝\033[1;91;1m     \033[1;37m╚"
+        "\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m"
+        "\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m╝\033[1;91;1m"
+        "\033[1;37m╚\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m╝"
+        "\033[1;91;1m  \033[1;37m╚\033[1;91;1m\033[1;37m═\033[1;91;1m"
+        "\033[1;37m╝\033[1;91;1m \033[1;37m╚\033[1;91;1m\033[1;37m═"
+        "\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m"
+        "\033[1;37m═\033[1;91;1m\033[1;37m═\033[1;91;1m\033[1;37m╝"
+        "\033[1;91;1m  \033[0;0m"]
 
 # =============================================================================
 # Define classes
@@ -79,7 +141,9 @@ class AperoProfile:
         # construct the rsync command
         rsync_cmd = RSYNC_CMD.format(REMOTE=remote_path, LOCAL=lpath)
         # print the rsync command
-        print(rsync_cmd)
+        cprint()
+        cprint(rsync_cmd, colour='blue')
+        cprint()
         # if not in test mode run the rsync command
         if not test:
             os.system(rsync_cmd)
@@ -107,6 +171,26 @@ APROFS['spirou_offline'] = AperoProfile(name='spirou_offline',
 # =============================================================================
 # Define functions
 # =============================================================================
+def cprint(text: str = '', colour: str = 'green', kind='print'):
+    """
+    Print text in a given color
+    :param text: str, the text to print
+    :param color: str, the color to print the text in
+    :return: None
+    """
+    if colour.upper() in COLOURS:
+        print_colour = COLOURS[colour.upper()]
+        end_colour = COLOURS['ENDC']
+    else:
+        print_colour = ''
+        end_colour = ''
+
+    if kind == 'input':
+        return input(f'{print_colour}{text}{end_colour}')
+    else:
+        print(f'{print_colour}{text}{end_colour}')
+
+
 def get_args():
     """
     Define the command line arguments
@@ -166,17 +250,95 @@ def get_args():
                         help='Define the user name i.e. user@server')
     # load arguments with parser
     args = parser.parse_args()
+    # print arguments used
+    cprint('Arguments used:', colour='blue')
+    # flag for having arguments
+    has_args = False
+    # loop around arguments
+    for arg in vars(args):
+        # get value
+        value = getattr(args, arg)
+        # skip test if not in test mode
+        if arg == 'test' and not value:
+            continue
+        if str(value).lower() not in ['', 'null', 'none']:
+            cprint('\t- {0}: {1}'.format(arg, getattr(args, arg)),
+                   colour='blue')
+            has_args = True
+    # deal with no arguments given
+    if not has_args:
+        cprint('\t- No arguments given', colour='blue')
+    header_line()
     # return arguments
     return args
 
 
+def header_line(symbol='*', colour='green'):
+    """
+    Print the header
+    :return: None
+    """
+    cprint(symbol * 60, colour=colour)
+
+
+def clean_object(rawobjname: str) -> str:
+    """
+    Clean a 'rawobjname' to allow it to be consistent
+
+    :param rawobjname: str, the raw object name to clean
+
+    :return: str, the cleaned object name
+    """
+    # if raw object name contains null text - return Null string
+    if str(rawobjname).lower() in ['null', 'none', '']:
+        return 'Null'
+    # strip spaces off raw object
+    objectname = rawobjname.strip()
+    # replace + and - with "p" and "m"
+    objectname = objectname.replace('+', 'p')
+    objectname = objectname.replace('-', 'm')
+    # now remove bad characters
+    for bad_char in BAD_OBJ_CHARS:
+        objectname = objectname.replace(bad_char, '_')
+    objectname = objectname.upper()
+    # deal with multiple underscores in a row
+    while '__' in objectname:
+        objectname = objectname.replace('__', '_')
+    # strip leading / trailing '_'
+    objectname = objectname.strip('_')
+    # return cleaned object name
+    return objectname
+
+
+def splash():
+    """
+    Print the splash screen
+    :return: None
+    """
+    # print end message
+    header_line()
+    for line in LOGO:
+        cprint(line, colour='red')
+    header_line()
+    cprint(f'{__NAME__}\t\tVersion: {__VERSION__}', colour='red')
+    header_line()
+
+
 def main():
+    """
+    Main code
+
+    :return:
+    """
+    # print splash screen
+    splash()
     # get arguments from command line
     params = get_args()
+
     # deal with object not set (ask)
     if str(params.object).lower() in ['', 'null', 'none']:
         question = '\nPlease choose an APERO object name:\t'
-        params.object = input(question)
+        params.object = cprint(question, colour='magenta', kind='input')
 
     if ',' not in str(params.object):
         objnames = [params.object]
@@ -188,27 +350,29 @@ def main():
     # deal with profile not set (ask)
     if params.profile.lower() in ['', 'null', 'none']:
         question = '\nPlease choose an APERO profile name:\t'
-        params.profile = input(question)
+        params.profile = cprint(question, colour='magenta', kind='input')
     # check that apero profile is valid
     if params.profile.lower() not in APROFS.keys():
         # need a valid number between 0 and
         uinput = -1
         while uinput not in list(range(len(APROFS))):
-            print('\nInvalid apero profile. Please select from the following')
+            cprint('\nInvalid apero profile. Please select from the following',
+                   colour='magenta')
             for p_it, profile in enumerate(APROFS.keys()):
-                print(f'{p_it + 1}. {profile}')
+                cprint(f'{p_it + 1}. {profile}', colour='magenta')
             # noinspection PyBroadException
             try:
-                uinput = int(input(f'Enter 1 - {len(APROFS)}:\t'))
+                question = f'Enter 1 - {len(APROFS)}:\t'
+                uinput = int(cprint(question, colour='magenta', kind='input'))
             except Exception as _:
                 continue
         # set profile based on user input
-        params.profile = list(APROFS.keys())[int(uinput)-1]
+        params.profile = list(APROFS.keys())[int(uinput) - 1]
 
     # deal with no file search string given
     if params.filestring.lower() in ['', 'null', 'none']:
         question = '\nPlease provide a search string:\t'
-        params.filestring = input(question)
+        params.filestring = cprint(question, colour='magenta', kind='input')
 
     # deal with no path given
     if params.path.lower() in ['', 'null', 'none']:
@@ -223,7 +387,8 @@ def main():
         try:
             os.makedirs(str(params.path))
         except Exception as _:
-            print('\nPath (--path --dir -d) invalid. Could not make path.')
+            cprint('\nPath (--path --dir -d) invalid. Could not make path.',
+                   colour='red')
             return
 
     # get the apero profile instance
@@ -237,12 +402,24 @@ def main():
 
     # loop around object names
     for objname in objnames:
+        # clean object name
+        objname = clean_object(objname)
+        # print progress
+        cprint('\n', colour='green')
+        header_line(symbol='=')
+        cprint(f'Getting data for object: {objname}', colour='green')
+        header_line(symbol='=')
         # get the data
         apero_profile.get_data(objname=objname,
                                local_path=params.path,
                                filestring=params.filestring,
                                multi=multi,
                                test=params.test)
+
+    # print end message
+    header_line()
+    cprint('Code ended successfully', colour='green')
+    header_line()
 
 
 # =============================================================================
