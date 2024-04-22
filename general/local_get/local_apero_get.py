@@ -48,7 +48,7 @@ class AperoProfile:
         self.instrument = instrument
 
     def get_data(self, objname: str, local_path: str, filestring: str,
-                 test: bool = False):
+                 multi: bool = False, test: bool = False):
         """
         Create the remote_path and rsync command and run it
 
@@ -59,7 +59,16 @@ class AperoProfile:
                      the rsync command
         :return: None
         """
-        # construc the remove path
+        # deal with multi and localpath
+        if multi:
+            lpath = os.path.join(local_path, objname)
+            # deal with local path not existing
+            if not os.path.exists(lpath):
+                os.makedirs(lpath)
+        else:
+            lpath = str(local_path)
+
+        # construct the remove path
         remote_path = PATH.format(INSTRUMENT=self.instrument,
                                   PROFILE=self.name,
                                   OBJECT=objname)
@@ -68,7 +77,7 @@ class AperoProfile:
         # the remote path must have format "user@host:path"
         remote_path = f'{self.user}@{self.host}:{remote_path}'
         # construct the rsync command
-        rsync_cmd = RSYNC_CMD.format(REMOTE=remote_path, LOCAL=local_path)
+        rsync_cmd = RSYNC_CMD.format(REMOTE=remote_path, LOCAL=lpath)
         # print the rsync command
         print(rsync_cmd)
         # if not in test mode run the rsync command
@@ -137,7 +146,8 @@ def get_args():
     # add obs dir
     parser.add_argument('--object', '--obj', '-o', '--objname',
                         type=str, default='None',
-                        help='The profile yaml to use')
+                        help='The object name to search for (as in APERO '
+                             'database). Note you can NOT use an alias here.')
     parser.add_argument('--profile', '-p', '--name', '-n',
                         type=str, default='None',
                         help='The specific apero profile to use')
@@ -167,6 +177,14 @@ def main():
     if str(params.object).lower() in ['', 'null', 'none']:
         question = '\nPlease choose an APERO object name:\t'
         params.object = input(question)
+
+    if ',' not in str(params.object):
+        objnames = [params.object]
+        multi = False
+    else:
+        objnames = params.object.split(',')
+        multi = True
+
     # deal with profile not set (ask)
     if params.profile.lower() in ['', 'null', 'none']:
         question = '\nPlease choose an APERO profile name:\t'
@@ -207,6 +225,7 @@ def main():
         except Exception as _:
             print('\nPath (--path --dir -d) invalid. Could not make path.')
             return
+
     # get the apero profile instance
     apero_profile = APROFS[params.profile.lower()]
     # deal with a host override
@@ -215,11 +234,15 @@ def main():
     # deal with a username override
     if params.user.lower() not in ['', 'null', 'none']:
         apero_profile.user = params.user
-    # get the data
-    apero_profile.get_data(objname=params.object,
-                           local_path=params.path,
-                           filestring=params.filestring,
-                           test=params.test)
+
+    # loop around object names
+    for objname in objnames:
+        # get the data
+        apero_profile.get_data(objname=objname,
+                               local_path=params.path,
+                               filestring=params.filestring,
+                               multi=multi,
+                               test=params.test)
 
 
 # =============================================================================
