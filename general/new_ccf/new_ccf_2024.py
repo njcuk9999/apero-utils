@@ -53,16 +53,23 @@ def doppler(wave0, v):
     v = np.array(v)
     return wave0 * np.sqrt((1 - v / c) / (1 + v / c))
 
+def relativistic_waveshift(v):
+    return np.sqrt((1 - v / c) / (1 + v / c))
+
+
+def relativistic_waveshift1(v):
+    return np.sqrt((1 + v / c) / (1 - v / c))
+
 tbl = dict(Table.read(LINELIST))
 
 # find all files
 files = np.array(glob.glob(DATAPATH))
 files.sort()
 
-v0 = -5e4  # m/s
-v1 = 0.0  # m/s
-velostep = 500  # m/s
-dvs = np.arange(v0, v1, velostep)
+v0 = -300000 # m/s
+v1 = 300000  # m/s
+velostep = 250  # m/s
+dvs = np.arange(v0, v1+velostep, velostep)
 
 # placeholders for the results
 RVS = np.zeros(len(files))
