@@ -44,7 +44,7 @@ def get_args() -> Dict[str, Any]:
     # add obs dir
     parser.add_argument('yaml', type=str, default='None',
                         help='The profiles yaml to use')
-    parser.add_argument('profiles', type=str, default='None',
+    parser.add_argument('--profiles', type=str, default='None',
                         help='Only use these profiles (ignore any others)')
     # load arguments with parser
     args = parser.parse_args()
