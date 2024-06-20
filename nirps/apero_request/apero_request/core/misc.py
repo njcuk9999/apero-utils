@@ -73,7 +73,7 @@ def load_params():
     if args['profiles'] != 'None':
         profiles = args['profiles'].split(',')
         # clean up profile names
-        params['profiles'] = []
+        params['filter profiles'] = []
         # loop around profiles
         for profile in profiles:
             params['filter profiles'].append(profile.strip())
