@@ -754,7 +754,13 @@ def create_requests(params: Dict[str, Any],
         email = valid_dataframe['Email Address'][row]
         # get profile requested
         profile = valid_dataframe['APERO_MODE'][row]
-
+        # ---------------------------------------------------------------------
+        # skip profiles not in filter profiles list (if used)
+        #    if this is not used then all profiles are valid
+        if params['filter profiles'] is not None:
+            if profile not in params['filter profiles']:
+                continue
+        # ---------------------------------------------------------------------
         # deal with passkey not in pass_dict
         if passkey not in pass_dict:
             # create request

@@ -44,6 +44,8 @@ def get_args() -> Dict[str, Any]:
     # add obs dir
     parser.add_argument('yaml', type=str, default='None',
                         help='The profiles yaml to use')
+    parser.add_argument('profiles', type=str, default='None',
+                        help='Only use these profiles (ignore any others)')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -67,6 +69,18 @@ def load_params():
     # push into params
     for key in yaml_params:
         params[key] = copy.deepcopy(yaml_params[key])
+    # push the profiles argument into params
+    if args['profiles'] != 'None':
+        profiles = args['profiles'].split(',')
+        # clean up profile names
+        params['profiles'] = []
+        # loop around profiles
+        for profile in profiles:
+            params['filter profiles'].append(profile.strip())
+        # if for some reason we have no profiles set it back to None
+        if len(params['profiles']) == 0:
+            params['filter profiles'] = None
+
     # return parameters
     return params
 

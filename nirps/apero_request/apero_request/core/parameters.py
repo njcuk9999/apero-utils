@@ -41,6 +41,8 @@ parameters['valid time'] = 7
 # the file size limit in GB
 parameters['file size limit'] = 10
 
+# a profiles filter set by user
+parameters['filter profiles'] = None
 
 # =============================================================================
 # Define functions
