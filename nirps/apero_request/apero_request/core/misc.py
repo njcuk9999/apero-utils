@@ -78,7 +78,7 @@ def load_params():
         for profile in profiles:
             params['filter profiles'].append(profile.strip())
         # if for some reason we have no profiles set it back to None
-        if len(params['profiles']) == 0:
+        if len(params['filter profiles']) == 0:
             params['filter profiles'] = None
 
     # return parameters
