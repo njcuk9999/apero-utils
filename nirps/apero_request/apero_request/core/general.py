@@ -462,6 +462,7 @@ class Request:
         except Exception as e:
             msg = 'Failed to send email for request {0}'
             msg += '\n\t{1}: {2}'
+            msg += '\n\t Request was:\n'
             msg += self._generate_summary()
             margs = [iteration, type(e), str(e)]
             misc.log_msg(params, msg.format(*margs))
@@ -494,6 +495,7 @@ class Request:
         except Exception as e:
             msg = 'Failed to send email for request {0}'
             msg += '\n\t{1}: {2}'
+            msg += '\n\t Request was:\n'
             msg += self._generate_summary()
             margs = [iteration, type(e), str(e)]
             misc.log_msg(params, msg.format(*margs))
@@ -835,9 +837,7 @@ def remove_invalid_tars(params: Dict[str, Any],
     valid_requests = dict()
     # get list of valid request files
     for it, request in enumerate(requests):
-        if request.skip:
-            continue
-        if request.valid:
+        if request.valid or request.skip:
             valid_requests[it] = request.tarfile
     # get a list of all tar files
     valid_request_tar_files = list(valid_requests.values())
