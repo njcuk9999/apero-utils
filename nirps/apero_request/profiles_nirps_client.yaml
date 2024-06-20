@@ -42,4 +42,4 @@ ssh:
   user: cook
   host: venus.astro.umontreal.ca
   options: ssh -oport=5822
-  url: http://apero.exoplanets.ca/requests/
+  url: http://apero.exoplanets.ca/requests/nirps_client/
