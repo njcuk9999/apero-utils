@@ -38,7 +38,7 @@ local path: /cosmos99/nirps/apero-data/misc/apero-request/
 email from: nirps-client@astro.umontreal.ca
 # SSH PATH to copy the website to
 ssh:
-  directory: /export/www/home/cook/www/apero-drs/requests/
+  directory: /export/www/home/cook/www/apero-drs/requests/nirps_client/
   user: cook
   host: venus.astro.umontreal.ca
   options: ssh -oport=5822

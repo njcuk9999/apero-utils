@@ -38,7 +38,7 @@ local path: /cosmos99/spirou/apero-data/misc/apero-request/
 email from: spirou-client@astro.umontreal.ca
 # SSH PATH to copy the website to
 ssh:
-  directory: /export/www/home/cook/www/apero-drs/requests/
+  directory: /export/www/home/cook/www/apero-drs/requests/spirou_client/
   user: cook
   host: venus.astro.umontreal.ca
   options: ssh -oport=5822
