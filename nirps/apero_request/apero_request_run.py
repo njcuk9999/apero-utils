@@ -84,6 +84,7 @@ def __main__(params):
     for r_it, request in enumerate(requests):
         # deal with skips
         if request.skip:
+            misc.log_msg(params, f'\tSkipping request [skipped] {r_it + 1}')
             continue
         # print where we are up to
         msg = 'Generating request {0} / {1}'
@@ -93,12 +94,13 @@ def __main__(params):
             # run apero get for each request
             request.run_request(params)
         else:
-            misc.log_msg(params, '\tSkipping request')
+            misc.log_msg(params, f'\tSkipping request [invalid] {r_it + 1}')
     # -------------------------------------------------------------------------
     # deal with informing users of results
     for r_it, request in enumerate(requests):
         # deal with skips
         if request.skip:
+            misc.log_msg(params, f'\tSkipping email {r_it + 1}')
             continue
         # print where we are up to
         msg = 'Emailing user for request {0} / {1}'
