@@ -87,6 +87,7 @@ class Request:
         # ---------------------------------------------------------------------
         # other attributes
         self.valid: bool = False
+        self.skip = False
         self.exists: bool = False
         self.error: bool = False
         self.reason: str = ''
@@ -745,7 +746,7 @@ def create_requests(params: Dict[str, Any],
             profile_dict[passkey] = profile_dict[passkey].union(profiles)
     # -------------------------------------------------------------------------
     # store a list of requests
-    requests, valid_mask = [], np.zeros(len(valid_dataframe)).astype(bool)
+    requests = []
     # loop around rows in valid_dataframe
     for it, row in enumerate(valid_dataframe.index):
         # get passkey
@@ -759,6 +760,12 @@ def create_requests(params: Dict[str, Any],
         #    if this is not used then all profiles are valid
         if params['filter profiles'] is not None:
             if profile not in params['filter profiles']:
+                # create request
+                request = Request.from_pandas_row(valid_dataframe.iloc[it])
+                # set request as invalid
+                request.skip = True
+                # add to list of requests
+                requests.append(request)
                 continue
         # ---------------------------------------------------------------------
         # deal with passkey not in pass_dict
@@ -828,6 +835,8 @@ def remove_invalid_tars(params: Dict[str, Any],
     valid_requests = dict()
     # get list of valid request files
     for it, request in enumerate(requests):
+        if request.skip:
+            continue
         if request.valid:
             valid_requests[it] = request.tarfile
     # get a list of all tar files
@@ -870,7 +879,7 @@ def create_dataframe(params: Dict[str, Any], requests: List[Request]
         # add to all rows
         all_rows.append(all_row)
         # only if request if valid
-        if not request.valid:
+        if not request.valid and not request.skip:
             continue
         # add to rows
         valid_rows.append(row)

@@ -82,6 +82,9 @@ def __main__(params):
     # loop around requests and run requests
     # -------------------------------------------------------------------------
     for r_it, request in enumerate(requests):
+        # deal with skips
+        if request.skip:
+            continue
         # print where we are up to
         msg = 'Generating request {0} / {1}'
         misc.log_msg(params, msg.format(r_it +1, len(requests)))
@@ -94,6 +97,9 @@ def __main__(params):
     # -------------------------------------------------------------------------
     # deal with informing users of results
     for r_it, request in enumerate(requests):
+        # deal with skips
+        if request.skip:
+            continue
         # print where we are up to
         msg = 'Emailing user for request {0} / {1}'
         misc.log_msg(params, msg.format(r_it +1, len(requests)))
