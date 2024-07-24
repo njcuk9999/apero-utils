@@ -233,11 +233,20 @@ def run_single_test(params: Dict[str, Any], test_type: str):
         # print message on which observation directory we are processing
         msg = '*' * 50
         msg += f'\nProcessing single test on observatory directory {obsdir}'
-        msg += '*' * 50
+        msg += '\n' + '*' * 50
         misc.log_msg(msg, level='info')
         # run single test
         _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
                      test_type=test_type)
+    # -------------------------------------------------------------------------
+    # print a note that the single test does not update the database
+    msg = ('*' * 50 + '\nPlease note\n' + '*' * 50 +
+           '\n\tSingle test mode (--test) does NOT update the '
+           'database. '
+           '\n\tPlease run without the --test argument to update the '
+           'database. '
+           '\n\t--testfilter can be used to run only some tests.')
+    misc.log_msg(msg, level='info', color='yellow')
 
 
 # =============================================================================
