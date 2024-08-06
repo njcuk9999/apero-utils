@@ -171,7 +171,9 @@ def run_tests(params: Dict[str, Any],
             # deal with skipping tests
             if params['test_filter'] is not None:
                 if test_name not in params['test_filter']:
-                    if test_name in obsdir_dataframe:
+                    if obsdir not in obsdir_dataframe.index:
+                        value = ''
+                    elif test_name in obsdir_dataframe:
                         value = obsdir_dataframe.loc[obsdir, test_name]
                     else:
                         value = ''
