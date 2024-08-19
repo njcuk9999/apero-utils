@@ -109,6 +109,12 @@ ENG_TESTS.append(EngTest('VacuumGauge1',
 ENG_TESTS.append(EngTest('IsolationValve',
                          header='HIERARCH ESO INS SENS100 STAT',
                          dtype='bool'))
+ENG_TESTS.append(EngTest('Cryo1Status',
+                         header='HIERARCH ESO INS SENS126',
+                         dtype='bool'))
+ENG_TESTS.append(EngTest('Cryo2Status',
+                         header='HIERARCH ESO INS SENS126',
+                         dtype='bool'))
 ENG_TESTS.append(EngTest('WarningCryo1',
                          header='HIERARCH ESO INS SENS144 STAT',
                          dtype='str'))
@@ -283,6 +289,82 @@ def test_isolation_valve(tbl_dict: Dict[str, Any],
         margs = []
     else:
         msg = 'Isolation valve sometimes open ({0} times)'
+        margs = [isolation_valve]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_cryo1_stat(tbl_dict: Dict[str, Any],
+                    mask_dict: Dict[str, np.ndarray],
+                    logger: List[str],
+                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    The Cryo1 status is false - means its off - this is bad
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'Cryo1Status'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    isolation_valve = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
+    qc_passed = isolation_valve == 0
+    if qc_passed:
+        msg = 'Cryo1 on (=on)'
+        margs = []
+    else:
+        msg = 'Cryo1 off (=false)'
+        margs = [isolation_valve]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_cryo2_stat(tbl_dict: Dict[str, Any],
+                    mask_dict: Dict[str, np.ndarray],
+                    logger: List[str],
+                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    The Cryo1 status is false - means its off - this is bad
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'Cryo2Status'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    isolation_valve = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
+    qc_passed = isolation_valve == 0
+    if qc_passed:
+        msg = 'Cryo2 on (=on)'
+        margs = []
+    else:
+        msg = 'Cryo2 off (=false)'
         margs = [isolation_valve]
     # add to the logger
     logger.append(msg.format(*margs))
@@ -633,12 +715,20 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     logger, passer = test_turbo_pump_status(*test_args)
 
     # -------------------------------------------------------------------------
-    # Test the Cryo1 warning
+    # Test the Cryo1 status
     # -------------------------------------------------------------------------
-    # # set up arguments for the sub-test functions
-    # test_args = [tbl_dict, mask_dict, logger, passer]
-    # # run test
-    # logger, passer = test_warning_cryo1(*test_args)
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_cryo1_stat(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test the Cryo1 status
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_cryo2_stat(*test_args)
 
     # -------------------------------------------------------------------------
     # Test the Cryo2 warning
