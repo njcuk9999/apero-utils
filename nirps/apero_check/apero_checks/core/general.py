@@ -407,14 +407,9 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
     try:
         add_to_sheet(params, dataframe, test_type=test_type)
         # ---------------------------------------------------------------------
+    finally:
         # unlock codes
         unlock()
-    except Exception as e:
-        # ---------------------------------------------------------------------
-        # unlock codes
-        unlock()
-        # raise exception
-        raise e
 
 
 def store_overrides(params: Dict[str, Any],
@@ -545,9 +540,9 @@ def lock(stop: bool = False) -> bool:
     lock_file = os.path.join(LOCK_DIR, 'lock.lock')
     # counter
     counter = 0
-    # wait a very small random amount of time (to avoid two codes doing this
+    # wait a small random amount of time (to avoid two codes doing this
     # at the same time)
-    random_time = 0.1 * np.random.random()
+    random_time = 0.1 + 0.05 * np.random.uniform(-1, 1)
     time.sleep(random_time)
     # if lock file exists
     while os.path.exists(lock_file):
