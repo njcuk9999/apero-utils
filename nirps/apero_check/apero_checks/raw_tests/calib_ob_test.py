@@ -43,10 +43,13 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     :return: bool, True if passed, False otherwise
     """
-
-    # Here you can add more calibrations that are required (one day LFC maybe)
-    must_have_dprtypes = ['DARK', 'WAVE,FP,FP', 'WAVE,UN1,FP', 'WAVE,FP,UN1',
-                          'FLAT,DARK,LAMP', 'FLAT,LAMP,DARK', 'WAVE,UN1,UN1']
+    # Here we add OB NAMES (sub strings) that are required for a night
+    #  note these is MJD sensitive so we require a range of MJDs
+    must_have_obnames = dict()
+    # Afternoon calibrations started around 2023-06-01 - only check after
+    must_have_obnames['Afternoon-Calibrations'] = (60096, 99999)
+    # Daily calibration started around 2022-11-12 - only check after
+    must_have_obnames['Daily-Calibrations-Full-Set'] = (59895, 99999)
     # This tells use what the header keys are
     header_keys = dict()
     header_keys['DPR_TYPE'] = 'HIERARCH ESO DPR TYPE'
@@ -77,39 +80,50 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         return False
     # -------------------------------------------------------------------------
     # create table to store keywords
-    dpr_counts = dict()
+    obs_counts = dict()
+    # flag obs out of range
+    obs_out_of_range = dict()
+
     # fill table looping through files
     for ifile in tqdm(range(len(files))):
         # get the header
         hdr = fits.getheader(files[ifile])
         # get dpr type and obs name
-        dpr_type = str(hdr.get(header_keys['DPR_TYPE'], None))
-        # count dpr type instances
-        if dpr_type in dpr_counts:
-            dpr_counts[dpr_type] += 1
-        else:
-            dpr_counts[dpr_type] = 1
+        obs_name = str(hdr.get(header_keys['OBS_NAME'], None))
+        mjd_date = hdr[header_keys['MJD-OBS']]
+        # check must have obnames
+        for obname in must_have_obnames:
+            # get the conditions to add obname
+            in_range = mjd_date >= must_have_obnames[obname][0]
+            in_range &= mjd_date <= must_have_obnames[obname][1]
+            # if we are out of range we don't test this obname
+            if not in_range:
+                obs_out_of_range[obname] = True
+            elif obname in obs_name:
+                # count obs name instances
+                if obs_name in obs_counts:
+                    obs_counts[obname] += 1
+                else:
+                    obs_counts[obname] = 1
         # close the header
         del hdr
     # -------------------------------------------------------------------------
     # set the failed messages
     failed_log = []
     passed_log = []
-    dpr_type_qc_passed = True
     # -------------------------------------------------------------------------
-    # now we test must have dpr types
+    # Check that we have morning and afternoon calibrations
     # -------------------------------------------------------------------------
-    # could be updated to force a minimum number of calibrations
-    for dpr_type in must_have_dprtypes:
-        # deal with no values found for this night
-        if dpr_type not in dpr_counts:
-            fmsg = '\tNo "ESO DPR TYPE" = {} on that night'
-            failed_log.append(fmsg.format(dpr_type))
-            dpr_type_qc_passed = False
-    # deal with passed log
-    if dpr_type_qc_passed:
-        passed_log.append('\tAll "must have" calibrations have been obtained '
-                          'at least once')
+    # loop around obnames
+    for obs_name in must_have_obnames:
+        # do not test if out of range
+        if obs_name in obs_out_of_range:
+            continue
+        # deal with pass/failure
+        if obs_name in obs_counts:
+            passed_log.append('\t"{0}" OBNAME found.'.format(obs_name))
+        else:
+            failed_log.append('\t"{0}" OBNAME not found'.format(obs_name))
     # -------------------------------------------------------------------------
     # construct a string for printing output
     passed_log = '\n'.join(passed_log)
