@@ -626,9 +626,13 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # run ari
-        apero_ri.main(profile=ari_profile)
-        # log that APERO started
-        settings['LOG'][profile].write(ARI_END)
+        ari_rtn = apero_ri.main(profile=ari_profile)
+        # log that ARI ended successfully
+        if 'success' in ari_rtn:
+            if ari_rtn['success']:
+                settings['LOG'][profile].write(ARI_END)
+        else:
+            settings['LOG'][profile].write(ARI_END)
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
     # change back to original path
@@ -788,6 +792,7 @@ if __name__ == "__main__":
         # run the checks
         run_apero_checks(trigger_settings['PROFILES'][profile], mode='red',
                          obsdirs=trigger_settings['OBS_DIRS'])
+
 # =============================================================================
 # End of code
 # =============================================================================
