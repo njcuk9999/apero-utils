@@ -15,11 +15,11 @@ nirps ha offline:
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: lbl_run_skip.ini
+        run file: offline_catchup_run.ini
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
-            - all
+            - None
     # apero_get settings
     get:
         science fibers:
@@ -36,7 +36,8 @@ nirps ha offline:
             - SC1D_V_FILE
             - RC1D_V_FILE
             - TELLU_TEMP
-            - TELLU_TEMP_S1DV - CCF_RV
+            - TELLU_TEMP_S1DV
+            - CCF_RV
             - DRS_POST_E
             - DRS_POST_S
             - DRS_POST_T

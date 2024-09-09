@@ -87,6 +87,7 @@ class Request:
         # ---------------------------------------------------------------------
         # other attributes
         self.valid: bool = False
+        self.skip = False
         self.exists: bool = False
         self.error: bool = False
         self.reason: str = ''
@@ -206,6 +207,7 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tCould not get profile parameters with error: {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # update apero profile
         try:
@@ -213,6 +215,7 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tCould not update apero profile with error: {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # ---------------------------------------------------------------------
         # sort out arguments for apero get
@@ -225,6 +228,7 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tCould not set up apero get parameters. Error {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # ---------------------------------------------------------------------
         # try to run apero get
@@ -251,7 +255,7 @@ class Request:
             from apero.tools.recipes.bin import apero_get
             # print the command we are running
             message = f'Running command: {self.cmd}'
-            misc.log_msg(message)
+            misc.log_msg(params, message)
             # run apero get to make the objects dir in apero dir
             llget = apero_get.main(objnames=self.drsobjn_str,
                                    dprtypes=self.dprtype_str,
@@ -269,10 +273,15 @@ class Request:
         except Exception as e:
             self.valid = False
             self.reason = f'\tApero get failed with error: {e}'
+            misc.log_msg(params, self.reason, log_only=True)
             return
         # ---------------------------------------------------------------------
         # set url (after creation)
-        self.tar_url = params['ssh']['url'] + '/' + self.tarfile
+        ssh_url = params['ssh']['url']
+        if ssh_url.endswith('/'):
+            self.tar_url = params['ssh']['url'] + self.tarfile
+        else:
+            self.tar_url = params['ssh']['url'] + '/' + self.tarfile
         # ---------------------------------------------------------------------
         # check that tar was create
         # ---------------------------------------------------------------------
@@ -287,16 +296,19 @@ class Request:
                 if len(get_indict) == 0:
                     self.valid = False
                     self.reason = f'\tNo files found.'
+                    misc.log_msg(params, self.reason, log_only=True)
                     return
             # else we report the error
             elif len(get_errors) > 0:
                 self.valid = False
                 self.reason = '\n'.join(get_errors)
+                misc.log_msg(params, self.reason, log_only=True)
                 return
             else:
                 # if we get here we have an unknown error
                 self.valid = False
                 self.reason = '\tUnknown error. Contact support with the query.'
+                misc.log_msg(params, self.reason, log_only=True)
         else:
             return
 
@@ -314,12 +326,12 @@ class Request:
             raise base.AperoRequestError(emsg)
         # ---------------------------------------------------------------------
         # load yaml file from params
-        yaml_file = params[self.mode]
+        yaml_file = params[self.mode]['yaml']
         # read yaml file
         yaml_params = io.read_yaml(yaml_file)
         # ---------------------------------------------------------------------
         # get profile name
-        profile_name = self.mode.replace('_', ' ')
+        profile_name = params[self.mode]['profile']
         # deal with profile name not in yaml_params
         if profile_name not in yaml_params:
             emsg = f'Profile name {profile_name} not in yaml file.'
@@ -443,12 +455,17 @@ class Request:
         email_kwargs['subject'] = f'APERO request successful: {self.hashkey}'
         try:
             misc.send_email(**email_kwargs)
+            msg = 'Succeeded to send email for request {0}'
+            msg += self._generate_summary()
+            margs = [iteration]
+            misc.log_msg(params, msg.format(*margs), log_only=True)
         except Exception as e:
             msg = 'Failed to send email for request {0}'
             msg += '\n\t{1}: {2}'
+            msg += '\n\t Request was:\n'
             msg += self._generate_summary()
             margs = [iteration, type(e), str(e)]
-            misc.log_msg(msg.format(*margs))
+            misc.log_msg(params, msg.format(*margs))
 
     def email_failure(self, params: Dict[str, Any], iteration: int):
 
@@ -478,9 +495,10 @@ class Request:
         except Exception as e:
             msg = 'Failed to send email for request {0}'
             msg += '\n\t{1}: {2}'
+            msg += '\n\t Request was:\n'
             msg += self._generate_summary()
             margs = [iteration, type(e), str(e)]
-            misc.log_msg(msg.format(*margs))
+            misc.log_msg(params, msg.format(*margs))
 
 
 # =============================================================================
@@ -531,7 +549,7 @@ def get_sheet(params: Dict[str, Any], sheetkind: str) -> pd.DataFrame:
     # ---------------------------------------------------------------------
     # print progress
     msg = f'\tDownloading google-sheet: {sheetkind}'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
@@ -557,7 +575,7 @@ def sync_data(params: Dict[str, Any]):
     rdict['INPATH'] = params['local path']
     rdict['OUTPATH'] = os.path.join(params['ssh']['directory'])
     # print command to rsync
-    misc.log_msg(RSYNC_CMD_OUT.format(**rdict))
+    misc.log_msg(params, RSYNC_CMD_OUT.format(**rdict))
     # run command (will require password)
     if not params['test']:
         os.system(RSYNC_CMD_OUT.format(**rdict))
@@ -576,9 +594,27 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     io.gsp_setup()
     # get sheet kind parameters
     sheet_id, sheet_name = get_sheetkind(params, 'response')
+    # get the current data from the google sheet (in case it has been updated)
+    current_dataframe = get_sheet(params, 'response')
+    # convert timestampe to a datetime
+    current_dataframe['Timestamp'] = pd.to_datetime(current_dataframe['Timestamp'],
+                                                    format="mixed", dayfirst=True)
+    # -------------------------------------------------------------------------
+    # get all entries after MOST RECENT
+    new_entries = current_dataframe['Timestamp'] > params['MOST_RECENT']
+    # if we have new entries add them
+    if np.sum(new_entries) > 0:
+        # print progress
+        msg = ('New entries found since running request script.'
+               '\n\tAdding {0} new entries').format(np.sum(new_entries))
+        misc.log_msg(params, msg, level='info')
+        # add the new entries
+        dataframe = pd.concat([dataframe, current_dataframe[new_entries]],
+                              ignore_index=True)
+    # -------------------------------------------------------------------------
     # print progress
     msg = 'Pushing all rows to google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id, sheet=sheet_name)
     # get worksheet (we need to manually delete rows for a google form
@@ -600,7 +636,7 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
         google_sheet.df_to_sheet(dataframe, index=False, replace=False)
     # print progress
     msg = 'Valid rows added to response google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
 
 
 def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
@@ -618,7 +654,7 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     sheet_id, sheet_name = get_sheetkind(params, 'archive')
     # print progress
     msg = 'Pushing all rows to google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
     # make a hash key for each row in dataframe
     hashkeys = []
     for row in range(len(dataframe)):
@@ -653,7 +689,7 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
         google_sheet.df_to_sheet(new_dataframe, index=False, replace=True)
     # print progress
     msg = 'All rows added to archive google-sheet'
-    misc.log_msg(msg, level='info')
+    misc.log_msg(params, msg, level='info')
 
 
 def create_requests(params: Dict[str, Any],
@@ -675,10 +711,6 @@ def create_requests(params: Dict[str, Any],
     pass_sheet = get_sheet(params, 'pass')
     # get the valid time period in days
     valid_time = pd.Timedelta(days=-params['valid time'])
-
-    # convert timestampe to a datetime
-    dataframe['Timestamp'] = pd.to_datetime(dataframe['Timestamp'],
-                                            format="mixed", dayfirst=True)
     # get the offset
     offset = dataframe['Timestamp'] - pd.Timestamp.now() > valid_time
     # valid dataframe
@@ -716,7 +748,7 @@ def create_requests(params: Dict[str, Any],
             profile_dict[passkey] = profile_dict[passkey].union(profiles)
     # -------------------------------------------------------------------------
     # store a list of requests
-    requests, valid_mask = [], np.zeros(len(valid_dataframe)).astype(bool)
+    requests = []
     # loop around rows in valid_dataframe
     for it, row in enumerate(valid_dataframe.index):
         # get passkey
@@ -725,7 +757,19 @@ def create_requests(params: Dict[str, Any],
         email = valid_dataframe['Email Address'][row]
         # get profile requested
         profile = valid_dataframe['APERO_MODE'][row]
-
+        # ---------------------------------------------------------------------
+        # skip profiles not in filter profiles list (if used)
+        #    if this is not used then all profiles are valid
+        if params['filter profiles'] is not None:
+            if profile not in params['filter profiles']:
+                # create request
+                request = Request.from_pandas_row(valid_dataframe.iloc[it])
+                # set request as invalid
+                request.skip = True
+                # add to list of requests
+                requests.append(request)
+                continue
+        # ---------------------------------------------------------------------
         # deal with passkey not in pass_dict
         if passkey not in pass_dict:
             # create request
@@ -793,7 +837,7 @@ def remove_invalid_tars(params: Dict[str, Any],
     valid_requests = dict()
     # get list of valid request files
     for it, request in enumerate(requests):
-        if request.valid:
+        if request.valid or request.skip:
             valid_requests[it] = request.tarfile
     # get a list of all tar files
     valid_request_tar_files = list(valid_requests.values())
@@ -835,13 +879,13 @@ def create_dataframe(params: Dict[str, Any], requests: List[Request]
         # add to all rows
         all_rows.append(all_row)
         # only if request if valid
-        if not request.valid:
+        if not request.valid and not request.skip:
             continue
         # add to rows
         valid_rows.append(row)
     # convert list of rows to dataframe
     valid_dataframe = pd.DataFrame(valid_rows)
-    all_dataframe = pd.DataFrame(all_rows)
+    all_dataframe = pd.DataFrame(all_rows).reset_index(drop=True)
     # return dataframe
     return valid_dataframe, all_dataframe
 

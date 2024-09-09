@@ -36,6 +36,7 @@ LOCK_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 MAX_COUNT = 30
 # -----------------------------------------------------------------------------
 
+
 # =============================================================================
 # Define functions
 # =============================================================================
@@ -170,7 +171,9 @@ def run_tests(params: Dict[str, Any],
             # deal with skipping tests
             if params['test_filter'] is not None:
                 if test_name not in params['test_filter']:
-                    if test_name in obsdir_dataframe:
+                    if obsdir not in obsdir_dataframe.index:
+                        value = ''
+                    elif test_name in obsdir_dataframe:
                         value = obsdir_dataframe.loc[obsdir, test_name]
                     else:
                         value = ''
@@ -232,11 +235,20 @@ def run_single_test(params: Dict[str, Any], test_type: str):
         # print message on which observation directory we are processing
         msg = '*' * 50
         msg += f'\nProcessing single test on observatory directory {obsdir}'
-        msg += '*' * 50
+        msg += '\n' + '*' * 50
         misc.log_msg(msg, level='info')
         # run single test
         _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
                      test_type=test_type)
+    # -------------------------------------------------------------------------
+    # print a note that the single test does not update the database
+    msg = ('*' * 50 + '\nPlease note\n' + '*' * 50 +
+           '\n\tSingle test mode (--test) does NOT update the '
+           'database. '
+           '\n\tPlease run without the --test argument to update the '
+           'database. '
+           '\n\t--testfilter can be used to run only some tests.')
+    misc.log_msg(msg, level='info', color='yellow')
 
 
 # =============================================================================
@@ -252,6 +264,9 @@ def get_current_dataframe(params, test_type='raw'):
     elif test_type == 'red':
         sheet_id = params['red sheet id']
         sheet_name = params['red sheet name']
+    elif test_type == 'override':
+        sheet_id = params['over sheet id']
+        sheet_name = params['over sheet name']
     else:
         emsg = 'ADD_TO_SHEET error: test_type must be set to "raw" or "red"'
         raise base.AperoChecksError(emsg)
@@ -287,8 +302,12 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     elif test_type == 'red':
         sheet_id = params['red sheet id']
         sheet_name = params['red sheet name']
+    elif test_type == 'override':
+        sheet_id = params['over sheet id']
+        sheet_name = params['over sheet name']
     else:
-        emsg = 'ADD_TO_SHEET error: test_type must be set to "raw" or "red"'
+        emsg = ('ADD_TO_SHEET error: test_type must be set to "raw" or "red" '
+                'or "override"')
         raise base.AperoChecksError(emsg)
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
@@ -303,30 +322,39 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     # sort the dataframe by date column in descending order
     current_dataframe = current_dataframe.sort_values(by='date',
                                                       ascending=False)
-    # Group the dataframe by obsdir and get hte index of the maximum date
-    # (i.e. the most recent date)
-    idx = current_dataframe.groupby('obsdir')['date'].idxmax()
-    # filter the dataframe using the obtained index values
-    current_dataframe = current_dataframe.loc[idx]
-    # reset the index of the filtered dataframe
-    current_dataframe = current_dataframe.reset_index(drop=True)
+    # deal with grouping by date
+    if test_type in ['red', 'raw']:
+        # Group the dataframe by obsdir and get hte index of the maximum date
+        # (i.e. the most recent date)
+        idx = current_dataframe.groupby('obsdir')['date'].idxmax()
+        # filter the dataframe using the obtained index values
+        current_dataframe = current_dataframe.loc[idx]
+        # reset the index of the filtered dataframe
+        current_dataframe.reset_index(drop=True)
+    elif test_type in 'override':
+        # Drop dulicates based on
+        dkwargs = dict(subset=['obsdir', 'test_type', 'test_name'],
+                       keep='first', inplace=True)
+        current_dataframe.drop_duplicates(**dkwargs)
+        # reset the index of the filtered dataframe
+        current_dataframe.reset_index(drop=True, inplace=True)
     # -------------------------------------------------------------------------
     # resort values ascending in date
     current_dataframe = current_dataframe.sort_values(by='obsdir',
                                                       ascending=False)
     # -------------------------------------------------------------------------
     # print progress
-    msg = 'Pushing all rows to google-sheet'
+    msg = 'Pushing all rows to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
     # push dataframe back to server
     google_sheet.df_to_sheet(current_dataframe, index=False, replace=True)
     # print progress
-    msg = 'All rows added to google-sheet'
+    msg = 'All rows added to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
 
 
 def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
-                 test_type: str ='raw'):
+                 test_type: str = 'raw'):
     """
     Upload test results to google sheet
 
@@ -376,10 +404,129 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
     dataframe = pd.DataFrame(results_dict, columns=columns)
     # -------------------------------------------------------------------------
     # add to sheet
-    add_to_sheet(params, dataframe, test_type=test_type)
+    try:
+        add_to_sheet(params, dataframe, test_type=test_type)
+        # ---------------------------------------------------------------------
+    finally:
+        # unlock codes
+        unlock()
+
+
+def store_overrides(params: Dict[str, Any],
+                    overrides: Dict[str, Dict[str, Any]],
+                    test_type: str = 'raw'):
+    # deal with no results
+    if len(overrides) == 0:
+        msg = 'No override rows to add to google sheet'
+        misc.log_msg(msg, level='warning')
+        return
+
+    # define the sheet id and sheet name (pending)
+    if test_type == 'raw':
+        sheet_name = params['raw sheet name']
+    elif test_type == 'red':
+        sheet_name = params['red sheet name']
+    else:
+        return
+
+    # print message on which observation directory we are processing
+    msg = '*' * 50
+    msg += f'\nUploading to override google sheet'
+    msg += '\n' + '*' * 50
+    misc.log_msg(msg, level='info')
+    # get time now
+    time_now = base.AstropyTime.now().iso
+    # remove the decimal seconds
+    time_now = time_now.split('.')[0]
+    # store columns
+    columns = ['obsdir', 'date', 'test_type', 'test_name', 'test_value',
+               'who', 'comment']
+    # turn results dictionary into a single dictionary
+    results_dict = dict()
+    for col in columns:
+        results_dict[col] = []
+    # loop around all overrides and populate results_dict
+    for obsdir in overrides:
+        # loop around tests
+        for test_name in overrides[obsdir]:
+            results_dict['obsdir'] += [obsdir]
+            results_dict['date'] += [time_now]
+            results_dict['test_type'] += [sheet_name]
+            results_dict['test_name'] += [test_name]
+            # get the values from the tuple
+            value, name, reason = overrides[obsdir][test_name]
+            # push into results
+            results_dict['test_value'] += [value]
+            results_dict['who'] += [name]
+            results_dict['comment'] += [reason]
     # -------------------------------------------------------------------------
-    # unlock codes
-    unlock()
+    # lock codes
+    lock()
+    # -------------------------------------------------------------------------
+    # turn results dictionary into dataframe
+    dataframe = pd.DataFrame(results_dict, columns=columns)
+    # -------------------------------------------------------------------------
+    # add to sheet
+    try:
+        add_to_sheet(params, dataframe, test_type='override')
+        # ---------------------------------------------------------------------
+        # unlock codes
+        unlock()
+    except Exception as e:
+        # ---------------------------------------------------------------------
+        # unlock codes
+        unlock()
+        # raise exception
+        raise e
+
+
+def check_override(params: Dict[str, Any],
+                   results: Dict[str, Dict[str, Any]],
+                   test_type: str = 'raw'):
+    # get any overrides we have
+    override_dataframe = get_current_dataframe(params, 'override')
+    # define the sheet id and sheet name (pending)
+    if test_type == 'raw':
+        sheet_name = params['raw sheet name']
+    elif test_type == 'red':
+        sheet_name = params['red sheet name']
+    else:
+        emsg = 'ADD_TO_SHEET error: test_type must be set to "raw" or "red"'
+        raise base.AperoChecksError(emsg)
+    # filter dataframe by sheet_name
+    type_mask = override_dataframe['test_type'] == sheet_name
+    override_dataframe = override_dataframe[type_mask]
+    # get the override obsdirs
+    override_obsdirs = np.array(override_dataframe['obsdir'])
+    # get the test names
+    override_test_names = np.array(override_dataframe['test_name'])
+    # get the test values
+    override_test_values = np.array(override_dataframe['test_value'])
+    # keep a counter of how many values we updated
+    counter = 0
+    # loop around all rows we are overriding
+    for row in range(len(override_obsdirs)):
+        # get the obsdir we are overriding
+        override_obsdir = override_obsdirs[row]
+        # get the test name
+        override_test_name = override_test_names[row]
+        # get the test value
+        override_test_value = override_test_values[row]
+        # if the obsdir is not in the results we skip
+        if override_obsdir not in results:
+            continue
+        # if the test_name is not in the results we skip
+        if override_test_name not in results[override_obsdir]:
+            continue
+        # update the test value - if it has changed
+        if results[override_obsdir][override_test_name] != override_test_value:
+            results[override_obsdir][override_test_name] = override_test_value
+            counter += 1
+    # log that we updated "counter" values
+    msg = 'Updated {0} override values'.format(counter)
+    misc.log_msg(msg, level='info')
+    # return the updated results
+    return results
 
 
 def lock(stop: bool = False) -> bool:
@@ -393,9 +540,9 @@ def lock(stop: bool = False) -> bool:
     lock_file = os.path.join(LOCK_DIR, 'lock.lock')
     # counter
     counter = 0
-    # wait a very small random amount of time (to avoid two codes doing this
+    # wait a small random amount of time (to avoid two codes doing this
     # at the same time)
-    random_time = 0.1 * np.random.random()
+    random_time = 0.1 + 0.05 * np.random.uniform(-1, 1)
     time.sleep(random_time)
     # if lock file exists
     while os.path.exists(lock_file):

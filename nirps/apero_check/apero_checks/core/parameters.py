@@ -112,6 +112,17 @@ parameters['red sheet name'] = Const('red sheet name', None, dtype=str,
                                      not_none=True,
                                      path='check.red sheet name')
 
+
+# define the sheet id for the google sheet
+parameters['over sheet id'] = Const('over sheet id',
+                                    '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
+                                    dtype=str)
+
+# define the sheet name for the google sheet
+parameters['over sheet name'] = Const('over sheet name',
+                                      'OVERRIDES',
+                                      dtype=str)
+
 # =============================================================================
 # Start of code
 # =============================================================================

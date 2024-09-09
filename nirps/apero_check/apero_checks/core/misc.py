@@ -9,6 +9,7 @@ Created on 2023-07-03 at 14:51
 
 @author: cook
 """
+import os
 import argparse
 import copy
 from typing import Any, Dict, Optional, Tuple
@@ -309,6 +310,11 @@ def log_msg(message, level: str = '', color: Optional[str] = None):
     else:
         print(start + print_string + end)
 
+    # construct log file path
+    log_file = os.path.join(os.path.expanduser('~'), 'apero_check.log')
+    # save to log file
+    with open(log_file, 'a') as f:
+        f.write(print_string + '\n')
 
 # =============================================================================
 # Start of code

@@ -59,9 +59,13 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # imports after apero profile update
     from apero.core.core import drs_database
     from apero.tools.module.processing import drs_precheck
+    from apero.tools.module.database import manage_databases
+    # -------------------------------------------------------------------------
+    # update database
+    manage_databases.update_object_database(apero_params, log=False)
     # -------------------------------------------------------------------------
     # construct the index database instance
-    findexdbm = drs_database.FileIndexDatabase(params)
+    findexdbm = drs_database.FileIndexDatabase(apero_params)
     findexdbm.load_db()
     # get the unfound table
     unfound_table = drs_precheck.obj_check(apero_params, findexdbm, log=False)

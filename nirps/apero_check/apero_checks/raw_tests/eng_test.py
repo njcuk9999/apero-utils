@@ -9,13 +9,13 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
-import copy
 import glob
 import os
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional, Tuple
 
 import numpy as np
 from astropy.io import fits
+from tqdm import tqdm
 
 from apero_checks.core import misc
 
@@ -26,6 +26,584 @@ from apero_checks.core import misc
 # define any other constants here that you want moving to the parameters.py
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
+class EngTest:
+    def __init__(self, name: str, header: Optional[str] = None,
+                 dtype: Optional[str] = None):
+
+        self.name = str(name)
+
+        if header is None:
+            self.header_key = str(self.name)
+        else:
+            self.header_key = str(header)
+
+        self.dtype = dtype
+        self.in_header = False
+        self.value = None
+
+    def read_header(self, hdr: fits.Header, filename: str):
+
+        if self.header_key in hdr:
+            raw_value = hdr[self.header_key]
+            self.in_header = True
+        else:
+            raw_value = None
+            self.in_header = False
+        # try to interpret the header key with the given dtype
+        try:
+
+            if self.dtype == 'time.iso':
+                if raw_value is None:
+                    self.value = ''
+                else:
+                    self.value = str(raw_value)
+            elif self.dtype == 'time.mjd':
+                if raw_value is None:
+                    self.value = np.nan
+                else:
+                    self.value = float(raw_value)
+            elif self.dtype == 'str':
+                if raw_value is None:
+                    self.value = ''
+                else:
+                    return str(raw_value)
+            elif self.dtype == 'bool':
+                if raw_value is None:
+                    self.value = False
+                elif raw_value in ['True', 'TRUE', 'true', 1, True]:
+                    self.value = True
+                else:
+                    self.value = False
+            elif self.dtype == 'float':
+                if raw_value is None:
+                    self.value = np.nan
+                else:
+                    self.value = float(raw_value)
+        except Exception as e:
+            emsg = 'Error reading header key {0} with dtype {1} for file {2}'
+            eargs = [self.header_key, self.dtype, filename]
+            print(emsg.format(*eargs))
+            print('Error was: {0}'.format(e))
+
+
+# Set up engineering header keys
+# noinspection PyListCreation
+ENG_TESTS = []
+ENG_TESTS.append(EngTest('DATE-OBS', dtype='time.iso'))
+ENG_TESTS.append(EngTest('MJD-OBS', dtype='time.mjd'))
+ENG_TESTS.append(EngTest('OBJECT', dtype='str'))
+ENG_TESTS.append(EngTest('DPRTYPE',
+                         header='HIERARCH ESO DPR TYPE',
+                         dtype='str'))
+ENG_TESTS.append(EngTest('TurboPumpStatus',
+                         header='HIERARCH ESO INS SENS102 STAT',
+                         dtype='bool'))
+ENG_TESTS.append(EngTest('EncloserTemperature',
+                         header='HIERARCH ESO INS TEMP185 VAL',
+                         dtype='float'))
+ENG_TESTS.append(EngTest('EncloserTemperatureSetpoint',
+                         header='ESO INS TEMP187 VAL', dtype='float'))
+ENG_TESTS.append(EngTest('VacuumGauge1',
+                         header='HIERARCH ESO INS PRES104 VAL',
+                         dtype='float'))
+ENG_TESTS.append(EngTest('IsolationValve',
+                         header='HIERARCH ESO INS SENS100 STAT',
+                         dtype='bool'))
+ENG_TESTS.append(EngTest('Cryo1Status',
+                         header='HIERARCH ESO INS SENS126',
+                         dtype='bool'))
+ENG_TESTS.append(EngTest('Cryo2Status',
+                         header='HIERARCH ESO INS SENS126',
+                         dtype='bool'))
+ENG_TESTS.append(EngTest('WarningCryo1',
+                         header='HIERARCH ESO INS SENS144 STAT',
+                         dtype='str'))
+ENG_TESTS.append(EngTest('WarningCryo2',
+                         header='HIERARCH ESO INS SENS146 STAT',
+                         dtype='str'))
+ENG_TESTS.append(EngTest('FPtemperature_interior',
+                         header='HIERARCH ESO INS TEMP14 VAL',
+                         dtype='float'))
+ENG_TESTS.append(EngTest('FPtemperature_exterior',
+                         header='HIERARCH ESO INS TEMP13 VAL',
+                         dtype='float'))
+ENG_TESTS.append(EngTest('FPtemperature_setpoint',
+                         header='HIERARCH ESO INS TEMP188 VAL',
+                         dtype='float'))
+ENG_TESTS.append(EngTest('EncloserHeaterPower',
+                         header='HIERARCH ESO INS SENS121 VAL',
+                         dtype='float'))
+
+
+# =============================================================================
+# Define test functions
+# =============================================================================
+def test_enclosure_temperature(tbl_dict: Dict[str, np.ndarray],
+                               mask_dict: Dict[str, np.ndarray],
+                               logger: List[str], passer: List[bool]
+                               ) -> Tuple[List[str], List[bool]]:
+    """
+    Test Enclosure Temperature
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # define keys
+    key1 = 'EncloserTemperature'
+    key2 = 'EncloserTemperatureSetpoint'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0 or np.sum(mask_dict[key2]) == 0:
+        logger.append(f'No header entries for {key1} or {key2}')
+        passer.append(True)
+        return logger, passer
+    # work out rms
+    rms = np.nanstd(tbl_dict[key1][mask_dict[key1]] -
+                    tbl_dict[key2][mask_dict[key2]])
+    # Enclosure temperature should be stable to 0.1 K rms
+    qc_rms = 0.1
+    qc_passed = rms < qc_rms
+
+    msg = 'RMS of enclosure temperature {0:.1E} K  ({1}{2:.1E} K)'
+    if qc_passed:
+        margs = [rms, '<', qc_rms]
+
+    else:
+        margs = [rms, '>', qc_rms]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_enclosure_temperature_setpoint(tbl_dict: Dict[str, Any],
+                                        mask_dict: Dict[str, np.ndarray],
+                                        logger: List[str], passer: List[bool]
+                                        ) -> Tuple[List[str], List[bool]]:
+    """
+    Test Enclosure temperature should be within 0.1 K of setpoint
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    key1 = 'EncloserTemperature'
+    key2 = 'EncloserTemperatureSetpoint'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0 or np.sum(mask_dict[key2]) == 0:
+        logger.append(f'No header entries for {key1} or {key2}')
+        passer.append(True)
+        return logger, passer
+    # work out mean diff
+    mean_diff = np.nanmean(tbl_dict[key1][mask_dict[key1]] -
+                           tbl_dict[key2][mask_dict[key1]])
+
+    qc_mean = 0.1
+    qc_passed = np.abs(mean_diff) < qc_mean
+
+    msg = 'mean enclosure temperature diff {0:.1E} K  ({1}{2:.1E} K)'
+    if qc_passed:
+        margs = [mean_diff, '<', qc_mean]
+    else:
+        margs = [mean_diff, '>', qc_mean]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_vacuum_gauge1(tbl_dict: Dict[str, Any],
+                       mask_dict: Dict[str, np.ndarray],
+                       logger: List[str],
+                       passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    Test the VacuumGauge1 should see a really good vacuum otherwise there
+    is a leak
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # define key
+    key1 = 'VacuumGauge1'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out max
+    vacuum_gauge1 = np.nanmax(tbl_dict[key1][mask_dict[key1]])
+
+    qc_vacuum_gauge1 = 1e-4
+    qc_passed = vacuum_gauge1 < qc_vacuum_gauge1
+
+    msg = 'max VacuumGauge1 {0:.2E} mbar  ({1}{2:.2E} mbar)'
+    if qc_passed:
+        margs = [vacuum_gauge1, '<', qc_vacuum_gauge1]
+    else:
+        margs = [vacuum_gauge1, '>', qc_vacuum_gauge1]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_isolation_valve(tbl_dict: Dict[str, Any],
+                         mask_dict: Dict[str, np.ndarray],
+                         logger: List[str],
+                         passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    The IsolationValve should be closed, that's super bad if it's open
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'IsolationValve'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    isolation_valve = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
+    qc_passed = isolation_valve == 0
+    if qc_passed:
+        msg = 'Isolation valve always closed'
+        margs = []
+    else:
+        msg = 'Isolation valve sometimes open ({0} times)'
+        margs = [isolation_valve]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_cryo1_stat(tbl_dict: Dict[str, Any],
+                    mask_dict: Dict[str, np.ndarray],
+                    logger: List[str],
+                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    The Cryo1 status is false - means its off - this is bad
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'Cryo1Status'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    isolation_valve = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
+    qc_passed = isolation_valve == 0
+    if qc_passed:
+        msg = 'Cryo1 on (=on)'
+        margs = []
+    else:
+        msg = 'Cryo1 off (=false)'
+        margs = [isolation_valve]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_cryo2_stat(tbl_dict: Dict[str, Any],
+                    mask_dict: Dict[str, np.ndarray],
+                    logger: List[str],
+                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    The Cryo1 status is false - means its off - this is bad
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'Cryo2Status'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    isolation_valve = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
+    qc_passed = isolation_valve == 0
+    if qc_passed:
+        msg = 'Cryo2 on (=on)'
+        margs = []
+    else:
+        msg = 'Cryo2 off (=false)'
+        margs = [isolation_valve]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_turbo_pump_status(tbl_dict: Dict[str, Any],
+                           mask_dict: Dict[str, np.ndarray],
+                           logger: List[str],
+                           passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    The TurboPumpStatus should be 'off' on the fast majority of occurences
+    (ask Philippe for details)
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'TurboPumpStatus'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    turbo_status = np.nansum(tbl_dict[key1][mask_dict[key1]])
+
+    qc_passed = turbo_status == 0
+    if qc_passed:
+        msg = 'TurboPumpStatus always closed'
+        margs = []
+    else:
+        msg = 'TurboPumpStatus sometimes open ({0} times, {1:.1f}% of time)'
+        margs = [turbo_status, np.nanmean(tbl_dict['TurboPumpStatus']) * 100.]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_warning_cryo1(tbl_dict: Dict[str, Any],
+                       mask_dict: Dict[str, np.ndarray],
+                       logger: List[str],
+                       passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    Test the Cryo1 warning
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'WarningCryo1'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    warning_cryo1_status = np.nansum(tbl_dict[key1][mask_dict[key1]] != '')
+
+    qc_passed = warning_cryo1_status == 0
+    if qc_passed:
+        msg = 'WarningCryo1 always OK'
+        margs = []
+    else:
+        msg = 'WarningCryo1 not empty ({0} times)'
+        margs = [warning_cryo1_status]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_warning_cryo2(tbl_dict: Dict[str, Any],
+                       mask_dict: Dict[str, np.ndarray],
+                       logger: List[str], passer: List[bool]
+                       ) -> Tuple[List[str], List[bool]]:
+    """
+    Test the Cryo2 warning
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    key1 = 'WarningCryo2'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out sum
+    warning_cryo2_status = np.nansum(tbl_dict[key1][mask_dict[key1]] != '')
+
+    qc_passed = warning_cryo2_status == 0
+    if qc_passed:
+        msg = 'WarningCryo2 always OK'
+        margs = []
+    else:
+        msg = 'WarningCryo2 not empty ({0} times)'
+        margs = [warning_cryo2_status]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_fp_temperature(tbl_dict: Dict[str, Any],
+                        mask_dict: Dict[str, np.ndarray],
+                        logger: List[str],
+                        passer: List[bool]) -> Tuple[List[str], List[bool]]:
+    """
+    Test FP temperature should be stable to 0.01 K rms
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'FPtemperature_interior'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out rms
+    rms_fp_temperature = np.nanstd(tbl_dict[key1][mask_dict[key1]])
+
+    qc_f_ptemperature = 1e-2
+    qc_passed = rms_fp_temperature < qc_f_ptemperature
+    if qc_passed:
+        msg = 'RMS FP temperature interior {0:.2E} K  ({1}{2:.2E} K)'
+        margs = [rms_fp_temperature, '<', qc_f_ptemperature]
+    else:
+        msg = 'RMS FP temperature interior {0:.2E} K  ({1}{2:.2E} K)'
+        margs = [rms_fp_temperature, '>', qc_f_ptemperature]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_fp_temperature_setpoint(tbl_dict: Dict[str, Any],
+                                 mask_dict: Dict[str, np.ndarray],
+                                 logger: List[str], passer: List[bool]
+                                 ) -> Tuple[List[str], List[bool]]:
+    """
+    FP temperature should be within 0.005 K of setpoint
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    key1 = 'FPtemperature_interior'
+    key2 = 'FPtemperature_setpoint'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0 or np.sum(mask_dict[key2]) == 0:
+        logger.append(f'No header entries for {key1} or {key2}')
+        passer.append(True)
+        return logger, passer
+    # work out rms
+    rms = np.nanstd(tbl_dict[key1][mask_dict[key1]] -
+                    tbl_dict[key2][mask_dict[key1]])
+
+    qc_rms = 0.005
+    qc_passed = rms < qc_rms
+    if qc_passed:
+        msg = 'RMS FP to setpoint {0:.1E} K  ({1}{2:.1E} K)'
+        margs = [rms, '<', qc_rms]
+    else:
+        msg = 'RMS FP to setpoint {0:.1E} K  ({1}{2:.1E} K)'
+        margs = [rms, '>', qc_rms]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
+
+
+def test_encloser_heater_power(tbl_dict: Dict[str, Any],
+                               mask_dict: Dict[str, np.ndarray],
+                               logger: List[str], passer: List[bool]
+                               ) -> Tuple[List[str], List[bool]]:
+    """
+    Test Encloser heater power should be less than 80%
+
+    :param tbl_dict: dictionary of table values from headers of all files
+    :param logger: list of strings with reason for passing or failing
+    :param passer: list of bools, whether a test passed (True) or failed (False)
+
+    :return: Tuple, the updated 1. logger and 2. passer
+    """
+    # set key
+    key1 = 'EncloserHeaterPower'
+    # check if mask is empty
+    if np.sum(mask_dict[key1]) == 0:
+        logger.append(f'No header entries for {key1}')
+        passer.append(True)
+        return logger, passer
+    # work out max
+    max_heater_power = np.nanmax(tbl_dict[key1][mask_dict[key1]])
+
+    heater_power_thres = 80.0
+    qc_passed = max_heater_power < heater_power_thres
+    if qc_passed:
+        msg = 'Encloser heater power {0:.1f}% ({1}{2:.1f}%)'
+        margs = [max_heater_power, '<', heater_power_thres]
+    else:
+        msg = 'Encloser heater power {0:.1f}% ({1}{2:.1f}%)'
+        margs = [max_heater_power, '>', heater_power_thres]
+    # add to the logger
+    logger.append(msg.format(*margs))
+    # add to the passed
+    passer.append(qc_passed)
+    # return logger and passer
+    return logger, passer
 
 
 # =============================================================================
@@ -52,197 +630,166 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         margs = [obsdir]
         misc.log_msg(msg.format(*margs), level='')
     # -------------------------------------------------------------------------
-
+    # create the observation directory path
     obsdir_path = os.path.join(raw_directory, obsdir)
-
+    # deal with no observation directory
     if not os.path.exists(obsdir_path):
         if log:
-            print('Observation directory {0} does not exist - TEST FAILED')
-        return False
-
+            print('Observation directory {0} does not exist - skipping test')
+        return True
+    # get a list of files in this observation directory
     files = glob.glob(os.path.join(obsdir_path, '*.fits'))
-
+    # deal with no files
     if len(files) == 0:
         if log:
             # pass a True if no file is found on that night
-            print('No files found for night {}'.format(obsdir))
-        return False
-
+            print('No files found for night {} - skipping test'.format(obsdir))
+        return True
+    # -------------------------------------------------------------------------
     # create table to store keywords
-    tbl = dict()
-
-    # keywords to extract and table name
-    keys = [['DATE-OBS', 'DATE-OBS'],
-            ['MJD-OBS', 'MJD-OBS'],
-            ['OBJECT', 'OBJECT'],
-            ['HIERARCH ESO DPR TYPE', 'DPRTYPE'],
-            ['ESO INS SENS102 STAT', 'TurboPumpStatus'],  # False
-            ['ESO INS TEMP185 VAL', 'EncloserTemperature'],  # ~20 C
-            ['ESO INS TEMP187 VAL', 'EncloserTemperatureSetpoint'],  # ~20 C
-            ['ESO INS PRES104 VAL', 'VacuumGauge1'],  # < 1e-5 mbar
-            ['ESO INS SENS100 STAT', 'IsolationValve'],  # False
-            ['ESO INS SENS144 STAT', 'WarningCryo1'],  # ''
-            ['ESO INS SENS146 STAT', 'WarningCryo2'],
-            ['ESO INS TEMP14 VAL', 'FPtemperature_interior'],
-            ['ESO INS TEMP13 VAL', 'FPtemperature_exterior'],
-            ['ESO INS TEMP188 VAL', 'FPtemperature_setpoint']  # ''
-            ]
-    keys = np.array(keys)
-
-    # define table columns
-    h0 = fits.getheader(files[0])
-
-    for i in range(len(keys[:, 0])):
-        # loop on keys and which column to store them
-        key = keys[i, 0]
-        key2 = keys[i, 1]
-
-        # if not present, we store a dummy value not to raise an error
-        if key not in h0.keys():
-            val = 0.0
-        else:
-            val = h0[key]
-
-        # pad strings to avoid error if there are long strings in later files
-        if type(val) == str:
-            val = ' ' * 100
-        tbl[key2] = np.array([val] * len(files))
-
+    tbl_dict = dict()
+    mask_dict = dict()
     # fill table looping through files
-    for ifile in range(len(files)):
-        h = fits.getheader(files[ifile])
-
-        for i in range(len(keys[:, 0])):
-            key = keys[i, 0]  # keyword in header
-            key2 = keys[i, 1]  # keyword in table
-            # only if key is present in header
-            if key in h.keys():
-                tbl[key2][ifile] = copy.deepcopy(h[key])
-
-    # change to True/False for strings
-    for key in tbl.keys():
-        if (tbl[key][0] == 'FALSE') or (tbl[key][0] == 'TRUE'):
-            tbl[key] = tbl[key] == 'TRUE'
-
+    for ifile in tqdm(range(len(files)), leave=False):
+        # get the header
+        hdr = fits.getheader(files[ifile])
+        # loop around keys and fill the table dictionary
+        for it, key in enumerate(ENG_TESTS):
+            key.read_header(hdr, files[ifile])
+            # deal with new dictionary entry
+            if key.name not in tbl_dict:
+                tbl_dict[key.name] = []
+                mask_dict[key.name] = []
+            # push in value
+            tbl_dict[key.name].append(key.value)
+            mask_dict[key.name].append(key.in_header)
+    # convert lists to numpy arrays
+    for it, key in enumerate(tbl_dict):
+        tbl_dict[key] = np.array(tbl_dict[key])
+        mask_dict[key] = np.array(mask_dict[key]).astype(bool)
+    # -------------------------------------------------------------------------
     # We add prints on the status of raw keywords:
+    passer = []
+    logger = []
+
+    # -------------------------------------------------------------------------
+    # Test Enclosure Temperature
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_enclosure_temperature(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test Enclosure temperature should be within 0.1 K of setpoint
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_enclosure_temperature(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test the VacuumGauge1 should see a really good vacuum otherwise there
+    # is a leak
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_vacuum_gauge1(*test_args)
+
+    # -------------------------------------------------------------------------
+    # The IsolationValve should be closed, that's super bad if it's open
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_isolation_valve(*test_args)
+
+    # -------------------------------------------------------------------------
+    # The TurboPumpStatus should be 'off' on the fast majority of occurences
+    # (ask Philippe for details)
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_turbo_pump_status(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test the Cryo1 status
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_cryo1_stat(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test the Cryo1 status
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_cryo2_stat(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test the Cryo2 warning
+    # -------------------------------------------------------------------------
+    # # set up arguments for the sub-test functions
+    # test_args = [tbl_dict, mask_dict, logger, passer]
+    # # run test
+    # logger, passer = test_warning_cryo2(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test FP temperature should be stable to 0.01 K rms
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_fp_temperature(*test_args)
+
+    # -------------------------------------------------------------------------
+    # FP temperature should be within 0.005 K of setpoint
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_fp_temperature_setpoint(*test_args)
+
+    # -------------------------------------------------------------------------
+    # Test Encloser heater power should be less than 80%
+    # -------------------------------------------------------------------------
+    # set up arguments for the sub-test functions
+    test_args = [tbl_dict, mask_dict, logger, passer]
+    # run test
+    logger, passer = test_encloser_heater_power(*test_args)
+
+    # -------------------------------------------------------------------------
+    # construct a string for printing output
+    # -------------------------------------------------------------------------
+    # storage for combined log
     passed_log = []
     failed_log = []
-
-    # on Enclosure Temperature
-    ####################################################################################
-    rms = np.nanstd(tbl['EncloserTemperature'] - tbl['EncloserTemperatureSetpoint'])
-    # Enclosure temperature should be stable to 0.1 K rms
-    qc_rms = 0.1
-    qc = rms < qc_rms
-    if qc:
-        passed_log.append('\tRMS of enclosure temperature {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-    else:
-        failed_log.append('\tRMS of enclosure temperature {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-
-    ####################################################################################
-    # Enclosure temperature should be within 0.1 K of setpoint
-    mean_diff = np.nanmean(tbl['EncloserTemperature'] - tbl['EncloserTemperatureSetpoint'])
-    qc_mean = 0.1
-    qc = np.abs(mean_diff) < qc_mean
-
-    if qc:
-        passed_log.append('\tmean enclosure temperature diff {:.1E} K  (<{:.1E} K)'.format(mean_diff, qc_mean))
-    else:
-        failed_log.append('\tmean enclosure temperature diff {:.1E} K  (<{:.1E} K)'.format(mean_diff, qc_mean))
-
-    ####################################################################################
-    # The VacuumGauge1 should see a really good vacuum otherwise there is a leak
-    vacuum_gauge1 = np.nanmax(tbl['VacuumGauge1'])
-    qc_vacuum_gauge1 = 1e-4
-    qc = vacuum_gauge1 < qc_vacuum_gauge1
-
-    if qc:
-        passed_log.append('\tmax VacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(vacuum_gauge1, qc_vacuum_gauge1))
-    else:
-        failed_log.append('\tmaxVacuumGauge1 {:.2E} mbar  (<{:.2E} mbar)'.format(vacuum_gauge1, qc_vacuum_gauge1))
-
-    ####################################################################################
-    # The IsolationValve should be closed, that's super bad if it's open
-    valve_status = np.sum(tbl['IsolationValve'])
-
-    if valve_status == 0:
-        passed_log.append('\tIsolation valve always closed')
-    else:
-        failed_log.append('\tIsolation valve sometimes open ({} times)'.format(valve_status))
-
-    ####################################################################################
-    # The TurboPumpStatus should be 'off' on the fast majority of occurences (ask Philippe for details)
-    turbo_status = np.sum(tbl['TurboPumpStatus'])
-
-    if turbo_status == 0:
-        passed_log.append('\tTurboPumpStatus always closed')
-    else:
-        failed_log.append('\tTurboPumpStatus sometimes open ({} times, '
-                          '{:.1f}% of time)'.format(turbo_status, np.mean(tbl['TurboPumpStatus']) * 100.))
-
-    ####################################################################################
-    # Status is '' empty string when everything is OK
-    # warning_cryo1_status = np.sum(tbl['WarningCryo1'] != '')
-    #
-    # if warning_cryo1_status == 0:
-    #     passed_log.append('\tWarningCryo1 always OK')
-    # else:
-    #     failed_log.append('\tWarningCryo1 not empty ({} times)'.format(warning_cryo1_status))
-
-    ####################################################################################
-    # Status is '' empty string when everything is OK
-
-    # warning_cryo2_status = np.sum(tbl['WarningCryo2'] != '')
-    #
-    # if warning_cryo2_status == 0:
-    #     passed_log.append('\tWarningCryo2 always OK')
-    # else:
-    #     failed_log.append('\tWarningCryo2 not empty ({} times)'.format(warning_cryo2_status))
-
-    ####################################################################################
-    # FP temperature should be stable to 0.01 K rms
-    rms_fp_temperature = np.nanstd(tbl['FPtemperature_interior'])
-    qc_f_ptemperature = 1e-2
-    qc = rms_fp_temperature < qc_f_ptemperature
-    if qc:
-        passed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_fp_temperature,
-                                                                                       qc_f_ptemperature))
-    else:
-        failed_log.append('\tRMS FP temperature interior {:.2E} K  (<{:.2E} K)'.format(rms_fp_temperature,
-                                                                                       qc_f_ptemperature))
-    ####################################################################################
-    # FP temperature should be within 0.005 K of setpoint
-    rms = np.nanstd(tbl['FPtemperature_exterior'] - tbl['FPtemperature_setpoint'])
-    qc_rms = 0.005
-    qc = rms < qc_rms
-    if qc:
-        passed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-    else:
-        failed_log.append('\tRMS FP to setpoint {:.1E} K  (<{:.1E} K)'.format(rms, qc_rms))
-
-    # construct a string for printing output
-    passed_log = '\n'.join(passed_log)
-    if len(passed_log) == 0:
-        passed_log = '\tNone'
-    failed_log = '\n'.join(failed_log)
-
+    # loop around tests
+    for it in range(len(passer)):
+        if passer[it]:
+            passed_log.append('\t' + logger[it])
+        else:
+            failed_log.append('\t' + logger[it])
+    # deal with return
     if len(failed_log) == 0:
-        failed_log = '\tNone'
         passed_logical = True
     else:
         passed_logical = False
-
+    # -------------------------------------------------------------------------
     if log:
         print('\n')
-        print('**********************************************************************')
+        print('*' * 50)
         print('QC for night {}'.format(obsdir))
         print('Passed QC:')
-        print(passed_log)
+        print('\n'.join(passed_log))
         print('Failed QC:')
-        print(failed_log)
-        print('**********************************************************************')
+        print('\n'.join(failed_log))
+        print('*' * 50)
         print('\n')
-
     # -------------------------------------------------------------------------
     return passed_logical
 

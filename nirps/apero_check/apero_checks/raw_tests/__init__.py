@@ -12,10 +12,12 @@ Created on 2023-07-03 at 14:36
 # only import from this directory
 from apero_checks.raw_tests import blank_test
 from apero_checks.raw_tests import calib_test
+from apero_checks.raw_tests import calib_ob_test
 from apero_checks.raw_tests import eng_test
 from apero_checks.raw_tests import obsdir_test
 from apero_checks.raw_tests import qual_test
 from apero_checks.raw_tests import astrom_test
+from apero_checks.raw_tests import prev_sci_test
 
 # =============================================================================
 # Append your test here
@@ -44,9 +46,13 @@ test_dict['HAS_OBSDIR'] = obsdir_test.test
 #            enclosure, pumps, valves
 test_dict['ENG_TEST'] = eng_test.test
 
-# eng test - Are the expected calibrations present in the night folder
+# calib test - Are the expected calibrations present in the night folder
 #            add eventual extra calibrations to the 'must have' objects
 test_dict['CALIB_TEST'] = calib_test.test
+
+# calib ob test - Do we have the expected OB NAMES for calibrations for this
+#                 night directory
+test_dict['COB_TEST'] = calib_ob_test.test
 
 # science quality test - Some basic quality checks for science files. Currently:
 #                        saturation, flux
@@ -60,11 +66,28 @@ test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
 #                           database this should return False
 test_dict['ASTROM_TEST'] = astrom_test.test
 
+
+# previous science data test - this tests whether the previous 3 nights had
+#                              science data
+test_dict['PREV_SCI'] = prev_sci_test.test
+
 # test 1 - explanation
 
 # test 2 - explanation
 
 # test 3 - explanation
+
+
+
+# =============================================================================
+# If and only if you want the user to be able to override test
+# =============================================================================
+# dictionary to store all tests
+override_list = []
+
+# PREV_SCI: There could be nights which do not have science data but should
+#           not be flagged as bad
+override_list.append('PREV_SCI')
 
 
 # =============================================================================

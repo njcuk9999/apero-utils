@@ -18,7 +18,7 @@ from typing import Any, Dict, List, Union
 import astropy.units as uu
 import numpy as np
 import yaml
-from astropy.time import Time
+from astropy.time import Time, TimeDelta
 
 # =============================================================================
 # Define variables
@@ -392,27 +392,26 @@ def run_processing(settings: Dict[str, Any]):
 
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_processing
-        from apero.tools.module.error import error_html
-
         # run apero processing
         if obs_dirs == '*':
-            ll = apero_processing.main(runfile=runfile,
+            apero_processing.main(runfile=runfile,
                                        test=settings['TEST'])
         else:
-            ll = apero_processing.main(runfile=runfile,
+            apero_processing.main(runfile=runfile,
                                        include_obs_dirs=obsdir_str,
                                        test=settings['TEST'])
         # ---------------------------------------------------------------------
         # push the errors into yaml format for html
         # ---------------------------------------------------------------------
-        # get outlist from the return of apero_processing.main
-        outlist = ll.get('outlist', None)
-        # make error yaml files (if we have an outlist)
-        if outlist is not None:
-            # construct path to yaml dicts
-            yaml_path = os.path.join(params['DRS_DATA_MSG'], 'yamls')
-            # push into yaml dicts
-            error_html.from_outlist(yaml_path, outlist)
+        # from apero.tools.module.error import error_html
+        # # get outlist from the return of apero_processing.main
+        # outlist = ll.get('outlist', None)
+        # # make error yaml files (if we have an outlist)
+        # if outlist is not None:
+        #     # construct path to yaml dicts
+        #     yaml_path = os.path.join(params['DRS_DATA_MSG'], 'yamls')
+        #     # push into yaml dicts
+        #     error_html.from_outlist(yaml_path, outlist)
         # log that APERO ended
         trigger_settings['LOG'][profile].write(APERO_END)
         # update reduced checks
@@ -470,7 +469,9 @@ def run_apero_get(settings: Dict[str, Any]):
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # update the apero profile
         pparams = update_apero_profile(pdict)
-        pconst = constants.pload()
+        # get the earliest raw file (we do not get files older than this)
+        settings['SINCE'] = get_earliest_raw_file(pparams,
+                                                  obsdirs=settings['OBS_DIRS'])
         # get the output types
         red_outtypes = ','.join(pdict['get']['science out types'])
         lbl_outtypes = ','.join(pdict['get-lbl']['science out types'])
@@ -616,6 +617,8 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     for profile in settings['PROFILES']:
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
+        # update the apero profile
+        _ = update_apero_profile(pdict)
         # get ari profile
         ari_profile = pdict['ari']['profile']
         # log that APERO started
@@ -623,9 +626,13 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # run ari
-        apero_ri.main(profile=ari_profile)
-        # log that APERO started
-        settings['LOG'][profile].write(ARI_END)
+        ari_rtn = apero_ri.main(profile=ari_profile)
+        # log that ARI ended successfully
+        if 'success' in ari_rtn:
+            if ari_rtn['success']:
+                settings['LOG'][profile].write(ARI_END)
+        else:
+            settings['LOG'][profile].write(ARI_END)
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
     # change back to original path
@@ -664,7 +671,7 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     if mode == 'red':
         check_code = 'apero_red_check.py'
     else:
-        check_code = 'apero_raw_data_check.py'
+        check_code = 'apero_raw_check.py'
     # get ari path
     check_path = pdict['check']['path']
     # get ari profile
@@ -693,6 +700,35 @@ def run_lbl_processing(settings: Dict[str, Any]):
     _ = settings
     print('\tNot implemented.')
     return
+
+
+def get_earliest_raw_file(apero_params, obsdirs):
+
+    from apero.core.core import drs_database
+    # get the index database
+    indexdbm = drs_database.FileIndexDatabase(apero_params)
+    # -------------------------------------------------------------------------
+    # create condition
+    condition = 'BLOCK_KIND="raw"'
+    # -------------------------------------------------------------------------
+    if obsdirs != '*':
+         sub_conditions = []
+         for obsdir in obsdirs:
+             sub_conditions.append(f'OBS_DIR="{obsdir}"')
+         # if we have sub conditions then we add them as a list of ors to c
+         #   condition
+         if len(sub_conditions) > 0:
+             condition += ' AND '
+             condition += '({0})'.format(' OR '.join(sub_conditions))
+    # -------------------------------------------------------------------------
+    # get times on these specific nights
+    last_modified = indexdbm.get_entries('LAST_MODIFIED', condition=condition)
+    # find the earliest time in these
+    earliest_time = Time(np.min(last_modified), format='unix')
+    # take 1 hour before this (just to be safe)
+    earliest_time -= TimeDelta(1 * uu.hour)
+    # return this time as an iso time
+    return earliest_time.iso
 
 
 # =============================================================================
@@ -756,6 +792,7 @@ if __name__ == "__main__":
         # run the checks
         run_apero_checks(trigger_settings['PROFILES'][profile], mode='red',
                          obsdirs=trigger_settings['OBS_DIRS'])
+
 # =============================================================================
 # End of code
 # =============================================================================

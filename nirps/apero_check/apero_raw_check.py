@@ -16,6 +16,7 @@ import apero_checks
 # =============================================================================
 # Define variables
 # =============================================================================
+__NAME__ = 'apero_raw_check.py'
 # version, date, author
 __VERSION__ = apero_checks.base.__VERSION__
 __DATE__ = apero_checks.base.__DATE__
@@ -31,26 +32,28 @@ __AUTHOR__ = apero_checks.base.__AUTHOR__
 def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
          test_name: Optional[str] = None, today: bool = False):
     # print splash
-    apero_checks.splash('APERO Reduction checks')
+    apero_checks.splash('APERO Raw data checks')
     # get params updated for input yaml file
     all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
     # loop around profiles
     for profile in all_params:
         # get profile params
         params = all_params[profile]
+        # add profile name to parameters
+        params['apero profile name'] = profile
         # if we do not have a test name then we run all tests and upload
         if params['test_name'] in [None, 'None']:
             # run the tests
-            test_results = apero_checks.run_tests(params, test_type='red')
+            test_results = apero_checks.run_tests(params, test_type='raw')
             # update results with the override
             test_results = apero_checks.check_override(params, test_results,
                                                        test_type='raw')
             # upload the tests
-            apero_checks.upload_tests(params, test_results, test_type='red')
+            apero_checks.upload_tests(params, test_results, test_type='raw')
         # otherwise we run a single test
         else:
             # run single test
-            apero_checks.run_single_test(params, test_type='red')
+            apero_checks.run_single_test(params, test_type='raw')
     # finish with an end message
     apero_checks.end_msg()
 

@@ -63,7 +63,7 @@ def update_apero_profile(params: Dict[str, Any], profile: int) -> Any:
     os.environ['DRS_UCONFIG'] = profile_path
     # allow getting apero
     if install_path is not None:
-        sys.path.append(install_path)
+        sys.path.append(str(install_path))
     # load apero modules
     from apero.base import base
     from apero.core import constants
@@ -215,6 +215,14 @@ def get_files_profile1(params) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
         filenames = paths1[block_name] + os.sep + basenames
         # get files from database
         files1[block_name] = filenames
+
+    # need to add the assets directory
+    files1['asset'] = []
+    for root, dirs, files in os.walk(apero_params['DRS_DATA_ASSETS']):
+        for filename in files:
+            files1['asset'].append(os.path.join(root, filename))
+    paths1['asset'] = apero_params['DRS_DATA_ASSETS']
+
     # add to path dict
     return files1, paths1
 
@@ -263,9 +271,70 @@ def get_files_profile2(params, files1: Dict[str, List[str]],
             files3[block_name].append(outfilename3)
         # add to path dict
         paths2[block_name] = path2
-        paths3[block_name] = path3
+        paths3[block_name] = str(path3)
     # return files
     return files2, files3, paths2, paths3
+
+
+def fast_copy(params, files1: Dict[str, List[str]],
+              paths1: Dict[str, str]):
+
+    # deal with symlinks --> return
+    if params['symlinks']:
+        return False
+    # flag for fast copy
+    did_fast_copy = True
+    # load parameters from profile 2
+    apero_params = update_apero_profile(params, profile=2)
+    # import database
+    from apero.core.constants import path_definitions
+    # get block definitions
+    blocks = path_definitions.BLOCKS
+    # loop around block definitions
+    for block in blocks:
+        # skip if not in files1
+        if block.name not in files1:
+            continue
+        # get block instance
+        block_inst = block(apero_params)
+        # get block name
+        block_name = block.name
+        # get path1 from paths1
+        path1 = paths1[block_name]
+        # get block path
+        path2 = block_inst.path
+        # get path3 the temporary path to copy things to first
+        block_base = os.path.basename(path2)
+        block_dir = os.path.dirname(path2)
+
+        # get the input and output paths
+        inpath = str(path1)
+        outpath = os.path.join(block_dir, TMP_DIR_PREFIX + block_base)
+        # check if the input path exists
+        if not os.path.exists(outpath):
+            # create path
+            os.makedirs(outpath)
+        # now add os.sep to inpath and outpath
+        if not inpath.endswith(os.sep):
+            inpath += os.sep
+        if not outpath.endswith(os.sep):
+            outpath += os.sep
+        # get the rsync command
+        rsync_cmd = 'rsync -avu {0} {1}'.format(inpath, outpath)
+        # print progress
+        print('\n\n' + '-' * 50)
+        print('Copying files for block={0}'.format(block_name))
+        print('Using rsync command:')
+        print('\t', rsync_cmd)
+        print('-' * 50 + '\n')
+        # run the command
+        try:
+            os.system(rsync_cmd)
+        except Exception as e:
+            print('Skipping rsync. Error: {0}'.format(e))
+            did_fast_copy = False
+    # return whether we did fast copy for all directories
+    return did_fast_copy
 
 
 def copy_files(params, files1: Dict[str, List[str]],
@@ -313,7 +382,7 @@ def copy_files(params, files1: Dict[str, List[str]],
                     os.makedirs(os.path.dirname(outfilename3))
                 # deal with tmp file existing
                 if os.path.exists(outfilename3):
-                    msg = ('Skipping {0} (tmp file already exists)')
+                    msg = 'Skipping {0} (tmp file already exists)'
                     margs = [outfilename3]
                     print(msg.format(*margs))
                     continue
@@ -398,24 +467,97 @@ def rename_directories(params: Dict[str, Any], paths2: Dict[str, str],
         print(msg.format(*margs))
         if not params['test']:
             if os.path.exists(paths2[block_name]):
-                shutil.rmtree(paths2[block_name])
+                if os.path.islink(paths2[block_name]):
+                    os.remove(paths2[block_name])
+                else:
+                    shutil.rmtree(paths2[block_name])
             os.rename(paths3[block_name], paths2[block_name])
     return True
 
 
-def update_databases_profile2(params):
+def get_db_and_blocks(params, profile_num: int):
+    # load parameters from profile 1
+    apero_params = update_apero_profile(params, profile=profile_num).copy()
+    # imports
+    from apero.base import drs_db
+    from apero.tools.module.database import manage_databases
+    from apero.core.constants import path_definitions
+    # get database defintiions
+    dbs = manage_databases.list_databases(apero_params)
+    # get the db classes
+    db_classes = dict()
+    for dbkey in dbs:
+        db_def = dbs[dbkey]
+        db_class = drs_db.database_wrapper(db_def.kind, db_def.path)
+        db_classes[dbkey] = db_class
+
+    # get old block classes
+    block_classes = path_definitions.BLOCKS
+
+    # get old block paths
+    block_paths = dict()
+    for block_class in block_classes:
+        block = block_class(apero_params)
+        block_paths[block.name] = block.path
+
+    return db_classes, block_paths
+
+
+def update_databases_profile2(params: Any):
+    """
+    Copy the calib/tellu/log and index databases from one location to another
+
+    :param params:
+
+    :return:
+    """
     # print progress
     print('Updating APERO databases')
-    # if test mode do nothing here
-    if params['test']:
-        return
-    # load parameters from profile 1
-    apero_params = update_apero_profile(params, profile=2)
-    # apero imports
-    from apero.tools.module.database import database_update
-    # update the databases
-    dbkind = 'all'
-    database_update.update_database(apero_params, dbkind=dbkind)
+    # get test param
+    test = params['test']
+    # dict of database keys which contains path that may need updating
+    file_path_cols = dict()
+    file_path_cols['findex'] = ['ABSPATH']
+    file_path_cols['log'] = ['INPATH', 'OUTPATH', 'LOGFILE', 'PLOTDIR']
+    # -------------------------------------------------------------------------
+    # get old dbs and blocks
+    old_dbs, old_blocks = get_db_and_blocks(params, profile_num=1)
+    # get new dbs and blocks
+    new_dbs, new_blocks = get_db_and_blocks(params, profile_num=2)
+    # -------------------------------------------------------------------------
+    # duplicate all databases
+    for dbkey in old_dbs:
+        # get old database
+        old_db = old_dbs[dbkey]
+        # get new database
+        new_db = new_dbs[dbkey]
+        # copy old to new
+        if test:
+            print('Duplicating {0} to {1}'.format(old_db.tname, new_db.tname))
+        else:
+            new_db.duplicate(old_db)
+    # -------------------------------------------------------------------------
+    # Deal with updating paths
+    for dbkey in file_path_cols:
+        # get new database
+        new_db = new_dbs[dbkey]
+        # loop around
+        for col in file_path_cols[dbkey]:
+            # loop around blocks (we need to update all blocks seperately)
+            for block_name in old_blocks:
+                # get the old path
+                old_path = old_blocks[block_name]
+                # get the new path
+                new_path = new_blocks[block_name]
+                # skip if old and new are the same
+                if old_path == new_path:
+                    continue
+                # update the paths
+                if test:
+                    margs = [col, old_path, new_path]
+                    print('Updating {0} in {1} from {2} to {3}'.format(*margs))
+                else:
+                    new_db.replace_paths(old_path, new_path, col)
 
 
 def main():
@@ -439,16 +581,20 @@ def main():
     files1, paths1 = get_files_profile1(params)
     # get the output files for profile 2 for each block kind
     files2, files3, paths2, paths3 = get_files_profile2(params, files1, paths1)
+
+    # try a fast copy using rsync
+    did_fast_copy = fast_copy(params, files1, paths1)
     # copy files from profile 1 to profile 2 for each block kind
     # must copy files to a temporary path first (copying can be slow)
-    copy_files(params, files1, files2, files3)
+    if not did_fast_copy:
+        copy_files(params, files1, files2, files3)
     # ask after copying whether we are ready to continue
     uinput = ''
     while uinput.lower() not in ['yes', 'no']:
         uinput = input('Are you ready to remove old data and replace with '
                        'the new data. Note this is a one way process and there '
                        'is no undo \n\tType "yes" or "no"?\t')
-    if uinput.lower() ==  'no':
+    if uinput.lower() == 'no':
         print('\n\tStopping copy.')
         return
     # may need to update profile 2 (via git) to match profile 1

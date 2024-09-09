@@ -9,6 +9,7 @@ Created on {DATE}
 
 @author: cook
 """
+import os
 import argparse
 import copy
 from hashlib import blake2b
@@ -43,6 +44,8 @@ def get_args() -> Dict[str, Any]:
     # add obs dir
     parser.add_argument('yaml', type=str, default='None',
                         help='The profiles yaml to use')
+    parser.add_argument('--profiles', type=str, default='None',
+                        help='Only use these profiles (ignore any others)')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -66,11 +69,24 @@ def load_params():
     # push into params
     for key in yaml_params:
         params[key] = copy.deepcopy(yaml_params[key])
+    # push the profiles argument into params
+    if args['profiles'] != 'None':
+        profiles = args['profiles'].split(',')
+        # clean up profile names
+        params['filter profiles'] = []
+        # loop around profiles
+        for profile in profiles:
+            params['filter profiles'].append(profile.strip())
+        # if for some reason we have no profiles set it back to None
+        if len(params['filter profiles']) == 0:
+            params['filter profiles'] = None
+
     # return parameters
     return params
 
 
-def log_msg(message, level: str = '', color: Optional[str] = None):
+def log_msg(params, message, level: str = '', color: Optional[str] = None,
+            log_only: bool = False):
 
     # we want to print all lines with prefix
     if '\n' in message:
@@ -108,30 +124,38 @@ def log_msg(message, level: str = '', color: Optional[str] = None):
         end = base.COLOURS['ENDC']
     else:
         start, end = '', ''
-    # print message
-    if level == 'error':
-        raise base.AperoRequestError(print_string)
-    else:
-        print(start + print_string + end)
+
+    if not log_only:
+        # print message
+        if level == 'error':
+            raise base.AperoRequestError(print_string)
+        else:
+            print(start + print_string + end)
+
+    # construct log file path
+    log_file = os.path.join(params['local path'], 'apero_request.log')
+    # save to log file
+    with open(log_file, 'a') as f:
+        f.write(print_string + '\n')
 
 
-def splash(codename):
+def splash(params, codename):
     msg1 = '*' * 50
-    log_msg(msg1, color='cyan')
+    log_msg(params, msg1, color='cyan')
     msg2 = '*  ' + codename
-    log_msg(msg2, color='magenta')
+    log_msg(params, msg2, color='magenta')
     msg3 = '*' * 50
     msg3 += f'\nVersion={__VERSION__}   Date={__DATE__}'
     msg3 += '\n' + '*' * 50
-    log_msg(msg3, color='cyan')
+    log_msg(params, msg3, color='cyan')
 
 
-def end_msg():
+def end_msg(params):
     # print message on which observation directory we are processing
     msg = '*' * 50
     msg += f'\nCode finished successfully'
     msg += '\n' + '*' * 50
-    log_msg(msg, level='info')
+    log_msg(params, msg, level='info')
 
 
 def generate_arg_checksum(source: Union[List[str], str],
@@ -195,7 +219,6 @@ def send_email(message: str,
 
     with smtplib.SMTP("localhost") as s:
         s.send_message(msg)
-
 
 
 # =============================================================================

@@ -9,9 +9,12 @@ Created on {DATE}
 
 @author: cook
 """
+import pandas as pd
+
 from apero_request.core import base
 from apero_request.core import general
 from apero_request.core import misc
+
 
 # =============================================================================
 # Define variables
@@ -33,12 +36,15 @@ def main():
     """
     # lets lock (or not run if locked)
     not_running = general.lock(stop=True)
+    # load params
+    params = misc.load_params()
     # if running then we exit
     if not not_running:
-        misc.log_msg('Request already running - exiting')
+        misc.log_msg(params, 'Request already running - exiting')
+        return
     # try to run main code
     try:
-        __main__()
+        __main__(params)
         # unlock the code
         general.unlock()
     except Exception as e:
@@ -48,57 +54,69 @@ def main():
         raise e
 
 
-def __main__():
-    # load params
-    params = misc.load_params()
+def __main__(params):
     # get splash
-    misc.splash('APERO requests')
+    misc.splash(params, 'APERO requests')
     # -------------------------------------------------------------------------
     # get current list of requests
     # -------------------------------------------------------------------------
-    misc.log_msg('Gettings requests')
+    misc.log_msg(params, 'Gettings requests')
     all_requests = general.get_sheet(params, 'response')
+
+    # convert timestampe to a datetime
+    all_requests['Timestamp'] = pd.to_datetime(all_requests['Timestamp'],
+                                               format="mixed", dayfirst=True)
+    # store the timestamp of the most recent request
+    params['MOST_RECENT'] = all_requests['Timestamp'].max()
     # -------------------------------------------------------------------------
     # create a list of requests
     # -------------------------------------------------------------------------
-    misc.log_msg('Creating requests')
+    misc.log_msg(params, 'Creating requests')
     requests = general.create_requests(params, all_requests)
     # -------------------------------------------------------------------------
     # Remove all invalid tar files + find already processed requests
     # -------------------------------------------------------------------------
-    misc.log_msg('Analysing local files')
+    misc.log_msg(params, 'Analysing local files')
     requests = general.remove_invalid_tars(params, requests)
     # -------------------------------------------------------------------------
     # loop around requests and run requests
     # -------------------------------------------------------------------------
     for r_it, request in enumerate(requests):
+        # deal with skips
+        if request.skip:
+            misc.log_msg(params, f'\tSkipping request [skipped] {r_it + 1}')
+            continue
         # print where we are up to
         msg = 'Generating request {0} / {1}'
-        misc.log_msg(msg.format(r_it +1, len(requests)))
+        misc.log_msg(params, msg.format(r_it +1, len(requests)))
         # request might already be invalid
         if request.valid:
             # run apero get for each request
             request.run_request(params)
         else:
-            misc.log_msg('\tSkipping request')
+            misc.log_msg(params, f'\tSkipping request [invalid] {r_it + 1}')
     # -------------------------------------------------------------------------
     # deal with informing users of results
     for r_it, request in enumerate(requests):
+        # deal with skips
+        if request.skip:
+            misc.log_msg(params, f'\tSkipping email {r_it + 1}')
+            continue
         # print where we are up to
         msg = 'Emailing user for request {0} / {1}'
-        misc.log_msg(msg.format(r_it +1, len(requests)))
+        misc.log_msg(params, msg.format(r_it +1, len(requests)))
         # email a success
         if request.valid and not request.exists:
             # email user
-            misc.log_msg('\tEmailing success')
+            misc.log_msg(params, '\tEmailing success')
             request.email_success(params, r_it)
         elif not request.exists:
             # email user
-            misc.log_msg('\tEmailing failure')
+            misc.log_msg(params, '\tEmailing failure')
             request.email_failure(params, r_it)
         else:
             msg = 'Request {0} already exists:'
-            misc.log_msg(msg.format(r_it))
+            misc.log_msg(params, msg.format(r_it))
             print(request)
     # -------------------------------------------------------------------------
     # copy index.html file over
@@ -114,7 +132,7 @@ def __main__():
     general.update_archive_sheet(params, all_requests)
     # -------------------------------------------------------------------------
     # finish with an end message
-    misc.end_msg()
+    misc.end_msg(params)
 
 
 # =============================================================================

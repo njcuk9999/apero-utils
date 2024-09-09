@@ -16,6 +16,7 @@ from apero_checks.red_tests import calib_test
 from apero_checks.red_tests import manual_trigger_tests
 from apero_checks.red_tests import pixel_shifts_test
 from apero_checks.red_tests import excess_modal
+from apero_checks.red_tests import prev_reduc_test
 
 # =============================================================================
 # Append your test here
@@ -72,13 +73,22 @@ test_dict['ARI_END'] = manual_trigger_tests.test_ari_end
 test_dict['PIXEL_SHIFTS'] = pixel_shifts_test.test
 
 # Test excess modal noise in telluric stars
-# test_dict['EXCESS_MODAL'] = excess_modal.test
+test_dict['EXCESS_MODAL'] = excess_modal.test
+
+# Test that every raw file has a preprocessed file
+test_dict['PREV_REDUC'] = prev_reduc_test.test
 
 # test 1 - explanation
 
 # test 2 - explanation
 
 # test 3 - explanation
+
+# =============================================================================
+# If and only if you want the user to be able to override test
+# =============================================================================
+# dictionary to store all tests
+override_list = []
 
 
 # =============================================================================

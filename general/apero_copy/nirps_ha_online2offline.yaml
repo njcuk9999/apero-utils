@@ -1,8 +1,8 @@
 # APERO profile to copy from
-profile1: /cosmos99/nirps/apero-settings/nirps_he_offline
+profile1: /cosmos99/nirps/apero-settings/nirps_ha_offline
 
 # APERO profile to copy to
-profile2: /cosmos99/nirps/apero-settings/nirps_he_online
+profile2: /cosmos99/nirps/apero-settings/nirps_ha_online
 
 # APERO install directory (if not installed with pip) for profile 1
 apero install 1: /cosmos99/nirps/git-bin/apero-drs
