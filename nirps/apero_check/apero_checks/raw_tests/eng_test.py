@@ -197,7 +197,9 @@ class EngTest:
                 # Add error to logger
                 fmsg = self.fmsg.format(**self.variables)
                 # add bad files to filelist
-                for it, filename in enumerate(files[~logic]):
+                for it, filename in enumerate(files):
+                    if logic[it]:
+                        continue
                     # add any vectors to the print out
                     vstr = ''
                     for vname in self.vectors:
