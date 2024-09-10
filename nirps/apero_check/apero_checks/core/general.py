@@ -171,7 +171,9 @@ def run_tests(params: Dict[str, Any],
             # deal with skipping tests
             if params['test_filter'] is not None:
                 if test_name not in params['test_filter']:
-                    if test_name in obsdir_dataframe:
+                    if obsdir not in obsdir_dataframe.index:
+                        value = ''
+                    elif test_name in obsdir_dataframe:
                         value = obsdir_dataframe.loc[obsdir, test_name]
                     else:
                         value = ''
@@ -233,11 +235,20 @@ def run_single_test(params: Dict[str, Any], test_type: str):
         # print message on which observation directory we are processing
         msg = '*' * 50
         msg += f'\nProcessing single test on observatory directory {obsdir}'
-        msg += '*' * 50
+        msg += '\n' + '*' * 50
         misc.log_msg(msg, level='info')
         # run single test
         _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
                      test_type=test_type)
+    # -------------------------------------------------------------------------
+    # print a note that the single test does not update the database
+    msg = ('*' * 50 + '\nPlease note\n' + '*' * 50 +
+           '\n\tSingle test mode (--test) does NOT update the '
+           'database. '
+           '\n\tPlease run without the --test argument to update the '
+           'database. '
+           '\n\t--testfilter can be used to run only some tests.')
+    misc.log_msg(msg, level='info', color='yellow')
 
 
 # =============================================================================
@@ -396,14 +407,9 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
     try:
         add_to_sheet(params, dataframe, test_type=test_type)
         # ---------------------------------------------------------------------
+    finally:
         # unlock codes
         unlock()
-    except Exception as e:
-        # ---------------------------------------------------------------------
-        # unlock codes
-        unlock()
-        # raise exception
-        raise e
 
 
 def store_overrides(params: Dict[str, Any],
@@ -534,9 +540,9 @@ def lock(stop: bool = False) -> bool:
     lock_file = os.path.join(LOCK_DIR, 'lock.lock')
     # counter
     counter = 0
-    # wait a very small random amount of time (to avoid two codes doing this
+    # wait a small random amount of time (to avoid two codes doing this
     # at the same time)
-    random_time = 0.1 * np.random.random()
+    random_time = 0.1 + 0.05 * np.random.uniform(-1, 1)
     time.sleep(random_time)
     # if lock file exists
     while os.path.exists(lock_file):

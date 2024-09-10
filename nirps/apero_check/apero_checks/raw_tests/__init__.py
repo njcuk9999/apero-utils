@@ -12,6 +12,7 @@ Created on 2023-07-03 at 14:36
 # only import from this directory
 from apero_checks.raw_tests import blank_test
 from apero_checks.raw_tests import calib_test
+from apero_checks.raw_tests import calib_ob_test
 from apero_checks.raw_tests import eng_test
 from apero_checks.raw_tests import obsdir_test
 from apero_checks.raw_tests import qual_test
@@ -45,9 +46,13 @@ test_dict['HAS_OBSDIR'] = obsdir_test.test
 #            enclosure, pumps, valves
 test_dict['ENG_TEST'] = eng_test.test
 
-# eng test - Are the expected calibrations present in the night folder
+# calib test - Are the expected calibrations present in the night folder
 #            add eventual extra calibrations to the 'must have' objects
 test_dict['CALIB_TEST'] = calib_test.test
+
+# calib ob test - Do we have the expected OB NAMES for calibrations for this
+#                 night directory
+test_dict['COB_TEST'] = calib_ob_test.test
 
 # science quality test - Some basic quality checks for science files. Currently:
 #                        saturation, flux
