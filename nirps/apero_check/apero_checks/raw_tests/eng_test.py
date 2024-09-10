@@ -134,7 +134,7 @@ class EngTest:
                 passer.append(True)
                 not_found = True
             else:
-                self.vectors[vname] = np.array(tbl_dict[key][mask_value])
+                self.vectors[key] = np.array(tbl_dict[key][mask_value])
                 self.variables[vname] = np.array(tbl_dict[key][mask_value])
             # push into global_mask
             global_mask &= mask_value
@@ -503,7 +503,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # -------------------------------------------------------------------------
     # Run tests
     # -------------------------------------------------------------------------
-    print()
+    # Run the engineering sub-tests
     for sub_test in ETESTS:
         # set up arguments for the sub-test functions
         test_args = [tbl_dict, mask_dict, logger, passer]
