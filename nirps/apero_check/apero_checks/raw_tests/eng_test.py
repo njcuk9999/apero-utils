@@ -28,8 +28,7 @@ from apero_checks.core import misc
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
 class HdrKey:
     def __init__(self, name: str, header: Optional[str] = None,
-                 dtype: Optional[str] = None):
-
+                 dtype: Optional[str] = None, test: bool = True):
         self.name = str(name)
 
         if header is None:
@@ -40,6 +39,7 @@ class HdrKey:
         self.dtype = dtype
         self.in_header = False
         self.value = None
+        self.test = test
 
     def read_header(self, hdr: fits.Header, filename: str):
 
@@ -83,6 +83,15 @@ class HdrKey:
             eargs = [self.header_key, self.dtype, filename]
             print(emsg.format(*eargs))
             print('Error was: {0}'.format(e))
+
+    @staticmethod
+    def print_keys(hdrlist: List['HdrKey']):
+        # loop around header keys in provided list
+        for hdrkey in hdrlist:
+            # only show keys that we test
+            if hdrkey.test:
+                print(hdrkey.name, hdrkey.value)
+
 
 
 class EngTest:
@@ -219,12 +228,12 @@ class EngTest:
 # =============================================================================
 # Set up header keys
 HDR_KEYS = []
-HDR_KEYS.append(HdrKey('DATE-OBS', dtype='time.iso'))
-HDR_KEYS.append(HdrKey('MJD-OBS', dtype='time.mjd'))
-HDR_KEYS.append(HdrKey('OBJECT', dtype='str'))
+HDR_KEYS.append(HdrKey('DATE-OBS', dtype='time.iso', test=False))
+HDR_KEYS.append(HdrKey('MJD-OBS', dtype='time.mjd', test=False))
+HDR_KEYS.append(HdrKey('OBJECT', dtype='str', test=False))
 HDR_KEYS.append(HdrKey('DPRTYPE',
                          header='HIERARCH ESO DPR TYPE',
-                         dtype='str'))
+                         dtype='str', test=False))
 HDR_KEYS.append(HdrKey('TurboPumpStatus',
                          header='HIERARCH ESO INS SENS102 STAT',
                          dtype='bool'))
@@ -232,7 +241,7 @@ HDR_KEYS.append(HdrKey('EncloserTemperature',
                          header='HIERARCH ESO INS TEMP185 VAL',
                          dtype='float'))
 HDR_KEYS.append(HdrKey('EncloserTemperatureSetpoint',
-                         header='ESO INS TEMP187 VAL', dtype='float'))
+                         header='HIERARCH ESO INS TEMP187 VAL', dtype='float'))
 HDR_KEYS.append(HdrKey('VacuumGauge1',
                          header='HIERARCH ESO INS PRES104 VAL',
                          dtype='float'))
