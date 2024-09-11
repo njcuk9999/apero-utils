@@ -96,6 +96,7 @@ class EngTest:
         self.pmsg = ''
         self.calc = dict()
         self.active = True
+        self.filters = dict()
 
     def run_test(self, tbl_dict: Dict[str, Any],
                  mask_dict: Dict[str, np.ndarray],
@@ -117,6 +118,7 @@ class EngTest:
         for vname in self.data:
             # get the key
             key = self.data[vname]
+            # ------------------------------------------------------------------
             # some variables may not be in tbl_dict (just put these straight
             #  into self.variables
             if not isinstance(key, str):
@@ -125,12 +127,30 @@ class EngTest:
             if key not in tbl_dict:
                 self.variables[vname] = self.data[vname]
                 continue
+            # ------------------------------------------------------------------
             # get the value from the mask
             mask_value = mask_dict[key]
+            # ------------------------------------------------------------------
+            filter_str = ''
+            # deal with filters
+            for filter_name in self.filters:
+                # get filter
+                _filter = self.filters[filter_name]
+                # if this filter is not in the table don't add it
+                if filter_name not in tbl_dict:
+                    continue
+                # calculate filter mask
+                filter_mask = np.in1d(tbl_dict[filter_name], _filter)
+                # add to the string
+                filter_str += f'{filter_name}=[{",".join(_filter)}] '
+                # add this filter to the mask value
+                mask_value &= filter_mask
+            # ------------------------------------------------------------------
             # deal with no valid values
             if np.sum(mask_value) == 0:
-                logger.append(f'No header entries for {key} '
-                              f'(subtest={self.name}')
+                lmsg = f'No header entries for {key} (subtest={self.name}'
+                lmsg += filter_str
+                logger.append(lmsg)
                 passer.append(True)
                 not_found = True
             else:
@@ -147,19 +167,10 @@ class EngTest:
         # Step 2: Add calc variables to self.variables
         # ---------------------------------------------------------------------
         for vname in self.calc:
-            # push variable on to value
-            try:
-                # calculate the value
-                value = self.calc[vname](**self.variables)
-                # update self.variables
-                self.variables[vname] = value
-            except Exception as e:
-                # Add error to logger
-                logger.append(f'Cannot calc {vname} for test {self.name}.'
-                              f'\n{type(e)}: {str(e)}')
-                # add failure to passer
-                passer.append(False)
-
+            # calculate the value
+            value = self.calc[vname](**self.variables)
+            # update self.variables
+            self.variables[vname] = value
 
         # ---------------------------------------------------------------------
         # Step 3: Calculate the logic
@@ -263,22 +274,10 @@ HDR_KEYS.append(HdrKey('FPtemperature_setpoint',
 HDR_KEYS.append(HdrKey('EncloserHeaterPower',
                          header='HIERARCH ESO INS SENS121 VAL',
                          dtype='float'))
-HDR_KEYS.append(HdrKey('ScramblingInnerRadius',
-                       header='HIERARCH ESO INS2 AOS SCRAMB INNER',
-                       dtype='float'))
-HDR_KEYS.append(HdrKey('ScramblingOuterRadius',
-                       header='HIERARCH ESO INS2 AOS SCRAMB OUTER',
-                       dtype='float'))
-HDR_KEYS.append(HdrKey('ScramblingRadialFreq',
-                       header='HIERARCH ESO INS2 AOS SCRAMB RADFREQ',
-                       dtype='float'))
-HDR_KEYS.append(HdrKey('ScramblingWaveForm',
-                       header='HIERARCH ESO INS2 AOS SCRAMB SHAPE',
-                       dtype='str'))
 HDR_KEYS.append(HdrKey('ScramblingStatus',
                        header='HIERARCH ESO INS2 AOS SCRAMB ST',
                        dtype='bool'))
-HDR_KEYS.append(HdrKey('ScramblingDeviceStatus',
+HDR_KEYS.append(HdrKey('StretcherStatus',
                        header='HIERARCH ESO INS OPTI10 STAT',
                        dtype='str'))
 
@@ -334,7 +333,8 @@ ETESTS['cryo2s'].fmsg = 'Cryo2 off'
 ETESTS['tpump1'] = EngTest('test_turbo_pump_status')
 ETESTS['tpump1'].data = dict(x='TurboPumpStatus')
 ETESTS['tpump1'].calc = dict(tsum=lambda **k: np.nansum(k['x']),
-                             tper=lambda **k: k['tsum'] * 100.0)
+                             tmean=lambda **k: np.nanmean(k['x']),
+                             tper=lambda **k: k['tmean'] * 100.0)
 ETESTS['tpump1'].func = lambda **k: k['x'] == 0
 ETESTS['tpump1'].pmsg = 'TurboPumpStatus always closed'
 ETESTS['tpump1'].fmsg = 'TurboPumpStatus sometimes open ({tsum} times, {tper:.1f}% of time)'
@@ -380,55 +380,21 @@ ETESTS['enhpow'].func = lambda **k: k['x'] < k['limit']
 ETESTS['enhpow'].pmsg = 'Encloser heater power {maxx:.1f}% < {limit:.1f}%'
 ETESTS['enhpow'].fmsg = 'Encloser heater power {maxx:.1f}% >= {limit:.1f}%'
 # -----------------------------------------------------------------------------
-ETESTS['scrinn'] = EngTest('ScramblingInnerRadius')
-ETESTS['scrinn'].data = dict(x='ScramblingInnerRadius',
-                             limit=0.0)
-ETESTS['scrinn'].calc = dict(minx=lambda **k: np.nanmin(k['x']),
-                             maxx=lambda **k: np.nanmax(k['x']))
-ETESTS['scrinn'].func = lambda **k: k['x'] == k['limit']
-ETESTS['scrinn'].pmsg = 'Scrambling Inner Radius = {minx}-{maxx}'
-ETESTS['scrinn'].fmsg = 'Scrambling Inner Radius = {minx}-{maxx} (should be {limit})'
-# -----------------------------------------------------------------------------
-ETESTS['scrout'] = EngTest('ScramblingOuterRadius')
-ETESTS['scrout'].data = dict(x='ScramblingOuterRadius',
-                             limit=0.2)
-ETESTS['scrout'].calc = dict(minx=lambda **k: np.nanmin(k['x']),
-                             maxx=lambda **k: np.nanmax(k['x']))
-ETESTS['scrout'].func = lambda **k: k['x'] == k['limit']
-ETESTS['scrout'].pmsg = 'Scrambling Outer Radius = {minx}-{maxx}'
-ETESTS['scrout'].fmsg = 'Scrambling Outer Radius = {minx}-{maxx} (should be {limit})'
-# -----------------------------------------------------------------------------
-ETESTS['scrrfq'] = EngTest('ScramblingRadialFreq')
-ETESTS['scrrfq'].data = dict(x='ScramblingRadialFreq',
-                             limit=5.0)
-ETESTS['scrrfq'].calc = dict(minx=lambda **k: np.nanmin(k['x']),
-                             maxx=lambda **k: np.nanmax(k['x']))
-ETESTS['scrrfq'].func = lambda **k: k['x'] == k['limit']
-ETESTS['scrrfq'].pmsg = 'Scrambling Radius Frequency = {minx}-{maxx}'
-ETESTS['scrrfq'].fmsg = 'Scrambling Radius Frequency = {minx}-{maxx} (should be {limit})'
-# -----------------------------------------------------------------------------
-ETESTS['scrwfm'] = EngTest('ScramblingWaveForm')
-ETESTS['scrwfm'].data = dict(x='ScramblingWaveForm',
-                             limit='SINUSOID')
-ETESTS['scrwfm'].calc = dict(values=lambda **k: ','.join([str(x) for x in set(k['x'])]))
-ETESTS['scrwfm'].func = lambda **k: k['x'] == k['limit']
-ETESTS['scrwfm'].pmsg = 'Scrambling WaveForm = values'
-ETESTS['scrwfm'].fmsg = 'Scrambling WaveForm = values (should be {limit})'
-# -----------------------------------------------------------------------------
 ETESTS['scrsta'] = EngTest('ScramblingStatus')
 ETESTS['scrsta'].data = dict(x='ScramblingStatus',
                              limit=True)
 ETESTS['scrsta'].func = lambda **k: k['x'] == True
+ETESTS['scrsta'].filters = dict(DPRTYPE=['OBJECT,FP', 'OBJECT,SKY', 'TELLURIC,SKY'])
 ETESTS['scrsta'].pmsg = 'Scrambling Status Okay (=T)'
 ETESTS['scrsta'].fmsg = 'Scrambling Status Not Okay (=F)'
 # -----------------------------------------------------------------------------
-ETESTS['scrdst'] = EngTest('ScramblingDeviceStatus')
-ETESTS['scrdst'].data = dict(x='ScramblingDeviceStatus',
+ETESTS['scrdst'] = EngTest('StretcherStatus')
+ETESTS['scrdst'].data = dict(x='StretcherStatus',
                              limit='ON')
-ETESTS['scrdst'].calc = dict(cx=lambda **k: [x.strip() for x in k['x']])
+ETESTS['scrdst'].calc = dict(cx=lambda **k: np.char.array(k['x']).strip())
 ETESTS['scrdst'].func = lambda **k: k['cx'] == k['limit']
-ETESTS['scrdst'].pmsg = 'Scrambling On'
-ETESTS['scrdst'].fmsg = 'Scrambling Off'
+ETESTS['scrdst'].pmsg = 'Stretcher On'
+ETESTS['scrdst'].fmsg = 'Stretcher Off'
 
 
 # =============================================================================
