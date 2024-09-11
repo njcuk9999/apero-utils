@@ -262,7 +262,7 @@ HDR_KEYS.append(HdrKey('Cryo1Status',
                          header='HIERARCH ESO INS SENS126',
                          dtype='bool'))
 HDR_KEYS.append(HdrKey('Cryo2Status',
-                         header='HIERARCH ESO INS SENS126',
+                         header='HIERARCH ESO INS SENS127',
                          dtype='bool'))
 HDR_KEYS.append(HdrKey('WarningCryo1',
                          header='HIERARCH ESO INS SENS144 STAT',
