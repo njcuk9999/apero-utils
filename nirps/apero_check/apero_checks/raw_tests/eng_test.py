@@ -90,8 +90,7 @@ class HdrKey:
         for hdrkey in hdrlist:
             # only show keys that we test
             if hdrkey.test:
-                print(hdrkey.name, hdrkey.value)
-
+                print(f'{hdrkey.name:30} {hdrkey.header_key}')
 
 
 class EngTest:
