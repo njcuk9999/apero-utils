@@ -39,7 +39,7 @@ SHORT = ['he', 'ha']
 # Start from this date
 ALLOCATION_START = '2023-06-01'
 # Start plot from this date
-COMMENT_START = '2024-01-01'
+COMMENT_START = '2024-08-01'
 # Name people who have left
 EX_MEMBERS = ['Fred', 'Yuri', 'Rose', 'Olivia']
 # Ignore these columns when checking for False in check tables
@@ -143,15 +143,16 @@ def allocation_histogram(allocation_table: Table):
 
 
 def trace_falses(raw_table: Table, red_table: Table, comm_table: Table
-                 ) -> Tuple[List[str], List[List[str]], List[List[str]]]:
+                 ) -> Tuple[List[str], List[List[str]], List[List[str]], List[bool]]:
 
-    # deinfe which tables to test
+    # define which tables to test
     tables = [raw_table, red_table]
     table_types = ['raw', 'red']
     # storage for dates and tests
-    dates = []
-    raw_tests = []
-    red_tests = []
+    dates: List[str] = []
+    raw_tests: List[List[str]] = []
+    red_tests: List[List[str]] = []
+    mentioned: List[bool] = []
 
     # loop around raw and red table
     for table_it, table in enumerate(tables):
@@ -177,7 +178,7 @@ def trace_falses(raw_table: Table, red_table: Table, comm_table: Table
                     fails.append(col)
             # if some tests have not passed and not been mentioned in
             #  the comments table then add to the list
-            if not passed and date not in comm_table['obsdir']:
+            if not passed:
                 # need to deal with date already in list
                 if date in dates:
                     index = dates.index(date)
@@ -187,6 +188,9 @@ def trace_falses(raw_table: Table, red_table: Table, comm_table: Table
                         red_tests[index] = list(set(red_tests[index] + fails))
                 # otherwise we add a new entry
                 else:
+                    # store whether False has been mentioned
+                    mentioned.append(date in comm_table['obsdir'])
+                    # store the date
                     dates.append(date)
                     if table_types[table_it] == 'raw':
                         raw_tests.append(list(set(fails)))
@@ -195,7 +199,7 @@ def trace_falses(raw_table: Table, red_table: Table, comm_table: Table
                         raw_tests.append([])
                         red_tests.append(list(set(fails)))
     # return dates and tests which fail and have no comment to match
-    return dates, raw_tests, red_tests
+    return dates, raw_tests, red_tests, mentioned
 
 def who_was_allocated(dates: List[str], allocation_table: Table) -> List[str]:
 
@@ -213,7 +217,7 @@ def who_was_allocated(dates: List[str], allocation_table: Table) -> List[str]:
     return allocated
 
 
-def comment_histogram(stat_table: Table):
+def comment_histogram(stat_table: Table, kind: str):
 
     # only count days from start date until today
     dates = Time(stat_table['obsdir'])
@@ -248,12 +252,13 @@ def comment_histogram(stat_table: Table):
         # get the name counts
         name_counts = Counter(stat_table['who'][datemask & groupmask])
 
-        # Get the maximum entry
-        max_entry = max(max_entry, max(name_counts.values()))
+        if len(group) > 0:
+            # Get the maximum entry
+            max_entry = max(max_entry, max(name_counts.values()))
 
-        # Plot the histogram
-        frames[it].bar(name_counts.keys(), name_counts.values(),
-                color=colors[:len(name_counts)])
+            # Plot the histogram
+            frames[it].bar(name_counts.keys(), name_counts.values(),
+                    color=colors[:len(name_counts)])
         # Add labels and title
         frames[it].set(ylabel='Number of days comments not added on failure',
                        title=group_names[it])
@@ -266,11 +271,11 @@ def comment_histogram(stat_table: Table):
     frames[1].yaxis.set_label_position('right')
 
     # construct the title
-    targs = [COMMENT_START, Time.now().iso.split()[0]]
-    title = 'Comment Histogram\n From {0} to {1}'.format(*targs)
+    targs = [kind, COMMENT_START, Time.now().iso.split()[0]]
+    title = '{0} Comment Histogram\n From {1} to {2}'.format(*targs)
     plt.suptitle(title)
     # save png
-    plt.savefig('results/comment_histogram.png')
+    plt.savefig('results/{0}_comment_histogram.png'.format(kind))
     # Show the plot
     plt.show()
 
@@ -285,13 +290,14 @@ def main():
     allocation_table = allocation_histogram(allocation_table)
     # -------------------------------------------------------------------------
     # global storage
-    stbl = dict()
-    stbl['date'] = []
-    stbl['who'] = []
-    stbl['raw_ha'] = []
-    stbl['red_ha'] = []
-    stbl['raw_he'] = []
-    stbl['red_he'] = []
+    sdict = dict()
+    sdict['date'] = []
+    sdict['who'] = []
+    sdict['mentioned'] = []
+    sdict['raw_ha'] = []
+    sdict['red_ha'] = []
+    sdict['raw_he'] = []
+    sdict['red_he'] = []
     # -------------------------------------------------------------------------
     # loop around instruments
     for iit, instrument in enumerate(INSTRUMENTS):
@@ -302,8 +308,9 @@ def main():
         # read the comm sheet
         comm_table = read_google_sheet_csv(CHECKS_ID, COMM_SHEET[instrument])
         # trace falses in the raw and red table (should have a matching comment)
-        dates, raw_tests, red_tests = trace_falses(raw_table, red_table,
-                                                   comm_table)
+        dates, raw_tests, red_tests, mentioned = trace_falses(raw_table,
+                                                              red_table,
+                                                              comm_table)
         # find out who was allocated to these dates
         allocated = who_was_allocated(dates, allocation_table)
         # get short key
@@ -316,69 +323,75 @@ def main():
         # loop around rows
         for row in range(len(dates)):
             # add to stats table
-            if dates[row] not in stbl['date']:
-                stbl['date'].append(dates[row])
-                stbl['who'].append(allocated[row])
-                stbl[rawkey1].append(raw_tests[row])
-                stbl[redkey1].append(red_tests[row])
-                stbl[rawkey2].append([])
-                stbl[redkey2].append([])
+            if dates[row] not in sdict['date']:
+                sdict['date'].append(dates[row])
+                sdict['who'].append(allocated[row])
+                sdict['mentioned'].append(mentioned[row])
+                sdict[rawkey1].append(raw_tests[row])
+                sdict[redkey1].append(red_tests[row])
+                sdict[rawkey2].append([])
+                sdict[redkey2].append([])
                 continue
             # find row in stats table
-            index = list(stbl['date']).index(dates[row])
+            index = list(sdict['date']).index(dates[row])
             # update tests
-            stbl[rawkey1][index] = list(set(stbl[rawkey1][index] + raw_tests[row]))
-            stbl[redkey1][index] = list(set(stbl[redkey1][index] + red_tests[row]))
+            sdict[rawkey1][index] = list(set(sdict[rawkey1][index] + raw_tests[row]))
+            sdict[redkey1][index] = list(set(sdict[redkey1][index] + red_tests[row]))
     # -------------------------------------------------------------------------
     # push into table
     stat_table = Table()
-    stat_table['obsdir'] = stbl['date']
-    stat_table['who'] = stbl['who']
-    stat_table['raw_ha'] = [', '.join(x) for x in stbl['raw_ha']]
-    stat_table['raw_he'] = [', '.join(x) for x in stbl['raw_he']]
-    stat_table['red_ha'] = [', '.join(x) for x in stbl['red_ha']]
-    stat_table['red_he'] = [', '.join(x) for x in stbl['red_he']]
+    stat_table['obsdir'] = sdict['date']
+    stat_table['who'] = sdict['who']
+    stat_table['mentioned'] = sdict['mentioned']
+    stat_table['raw_ha'] = [', '.join(x) for x in sdict['raw_ha']]
+    stat_table['raw_he'] = [', '.join(x) for x in sdict['raw_he']]
+    stat_table['red_ha'] = [', '.join(x) for x in sdict['red_ha']]
+    stat_table['red_he'] = [', '.join(x) for x in sdict['red_he']]
     # filter table (since COMMENT_DATE)
-    mask = Time(stat_table['obsdir']) >= Time(COMMENT_START)
-    stat_table = stat_table[mask]
+    timemask = Time(stat_table['obsdir']) >= Time(COMMENT_START)
+    stat_table = stat_table[timemask]
     # sort stat table by date
     stat_table = stat_table[np.argsort(stat_table['obsdir'])[::-1]]
+    # mask for mentioned
+    good_mask = stat_table['mentioned'] == True
     # write to file
-    stat_table.write('results/test_table.csv', format='ascii.csv', overwrite=True)
+    stat_table[~good_mask].write('results/bad_table_perdate.csv', format='ascii.csv', overwrite=True)
+    stat_table[good_mask].write('results/good_table_perdate.csv', format='ascii.csv', overwrite=True)
     # -------------------------------------------------------------------------
     # plot the comment histogram
-    comment_histogram(stat_table)
+    comment_histogram(stat_table[good_mask], 'good')
+    comment_histogram(stat_table[~good_mask], 'bad')
     # -------------------------------------------------------------------------
-    # one last table: group by who and give days that need reporting
-    who_dict = dict()
-    who_dict['who'] = []
-    who_dict['obsdirs'] = []
+    masks = [good_mask, ~good_mask]
+    kinds = ['good', 'bad']
+    who_tables = dict()
+    # loop around good and bad
+    for it in range(len(masks)):
+        # one last table: group by who and give days that need reporting
+        who_dict = dict()
+        who_dict['who'] = []
+        who_dict['obsdirs'] = []
+        # get the masked stat table (good or bad)
+        tmp_stat_table = stat_table[masks[it]]
+        # loop around people
+        for who in list(set(tmp_stat_table['who'])):
+            whomask = tmp_stat_table['who'] == who
+            obsdirs = tmp_stat_table['obsdir'][whomask]
+            # sort obsdirs
+            obsdirs = sorted(obsdirs)
+            # push into dictionary
+            who_dict['who'].append(who)
+            who_dict['obsdirs'].append(', '.join(obsdirs))
+        # push into table
+        who_table = Table(who_dict)
+        # write to file
+        who_table.write('results/{0}_obsdir_table.csv'.format(kinds[it]),
+                        format='ascii.csv', overwrite=True)
 
-    for who in list(set(stat_table['who'])):
-        mask = stat_table['who'] == who
-        obsdirs = stat_table['obsdir'][mask]
-        # sort obsdirs
-        obsdirs = sorted(obsdirs)
-        # push into dictionary
-        who_dict['who'].append(who)
-        who_dict['obsdirs'].append(', '.join(obsdirs))
-    # push into table
-    who_table = Table(who_dict)
-    # write to file
-    who_table.write('results/obsdir_table.csv', format='ascii.csv', overwrite=True)
+        who_tables[kinds[it]] = who_table
     # -------------------------------------------------------------------------
     # return to code
-    return stat_table, who_table
-
-
-
-
-
-
-
-
-
-
+    return stat_table, who_tables
 
 
 # =============================================================================
