@@ -11,6 +11,7 @@ Created on 2023-07-03 at 14:51
 """
 import os
 import platform
+import time
 from typing import Any, Dict, Union
 
 import yaml
@@ -113,7 +114,64 @@ def gsp_setup():
         file2.write(TEXT2.format(''.join(PARAM4), PARAM1, PARAM3))
 
 
+def pull_from_googlesheet(google_sheet, logger=None, **kwargs):
+    # push dataframe back to server
+    fail_count, error = 0, ''
+    while fail_count < 10:
+        try:
+            return google_sheet.sheet_to_df(**kwargs)
+        except Exception as e:
+            msg = ('Attempt {0}: Could not pull from googlesheets. '
+                   'Trying again in 45 s')
+            margs = [fail_count + 1]
+            # log the message
+            if logger is None:
+                print(msg.format(*margs))
+            else:
+                logger(msg.format(*margs))
+            fail_count += 1
+            error = e
+            time.sleep(45)
+    # if we still have not succeeded raise exception here
+    emsg = ('Could not pull from google sheets. Tried 10 times. '
+            'Error {0}: {1}')
+    raise base.AperoRequestError(emsg.format(type(error), str(error)))
 
+
+def push_to_googlesheet(google_sheet, dataframe, logger=None, **kwargs):
+    """
+    Push to googlesheets using the gspread class
+    Has a while loop to try multiple times before raising an error
+
+    :param google_sheet: gspread instance
+    :param dataframe: pandas dataframe to add
+    :param logger: logger instance (None means use print)
+    :param kwargs: passed to google_sheets.df_to_sheet
+
+    :return:
+    """
+    # push dataframe back to server
+    fail_count, error = 0, ''
+    while fail_count < 10:
+        try:
+            google_sheet.df_to_sheet(dataframe, **kwargs)
+            return
+        except Exception as e:
+            msg = ('Attempt {0}: Could not upload to googlesheets. '
+                   'Trying again in 45 s')
+            margs = [fail_count + 1]
+            # log the message
+            if logger is None:
+                print(msg.format(*margs))
+            else:
+                logger(msg.format(*margs))
+            fail_count += 1
+            error = str(e)
+            time.sleep(45)
+    # if we still have not succeeded raise exception here
+    emsg = ('Could not upload to google sheets. Tried 10 times. '
+            'Error {0}: {1}')
+    raise base.AperoRequestError(emsg.format(type(error), str(error)))
 
 
 # =============================================================================

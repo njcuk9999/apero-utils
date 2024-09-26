@@ -273,7 +273,8 @@ def get_current_dataframe(params, test_type='raw'):
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
-    return google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+    return io.pull_from_googlesheet(google_sheet, index=0, sheet=sheet_name,
+                                    logger=misc.log_msg)
 
 
 def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
@@ -316,7 +317,9 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
-    current_dataframe = google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+    current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
+                                                 sheet=sheet_name,
+                                                 logger=misc.log_msg)
     # -------------------------------------------------------------------------
     # append empty rows to dataframe
     current_dataframe = pd.concat([current_dataframe, dataframe],
@@ -354,8 +357,8 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
         # check that the new dataframe isn't shorter than the old one
         if len(current_dataframe) < len(last_dataframe):
             # push dataframe back to server
-            google_sheet.df_to_sheet(last_dataframe, index=False,
-                                     replace=True)
+            io.push_to_googlesheet(google_sheet, last_dataframe, index=False,
+                                   replace=True, logger=misc.log_msg)
             emsg = (f'Sheet {sheet_name} ({sheet_id}) has got shorter - '
                     f'something went wrong. Please delete {last_dataframe} and '
                     f'try again - note we are resetting the online version to '
@@ -373,8 +376,8 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     # print progress
     msg = 'Pushing all rows to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
-    # push dataframe back to server
-    google_sheet.df_to_sheet(current_dataframe, index=False, replace=True)
+    io.push_to_googlesheet(google_sheet, current_dataframe, index=False,
+                           replace=True, logger=misc.log_msg)
     # print progress
     msg = 'All rows added to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
