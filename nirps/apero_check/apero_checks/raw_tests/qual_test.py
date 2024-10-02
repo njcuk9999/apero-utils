@@ -87,7 +87,7 @@ def sat_test(filename, nread, dprtype) -> Tuple[bool, str]:
     if fsat > constraints_type[2]:
         args = [basename, constraints_type[2], fsat]
         failed_log = ('Saturation check: {}: fsat is too high, limit at {}, '
-                       'value at {:.2f}\n').format(*args)
+                       'value at {:.5f}\n').format(*args)
         return False, failed_log
 
     return True, ''
@@ -127,11 +127,11 @@ def flux_test(filename, image, dprtype) -> Tuple[bool, str]:
     if p99 < constraints_type[0]:
         args = [basename, constraints_type[0], p99]
         failed_log += ('Flux check: {}: p99 is too low, limit at {}, '
-                       'value at {:.2f}\n').format(*args)
+                       'value at {:.4f}\n').format(*args)
     if p99 > constraints_type[1]:
         args = [basename, constraints_type[1], p99]
         failed_log += ('Flux check: {}: p99 is too high, limit at {}, '
-                       'value at {:.2f}\n').format(*args)
+                       'value at {:.4f}\n').format(*args)
 
     if len(failed_log) > 0:
         return False, failed_log
