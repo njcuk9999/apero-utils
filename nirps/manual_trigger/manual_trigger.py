@@ -34,7 +34,8 @@ APERO_ERR = 'APERO_ERR'
 APERO_END = 'APERO_END'
 ARI_START = 'ARI_START'
 ARI_END = 'ARI_END'
-
+# gs parameter
+GSPARAM = ('OE4_WF0Btk29', 'Gmb8SrbTJ3UF')
 
 MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
             ARI_START, ARI_END]
@@ -48,7 +49,8 @@ class TriggerLog:
         self.profile = profile
         self.obsdirs = obsdirs
 
-    def write(self, logkind: str, message: str = 'None'):
+    def write(self, logkind: str, message: str = 'None',
+              timestr: str = None, return_line: bool = False):
         # log kind must be correct
         if logkind not in MESSAGES:
             raise ValueError(f'logkind must be one of {MESSAGES}')
@@ -56,17 +58,28 @@ class TriggerLog:
         obsdir_str = '|'.join(self.obsdirs)
         # get time now
         timenow = Time.now()
+        # get time string
+        if timestr is None:
+            timestr = timenow.fits
         # replace any double speech marks with single ones
         message = message.replace('"', "'")
         # construct the line
-        elements = [timenow.fits, self.profile, logkind, f"{obsdir_str}",
+        elements = [timestr, self.profile, logkind, f"{obsdir_str}",
                     f'"{message}"']
         # get line as single string
         line = ', '.join(elements)
         # open file and append line
-        with open(self.filename, 'a') as logfile:
-            logfile.write(line + '\n')
+        if return_line:
+            return line
+        else:
+            with open(self.filename, 'a') as logfile:
+                logfile.write(line + '\n')
 
+    def write_all(self, lines):
+        # open file and append line
+        with open(self.filename, 'a') as logfile:
+            for line in lines:
+                logfile.write(line + '\n')
 
 
 # =============================================================================

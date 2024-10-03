@@ -273,7 +273,8 @@ def get_current_dataframe(params, test_type='raw'):
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
-    return google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+    return io.pull_from_googlesheet(google_sheet, index=0, sheet=sheet_name,
+                                    logger=misc.log_msg)
 
 
 def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
@@ -309,10 +310,16 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
         emsg = ('ADD_TO_SHEET error: test_type must be set to "raw" or "red" '
                 'or "override"')
         raise base.AperoChecksError(emsg)
+    # -------------------------------------------------------------------------
+    # make a local name for the file
+    local_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    local_file = os.path.join(local_path, 'local', f'{sheet_id}_{sheet_name}.csv')
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
-    current_dataframe = google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+    current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
+                                                 sheet=sheet_name,
+                                                 logger=misc.log_msg)
     # -------------------------------------------------------------------------
     # append empty rows to dataframe
     current_dataframe = pd.concat([current_dataframe, dataframe],
@@ -343,11 +350,34 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     current_dataframe = current_dataframe.sort_values(by='obsdir',
                                                       ascending=False)
     # -------------------------------------------------------------------------
+    # load last table in local directory
+    if os.path.exists(local_file):
+        last_dataframe = pd.read_csv(local_file)
+
+        # check that the new dataframe isn't shorter than the old one
+        if len(current_dataframe) < len(last_dataframe):
+            # push dataframe back to server
+            io.push_to_googlesheet(google_sheet, last_dataframe, index=False,
+                                   replace=True, logger=misc.log_msg)
+            emsg = (f'Sheet {sheet_name} ({sheet_id}) has got shorter - '
+                    f'something went wrong. Please delete {last_dataframe} and '
+                    f'try again - note we are resetting the online version to '
+                    f'this last version.')
+            raise base.AperoChecksError(emsg)
+    # if local file still exists remove it
+    if os.path.exists(local_file):
+        os.remove(local_file)
+    # print progress
+    msg = 'Saving local backup ({0})'.format(local_file)
+    misc.log_msg(msg, level='info')
+    # save table to local directory
+    current_dataframe.to_csv(local_file, index=False)
+    # -------------------------------------------------------------------------
     # print progress
     msg = 'Pushing all rows to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
-    # push dataframe back to server
-    google_sheet.df_to_sheet(current_dataframe, index=False, replace=True)
+    io.push_to_googlesheet(google_sheet, current_dataframe, index=False,
+                           replace=True, logger=misc.log_msg)
     # print progress
     msg = 'All rows added to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
