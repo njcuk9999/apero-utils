@@ -41,7 +41,7 @@ ALLOCATION_START = '2023-06-01'
 # Start plot from this date
 COMMENT_START = '2024-08-01'
 # Name people who have left
-EX_MEMBERS = ['Fred', 'Yuri', 'Rose', 'Olivia']
+EX_MEMBERS = ['Fred', 'Yuri', 'Rose', 'Olivia', 'Romain', 'Etienne', 'Lison']
 # Ignore these columns when checking for False in check tables
 IGNORE_COLS = ['obsdir', 'date', 'BLANK']
 
