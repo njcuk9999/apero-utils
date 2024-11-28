@@ -87,7 +87,7 @@ override_list = []
 
 # PREV_SCI: There could be nights which do not have science data but should
 #           not be flagged as bad
-override_list.append('PREV_SCI')
+override_list.append('NO_SCI')
 
 
 # =============================================================================
