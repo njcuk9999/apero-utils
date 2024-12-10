@@ -513,6 +513,11 @@ def store_overrides(params: Dict[str, Any],
 def check_override(params: Dict[str, Any],
                    results: Dict[str, Dict[str, Any]],
                    test_type: str = 'raw'):
+    # Log that we are testing for overrides
+    msg = '*' * 50
+    msg += '\n Testing for overrides'
+    msg += '\n' + '*' * 50
+    misc.log_msg(msg, level='info')
     # get any overrides we have
     override_dataframe = get_current_dataframe(params, 'override')
     # define the sheet id and sheet name (pending)
@@ -550,7 +555,16 @@ def check_override(params: Dict[str, Any],
             continue
         # update the test value - if it has changed
         if results[override_obsdir][override_test_name] != override_test_value:
+            # store previous value
+            prev_value = bool(results[override_obsdir][override_test_name])
+            # update previous value to new value
             results[override_obsdir][override_test_name] = override_test_value
+            # construct message
+            msg = '\tOverride found: {0} {1} [{2}-->{3}]'
+            margs = [override_test_name, override_obsdir, prev_value,
+                     override_test_value]
+            misc.log_msg(msg.format(*margs))
+            # Add to the counter
             counter += 1
     # log that we updated "counter" values
     msg = 'Updated {0} override values'.format(counter)
