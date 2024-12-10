@@ -485,6 +485,10 @@ def run_apero_get(settings: Dict[str, Any]):
         # get the earliest raw file (we do not get files older than this)
         settings['SINCE'] = get_earliest_raw_file(pparams,
                                                   obsdirs=settings['OBS_DIRS'])
+        # if there are no files skip this profile
+        if len(settings['SINCE']) == 0:
+            print(f'\tNo files found - skipping profile: {profile}')
+            continue
         # get the output types
         red_outtypes = ','.join(pdict['get']['science out types'])
         lbl_outtypes = ','.join(pdict['get-lbl']['science out types'])
@@ -736,6 +740,9 @@ def get_earliest_raw_file(apero_params, obsdirs):
     # -------------------------------------------------------------------------
     # get times on these specific nights
     last_modified = indexdbm.get_entries('LAST_MODIFIED', condition=condition)
+    # deal with no files found
+    if len(last_modified) == 0:
+        return []
     # find the earliest time in these
     earliest_time = Time(np.min(last_modified), format='unix')
     # take 1 hour before this (just to be safe)

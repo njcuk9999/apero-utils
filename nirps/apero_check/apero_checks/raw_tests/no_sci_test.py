@@ -113,6 +113,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             print('Other files found for night {}'.format(obsdir))
             for key in other_files:
                 print('\t{0}: {1}'.format(key, other_files[key]))
+
+            print('\nNote: If override used it will not display here. ')
+
         return False
     # -------------------------------------------------------------------------
     # log number of science files found for each type

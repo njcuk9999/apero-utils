@@ -17,7 +17,7 @@ from apero_checks.raw_tests import eng_test
 from apero_checks.raw_tests import obsdir_test
 from apero_checks.raw_tests import qual_test
 from apero_checks.raw_tests import astrom_test
-from apero_checks.raw_tests import prev_sci_test
+from apero_checks.raw_tests import no_sci_test
 
 # =============================================================================
 # Append your test here
@@ -69,7 +69,7 @@ test_dict['ASTROM_TEST'] = astrom_test.test
 
 # previous science data test - this tests whether the previous 3 nights had
 #                              science data
-test_dict['PREV_SCI'] = prev_sci_test.test
+test_dict['NO_SCI'] = no_sci_test.test
 
 # test 1 - explanation
 
@@ -87,7 +87,7 @@ override_list = []
 
 # PREV_SCI: There could be nights which do not have science data but should
 #           not be flagged as bad
-override_list.append('PREV_SCI')
+override_list.append('NO_SCI')
 
 
 # =============================================================================

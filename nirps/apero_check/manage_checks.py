@@ -41,7 +41,7 @@ ALLOCATION_START = '2023-06-01'
 # Start plot from this date
 COMMENT_START = '2024-08-01'
 # Name people who have left
-EX_MEMBERS = ['Fred', 'Yuri', 'Rose', 'Olivia']
+EX_MEMBERS = ['Fred', 'Yuri', 'Rose', 'Olivia', 'Romain', 'Etienne', 'Lison']
 # Ignore these columns when checking for False in check tables
 IGNORE_COLS = ['obsdir', 'date', 'BLANK']
 
@@ -98,13 +98,13 @@ def allocation_histogram(allocation_table: Table):
     colors = ['red', 'blue', 'orange', 'purple', 'green', 'yellow', 'brown',
               'pink', 'gray', 'cyan', 'magenta', 'olive', 'lime', 'teal'] * 10
     # setup figure
-    plt.figure(figsize=(20, 20))
+    plt.figure(figsize=(12, 12))
     frames = [plt.subplot2grid((1, 4), (0, 0), colspan=3),
               plt.subplot2grid((1, 4), (0, 3), colspan=1)]
     # store max number of times someone was allocated
     max_entry = 0
     # define groups
-    group_names = ['Members', 'Previous Members']
+    group_names = ['Babysitters', 'Previous Babysitters']
     # loop around members and ex members
     for it, group in enumerate([members, exmembers]):
 
@@ -126,6 +126,7 @@ def allocation_histogram(allocation_table: Table):
     # set y limits for all frames
     for frame in frames:
         frame.set_ylim(0, max_entry + 1)
+        frame.tick_params(axis='x', rotation=90)
     # put the y-axis label and ticks on the right side
     frames[1].yaxis.tick_right()
     frames[1].yaxis.set_label_position('right')
@@ -237,7 +238,7 @@ def comment_histogram(stat_table: Table, kind: str):
     colors = ['red', 'blue', 'orange', 'purple', 'green', 'yellow', 'brown',
               'pink', 'gray', 'cyan', 'magenta', 'olive', 'lime', 'teal'] * 10
     # setup figure
-    plt.figure(figsize=(20, 20))
+    plt.figure(figsize=(12, 12))
     frames = [plt.subplot2grid((1, 4), (0, 0), colspan=3),
               plt.subplot2grid((1, 4), (0, 3), colspan=1)]
     # store max number of times someone was allocated
@@ -259,13 +260,20 @@ def comment_histogram(stat_table: Table, kind: str):
             # Plot the histogram
             frames[it].bar(name_counts.keys(), name_counts.values(),
                     color=colors[:len(name_counts)])
+        else:
+            frames[it].axis('off')
+
+        if kind == 'good':
+            ylabel = 'Number of days comments added on failure'
+        else:
+            ylabel = 'Number of days comments NOT added on failure'
         # Add labels and title
-        frames[it].set(ylabel='Number of days comments not added on failure',
-                       title=group_names[it])
+        frames[it].set(ylabel=ylabel, title=group_names[it])
 
     # set y limits for all frames
     for frame in frames:
         frame.set_ylim(0, max_entry + 1)
+        frame.tick_params(axis='x', rotation=90)
     # put the y-axis label and ticks on the right side
     frames[1].yaxis.tick_right()
     frames[1].yaxis.set_label_position('right')
