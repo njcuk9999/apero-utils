@@ -288,6 +288,9 @@ HDR_KEYS.append(HdrKey('ScramblingStatus',
 HDR_KEYS.append(HdrKey('StretcherStatus',
                        header='HIERARCH ESO INS OPTI10 STAT',
                        dtype='str'))
+HDR_KEYS.append(HdrKey('BackEndDeviceError',
+                       header='HIERARCH ESO INS SENS129 STAT',
+                       dtype='str'))
 
 
 # Set up engineering tests
@@ -403,6 +406,14 @@ ETESTS['scrdst'].calc = dict(cx=lambda **k: np.char.array(k['x']).strip())
 ETESTS['scrdst'].func = lambda **k: k['cx'] == k['limit']
 ETESTS['scrdst'].pmsg = 'Stretcher On'
 ETESTS['scrdst'].fmsg = 'Stretcher Off'
+# -----------------------------------------------------------------------------
+ETESTS['be_derr'] = EngTest('BackEnd_DeviceError')
+ETESTS['be_derr'].data = dict(x='BackEndDeviceError',
+                              limit='NOK')
+ETESTS['be_derr'].func = lambda **k: k['x'] != k['limit']
+ETESTS['be_derr'].pmsg = 'No errors for backend devices'
+ETESTS['be_derr'].fmsg = 'Errors reported for backend devices'
+
 
 
 # =============================================================================
