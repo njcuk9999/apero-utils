@@ -376,15 +376,19 @@ ETESTS['fptemp'].pmsg = ('RMS FP temperature interior '
 ETESTS['fptemp'].fmsg = ('RMS FP temperature interior '
                          '{rms:.2E} K >= {limit:.2E} K)')
 # -----------------------------------------------------------------------------
-ETESTS['fptemp_ext'] = EngTest('test_fp_temperature_ext')
-ETESTS['fptemp_ext'].data = dict(x='FPtemperature_exterior',
-                                 low=23.498, high=24.502)
-ETESTS['fptemp_ext'].calc = dict()
-ETESTS['fptemp_ext'].func = lambda **k: (k['x'] > k['low']) & (k['x'] < k['high'])
-ETESTS['fptemp_ext'].pmsg = ('Fabry-Perot lakeshore temp exterior within '
-                             'limits={x:.3f} K ({low}-{high} K)')
-ETESTS['fptemp_ext'].fmsg = ('Fabry-Perot lakeshore temp exterior outside '
-                             'limits={x:.3f} K ({low} - {high} K)')
+# ETESTS['fptemp_ext'] = EngTest('test_fp_temperature_ext')
+# ETESTS['fptemp_ext'].data = dict(x='FPtemperature_exterior',
+#                                  low=23.498, high=24.502)
+# ETESTS['fptemp_ext'].calc = dict(xmin=lambda **k: np.nanmin(k['x']),
+#                                  xmax=lambda **k: np.nanmax(k['x']))
+# ETESTS['fptemp_ext'].func = lambda **k: ((k['xmin'] > k['low'])
+#                                          & (k['xmax'] < k['high']))
+# ETESTS['fptemp_ext'].pmsg = ('Fabry-Perot lakeshore temp exterior within '
+#                              'measured={xmin:.3f}-{xmax:.3f} K '
+#                              '(limits={low}-{high} K)')
+# ETESTS['fptemp_ext'].fmsg = ('Fabry-Perot lakeshore temp exterior outside '
+#                              'measured={xmin:.3f}-{xmax:.3f} K '
+#                              '(limits={low} - {high} K)')
 # -----------------------------------------------------------------------------
 ETESTS['fptset'] = EngTest('test_fp_temperature_setpoint')
 ETESTS['fptset'].data = dict(x='FPtemperature_interior',
