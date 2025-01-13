@@ -37,9 +37,9 @@ COMM_SHEET = dict(NIRPS_HA='346030560', NIRPS_HE='68390787')
 INSTRUMENTS = ['NIRPS_HE', 'NIRPS_HA']
 SHORT = ['he', 'ha']
 # Start from this date
-ALLOCATION_START = '2023-06-01'
+ALLOCATION_START = '2024-12-20'
 # Start plot from this date
-COMMENT_START = '2024-08-01'
+COMMENT_START = '2024-12-20'
 # Name people who have left
 EX_MEMBERS = ['Fred', 'Yuri', 'Rose', 'Olivia', 'Romain', 'Etienne', 'Lison']
 # Ignore these columns when checking for False in check tables
@@ -113,8 +113,11 @@ def allocation_histogram(allocation_table: Table):
         # get the name counts
         name_counts = Counter(allocation_table['Who'][datemask & groupmask])
 
-        # Get the maximum entry
-        max_entry = max(max_entry, max(name_counts.values()))
+        if len(name_counts) == 0:
+            max_entry = 0
+        else:
+            # Get the maximum entry
+            max_entry = max(max_entry, max(name_counts.values()))
 
         # Plot the histogram
         frames[it].bar(name_counts.keys(), name_counts.values(),
