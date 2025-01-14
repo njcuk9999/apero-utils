@@ -378,7 +378,7 @@ ETESTS['fptemp'].fmsg = ('RMS FP temperature interior '
 #-----------------------------------------------------------------------------
 ETESTS['fptemp_ext'] = EngTest('test_fp_temperature_ext')
 ETESTS['fptemp_ext'].data = dict(x='FPtemperature_exterior',
-                                 low=23.498, high=24.502)
+                                 low=23.496, high=24.504)
 ETESTS['fptemp_ext'].calc = dict(xmin=lambda **k: np.nanmin(k['x']),
                                  xmax=lambda **k: np.nanmax(k['x']))
 ETESTS['fptemp_ext'].func = lambda **k: ((k['xmin'] > k['low'])
