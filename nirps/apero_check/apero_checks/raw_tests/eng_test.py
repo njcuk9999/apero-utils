@@ -288,6 +288,9 @@ HDR_KEYS.append(HdrKey('ScramblingStatus',
 HDR_KEYS.append(HdrKey('StretcherStatus',
                        header='HIERARCH ESO INS OPTI10 STAT',
                        dtype='str'))
+HDR_KEYS.append(HdrKey('BackEndDeviceError',
+                       header='HIERARCH ESO INS SENS129 STAT',
+                       dtype='str'))
 
 
 # Set up engineering tests
@@ -368,8 +371,24 @@ ETESTS['fptemp'].data = dict(x='FPtemperature_interior',
                              limit=1.0e-2)
 ETESTS['fptemp'].calc = dict(rms=lambda **k: np.nanstd(k['x']))
 ETESTS['fptemp'].func = lambda **k: k['rms'] < k['limit']
-ETESTS['fptemp'].pmsg = 'RMS FP temperature interior {rms:.2E} K < {limit:.2E} K)'
-ETESTS['fptemp'].fmsg = 'RMS FP temperature interior {rms:.2E} K >= {limit:.2E} K)'
+ETESTS['fptemp'].pmsg = ('RMS FP temperature interior '
+                         '{rms:.2E} K < {limit:.2E} K)')
+ETESTS['fptemp'].fmsg = ('RMS FP temperature interior '
+                         '{rms:.2E} K >= {limit:.2E} K)')
+#-----------------------------------------------------------------------------
+ETESTS['fptemp_ext'] = EngTest('test_fp_temperature_ext')
+ETESTS['fptemp_ext'].data = dict(x='FPtemperature_exterior',
+                                 low=23.496, high=24.504)
+ETESTS['fptemp_ext'].calc = dict(xmin=lambda **k: np.nanmin(k['x']),
+                                 xmax=lambda **k: np.nanmax(k['x']))
+ETESTS['fptemp_ext'].func = lambda **k: ((k['xmin'] > k['low'])
+                                         & (k['xmax'] < k['high']))
+ETESTS['fptemp_ext'].pmsg = ('Fabry-Perot lakeshore temp exterior within '
+                             'measured={xmin:.3f}-{xmax:.3f} K '
+                             '(limits={low}-{high} K)')
+ETESTS['fptemp_ext'].fmsg = ('Fabry-Perot lakeshore temp exterior outside '
+                             'measured={xmin:.3f}-{xmax:.3f} K '
+                             '(limits={low} - {high} K)')
 # -----------------------------------------------------------------------------
 ETESTS['fptset'] = EngTest('test_fp_temperature_setpoint')
 ETESTS['fptset'].data = dict(x='FPtemperature_interior',
@@ -403,6 +422,14 @@ ETESTS['scrdst'].calc = dict(cx=lambda **k: np.char.array(k['x']).strip())
 ETESTS['scrdst'].func = lambda **k: k['cx'] == k['limit']
 ETESTS['scrdst'].pmsg = 'Stretcher On'
 ETESTS['scrdst'].fmsg = 'Stretcher Off'
+# -----------------------------------------------------------------------------
+ETESTS['be_derr'] = EngTest('BackEnd_DeviceError')
+ETESTS['be_derr'].data = dict(x='BackEndDeviceError',
+                              limit='NOK')
+ETESTS['be_derr'].func = lambda **k: k['x'] != k['limit']
+ETESTS['be_derr'].pmsg = 'No errors for backend devices'
+ETESTS['be_derr'].fmsg = 'Errors reported for backend devices'
+
 
 
 # =============================================================================
@@ -483,6 +510,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         test_args = [tbl_dict, mask_dict, logger, passer]
         # run test
         logger, passer = ETESTS[sub_test].run_test(*test_args)
+        # display passed or failed
+        if not passer[-1]:
+            misc.log_msg('\t\tFAILED', color='red')
 
     # -------------------------------------------------------------------------
     # construct a string for printing output

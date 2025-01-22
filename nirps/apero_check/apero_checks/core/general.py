@@ -113,9 +113,9 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
             raise base.AperoChecksError(emsg)
         # print whether test passed or failed
         if output:
-            misc.log_msg('\t\tPASSED', color='green')
+            misc.log_msg('\n\tAll tests PASSED', color='green')
         else:
-            misc.log_msg('\t\tFAILED', color='red')
+            misc.log_msg('\n\tOne or more tests FAILED', color='red')
     except Exception as e:
         if log:
             raise e
