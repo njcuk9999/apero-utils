@@ -11,7 +11,7 @@ Created on 2025-01-21 at 12:14
 """
 import os
 import re
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 from tqdm import tqdm
 
 # =============================================================================
@@ -25,10 +25,11 @@ INSTRUMENTS = ['spirou', 'nirps_he', 'nirps_ha']
 
 EXCLUDED_CODES = ['constants.py', 'config.py']
 
-HEADER = '*' * 75
+HEADER = '*' * 120
 
 # list of constants with out entries (outside CDict)
 MISSING = []
+NO_GROUP = []
 # -----------------------------------------------------------------------------
 COLOURS = dict()
 COLOURS['BLACK1'] = '\033[90;1m'
@@ -227,22 +228,25 @@ CC = Colors()
 
 
 def find_default_constants(file_path: str, method='add') -> Dict[str, str]:
-    # Regular expression to capture the first argument of CDict.add
-    pattern = (r'CDict\.add\(\s*[\'"]([^\'"]+)[\'"]'
-               r'(?:[^)]*?group=\s*([^\s,]+))?')
-    # Open and read the file
-    with open(file_path, 'r') as file:
-        content = file.read()
-    # Find all matches using the regex
-    matches = re.findall(pattern, content)
 
-    from apero.instruments.default.consants import CDict
-
+    from apero.instruments.default.constants import CDict
 
     constants_list = dict()
 
-    for match in matches:
-        constants_list[match[0]] = match[1] if match[1] else None
+    for constant_name in CDict.storage:
+        # get group
+        group = CDict.storage[constant_name].group
+        # deal with no group
+        if group is None:
+            constants_list[constant_name] = None
+            continue
+        # get name without group
+        if group + '.' in constant_name:
+            name = constant_name.split(group + '.')[-1]
+        else:
+            name = constant_name
+        # push into list
+        constants_list[name] = group
     # return constant list
     return constants_list
 
@@ -275,17 +279,19 @@ def find_constants_without_group(file_path: str, constants_list: Dict[str, str],
 def get_all_python_files(file_path: str):
     # list to return
     python_files = []
+    excluded_files = []
     # loop file_path
     for root, dir, files in os.walk(file_path):
         for filename in files:
             # skip filename if its in excluded codes
             if filename in EXCLUDED_CODES:
+                excluded_files.append(os.path.join(root, filename))
                 continue
             # only consider python files
             if filename.endswith('.py'):
                 python_files.append(os.path.join(root, filename))
     # return all python files
-    return python_files
+    return python_files, excluded_files
 
 
 def read_all_python_files(python_files: List[str]) -> Dict[str, List[str]]:
@@ -300,20 +306,83 @@ def read_all_python_files(python_files: List[str]) -> Dict[str, List[str]]:
     return python_dict
 
 
-def update_constant(constant_name, all_python_lines, group=None):
+
+
+
+
+def add_group_to_constant(old_name: str, new_name: str, content: List[str],
+                          file_path: str) -> Tuple[List[str], int, int]:
+
+    # Regular expression to match the specific constant
+    pattern = rf"(CDict\.\w+\(\s*['\"]{old_name}['\"],.*?)(\))"
+    # Join content into a single string for regex processing
+    content_string = "".join(content)
+    # truncated file name
+    string_filename = file_path.replace(PACKAGE_PATH, '')
+    # don't both if not found
+    if old_name not in content_string:
+        return content, 0, 0
+    else:
+        CC.cprint(f'\n\nProcessing {old_name} in {string_filename}', colour='magenta')
+    # Flag to track whether a match was found
+    match_found = False
+    # store start and end position
+    start_pos = 0
+    end_pos = 0
+    # Function to handle replacements
+    def replace_callback(match):
+        # Set the flag when a match is found
+        nonlocal match_found, start_pos, end_pos
+        match_found = True
+        # The full matched call
+        full_match = match.group(1)
+        # start and end position
+        start_pos = match.start()
+        end_pos = match.end()
+        # Check if "group=" is already in the arguments
+        if "group=" in full_match:
+            # Only rename the constant if needed
+            return full_match.replace(old_name, new_name) + match.group(2)
+
+        end_pos += len(", group=cgroup" + match.group(2))
+
+        # Add the `group=cgroup` and rename the constant
+        return (full_match.replace(old_name, new_name) +
+                ", group=cgroup" + match.group(2))
+
+    # Replace the specific constant and conditionally add `group=cgroup`
+    updated_content_string = re.sub(pattern, replace_callback, content_string, flags=re.DOTALL)
+
+    if not match_found:
+        return content, 0, 0
+    # split content back into lines
+    updated_content = updated_content_string.splitlines()
+    # get the line positions of start and end
+    start_line, end_line = string_pos_to_line_pos(updated_content, start_pos, end_pos)
+    # return these values
+    return updated_content, start_line, end_line
+
+
+
+def update_constant(constant_name, all_python_lines,
+                    const_python_lines, updated_lines, group=None):
 
     # print the variable name
     CC.cprint(HEADER, colour='magenta')
     CC.cprint(f'Processing {constant_name}', colour='magenta')
     CC.cprint(HEADER, colour='magenta')
 
-
-    CC.cprint('Finding instances')
+    if group is None:
+        CC.cprint('\tNo group found for constant. Skipping', colour='yellow')
+        global NO_GROUP
+        NO_GROUP.append(constant_name)
+        return
+    # print progress
+    CC.cprint('Finding instances...', colour='magenta')
     # storage python files
     python_files = dict()
     # find all instances of string in all python files
-    for python_file in tqdm(all_python_lines.keys()):
-
+    for python_file in all_python_lines.keys():
         for l_it, line in enumerate(all_python_lines[python_file]):
 
             if f'\'{constant_name}\'' in line:
@@ -326,36 +395,156 @@ def update_constant(constant_name, all_python_lines, group=None):
         CC.cprint('\tConstant not found outside definition. Skipping',
                   colour='yellow')
         return
+    CC.cprint('')
     # -------------------------------------------------------------------------
+    CC.cprint('Found instances:', colour='magenta')
     # print out these entries (removing the package path from python file
     for python_file in python_files:
-
-        # truncated file name
-        string_filename = python_file.replace(PACKAGE_PATH, '')
-
-        CC.cprint(string_filename, 'blue')
-
         # get lines
         lines = all_python_lines[python_file]
 
         line_number = python_files[python_file]
 
-
-        line_range = [max([0, line_number-3]),
-                      min([line_number+3, len(lines)])]
-
-        for line_it in range(*line_range):
-
-            fmt_line = lines[line_it].replace('\n', '')
-            CC.cprint(f'{str(line_it):5s}| {fmt_line}',
-                      colour='green', highlight_colour='red',
-                      highlight_words=[constant_name])
-        CC.cprint('\n')
+        print_entry(constant_name, python_file, lines, line_number,
+                    colour='green')
+    CC.cprint('')
     # -------------------------------------------------------------------------
+    # propose changes
+    # -------------------------------------------------------------------------
+    # 1: ask user to change variable name
+    # -------------------------------------------------------------------------
+    while True:
+        qmsg = (f'Enter new constant name for "{constant_name}" '
+                f'(leave blank to skip)>>\t')
+        new_constant_name = input(qmsg)
+        if len(new_constant_name) < 2:
+            new_constant_name = str(constant_name)
+            break
+
+        # add the group name onto the new_constant_name
+        new_constant_name1 = f'{group}.{new_constant_name}'
+
+        CC.cprint(f'\n\nChanging {constant_name} to {new_constant_name1}',
+                  colour='magenta')
+        accept = input('Accept changes? (y/n)>>\t')
+        if 'y' in accept.lower():
+            break
+
+    # -------------------------------------------------------------------------
+    # 2: rename variables in all python codes
+    # -------------------------------------------------------------------------
+    # print out these entries (removing the package path from python file
+    for python_file in python_files:
+        CC.cprint('Before:', colour='magenta')
+
+        # get lines
+        old_lines = all_python_lines[python_file]
+
+        old_line_number = python_files[python_file]
+
+        print_entry(constant_name, python_file, old_lines, old_line_number,
+                    colour='green', indent=4)
+
+        CC.cprint('After:', colour='magenta')
+        # get lines
+        lines = all_python_lines[python_file]
+        # get line number
+        line_number = python_files[python_file]
+        # get line
+        line = lines[line_number]
+        # new line
+        new_line = line.replace(f'\'{constant_name}\'', f'\'{new_constant_name1}\'')
+        # update line
+        lines[line_number] = new_line
+        # print entry
+        print_entry(new_constant_name1, python_file, lines, line_number,
+                    colour='blue', indent=4)
+        # ask to accept changes
+        qmsg = 'Accept changes? (y/n)>>\t'
+        accept = input(qmsg)
+
+        if 'y' in accept.lower():
+            all_python_lines[python_file] = lines
+            updated_lines[python_file] = lines
+
+    # -------------------------------------------------------------------------
+    # 3: rename variables in the const files
+    # -------------------------------------------------------------------------
+    for python_file in const_python_lines:
+        # get the updated line
+        uout = add_group_to_constant(constant_name, new_constant_name,
+                                     const_python_lines[python_file],
+                                     python_file)
+        updated_line, start_line, end_line = uout
+
+        # deal with not having found the constant
+        if start_line == 0 and end_line == 0:
+            continue
+        # get old entry
+        old_entry = (''.join(const_python_lines[python_file]).splitlines())
+        # print new entry
+        print_entry(constant_name, python_file, old_entry,
+                    line_start=start_line, line_end=end_line, colour='green')
+        # print new entry
+        print_entry(new_constant_name, python_file, updated_line,
+                    line_start=start_line, line_end=end_line, colour='blue')
+
+        # ask to accept changes
+        qmsg = 'Accept changes? (y/n)>>\t'
+        accept = input(qmsg)
+
+        if 'y' in accept.lower():
+            const_python_lines[python_file] = updated_line
+            updated_lines[python_file] = updated_line
+
+    return all_python_lines, const_python_lines, updated_lines
 
 
+def print_entry(entry, python_file, lines, line_number=0,
+                line_start=None, line_end=None, colour='green',
+                indent=0):
+    # deal with indent
+    if indent > 0:
+        prefix = ' ' * indent
+    else:
+        prefix = ''
+
+    # deal with not line start and end
+    if line_start is None:
+        line_start = max([0, line_number - 3])
+    if line_end is None:
+        line_end = min([line_number + 3, len(lines)])
+
+    # truncated file name
+    string_filename = python_file.replace(PACKAGE_PATH, '')
+
+    CC.cprint(prefix + '>> ' + string_filename, colour)
+
+    for line_it in range(line_start, line_end):
+        fmt_line = lines[line_it].replace('\n', '')
+        CC.cprint(prefix + f'{str(line_it):5s}| {fmt_line}',
+                  colour=colour, highlight_colour='red',
+                  highlight_words=[entry])
 
 
+def string_pos_to_line_pos(lines, start, end):
+    # Initialize variables to keep track of the current character position
+    current_pos = 0
+
+    # Find the lines that contain the start and end positions
+    start_line = end_line = None
+    for i, line in enumerate(lines):
+        line_start = current_pos
+        line_end = current_pos + len(line)
+
+        if start_line is None and line_start <= start <= line_end:
+            start_line = i
+        if end_line is None and line_start <= end <= line_end:
+            end_line = i
+
+        current_pos = line_end + 1  # Account for the '\n'
+
+    return start_line, end_line
 
 
 # =============================================================================
@@ -367,7 +556,6 @@ if __name__ == "__main__":
     # step 1: identify constants in default constants file
     constants_list = find_default_constants(INSTRUMENT_PATH +
                                             'default/constants.py')
-
     # -------------------------------------------------------------------------
     # step 2: find matching constants without a group in the instrument files
     # -------------------------------------------------------------------------
@@ -383,20 +571,28 @@ if __name__ == "__main__":
     # step 3: read all python files
     # -------------------------------------------------------------------------
     # get a list of all python files in the package
-    all_python_files = get_all_python_files(PACKAGE_PATH)
+    all_python_files, const_python_files = get_all_python_files(PACKAGE_PATH)
     # read all python files and stora the lines in memory in a dictionary
     all_python_lines = read_all_python_files(all_python_files)
+    # read all const python files
+    const_python_lines = read_all_python_files(const_python_files)
     # -------------------------------------------------------------------------
     # step 4: ask user for confirmation and edit files
     # -------------------------------------------------------------------------
+    updated_lines = dict()
     # loop around constants, display the variable, ask for the new name, and
     # then confirm changes, then write changes to files
     for constant_name in valid_constants_list.keys():
 
-        update_constant(constant_name, all_python_lines,
-                        group=valid_constants_list[constant_name])
-
-
+        uout = update_constant(constant_name, all_python_lines,
+                               const_python_lines, updated_lines,
+                               group=valid_constants_list[constant_name])
+        # we need to update the input dictionaries so we can change the
+        # next constant
+        all_python_lines, const_python_lines, updated_lines, = uout
+    # -------------------------------------------------------------------------
+    # step 5: save all updated line files
+    # -------------------------------------------------------------------------
 
 
 
