@@ -307,13 +307,11 @@ def read_all_python_files(python_files: List[str]) -> Dict[str, List[str]]:
     for python_file in python_files:
         # open file and read
         with open(python_file) as pfile:
-            python_dict[str(python_file)] = pfile.readlines()
+            lines = pfile.readlines()
+            vlines = [line.replace('\n', '') for line in lines]
+            python_dict[str(python_file)] = vlines
 
     return python_dict
-
-
-
-
 
 
 def add_group_to_constant(old_name: str, new_name: str, content: List[str],
@@ -643,6 +641,8 @@ if __name__ == "__main__":
     # step 5: save all updated line files
     # -------------------------------------------------------------------------
     for python_file in updated_lines:
+        # print progress
+        CC.cprint(f'\n\nWriting changes to {python_file}', colour='magenta')
         # get the lines
         lines = updated_lines[python_file]
         # write the lines to the file
