@@ -11,6 +11,7 @@ Created on 2025-01-21 at 12:14
 """
 import os
 import re
+import time
 from typing import Dict, List, Tuple, Union
 from tqdm import tqdm
 
@@ -221,10 +222,15 @@ class Colors:
     def cprint(self, message, colour='green',
               highlight_words: List[str] = None,
               highlight_colour: str = 'green'):
-        print(self.print(message, colour, highlight_words, highlight_colour))
+        print(self.print(message, colour, highlight_words, highlight_colour),
+              flush=True)
 
 
 CC = Colors()
+
+
+class StopLoop(Exception):
+    pass
 
 
 def find_default_constants(file_path: str, method='add') -> Dict[str, str]:
@@ -321,6 +327,7 @@ def add_group_to_constant(old_name: str, new_name: str, content: List[str],
     string_filename = file_path.replace(PACKAGE_PATH, '')
     # don't both if not found
     if old_name not in content_string:
+        CC.cprint(f'\n\nNot Processing {old_name} in {string_filename}', colour='magenta')
         return content, 0, 0
     else:
         CC.cprint(f'\n\nProcessing {old_name} in {string_filename}', colour='magenta')
@@ -367,16 +374,11 @@ def add_group_to_constant(old_name: str, new_name: str, content: List[str],
 def update_constant(constant_name, all_python_lines,
                     const_python_lines, updated_lines, group=None):
 
-    # print the variable name
-    CC.cprint(HEADER, colour='magenta')
-    CC.cprint(f'Processing {constant_name}', colour='magenta')
-    CC.cprint(HEADER, colour='magenta')
-
     if group is None:
         CC.cprint('\tNo group found for constant. Skipping', colour='yellow')
         global NO_GROUP
         NO_GROUP.append(constant_name)
-        return
+        return all_python_lines, const_python_lines, updated_lines
     # print progress
     CC.cprint('Finding instances...', colour='magenta')
     # storage python files
@@ -394,7 +396,7 @@ def update_constant(constant_name, all_python_lines,
         MISSING.append(constant_name)
         CC.cprint('\tConstant not found outside definition. Skipping',
                   colour='yellow')
-        return
+        return all_python_lines, const_python_lines, updated_lines
     CC.cprint('')
     # -------------------------------------------------------------------------
     CC.cprint('Found instances:', colour='magenta')
@@ -417,10 +419,11 @@ def update_constant(constant_name, all_python_lines,
         qmsg = (f'Enter new constant name for "{constant_name}" '
                 f'(leave blank to skip)>>\t')
         new_constant_name = input(qmsg)
-        if len(new_constant_name) < 2:
+        if len(new_constant_name) == 0:
             new_constant_name = str(constant_name)
+            # add the group name onto the new_constant_name
+            new_constant_name1 = f'{group}.{new_constant_name}'
             break
-
         # add the group name onto the new_constant_name
         new_constant_name1 = f'{group}.{new_constant_name}'
 
@@ -479,9 +482,19 @@ def update_constant(constant_name, all_python_lines,
 
         # deal with not having found the constant
         if start_line == 0 and end_line == 0:
+            CC.cprint(f'\tNo entry found for {constant_name} in {python_file}',
+                      colour='yellow')
+            time.sleep(0.1)
             continue
         # get old entry
         old_entry = (''.join(const_python_lines[python_file]).splitlines())
+
+        if ''.join(old_entry) == ''.join(updated_line):
+            CC.cprint(f'\tNo changes needed for {constant_name} in {python_file}',
+                      colour='yellow')
+            time.sleep(0.1)
+            continue
+
         # print new entry
         print_entry(constant_name, python_file, old_entry,
                     line_start=start_line, line_end=end_line, colour='green')
@@ -580,19 +593,61 @@ if __name__ == "__main__":
     # step 4: ask user for confirmation and edit files
     # -------------------------------------------------------------------------
     updated_lines = dict()
+    updated_constants = []
     # loop around constants, display the variable, ask for the new name, and
     # then confirm changes, then write changes to files
     for constant_name in valid_constants_list.keys():
 
-        uout = update_constant(constant_name, all_python_lines,
-                               const_python_lines, updated_lines,
-                               group=valid_constants_list[constant_name])
-        # we need to update the input dictionaries so we can change the
-        # next constant
-        all_python_lines, const_python_lines, updated_lines, = uout
+        # reset next and stop
+        next, stop = False, False
+        # loop around so we can redo constant if needed
+        while not next:
+            # print the variable name
+            CC.cprint('\n\n')
+            CC.cprint(HEADER, colour='magenta')
+            CC.cprint(f'Processing {constant_name}', colour='magenta')
+            CC.cprint(HEADER, colour='magenta')
+            try:
+                uout = update_constant(constant_name, all_python_lines,
+                                       const_python_lines, updated_lines,
+                                       group=valid_constants_list[constant_name])
+                # we need to update the input dictionaries so we can change the
+                # next constant
+                all_python_lines, const_python_lines, updated_lines = uout
+                # this constant has been updated
+                updated_constants.append(constant_name)
+                # go to next entry
+                next = True
+            except KeyboardInterrupt:
+                # we need to ask what to do next
+                qtime = True
+                # loop until valid response
+                while qtime:
+                    # ask user if they want to continue
+                    qmsg = ('\n\nRedo loop [R], Continue [C] or Stop [S]'
+                            '\n>>\t')
+                    accept = input(qmsg)
+                    if accept.upper() == 'R':
+                        next, stop, qtime = False, False, False
+                    elif accept.upper() == 'C':
+                        next, stop, qtime = True, False, False
+                    elif accept.upper() == 'S':
+                        next, stop, qtime = True, True, False
+                    else:
+                        continue
+        # deal with stopping
+        if stop:
+            break
+
     # -------------------------------------------------------------------------
     # step 5: save all updated line files
     # -------------------------------------------------------------------------
+    for python_file in updated_lines:
+        # get the lines
+        lines = updated_lines[python_file]
+        # write the lines to the file
+        with open(python_file, 'w') as f:
+            f.write('\n'.join(lines))
 
 
 
