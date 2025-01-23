@@ -320,36 +320,35 @@ def add_group_to_constant(old_name: str, new_name: str, content: List[str],
     # Regular expression to match the specific constant
     pattern = rf"(CDict\.\w+\(\s*['\"]{old_name}['\"],.*?)(\))"
     # Join content into a single string for regex processing
-    content_string = "".join(content)
+    content_string = '\n'.join(content)
     # truncated file name
     string_filename = file_path.replace(PACKAGE_PATH, '')
+    # do a basic match to see if we need to process
+    matches = re.findall(pattern, content_string)
     # don't both if not found
-    if old_name not in content_string:
-        CC.cprint(f'\n\nNot Processing {old_name} in {string_filename}', colour='magenta')
+    if len(matches) == 0:
+        CC.cprint(f'\n\nRegex failed for {old_name} in {string_filename}', colour='magenta')
         return content, 0, 0
     else:
         CC.cprint(f'\n\nProcessing {old_name} in {string_filename}', colour='magenta')
-    # Flag to track whether a match was found
-    match_found = False
-    # store start and end position
-    start_pos = 0
-    end_pos = 0
+
+    state = dict(match_found=False, start_pos=0, end_pos=0)
+
     # Function to handle replacements
     def replace_callback(match):
         # Set the flag when a match is found
-        nonlocal match_found, start_pos, end_pos
-        match_found = True
+        state['match_found'] = True
         # The full matched call
         full_match = match.group(1)
         # start and end position
-        start_pos = match.start()
-        end_pos = match.end()
+        state['start_pos'] = match.start()
+        state['end_pos'] = match.end()
         # Check if "group=" is already in the arguments
         if "group=" in full_match:
             # Only rename the constant if needed
             return full_match.replace(old_name, new_name) + match.group(2)
 
-        end_pos += len(", group=cgroup" + match.group(2))
+        state['end_pos'] += len(", group=cgroup" + match.group(2))
 
         # Add the `group=cgroup` and rename the constant
         return (full_match.replace(old_name, new_name) +
@@ -358,12 +357,14 @@ def add_group_to_constant(old_name: str, new_name: str, content: List[str],
     # Replace the specific constant and conditionally add `group=cgroup`
     updated_content_string = re.sub(pattern, replace_callback, content_string, flags=re.DOTALL)
 
-    if not match_found:
+    if not state['match_found']:
         return content, 0, 0
     # split content back into lines
     updated_content = updated_content_string.splitlines()
     # get the line positions of start and end
-    start_line, end_line = string_pos_to_line_pos(updated_content, start_pos, end_pos)
+    start_line, end_line = string_pos_to_line_pos(updated_content,
+                                                  start=int(state['start_pos']),
+                                                  end=int(state['end_pos']))
     # return these values
     return updated_content, start_line, end_line
 
@@ -422,13 +423,17 @@ def update_constant(constant_name, all_python_lines,
             # add the group name onto the new_constant_name
             new_constant_name1 = f'{group}.{new_constant_name}'
             break
+
+        if str(new_constant_name).upper() in ['Y', 'N', 'YES', 'NO']:
+            CC.cprint('\tInvalid constant name', colour='red')
+            continue
         # add the group name onto the new_constant_name
         new_constant_name1 = f'{group}.{new_constant_name}'
 
         CC.cprint(f'\n\nChanging {constant_name} to {new_constant_name1}',
                   colour='magenta')
         accept = input('Accept changes? (y/n)>>\t')
-        if 'y' in accept.lower():
+        if accept.strip().upper() in ['Y', 'YES']:
             break
 
     # -------------------------------------------------------------------------
@@ -464,18 +469,30 @@ def update_constant(constant_name, all_python_lines,
         qmsg = 'Accept changes? (y/n)>>\t'
         accept = input(qmsg)
 
-        if 'y' in accept.lower():
+        if accept.strip().upper() in ['Y', 'YES']:
             all_python_lines[python_file] = lines
             updated_lines[python_file] = lines
+        else:
+            raise StopLoop()
 
     # -------------------------------------------------------------------------
     # 3: rename variables in the const files
     # -------------------------------------------------------------------------
+    found_in_const = False
+
+
     for python_file in const_python_lines:
+        # get context
+        context = const_python_lines[python_file]
+        # skip files not found in context
+        if constant_name not in ''.join(context):
+            continue
+        else:
+            found_in_const = True
+
         # get the updated line
         uout = add_group_to_constant(constant_name, new_constant_name,
-                                     const_python_lines[python_file],
-                                     python_file)
+                                     context, python_file)
         updated_line, start_line, end_line = uout
 
         # deal with not having found the constant
@@ -485,11 +502,11 @@ def update_constant(constant_name, all_python_lines,
             time.sleep(0.1)
             continue
         # get old entry
-        old_entry = (''.join(const_python_lines[python_file]).splitlines())
+        old_entry = ('\n'.join(context).splitlines())
 
         if ''.join(old_entry) == ''.join(updated_line):
             CC.cprint(f'\tNo changes needed for {constant_name} in {python_file}',
-                      colour='yellow')
+                      colour='green')
             time.sleep(0.1)
             continue
 
@@ -504,9 +521,18 @@ def update_constant(constant_name, all_python_lines,
         qmsg = 'Accept changes? (y/n)>>\t'
         accept = input(qmsg)
 
-        if 'y' in accept.lower():
+        if accept.strip().upper() in ['Y', 'YES']:
             const_python_lines[python_file] = updated_line
             updated_lines[python_file] = updated_line
+        else:
+            raise StopLoop()
+
+    # deal with never finding
+    if not found_in_const:
+        CC.cprint(f'\tNo entry found for {constant_name} in any const file',
+                  colour='red')
+        input('Press enter to skip')
+        raise StopLoop()
 
     return all_python_lines, const_python_lines, updated_lines
 
@@ -592,9 +618,11 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     updated_lines = dict()
     updated_constants = []
+    # get the number of constants
+    num_constants = len(valid_constants_list.keys())
     # loop around constants, display the variable, ask for the new name, and
     # then confirm changes, then write changes to files
-    for constant_name in valid_constants_list.keys():
+    for c_it, constant_name in enumerate(valid_constants_list.keys()):
 
         # reset next and stop
         next, stop = False, False
@@ -603,7 +631,8 @@ if __name__ == "__main__":
             # print the variable name
             CC.cprint('\n\n')
             CC.cprint(HEADER, colour='magenta')
-            CC.cprint(f'Processing {constant_name}', colour='magenta')
+            CC.cprint(f'Processing {constant_name} ({c_it+1} of '
+                      f'{num_constants})', colour='magenta')
             CC.cprint(HEADER, colour='magenta')
             try:
                 uout = update_constant(constant_name, all_python_lines,
@@ -616,7 +645,7 @@ if __name__ == "__main__":
                 updated_constants.append(constant_name)
                 # go to next entry
                 next = True
-            except KeyboardInterrupt:
+            except (KeyboardInterrupt, StopLoop, Exception):
                 # we need to ask what to do next
                 qtime = True
                 # loop until valid response
@@ -625,11 +654,11 @@ if __name__ == "__main__":
                     qmsg = ('\n\nRedo loop [R], Continue [C] or Stop [S]'
                             '\n>>\t')
                     accept = input(qmsg)
-                    if accept.upper() == 'R':
+                    if accept.strip().upper() == 'R':
                         next, stop, qtime = False, False, False
-                    elif accept.upper() == 'C':
+                    elif accept.strip().upper() == 'C':
                         next, stop, qtime = True, False, False
-                    elif accept.upper() == 'S':
+                    elif accept.strip().upper() == 'S':
                         next, stop, qtime = True, True, False
                     else:
                         continue
