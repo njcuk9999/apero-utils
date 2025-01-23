@@ -550,7 +550,7 @@ def print_entry(entry, python_file, lines, line_number=0,
     if line_start is None:
         line_start = max([0, line_number - 3])
     if line_end is None:
-        line_end = min([line_number + 3, len(lines)])
+        line_end = min([line_number + 4, len(lines)])
 
     # truncated file name
     string_filename = python_file.replace(PACKAGE_PATH, '')
@@ -558,8 +558,15 @@ def print_entry(entry, python_file, lines, line_number=0,
     CC.cprint(prefix + '>> ' + string_filename, colour)
 
     for line_it in range(line_start, line_end):
+        # add an indicator for the line we are changing
+        if line_it == line_number:
+            sep = '+'
+        else:
+            sep = '|'
+        # format the line
         fmt_line = lines[line_it].replace('\n', '')
-        CC.cprint(prefix + f'{str(line_it):5s}| {fmt_line}',
+        # print the message
+        CC.cprint(prefix + f'{str(line_it):5s}{sep} {fmt_line}',
                   colour=colour, highlight_colour='red',
                   highlight_words=[entry])
 
@@ -623,7 +630,8 @@ if __name__ == "__main__":
     # loop around constants, display the variable, ask for the new name, and
     # then confirm changes, then write changes to files
     for c_it, constant_name in enumerate(valid_constants_list.keys()):
-
+        # get the group name
+        group_name = valid_constants_list[constant_name]
         # reset next and stop
         next, stop = False, False
         # loop around so we can redo constant if needed
@@ -633,11 +641,12 @@ if __name__ == "__main__":
             CC.cprint(HEADER, colour='magenta')
             CC.cprint(f'Processing {constant_name} ({c_it+1} of '
                       f'{num_constants})', colour='magenta')
+            CC.cprint(f'\tGroup: {group_name}', colour='magenta')
             CC.cprint(HEADER, colour='magenta')
             try:
                 uout = update_constant(constant_name, all_python_lines,
                                        const_python_lines, updated_lines,
-                                       group=valid_constants_list[constant_name])
+                                       group=group_name)
                 # we need to update the input dictionaries so we can change the
                 # next constant
                 all_python_lines, const_python_lines, updated_lines = uout
