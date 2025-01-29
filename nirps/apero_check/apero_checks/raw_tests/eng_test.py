@@ -195,26 +195,41 @@ class EngTest:
         # deal with a scalar value
         if not vector:
             if logic:
+                pmsg = '\n\t' + '-'*60
+                pmsg += f'\n\t{self.name}'
+                pmsg += '\n\t' + '-'*60 + '\n'
+                pmsg += '\t' + self.pmsg.format(**self.variables)
                 # append to logger
-                logger.append(self.pmsg.format(**self.variables))
+                logger.append(pmsg)
                 # add pass to passer
                 passer.append(True)
             else:
+                fmsg = '\n\t' + '-'*60
+                fmsg += f'\n\t{self.name}'
+                fmsg += '\n\t' + '-'*60 + '\n'
+                fmsg += '\t' + self.fmsg.format(**self.variables)
                 # append to logger
-                logger.append(self.fmsg.format(**self.variables))
+                logger.append(fmsg)
                 # add failure to passer
                 passer.append(False)
         # deal with a vector value
         else:
             # pass if all are True
             if np.sum(logic) == len(logic):
+                pmsg = '\n\t' + '-'*60
+                pmsg += f'\n\t{self.name}'
+                pmsg += '\n\t' + '-'*60 + '\n'
+                pmsg += '\t' + self.pmsg.format(**self.variables)
                 # append to logger
-                logger.append(self.pmsg.format(**self.variables))
+                logger.append(pmsg)
                 # add pass to passer
                 passer.append(True)
             else:
                 # Add error to logger
-                fmsg = self.fmsg.format(**self.variables)
+                fmsg = '\n\t' + '-'*60
+                fmsg += f'\n\t{self.name}'
+                fmsg += '\n\t' + '-'*60 + '\n'
+                fmsg += '\t' + self.fmsg.format(**self.variables)
                 # add bad files to filelist
                 for it, filename in enumerate(files):
                     if logic[it]:
@@ -222,9 +237,9 @@ class EngTest:
                     # add any vectors to the print out
                     vstr = ''
                     for vname in self.vectors:
-                        vstr += f'\t{vname}={self.vectors[vname][it]}'
+                        vstr += f'\t\t{vname}={self.vectors[vname][it]}'
                     # push into the fail message
-                    fmsg += f'\n\t {it+1}: {filename}' + vstr
+                    fmsg += f'\n\t\t {it+1}: {filename}' + vstr
                 # append to logger
                 logger.append(fmsg)
                 # add failure to passer
@@ -536,9 +551,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         print('\n')
         print('*' * 50)
         print('QC for night {}'.format(obsdir))
-        print('Passed QC:')
+        print('\n\nPassed QC:\n')
         print('\n'.join(passed_log))
-        print('Failed QC:')
+        print('\n\nFailed QC:\n')
         print('\n'.join(failed_log))
         print('*' * 50)
         print('\n')
