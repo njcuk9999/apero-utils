@@ -324,7 +324,7 @@ def add_group_to_constant(old_name: str, new_name: str, content: List[str],
     # truncated file name
     string_filename = file_path.replace(PACKAGE_PATH, '')
     # do a basic match to see if we need to process
-    matches = re.findall(pattern, content_string)
+    matches = re.findall(pattern, content_string, flags=re.DOTALL)
     # don't both if not found
     if len(matches) == 0:
         CC.cprint(f'\n\nRegex failed for {old_name} in {string_filename}', colour='magenta')
@@ -382,20 +382,38 @@ def update_constant(constant_name, all_python_lines,
     CC.cprint('Finding instances...', colour='magenta')
     # storage python files
     python_files = dict()
+    group_python_files = dict()
     # find all instances of string in all python files
     for python_file in all_python_lines.keys():
         for l_it, line in enumerate(all_python_lines[python_file]):
 
             if f'\'{constant_name}\'' in line:
                 python_files[python_file] = l_it
+            elif f'\'{group}.{constant_name}\'' in line:
+                group_python_files[python_file] = l_it
 
     # if none found we should keep a list
     if len(python_files) == 0:
-        global MISSING
-        MISSING.append(constant_name)
         CC.cprint('\tConstant not found outside definition. Skipping',
                   colour='yellow')
-        return all_python_lines, const_python_lines, updated_lines
+
+        if len(group_python_files) > 0:
+            CC.cprint(f'\t{group}.{constant_name} found in: ', colour='magenta')
+            for python_file in group_python_files:
+                lines = all_python_lines[python_file]
+                line_number = group_python_files[python_file]
+                print_entry(f'{group}.{constant_name}', python_file,
+                            lines, line_number, colour='green')
+            return all_python_lines, const_python_lines, updated_lines
+        else:
+            accept = input('Skip target? [Y/N]>>\t')
+            if accept.strip().upper() in ['Y', 'YES']:
+
+                return all_python_lines, const_python_lines, updated_lines
+            else:
+                global MISSING
+                MISSING.append(constant_name)
+
     CC.cprint('')
     # -------------------------------------------------------------------------
     CC.cprint('Found instances:', colour='magenta')
@@ -512,10 +530,10 @@ def update_constant(constant_name, all_python_lines,
 
         # print new entry
         print_entry(constant_name, python_file, old_entry,
-                    line_start=start_line, line_end=end_line, colour='green')
+                    line_start=start_line, line_end=end_line + 1, colour='green')
         # print new entry
         print_entry(new_constant_name, python_file, updated_line,
-                    line_start=start_line, line_end=end_line, colour='blue')
+                    line_start=start_line, line_end=end_line + 1, colour='blue')
 
         # ask to accept changes
         qmsg = 'Accept changes? (y/n)>>\t'
@@ -600,6 +618,8 @@ if __name__ == "__main__":
     # step 1: identify constants in default constants file
     constants_list = find_default_constants(INSTRUMENT_PATH +
                                             'default/constants.py')
+    # total number of constants
+    total_num_constants = len(constants_list)
     # -------------------------------------------------------------------------
     # step 2: find matching constants without a group in the instrument files
     # -------------------------------------------------------------------------
@@ -629,9 +649,10 @@ if __name__ == "__main__":
     num_constants = len(valid_constants_list.keys())
     # loop around constants, display the variable, ask for the new name, and
     # then confirm changes, then write changes to files
-    for c_it, constant_name in enumerate(valid_constants_list.keys()):
-        # get the group name
-        group_name = valid_constants_list[constant_name]
+    for c_it, constant_name in enumerate(constants_list.keys()):
+
+        # get percentage done
+        perc = ((c_it + 1) / num_constants) * 100
         # reset next and stop
         next, stop = False, False
         # loop around so we can redo constant if needed
@@ -640,7 +661,18 @@ if __name__ == "__main__":
             CC.cprint('\n\n')
             CC.cprint(HEADER, colour='magenta')
             CC.cprint(f'Processing {constant_name} ({c_it+1} of '
-                      f'{num_constants})', colour='magenta')
+                      f'{total_num_constants} ({perc:.2f} %)', colour='magenta')
+
+            if constant_name not in valid_constants_list:
+                CC.cprint(HEADER, colour='magenta')
+
+                CC.cprint('No group/constant already fixed. Skipping',
+                          colour='magenta')
+                # reset next and stop
+                next, stop = True, False
+                continue
+            # get the group name
+            group_name = valid_constants_list[constant_name]
             CC.cprint(f'\tGroup: {group_name}', colour='magenta')
             CC.cprint(HEADER, colour='magenta')
             try:
