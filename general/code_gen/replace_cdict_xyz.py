@@ -652,7 +652,7 @@ if __name__ == "__main__":
     for c_it, constant_name in enumerate(constants_list.keys()):
 
         # get percentage done
-        perc = ((c_it + 1) / num_constants) * 100
+        perc = ((c_it + 1) / total_num_constants) * 100
         # reset next and stop
         next, stop = False, False
         # loop around so we can redo constant if needed
@@ -661,7 +661,9 @@ if __name__ == "__main__":
             CC.cprint('\n\n')
             CC.cprint(HEADER, colour='magenta')
             CC.cprint(f'Processing {constant_name} ({c_it+1} of '
-                      f'{total_num_constants} ({perc:.2f} %)', colour='magenta')
+                      f'{total_num_constants} ({perc:.2f} %) '
+                      f'[valid={num_constants}])',
+                      colour='magenta')
 
             if constant_name not in valid_constants_list:
                 CC.cprint(HEADER, colour='magenta')
