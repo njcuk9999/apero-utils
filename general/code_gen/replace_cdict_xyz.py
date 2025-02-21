@@ -387,32 +387,34 @@ def update_constant(constant_name, all_python_lines,
     for python_file in all_python_lines.keys():
         for l_it, line in enumerate(all_python_lines[python_file]):
 
+
             if f'\'{constant_name}\'' in line:
-                python_files[python_file] = l_it
+                if python_file not in python_files:
+                    python_files[python_file] = []
+
+                python_files[python_file].append(l_it)
             elif f'\'{group}.{constant_name}\'' in line:
-                group_python_files[python_file] = l_it
+                if python_file not in group_python_files:
+                    group_python_files[python_file] = []
+                group_python_files[python_file].append(l_it)
 
     # if none found we should keep a list
     if len(python_files) == 0:
-        CC.cprint('\tConstant not found outside definition. Skipping',
-                  colour='yellow')
+        CC.cprint('\tConstant not found outside definition.', colour='yellow')
 
         if len(group_python_files) > 0:
             CC.cprint(f'\t{group}.{constant_name} found in: ', colour='magenta')
             for python_file in group_python_files:
                 lines = all_python_lines[python_file]
-                line_number = group_python_files[python_file]
-                print_entry(f'{group}.{constant_name}', python_file,
-                            lines, line_number, colour='green')
+                line_numbers = group_python_files[python_file]
+
+                for line_number in line_numbers:
+                    print_entry(f'{group}.{constant_name}', python_file,
+                                lines, line_number, colour='green')
             return all_python_lines, const_python_lines, updated_lines
         else:
-            accept = input('Skip target? [Y/N]>>\t')
-            if accept.strip().upper() in ['Y', 'YES']:
-
-                return all_python_lines, const_python_lines, updated_lines
-            else:
-                global MISSING
-                MISSING.append(constant_name)
+            global MISSING
+            MISSING.append(constant_name)
 
     CC.cprint('')
     # -------------------------------------------------------------------------
@@ -422,10 +424,10 @@ def update_constant(constant_name, all_python_lines,
         # get lines
         lines = all_python_lines[python_file]
 
-        line_number = python_files[python_file]
-
-        print_entry(constant_name, python_file, lines, line_number,
-                    colour='green')
+        line_numbers = python_files[python_file]
+        for line_number in line_numbers:
+            print_entry(constant_name, python_file, lines, line_number,
+                        colour='green')
     CC.cprint('')
     # -------------------------------------------------------------------------
     # propose changes
@@ -464,25 +466,29 @@ def update_constant(constant_name, all_python_lines,
         # get lines
         old_lines = all_python_lines[python_file]
 
-        old_line_number = python_files[python_file]
+        old_line_numbers = python_files[python_file]
 
-        print_entry(constant_name, python_file, old_lines, old_line_number,
-                    colour='green', indent=4)
+        for old_line_number in old_line_numbers:
+            print_entry(constant_name, python_file, old_lines, old_line_number,
+                        colour='green', indent=4)
 
         CC.cprint('After:', colour='magenta')
         # get lines
         lines = all_python_lines[python_file]
         # get line number
-        line_number = python_files[python_file]
-        # get line
-        line = lines[line_number]
-        # new line
-        new_line = line.replace(f'\'{constant_name}\'', f'\'{new_constant_name1}\'')
-        # update line
-        lines[line_number] = new_line
-        # print entry
-        print_entry(new_constant_name1, python_file, lines, line_number,
-                    colour='blue', indent=4)
+        line_numbers = python_files[python_file]
+
+        for line_number in line_numbers:
+            # get line
+            line = lines[line_number]
+            # new line
+            new_line = line.replace(f'\'{constant_name}\'',
+                                    f'\'{new_constant_name1}\'')
+            # update line
+            lines[line_number] = new_line
+            # print entry
+            print_entry(new_constant_name1, python_file, lines, line_number,
+                        colour='blue', indent=4)
         # ask to accept changes
         qmsg = 'Accept changes? (y/n)>>\t'
         accept = input(qmsg)
@@ -636,7 +642,7 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # get a list of all python files in the package
     all_python_files, const_python_files = get_all_python_files(PACKAGE_PATH)
-    # read all python files and stora the lines in memory in a dictionary
+    # read all python files and store the lines in memory in a dictionary
     all_python_lines = read_all_python_files(all_python_files)
     # read all const python files
     const_python_lines = read_all_python_files(const_python_files)
