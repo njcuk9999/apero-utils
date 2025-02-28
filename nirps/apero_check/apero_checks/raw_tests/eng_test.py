@@ -414,11 +414,12 @@ ETESTS['fptset'].func = lambda **k: k['rms'] < k['limit']
 ETESTS['fptset'].pmsg = 'RMS FP to setpoint {rms:.1E} K < {limit:.1E} K'
 ETESTS['fptset'].fmsg = 'RMS FP to setpoint {rms:.1E} K >= {limit:.1E} K'
 # -----------------------------------------------------------------------------
+# TODO: Question: Lisons says <90 < 5   is it maxx < limit or maxx > limit?
 ETESTS['enhpow'] = EngTest('test_encloser_heater_power')
 ETESTS['enhpow'].data = dict(x='EncloserHeaterPower',
-                             limit=80.0)
+                             limit=90.0)
 ETESTS['enhpow'].calc = dict(maxx=lambda **k: np.nanmax(k['x']))
-ETESTS['enhpow'].func = lambda **k: k['x'] < k['limit']
+ETESTS['enhpow'].func = lambda **k: k['maxx'] < k['limit']
 ETESTS['enhpow'].pmsg = 'Encloser heater power {maxx:.1f}% < {limit:.1f}%'
 ETESTS['enhpow'].fmsg = 'Encloser heater power {maxx:.1f}% >= {limit:.1f}%'
 # -----------------------------------------------------------------------------
@@ -476,16 +477,16 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # deal with no observation directory
     if not os.path.exists(obsdir_path):
         if log:
-            print('Observation directory {0} does not exist - skipping test')
-        return True
+            print('Observation directory {0} does not exist')
+        return False
     # get a list of files in this observation directory
     files = glob.glob(os.path.join(obsdir_path, '*.fits'))
     # deal with no files
     if len(files) == 0:
         if log:
             # pass a True if no file is found on that night
-            print('No files found for night {} - skipping test'.format(obsdir))
-        return True
+            print('No files found for night {}'.format(obsdir))
+        return False
     # -------------------------------------------------------------------------
     # create table to store keywords
     tbl_dict = dict(FILENAME=[])
