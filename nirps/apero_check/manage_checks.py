@@ -114,7 +114,7 @@ def allocation_histogram(allocation_table: Table):
         name_counts = Counter(allocation_table['Who'][datemask & groupmask])
 
         if len(name_counts) == 0:
-            max_entry = 0
+            max_entry = max(0, max_entry)
         else:
             # Get the maximum entry
             max_entry = max(max_entry, max(name_counts.values()))

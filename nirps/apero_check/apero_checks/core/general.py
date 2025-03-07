@@ -56,6 +56,7 @@ def get_obs_dirs(params) -> List[str]:
         print('')
         # if user input is "n" then exit
         if 'y' not in user_input.lower():
+            misc.log_msg('User chose to exit.', level='warning')
             return []
         obsdirs = io.get_obs_dirs(params['raw dir'])
     elif isinstance(params['obsdir'], list):
