@@ -18,6 +18,7 @@ from apero_checks.raw_tests import obsdir_test
 from apero_checks.raw_tests import qual_test
 from apero_checks.raw_tests import astrom_test
 from apero_checks.raw_tests import no_sci_test
+from apero_checks.raw_tests import sys_test
 
 # =============================================================================
 # Append your test here
@@ -70,6 +71,9 @@ test_dict['ASTROM_TEST'] = astrom_test.test
 # previous science data test - this tests whether the previous 3 nights had
 #                              science data
 test_dict['NO_SCI'] = no_sci_test.test
+
+# Test that the system is in good health
+test_dict['SYSTEM'] =  sys_test.test
 
 # test 1 - explanation
 

@@ -17,7 +17,6 @@ from apero_checks.red_tests import manual_trigger_tests
 from apero_checks.red_tests import pixel_shifts_test
 from apero_checks.red_tests import excess_modal
 from apero_checks.red_tests import prev_reduc_test
-from apero_checks.red_tests import sys_test
 
 # =============================================================================
 # Append your test here
@@ -78,9 +77,6 @@ test_dict['EXCESS_MODAL'] = excess_modal.test
 
 # Test that every raw file has a preprocessed file
 test_dict['PREV_REDUC'] = prev_reduc_test.test
-
-# Test that the system is in good health
-test_dict['SYSTEM'] =  sys_test.test
 
 # test 1 - explanation
 
