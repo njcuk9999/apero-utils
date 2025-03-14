@@ -11,11 +11,12 @@ Created on 2023-07-03 at 17:03
 """
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 import numpy as np
 import gspread_pandas as gspd
 import pandas as pd
+from astropy.table import join, Table
 
 from apero_checks import raw_tests
 from apero_checks import red_tests
@@ -92,42 +93,47 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
 
     :return: bool, True if test passed, False otherwise
     """
+    all_msg = ''
     # try to run test
     try:
-
         if test_type == 'raw':
             # print which test we are running
             msg = '\tRunning raw test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
             # run raw tests
-            output = raw_tests.test_dict[test_name](params, obsdir, log=log)
+            output, outmsg = raw_tests.test_dict[test_name](params, obsdir, log=log)
         elif test_type == 'red':
             # print which test we are running
             msg = '\tRunning red test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
             # run red tests
-            output = red_tests.test_dict[test_name](params, obsdir, log=log)
+            output, outmsg = red_tests.test_dict[test_name](params, obsdir, log=log)
         else:
             emsg = 'RUN_TEST error: test_type must be set to "raw" or "red"'
             raise base.AperoChecksError(emsg)
         # print whether test passed or failed
         if output:
-            misc.log_msg('\n\tAll tests PASSED', color='green')
+            msg = '\n\tAll tests PASSED'
+            misc.log_msg(msg, color='green')
         else:
-            misc.log_msg('\n\tOne or more tests FAILED', color='red')
+            msg = '\n\tOne or more tests FAILED'
+            misc.log_msg(msg, color='red')
+        # append messages
+        all_msg += outmsg
     except Exception as e:
         if log:
             raise e
         msg = '\t\tError in test {0} \n\t {1}'
         margs = [test_name, e]
         misc.log_msg(msg.format(*margs), level='warning')
+        all_msg += msg.format(*margs)
         output = False
-    return output
+    return output, all_msg
 
 
-def run_tests(params: Dict[str, Any],
+def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
               test_type: str) -> Dict[str, Dict[str, Any]]:
     """
     Run all tests in silent mode and return a dictionary of test values
@@ -138,6 +144,8 @@ def run_tests(params: Dict[str, Any],
 
     :return:
     """
+    # get profile name
+    pname = params['apero profile name']
     # get observation directories
     obsdirs = get_obs_dirs(params)
     # storage for test values
@@ -183,16 +191,21 @@ def run_tests(params: Dict[str, Any],
                     # skip actually running the test
                     continue
             # run the test
-            output = run_test(params, obsdir, test_name, it=it,
-                              num_tests=len(test_list),
-                              log=False, test_type=test_type)
+            output, out_msg = run_test(params, obsdir, test_name, it=it,
+                                       num_tests=len(test_list),
+                                       log=False, test_type=test_type)
             # add to test values
             test_values[obsdir][test_name] = output
+            # only log false tests
+            if not output:
+                misc.add_log_result(log_results, obsdir, pname,
+                                    test_type, test_name, out_msg)
     # return the test values
     return test_values
 
 
-def run_single_test(params: Dict[str, Any], test_type: str):
+def run_single_test(params: Dict[str, Any], log_results: Dict[str, list],
+                    test_type: str):
     """
     Run a single test in log mode
 
@@ -202,6 +215,8 @@ def run_single_test(params: Dict[str, Any], test_type: str):
 
     :return:
     """
+    # get profile name
+    pname = params['apero profile name']
     # get observation directories
     obsdirs = get_obs_dirs(params)
     # deal with no obsdir
@@ -239,8 +254,11 @@ def run_single_test(params: Dict[str, Any], test_type: str):
         msg += '\n' + '*' * 50
         misc.log_msg(msg, level='info')
         # run single test
-        _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
-                     test_type=test_type)
+        output, out_msg = run_test(params, obsdir, test_name, it=0,
+                                   num_tests=1, log=True, test_type=test_type)
+        if not output:
+            misc.add_log_result(log_results, obsdir, pname, test_type,
+                                test_name, out_msg)
     # -------------------------------------------------------------------------
     # print a note that the single test does not update the database
     msg = ('*' * 50 + '\nPlease note\n' + '*' * 50 +
@@ -250,6 +268,7 @@ def run_single_test(params: Dict[str, Any], test_type: str):
            'database. '
            '\n\t--testfilter can be used to run only some tests.')
     misc.log_msg(msg, level='info', color='yellow')
+
 
 
 # =============================================================================
@@ -443,6 +462,52 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
         unlock()
 
 
+def log_tests(results_dict: Dict[str, list]):
+    """
+    Upload test results to google sheet
+
+    :param params: parameters dictionary, containing all parameters that can
+                   be used
+    :param results: a dictionary of dictionarys where each element is a
+                    observation night and each sub-element is a test result
+                    (key = column name, value = True or False)
+    :param test_type: str, either "raw" or "red" (the type of tests to run)
+
+    :return:
+    """
+    # deal with no results
+    if len(results_dict['obsdir']) == 0:
+        msg = 'No rows to add to check log'
+        misc.log_msg(msg, level='warning')
+        return
+    # print message on which observation directory we are processing
+    msg = '*' * 50
+    msg += f'\nSaving to check log'
+    msg += '\n' + '*' * 50
+    misc.log_msg(msg, level='info')
+    # -------------------------------------------------------------------------
+    # convert new results to table
+    new_log_table = Table(results_dict)
+    # -------------------------------------------------------------------------
+    # lock codes
+    lock()
+    # get current log file
+    if os.path.exists(base.CHECK_LOG_FILE):
+        current_log_table = Table.read(base.CHECK_LOG_FILE)
+        # push new rows into
+        merged_log_table = join(current_log_table, new_log_table)
+    else:
+        merged_log_table = new_log_table
+    # -------------------------------------------------------------------------
+    # add to sheet
+    try:
+        merged_log_table.write(base.CHECK_LOG_FILE)
+        # ---------------------------------------------------------------------
+    finally:
+        # unlock codes
+        unlock()
+
+
 def store_overrides(params: Dict[str, Any],
                     overrides: Dict[str, Dict[str, Any]],
                     test_type: str = 'raw'):
@@ -513,6 +578,7 @@ def store_overrides(params: Dict[str, Any],
 
 def check_override(params: Dict[str, Any],
                    results: Dict[str, Dict[str, Any]],
+                   log_results: Dict[str, list],
                    test_type: str = 'raw'):
     # Log that we are testing for overrides
     msg = '*' * 50

@@ -9,6 +9,8 @@ Created on 2023-07-03 at 16:28
 
 @author: cook
 """
+import os
+
 from astropy.time import Time
 
 # =============================================================================
@@ -20,6 +22,8 @@ __AUTHOR__ = 'Neil Cook'
 # get astropy time
 AstropyTime = Time
 _ = AstropyTime.now
+# log file for checks
+CHECK_LOG_FILE = os.path.expanduser('~/.apero/check_fail_log.txt')
 
 
 # =============================================================================

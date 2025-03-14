@@ -14,7 +14,7 @@ import argparse
 import copy
 from typing import Any, Dict, Optional, Tuple
 
-from astropy.time import TimeDelta
+from astropy.time import Time, TimeDelta
 from astropy import units as uu
 
 from apero_checks.core import base
@@ -245,6 +245,45 @@ def load_params(yaml_file: Optional[str] = None,
     # -------------------------------------------------------------------------
     # return params
     return params
+
+
+def define_log_results():
+    """
+    Log results dictionary defintion for use in log table
+    #       time stamp          |  obsdir    | test_type | failed_test | failed_text
+    #       YYYY-MM-DD hh:mm:ss | YYYY-MM-DD | RED-CHECK | TEST_NAME   | TEXT
+
+    :return:
+    """
+    log_results = dict()
+    log_results['timestamp'] = []
+    log_results['obsdir'] = []
+    log_results['profile'] = []
+    log_results['test_type'] = []
+    log_results['failed_test'] = []
+    log_results['failed_text'] = []
+    return log_results
+
+
+def add_log_result(log_results: Dict[str, list], obsdir: str, pname: str,
+                   test_type: str,  failed_test: str, failed_text: str):
+    """
+    Add a result to the log results dictionary
+
+    :param log_results: Dictionary of results
+    :param obsdir: str, observation directory
+    :param test_type: str, test type
+    :param failed_test: str, failed test
+    :param failed_text: str, failed text
+    :return:
+    """
+    timenow = Time.now().iso
+    log_results['timestamp'].append(timenow)
+    log_results['obsdir'].append(obsdir)
+    log_results['profile'].append(pname)
+    log_results['test_type'].append(test_type)
+    log_results['failed_test'].append(failed_test)
+    log_results['failed_text'].append(failed_text)
 
 
 def splash(codename):
