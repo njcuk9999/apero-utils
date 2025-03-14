@@ -488,6 +488,12 @@ def log_tests(results_dict: Dict[str, list]):
     # -------------------------------------------------------------------------
     # convert new results to table
     new_log_table = Table(results_dict)
+    # remove all \n and \t from failed_text column
+    for row in range(len(new_log_table)):
+        if '\n' in new_log_table[row] or '\t' in new_log_table[row]:
+            new_row = new_log_table[row].replace('\n', ' || ')
+            new_row = new_row.replace('\t', ' ')
+            new_log_table[row] = new_row
     # -------------------------------------------------------------------------
     # lock codes
     lock()
@@ -501,7 +507,8 @@ def log_tests(results_dict: Dict[str, list]):
     # -------------------------------------------------------------------------
     # add to sheet
     try:
-        merged_log_table.write(base.CHECK_LOG_FILE)
+        # write to file
+        merged_log_table.write(base.CHECK_LOG_FILE, format='csv', overwrite=True)
         # ---------------------------------------------------------------------
     finally:
         # unlock codes

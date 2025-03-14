@@ -11,7 +11,7 @@ Created on 2023-07-03 at 14:37
 """
 import glob
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import numpy as np
 from astropy.io import fits
@@ -124,7 +124,7 @@ def lowpassfilter(input_vect: np.ndarray, width: int = 101,
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test for excess modal noise in telluric stars. It checks for tcorr files
     of vetted telluric stars and computes the rms of the pixel to pixel vs
@@ -160,18 +160,20 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # check if directory exists
     if not os.path.exists(obsdir_path):
+        out_msg = ('red directory {} does not exist'.format(obsdir))
         if log:
-            print('red directory {} does not exist'.format(obsdir))
-        return True
+            print(out_msg)
+        return True, out_msg
 
     # list of all the files in observation directory
     files = glob.glob(os.path.join(obsdir_path, '*e2ds*tcorr_A.fits'))
 
     # check if there are files in the directory
     if len(files) == 0:
+        out_msg = ('No torr files in directory {}'.format(obsdir))
         if log:
-            print('No torr files in directory {}'.format(obsdir))
-        return True
+            print(out_msg)
+        return True, out_msg
 
     passed = True
     failed_msg = ''
@@ -204,7 +206,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             threshold = threshold_HE
         else:
             # no threshold for other modes
-            return True
+            return True, 'No threshold given for non HA/HE file'
 
         rmsmsg = '(rms20 = {:.4f}, rms1 = {:.4f}), rmslf = {:4,f})'
         margs = [rms_pixel_to_pixel_20, rms_pixel_to_pixel,
@@ -223,17 +225,20 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
                 failed_msg += msg.format(*fargs)
 
     if no_telluric_stars:
+        out_msg = 'No telluric stars in directory {}'.format(obsdir)
         if log:
-            print('No telluric stars in directory {}'.format(obsdir))
-        return True
+            print(out_msg)
+        return True, out_msg
+
+    if len(failed_msg) > 0:
+        out_msg = (failed_msg)
+    else:
+        out_msg = ('No excess noise detected in telluric stars')
 
     if log:
-        if len(failed_msg) > 0:
-            print(failed_msg)
-        else:
-            print('No excess noise detected in telluric stars')
+        print(out_msg)
 
-    return passed
+    return passed, out_msg
 
 
 # =============================================================================

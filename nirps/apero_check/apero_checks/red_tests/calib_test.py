@@ -101,7 +101,7 @@ def calib_check(params: Any, recipe: Any, obsdir: str, log: bool = False
                                     condition, findexdbm, log=log)
 
 
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test with observation directory exists
 
@@ -135,9 +135,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # -------------------------------------------------------------------------
     # we use bad_calib_nights to register pass/fail
     if len(bad_calib_nights) == 0:
-        return True
+
+        out_msg = 'Calib test passed'
+
+        return True, out_msg
     else:
-        return False
+        out_msg = ('Calib count: ')
+        for key in calib_count:
+            out_msg += '\n' + str(key) + ': ' + str(calib_count[key])
+        out_msg += 'bad_calib_nights: '
+        for it in range(len(bad_calib_nights)):
+            out_msg += '\n' + str(bad_calib_nights[it]) + ': '
+
+        return False, out_msg
 
 
 

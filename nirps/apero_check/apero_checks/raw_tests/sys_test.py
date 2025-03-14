@@ -65,7 +65,7 @@ def test_disk_space() -> Tuple[bool, str]:
         return True, msg.format(*margs)
 
 
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test whether observation directory exists in the APERO raw data directory
     if it doesn't it means symlinks have not be created (i.e. trigger has not
@@ -92,8 +92,10 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     test_functions['DISK_USAGE'] = test_disk_space
 
     # -------------------------------------------------------------------------
-    # test 1: test email server
+    # run all tests
     # -------------------------------------------------------------------------
+    all_out_msg = ''
+    # loop around tests
     for it, test_name in enumerate(list(test_functions.keys())):
         # if we have a cached result use it (we don't need to run these tests
         # multiple times)
@@ -109,14 +111,18 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             misc.log_msg(f'Running {test_name} test [{it+1} of '
                          f'{len(test_functions)}]', '')
         # deal with failure
-        if not pass_it and log:
-            misc.log_msg(f'\t{reason_it}', level='warning')
+        out_msg = f'\t{reason_it}'
+
+        if log and pass_it:
+            misc.log_msg(out_msg, level='warning')
         elif log:
-            misc.log_msg(f'\t{reason_it}', level='')
+            misc.log_msg(out_msg, level='')
+
+        all_out_msg += '\n' + out_msg
         # update passed
         passed &= pass_it
     # -------------------------------------------------------------------------
-    return passed
+    return passed, all_out_msg
 
 
 # =============================================================================

@@ -71,54 +71,55 @@ def get_manual_log(params, obs_dir, test) -> Tuple[bool, str]:
 
 
 def test_switch(test_name: str, params: Dict[str, Any], obsdir: str,
-                log=False) -> bool:
+                log=False) -> Tuple[bool, str]:
     # run test
     passed, reason = get_manual_log(params, obsdir, test=test_name)
     # log the failure if logging is required
+    if passed:
+        out_msg = ('{0} passed'.format(test_name))
+    else:
+        out_msg = ('{0} failed: {1}'.format(test_name, reason))
     if log:
-        if passed:
-            print('{0} passed'.format(test_name))
-        else:
-            print('{0} failed: {1}'.format(test_name, reason))
+        print(out_msg)
     # return the passed condition
-    return passed
+    return passed, out_msg
 
 
 # =============================================================================
 # Define tests
 # =============================================================================
 def test_manual_trigger_start(params: Dict[str, Any], obsdir: str,
-                              log=False) -> bool:
+                              log=False) -> Tuple[bool, str]:
     # run the manual start test
     return test_switch(MANUAL_START, params, obsdir, log)
 
 
 def test_manual_trigger_end(params: Dict[str, Any], obsdir: str,
-                              log=False) -> bool:
+                              log=False) -> Tuple[bool, str]:
     # run the manual start test
     return test_switch(MANUAL_END, params, obsdir, log)
 
 
 def test_apero_start(params: Dict[str, Any], obsdir: str,
-                              log=False) -> bool:
+                              log=False) -> Tuple[bool, str]:
     # run the manual start test
     return test_switch(APERO_START, params, obsdir, log)
 
 
 def test_apero_end(params: Dict[str, Any], obsdir: str,
-                              log=False) -> bool:
+                              log=False) -> Tuple[bool, str]:
     # run the manual start test
     return test_switch(APERO_END, params, obsdir, log)
 
 
 def test_ari_start(params: Dict[str, Any], obsdir: str,
-                              log=False) -> bool:
+                              log=False) -> Tuple[bool, str]:
     # run the manual start test
     return test_switch(ARI_START, params, obsdir, log)
 
 
 def test_ari_end(params: Dict[str, Any], obsdir: str,
-                              log=False) -> bool:
+                              log=False) -> Tuple[bool, str]:
     # run the manual start test
     return test_switch(ARI_END, params, obsdir, log)
 

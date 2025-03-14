@@ -9,7 +9,7 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from apero_checks.core import base
 from apero_checks.core import apero_functions
@@ -25,7 +25,7 @@ from apero_checks.core import apero_functions
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Blank test - this tests whether test was run (should always return True)
     All other tests should return True or False, and only print messages if
@@ -72,32 +72,34 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # -------------------------------------------------------------------------
     # We get a False condition if there are unfound objects
     if len(unfound_table) > 0:
+        # print error
+        out_msg = ('\nSome objects must be added to astrometric database '
+              '(via apero_astrometrics) or added to the reject list.\n')
+        # loop around the rows
+        for row in range(len(unfound_table)):
+            # print the object
+            msg = ('\n\t{0}\t{1:30s}\t(APERO: {2})'
+                   '\tLAST[{3}, {4}, {5}]')
+            margs = [row + 1,
+                     ' or '.join(unfound_table['Original Names'][row]),
+                     unfound_table['Apero Name'][row],
+                     unfound_table['Last Run ID'][row],
+                     unfound_table['Last PI Name'] [row],
+                     unfound_table['Last Obs Date'][row]]
+            # print the message
+            out_msg += (msg.format(*margs))
         # all print out messages must be wrapped in if log
         if log:
-            # print error
-            print('\nSome objects must be added to astrometric database '
-                  '(via apero_astrometrics) or added to the reject list.\n')
-            # loop around the rows
-            for row in range(len(unfound_table)):
-                # print the object
-                msg = ('\t{0}\t{1:30s}\t(APERO: {2})'
-                       '\tLAST[{3}, {4}, {5}]')
-                margs = [row + 1,
-                         ' or '.join(unfound_table['Original Names'][row]),
-                         unfound_table['Apero Name'][row],
-                         unfound_table['Last Run ID'][row],
-                         unfound_table['Last PI Name'] [row],
-                         unfound_table['Last Obs Date'][row]]
-                # print the message
-                print(msg.format(*margs))
+            print(out_msg)
         # return False
-        return False
+        return False, out_msg
     else:
         # all print out messages must be wrapped in if log
+        out_msg = 'No unfound objects.'
         if log:
-            print('No unfound objects.')
+            print(out_msg)
         # return True
-        return True
+        return True, out_msg
 
 
 # =============================================================================

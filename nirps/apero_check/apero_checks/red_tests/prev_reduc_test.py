@@ -158,7 +158,7 @@ def get_last_file_time(path: str) -> Union[Time, None]:
     return Time(os.path.getmtime(last_file), format='unix')
 
 
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test whether observation directory exists in the APERO raw data directory
     if it doesn't it means symlinks have not be created (i.e. trigger has not
@@ -186,10 +186,10 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     last_modified = get_last_file_time(os.path.join(raw_directory, obsdir))
     # deal with no last_modified --> raw directory is empty
     if last_modified is None:
+        out_msg = 'Raw directory is empty: {0}'.format(raw_directory)
         if log:
-            msg = 'Raw directory is empty: {0}'.format(raw_directory)
-            misc.log_msg(msg, level='warning')
-        return False
+            misc.log_msg(out_msg, level='warning')
+        return False, out_msg
     # -------------------------------------------------------------------------
     # get the first and last time (we check for the last 7 days only)
     first = last_modified - TimeDelta(7 * uu.day)
@@ -205,20 +205,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     no_reduction = ~np.in1d(raw_prefixes, pp_prefixes)
     # if we have any files that are not in reduction we log an error
     if np.sum(no_reduction) > 0:
+        out_msg = 'Missing pp files in last 7 days: '
+        for row in range(len(raw_prefixes)):
+            if no_reduction[row]:
+                out_msg += '\n\t{0}'.format(raw_files[row])
         if log:
-            msg = 'Missing pp files in last 7 days: '
-            for row in range(len(raw_prefixes)):
-                if no_reduction[row]:
-                    msg += '\n\t{0}'.format(raw_files[row])
-
-            misc.log_msg(msg, level='warning')
-        return False
+            misc.log_msg(out_msg, level='warning')
+        return False, out_msg
     # -------------------------------------------------------------------------
+    out_msg = ('No missing pp files in the last 7 days.')
     if log:
-        msg = ('No missing pp files in the last 7 days.')
-        misc.log_msg(msg, level='')
+        misc.log_msg(out_msg, level='')
     # -------------------------------------------------------------------------
-    return True
+    return True, out_msg
 
 
 # =============================================================================

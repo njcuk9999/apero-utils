@@ -141,7 +141,7 @@ def flux_test(filename, image, dprtype) -> Tuple[bool, str]:
 
 
 def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
-              log: bool = False) -> bool:
+              log: bool = False) -> Tuple[bool, str]:
     # get path to observation directory
     raw_dir = params['raw dir']
     obsdir_path = os.path.join(raw_dir, obsdir)
@@ -154,17 +154,19 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
     # -------------------------------------------------------------------------
     # check if directory exists
     if not os.path.exists(obsdir_path):
+        out_msg = ('Observation directory {} does not exist'.format(obsdir))
         if log:
-            print('Observation directory {} does not exist'.format(obsdir))
-        return False
+            print(out_msg)
+        return False, out_msg
     # -------------------------------------------------------------------------
     # get a list of all the files in observation directory
     files = glob.glob(os.path.join(obsdir_path, '*.fits'))
     # check if there are files in the directory
     if len(files) == 0:
+        out_msg = ('No files in directory {}'.format(obsdir))
         if log:
-            print('No files in directory {}'.format(obsdir))
-        return False
+            print(out_msg)
+        return False, out_msg
     # -------------------------------------------------------------------------
     # filter files to only look at those with the dprtypes we want
     # -------------------------------------------------------------------------
@@ -185,6 +187,7 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
     # storage for all failed outputs
     failed_outputs = dict()
     failed_count = 0
+    all_failed_msgs = ''
     # make storage
     for dprtype in dprgroups:
         # each group is a dictionary of files
@@ -211,11 +214,13 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
                         fail_msgs.append('\t' + fail_msg2)
 
                     if not passed:
+                        margs = [drsgroup, dprtype, filename]
+                        all_fail_msg = ('{0}={1} Failed: {2}'.format(*margs))
+                        for fail_msg in fail_msgs:
+                            all_fail_msg += ('\n' + fail_msg)
                         if log:
-                            margs = [drsgroup, dprtype, filename]
-                            print('{0}={1} Failed: {2}'.format(*margs))
-                            for fail_msg in fail_msgs:
-                                print(fail_msg)
+                            print(all_fail_msg)
+                        all_failed_msgs += '\n' + all_fail_msg
 
                         failed_outputs[drsgroup][filename] = fail_msgs
                         failed_count += 1
@@ -223,12 +228,16 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
     # -------------------------------------------------------------------------
     # False if any of the tests for any file failed
     if failed_count > 0:
-        return False
+        return False, all_failed_msgs
     else:
-        return True
+        passed_msg = 'Qual test passed'
+        if log:
+            print(passed_msg)
+        return True, passed_msg
 
 
-def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False
+                    ) -> Tuple[bool, str]:
     """
     Calibration quality tests - multiple basic quality checks for
     calibration files.
@@ -256,7 +265,8 @@ def calib_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
 
 
-def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def sci_qual_test(params: Dict[str, Any], obsdir: str, log=False
+                  ) -> Tuple[bool, str]:
     """
     Calibration quality tests - multiple basic quality checks for science
     files.

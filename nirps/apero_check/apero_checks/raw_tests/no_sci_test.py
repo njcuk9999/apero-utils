@@ -11,7 +11,7 @@ Created on 2023-07-03 at 14:37
 """
 import glob
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from astropy.io import fits
 from tqdm import tqdm
@@ -36,7 +36,7 @@ PATHS_TO_RAW = ['/nirps_raw/nirps/raw-data/nirps_ha',
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Blank test - this tests whether test was run (should always return True)
     All other tests should return True or False, and only print messages if
@@ -66,16 +66,17 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         files += glob.glob(os.path.join(obsdir_path, '*.fits'))
     # no files is bad
     if len(files) == 0:
+        # pass a True if no file is found on that night
+        out_msg = ('No files found for night {}'.format(obsdir))
+        for raw_directory in PATHS_TO_RAW:
+            # get a list of all files
+            obsdir_path = os.path.join(raw_directory, obsdir)
+            # print paths checked
+            out_msg += ('\n\tChecked: {0}'.format(obsdir_path))
         if log:
-            # pass a True if no file is found on that night
-            print('No files found for night {}'.format(obsdir))
-            for raw_directory in PATHS_TO_RAW:
-                # get a list of all files
-                obsdir_path = os.path.join(raw_directory, obsdir)
-                # print paths checked
-                print('\tChecked: {0}'.format(obsdir_path))
+            print(out_msg)
         # no files mean we fail
-        return False
+        return False, out_msg
     # -------------------------------------------------------------------------
     # storage for counter
     science_files = dict()
@@ -108,25 +109,26 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # no science files might be bad
     if len(science_files) == 0:
+        out_msg = ('No science files found for night {}'.format(obsdir))
+        out_msg += ('\nOther files found for night {}'.format(obsdir))
+        for key in other_files:
+            out_msg += ('\n\t{0}: {1}'.format(key, other_files[key]))
+        out_msg += ('\n\nNote: If override used it will not display here. ')
         if log:
-            print('No science files found for night {}'.format(obsdir))
-            print('Other files found for night {}'.format(obsdir))
-            for key in other_files:
-                print('\t{0}: {1}'.format(key, other_files[key]))
+            print(out_msg)
 
-            print('\nNote: If override used it will not display here. ')
-
-        return False
+        return False, out_msg
     # -------------------------------------------------------------------------
     # log number of science files found for each type
+    out_msg = ('Science files found for night {0}'.format(obsdir))
+    for key in science_files:
+        out_msg += ('\n\t{0}: {1}'.format(key, science_files[key]))
+    out_msg += ('\n\tOther files found for night {}'.format(obsdir))
+    for key in other_files:
+        out_msg += ('\n\t{0}: {1}'.format(key, other_files[key]))
     if log:
-        print('Science files found for night {0}'.format(obsdir))
-        for key in science_files:
-            print('\t{0}: {1}'.format(key, science_files[key]))
-        print('Other files found for night {}'.format(obsdir))
-        for key in other_files:
-            print('\t{0}: {1}'.format(key, other_files[key]))
-    return True
+        print(out_msg)
+    return True, out_msg
 
 
 # =============================================================================

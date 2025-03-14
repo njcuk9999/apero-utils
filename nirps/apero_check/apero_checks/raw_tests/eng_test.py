@@ -451,7 +451,7 @@ ETESTS['be_derr'].fmsg = 'Errors reported for backend devices'
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test with observation directory exists
 
@@ -476,17 +476,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     obsdir_path = os.path.join(raw_directory, obsdir)
     # deal with no observation directory
     if not os.path.exists(obsdir_path):
+        out_msg = ('Observation directory {0} does not exist')
         if log:
-            print('Observation directory {0} does not exist')
-        return False
+            print(out_msg)
+        return False, out_msg
     # get a list of files in this observation directory
     files = glob.glob(os.path.join(obsdir_path, '*.fits'))
     # deal with no files
     if len(files) == 0:
+        # pass a True if no file is found on that night
+        out_msg = ('No files found for night {}'.format(obsdir))
         if log:
-            # pass a True if no file is found on that night
-            print('No files found for night {}'.format(obsdir))
-        return False
+            print(out_msg)
+        return False, out_msg
     # -------------------------------------------------------------------------
     # create table to store keywords
     tbl_dict = dict(FILENAME=[])
@@ -548,18 +550,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     else:
         passed_logical = False
     # -------------------------------------------------------------------------
+    outmsg = ('\n')
+    outmsg += ('\n' + '*' * 50)
+    outmsg += ('\nQC for night {}'.format(obsdir))
+    outmsg += ('\nPassed QC:')
+    outmsg += ('\n ' + '\n'.join(passed_log))
+    outmsg += ('\nFailed QC:')
+    outmsg += ('\n' + '\n'.join(failed_log))
+    outmsg += ('\n' + '*' * 50)
+    outmsg += ('\n')
     if log:
-        print('\n')
-        print('*' * 50)
-        print('QC for night {}'.format(obsdir))
-        print('\n\nPassed QC:\n')
-        print('\n'.join(passed_log))
-        print('\n\nFailed QC:\n')
-        print('\n'.join(failed_log))
-        print('*' * 50)
-        print('\n')
+        print(outmsg)
     # -------------------------------------------------------------------------
-    return passed_logical
+    return passed_logical, outmsg
 
 
 # =============================================================================
