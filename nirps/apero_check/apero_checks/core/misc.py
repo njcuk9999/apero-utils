@@ -255,6 +255,10 @@ def define_log_results():
 
     :return:
     """
+    # check that log directory exists
+    if not os.path.exists(os.path.dirname(base.CHECK_LOG_FILE)):
+        os.makedirs(os.path.dirname(base.CHECK_LOG_FILE))
+    # create log results dictionary
     log_results = dict()
     log_results['timestamp'] = []
     log_results['obsdir'] = []
