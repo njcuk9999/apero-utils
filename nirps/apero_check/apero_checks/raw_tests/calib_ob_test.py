@@ -94,7 +94,8 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
         # get dpr type and obs name
         obs_name = io.get_header_key(filename, header_keys['OBS_NAME'],
                                      required=False, default=None)
-        mjd_date = io.get_header_key(filename, header_keys['MJD-OBS'])
+        mjd_date = io.get_header_key(filename, header_keys['MJD-OBS'],
+                                     dtype=float)
         # check must have obnames
         for obname in must_have_obnames:
             # get the conditions to add obname
@@ -109,8 +110,6 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
                     obs_counts[obname] += 1
                 else:
                     obs_counts[obname] = 1
-        # close the header
-        del hdr
     # -------------------------------------------------------------------------
     # set the failed messages
     failed_log = []

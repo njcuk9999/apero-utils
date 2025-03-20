@@ -92,8 +92,6 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
             dpr_counts[dpr_type] += 1
         else:
             dpr_counts[dpr_type] = 1
-        # close the header
-        del hdr
     # -------------------------------------------------------------------------
     # set the failed messages
     failed_log = []

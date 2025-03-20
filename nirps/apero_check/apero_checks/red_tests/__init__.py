@@ -94,6 +94,8 @@ test_dict['PREV_REDUC'] = prev_reduc_test.test
 # dictionary to store all tests
 override_list = []
 
+# LOW_SNR: There could be objects for which we expect a low SNR
+override_list.append('LOW_SNR')
 
 # =============================================================================
 # End of code

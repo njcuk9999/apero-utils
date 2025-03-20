@@ -164,7 +164,7 @@ def get_header_key(filename: str, key: str, dtype: Type = str,
     if cache:
         if filename in HEADER_CACHE:
             if key in HEADER_CACHE[filename]:
-                return HEADER_CACHE[filename][key]
+                return dtype(HEADER_CACHE[filename][key])
     # get header
     hdr = fits.getheader(filename)
     # return the actual value

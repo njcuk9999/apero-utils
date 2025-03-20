@@ -27,8 +27,14 @@ from apero_checks.core import io
 # define any other constants here that you want moving to the parameters.py
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
-SNR_KEY = 'EXTSN064'
-SNR_LIMIT = 10
+
+# orders to check
+SNR_KEYS = ['EXTSN015', 'EXTSN060']
+
+# limits to check
+SNR_LIMITS = [10, 10]
+
+# science DPRTYPES
 SCI_DPRTYPES = ['OBJ_DARK', 'OBJ_FP', 'OBJ_SKY', 'TELLU_SKY', 'FLUXSTD_SKY']
 
 # =============================================================================
@@ -86,30 +92,38 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
 
     # check pixel shift header keys for all files in obsdir
     for filename in tqdm(files, leave=False):
-        # get snr
-        snr = io.get_header_key(filename, SNR_KEY, dtype=float,
-                                    required=False, default=None)
         # get dpr type
         dprtype = io.get_header_key(filename, 'DPRTYPE',
                                     required=False, default=None)
         # get object name
         objname = io.get_header_key(filename, 'DRSOBJN',
                                     required=False, default=None)
-        # only check science observations
-        if dprtype not in SCI_DPRTYPES:
-            continue
-        # fail
-        if snr < SNR_LIMIT:
-            # there is a shift
-            passed = False
-            failed_msg += (f'SNR[{SNR_KEY}] = {snr} (Should be > {SNR_LIMIT})'
-                           f'\n\tDRSOBJN = {objname}'
-                           f'\n\tFile: {filename}\n')
+
+        for snr_it, snr_key in enumerate(SNR_KEYS):
+            # get the limit for this snr
+            snr_limit = SNR_LIMITS[snr_it]
+            # get snr
+            snr = io.get_header_key(filename, snr_key, dtype=float,
+                                        required=False, default=None)
+            # only check science observations
+            if dprtype not in SCI_DPRTYPES:
+                continue
+            # fail
+            if snr < snr_limit:
+                # there is a shift
+                passed = False
+                failed_msg += (f'SNR[{snr_key}] = {snr} '
+                               f'(Should be > {snr_limit})'
+                               f'\n\tDRSOBJN = {objname}'
+                               f'\n\tFile: {filename}\n')
 
     if len(failed_msg) > 0:
         out_msg = (failed_msg)
     else:
-        out_msg = (f'All observations SNR > {SNR_LIMIT}')
+        out_msg = 'All observations'
+        for snr_it, snr_key in enumerate(SNR_KEYS):
+            snr_limit = SNR_LIMITS[snr_it]
+            out_msg += (f' SNR[{snr_key}] >= {snr_limit}')
     if log:
         print(out_msg)
     return passed, out_msg

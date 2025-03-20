@@ -78,14 +78,14 @@ def override_tests(params: Dict[str, Any],
         # value
         overrides[obsdir] = dict()
         # loop around all tests
-        for it, test_name in enumerate(test_list):
+        for it, _test_name in enumerate(test_list):
             # get the test function
-            if test_name in obsdir_dataframe.columns:
-                value = obsdir_dataframe.loc[obsdir, test_name]
+            if _test_name in obsdir_dataframe.columns:
+                value = obsdir_dataframe.loc[obsdir, _test_name]
             else:
                 value = ''
             # push into test_values
-            test_values[obsdir][test_name] = value
+            test_values[obsdir][_test_name] = value
         # ---------------------------------------------------------------------
         # Ask the user if they want to change the test value
         if test_name in test_values[obsdir]:
