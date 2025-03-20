@@ -20,6 +20,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 from apero_checks.core import apero_functions
 from apero_checks.core import misc
+from apero_checks.core import io
 
 
 def estimate_sigma(sp):
@@ -181,8 +182,15 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     no_telluric_stars = True
     # check pixel shift header keys for all files in obsdir
     for filename in tqdm(files, leave=False):
-        hdr = fits.getheader(filename)
-        if hdr['DRSOBJN'] not in vetted_stars:
+        
+        # get DRSOBJN for filename
+        drsobjn = io.get_header_key(filename, 'DRSOBJN',
+                                    required=False, default=None)
+        drsmode = io.get_header_key(filename, 'DRSMODE',
+                                    required=False, default=None)
+
+
+        if drsobjn not in vetted_stars:
             continue
 
         no_telluric_stars = False
@@ -200,9 +208,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
         else:
             rms_pixel_to_pixel_lf = 0
 
-        if hdr['DRSMODE'] == 'HA':
+        if drsmode == 'HA':
             threshold = threshold_HA
-        elif hdr['DRSMODE'] == 'HE':
+        elif drsmode == 'HE':
             threshold = threshold_HE
         else:
             # no threshold for other modes
@@ -216,12 +224,12 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
             passed = False
             if log:
                 msg = ('Excess modal noise detected in {0} {1}\nfile={2}\n\n')
-                fargs = [hdr['DRSOBJN'], rmsmsg.format(*margs), filename]
+                fargs = [drsobjn, rmsmsg.format(*margs), filename]
                 failed_msg += msg.format(*fargs)
         else:
             msg = ('No excess noise detected in {0} {1}\nfile={2}\n\n')
             if log:
-                fargs = [hdr['DRSOBJN'], rmsmsg.format(*margs), filename]
+                fargs = [drsobjn, rmsmsg.format(*margs), filename]
                 failed_msg += msg.format(*fargs)
 
     if no_telluric_stars:

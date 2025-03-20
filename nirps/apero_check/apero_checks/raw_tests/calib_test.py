@@ -17,7 +17,7 @@ from astropy.io import fits
 from tqdm import tqdm
 
 from apero_checks.core import misc
-
+from apero_checks.core import io
 
 # =============================================================================
 # Define variables
@@ -82,10 +82,11 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     dpr_counts = dict()
     # fill table looping through files
     for ifile in tqdm(range(len(files))):
-        # get the header
-        hdr = fits.getheader(files[ifile])
+        # get filename for this iteration
+        filename = files[ifile]
         # get dpr type and obs name
-        dpr_type = str(hdr.get(header_keys['DPR_TYPE'], None))
+        dpr_type = io.get_header_key(filename, header_keys['DPR_TYPE'],
+                                     required=False, default=None)
         # count dpr type instances
         if dpr_type in dpr_counts:
             dpr_counts[dpr_type] += 1

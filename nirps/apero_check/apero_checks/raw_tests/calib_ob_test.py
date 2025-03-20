@@ -17,6 +17,7 @@ from astropy.io import fits
 from tqdm import tqdm
 
 from apero_checks.core import misc
+from apero_checks.core import io
 
 
 # =============================================================================
@@ -88,11 +89,12 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
 
     # fill table looping through files
     for ifile in tqdm(range(len(files))):
-        # get the header
-        hdr = fits.getheader(files[ifile])
+        # get filename for this iteration
+        filename = files[ifile]
         # get dpr type and obs name
-        obs_name = str(hdr.get(header_keys['OBS_NAME'], None))
-        mjd_date = hdr[header_keys['MJD-OBS']]
+        obs_name = io.get_header_key(filename, header_keys['OBS_NAME'],
+                                     required=False, default=None)
+        mjd_date = io.get_header_key(filename, header_keys['MJD-OBS'])
         # check must have obnames
         for obname in must_have_obnames:
             # get the conditions to add obname

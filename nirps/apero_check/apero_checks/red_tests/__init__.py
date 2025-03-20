@@ -16,6 +16,7 @@ from apero_checks.red_tests import calib_test
 from apero_checks.red_tests import manual_trigger_tests
 from apero_checks.red_tests import pixel_shifts_test
 from apero_checks.red_tests import excess_modal
+from apero_checks.red_tests import low_snr_test
 from apero_checks.red_tests import prev_reduc_test
 
 # =============================================================================
@@ -74,6 +75,9 @@ test_dict['PIXEL_SHIFTS'] = pixel_shifts_test.test
 
 # Test excess modal noise in telluric stars
 test_dict['EXCESS_MODAL'] = excess_modal.test
+
+# Test for low SNR in science targets
+test_dict['LOW_SNR'] = low_snr_test.test
 
 # Test that every raw file has a preprocessed file
 test_dict['PREV_REDUC'] = prev_reduc_test.test

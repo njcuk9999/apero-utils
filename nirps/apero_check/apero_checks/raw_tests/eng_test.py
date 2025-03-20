@@ -18,6 +18,7 @@ from astropy.io import fits
 from tqdm import tqdm
 
 from apero_checks.core import misc
+from apero_checks.core import io
 
 
 # =============================================================================
@@ -41,13 +42,13 @@ class HdrKey:
         self.value = None
         self.test = test
 
-    def read_header(self, hdr: fits.Header, filename: str):
+    def read_header(self, filename: str):
 
-        if self.header_key in hdr:
-            raw_value = hdr[self.header_key]
+        raw_value = io.get_header_key(filename, self.header_key,
+                                      required=False, default=None)
+        if raw_value is not None:
             self.in_header = True
         else:
-            raw_value = None
             self.in_header = False
         # try to interpret the header key with the given dtype
         try:
@@ -498,11 +499,9 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
         # get the file
         tbl_dict['FILENAME'].append(files[ifile])
         mask_dict['FILENAME'].append(True)
-        # get the header
-        hdr = fits.getheader(files[ifile])
         # loop around keys and fill the table dictionary
         for it, key in enumerate(HDR_KEYS):
-            key.read_header(hdr, files[ifile])
+            key.read_header(files[ifile])
             # deal with new dictionary entry
             if key.name not in tbl_dict:
                 tbl_dict[key.name] = []

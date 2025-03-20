@@ -179,7 +179,8 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
     # loop around files and get valid files
     for filename in files:
         # get the dprtype
-        dpr_type = fits.getheader(filename)['HIERARCH ESO DPR TYPE']
+        dpr_type = io.get_header_key(filename, 'HIERARCH ESO DPR TYPE',
+                                     required=False, default=None)
         # if dprtype is valid add to valid files
         if dpr_type in valid_dprtypes:
             valid_files.append(filename)

@@ -13,8 +13,9 @@ import glob
 import os
 from typing import Any, Dict, Tuple
 
-from astropy.io import fits
 from tqdm import tqdm
+
+from apero_checks.core import io
 
 # =============================================================================
 # Define variables
@@ -84,12 +85,11 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     # -------------------------------------------------------------------------
     # loop around files
     for ifile in tqdm(range(len(files))):
-        # get header
-        hdr = fits.getheader(files[ifile])
+        # get file for this iteration
+        filename = files[ifile]
         # get dprtype
-        dprtype = str(hdr[DPRTYPE_KEY])
-        # delete header
-        del hdr
+        dprtype = io.get_header_key(filename, DPRTYPE_KEY,
+                                      required=False, default=None)
         # check if we have a science file
         if dprtype in SCIENCE_DPRTYPES:
             # increment counter if we already have this file

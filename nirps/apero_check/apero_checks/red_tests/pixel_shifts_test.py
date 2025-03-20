@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from apero_checks.core import apero_functions
 from apero_checks.core import misc
+from apero_checks.core import io
 
 
 # =============================================================================
@@ -83,11 +84,10 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
 
     # check pixel shift header keys for all files in obsdir
     for filename in tqdm(files, leave=False):
-
-        hdr = fits.getheader(filename)
-        filename = os.path.basename(filename)
-        dx = float(hdr['DETOFFDX'])
-        dy = float(hdr['DETOFFDY'])
+        # get dx and dy from header
+        dx = io.get_header_key(filename, 'DETOFFDX', dtype=float)
+        dy = io.get_header_key(filename, 'DETOFFDY', dtype=float)
+        # test condition
         if dx != 0 or dy != 0:
             # there is a shift
             passed = False

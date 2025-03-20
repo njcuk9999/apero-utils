@@ -13,6 +13,7 @@ import os
 import platform
 from typing import Any, Dict, Union, Type
 from astropy.io import fits
+from astropy.table import Table
 import time
 
 import yaml
@@ -155,7 +156,8 @@ def gsp_setup():
 
 
 def get_header_key(filename: str, key: str, dtype: Type = str,
-                   cache: bool = True) -> Any:
+                   cache: bool = True, required = True,
+                   default = None) -> Any:
     # make sure HEADER_CACHE is available to us
     global HEADER_CACHE
     # check cache
@@ -166,7 +168,10 @@ def get_header_key(filename: str, key: str, dtype: Type = str,
     # get header
     hdr = fits.getheader(filename)
     # return the actual value
-    value = dtype(hdr[key])
+    if not required and key not in hdr:
+        return default
+    else:
+        value = dtype(hdr[key])
     # add to cache
     if filename not in HEADER_CACHE:
         HEADER_CACHE[filename] = dict(key=value)

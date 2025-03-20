@@ -23,7 +23,7 @@ __AUTHOR__ = 'Neil Cook'
 AstropyTime = Time
 _ = AstropyTime.now
 # log file for checks
-CHECK_LOG_FILE = os.path.expanduser('~/.apero/checks/check_fail_log.txt')
+CHECK_LOG_FILE = os.path.expanduser('~/.apero/checks/check_fail_log.fits')
 
 
 # =============================================================================

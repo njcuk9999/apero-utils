@@ -11,12 +11,12 @@ Created on 2023-07-03 at 17:03
 """
 import os
 import time
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import gspread_pandas as gspd
 import pandas as pd
-from astropy.table import join, Table
+from astropy.table import Table, vstack
 
 from apero_checks import raw_tests
 from apero_checks import red_tests
@@ -115,10 +115,10 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
             raise base.AperoChecksError(emsg)
         # print whether test passed or failed
         if output:
-            msg = '\n\tAll tests PASSED'
+            msg = '\n\t\tAll tests PASSED'
             misc.log_msg(msg, color='green')
         else:
-            msg = '\n\tOne or more tests FAILED'
+            msg = '\n\t\tOne or more tests FAILED'
             misc.log_msg(msg, color='red')
         # append messages
         all_msg += outmsg
@@ -268,7 +268,6 @@ def run_single_test(params: Dict[str, Any], log_results: Dict[str, list],
            'database. '
            '\n\t--testfilter can be used to run only some tests.')
     misc.log_msg(msg, level='info', color='yellow')
-
 
 
 # =============================================================================
@@ -462,7 +461,7 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
         unlock()
 
 
-def log_tests(results_dict: Dict[str, list]):
+def log_tests(results_dict: Dict[str, Union[list, np.ndarray]]):
     """
     Upload test results to google sheet
 
@@ -486,29 +485,34 @@ def log_tests(results_dict: Dict[str, list]):
     msg += '\n' + '*' * 50
     misc.log_msg(msg, level='info')
     # -------------------------------------------------------------------------
+    # we need to make sure failed text is a object numpy array (to stop strings
+    #  trucating)
+    del results_dict['failed_text']
+    # TODO: Figure out how to add error
     # convert new results to table
     new_log_table = Table(results_dict)
-    # remove all \n and \t from failed_text column
-    for row in range(len(new_log_table)):
-        if '\n' in new_log_table[row] or '\t' in new_log_table[row]:
-            new_row = new_log_table[row].replace('\n', ' || ')
-            new_row = new_row.replace('\t', ' ')
-            new_log_table[row] = new_row
+    # # remove all \n and \t from failed_text column
+    # for row in range(len(new_log_table)):
+    #     fail_text = new_log_table[row]['failed_text']
+    #     if '\n' in fail_text or '\t' in fail_text:
+    #         new_fail_text = fail_text.replace('\n', ' || ')
+    #         new_fail_text = new_fail_text.replace('\t', ' ')
+    #         new_log_table[row]['failed_text'] = new_fail_text
     # -------------------------------------------------------------------------
     # lock codes
     lock()
     # get current log file
     if os.path.exists(base.CHECK_LOG_FILE):
-        current_log_table = Table.read(base.CHECK_LOG_FILE)
+        current_log_table = Table.read(base.CHECK_LOG_FILE, format='fits')
         # push new rows into
-        merged_log_table = join(current_log_table, new_log_table)
+        merged_log_table = vstack([current_log_table, new_log_table])
     else:
         merged_log_table = new_log_table
     # -------------------------------------------------------------------------
     # add to sheet
     try:
         # write to file
-        merged_log_table.write(base.CHECK_LOG_FILE, format='csv', overwrite=True)
+        merged_log_table.write(base.CHECK_LOG_FILE, format='fits', overwrite=True)
         # ---------------------------------------------------------------------
     finally:
         # unlock codes
