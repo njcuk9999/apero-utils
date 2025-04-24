@@ -20,8 +20,8 @@ from astropy.table import Table
 # =============================================================================
 # Define variables
 # =============================================================================
-name1 = 'spirou@rali'
-name2 = 'cook@jupiter'
+name1 = 'cook@jupiter'
+name2 = 'spirou@rali'
 name3 = 'cook@nb19'
 name4 = 'spirou@maestria'
 name5 = 'newworlds'
@@ -29,9 +29,8 @@ name6 = 'lam'
 name7 = 'cfht'
 
 
-names = [name1, name2, name3, name4, name5, name6, name7]
+# names = [name1, name2, name3, name4, name5, name6, name7]
 names = [name1, name2, name3, name4]
-
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
@@ -43,13 +42,13 @@ REF_NAME = str(name1)
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 outpaths = dict()
-outpaths[name1] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_rali/lbl/lblrdb/'
-outpaths[name2] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/lbl/lblrdb/'
-outpaths[name3] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_nb19/lbl/lblrdb/'
-outpaths[name4] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_maestria/lbl/lblrdb/'
-outpaths[name5] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_newworld/lbl/lblrdb/'
-outpaths[name6] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_lam/lbl/lblrdb/'
-outpaths[name7] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_cfht/lbl/lblrdb/'
+outpaths[name1] = '/scratch2/spirou/misc/compare/jupiter/lbl'
+outpaths[name2] = '/scratch2/spirou/misc/compare/rali/lbl'
+outpaths[name3] = '/scratch2/spirou/misc/compare/nb19/lbl'
+outpaths[name4] = '/scratch2/spirou/misc/compare/maestria/lbl'
+outpaths[name5] = '/scratch2/spirou/misc/compare/newworlds/lbl'
+outpaths[name6] = '/scratch2/spirou/misc/compare/lam/lbl'
+outpaths[name7] = '/scratch2/spirou/misc/compare/cfht/lbl'
 
 paths = outpaths
 
@@ -92,7 +91,6 @@ def get_files(path: str) -> List[str]:
         for filename in files:
             if filename.endswith('.fits'):
                 fits_files.append(os.path.join(root, filename))
-
     if len(fits_files) == 0:
         print(f'No files for: {path}')
     return fits_files
