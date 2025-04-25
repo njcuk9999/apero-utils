@@ -30,7 +30,7 @@ name7 = 'cfht'
 
 
 # names = [name1, name2, name3, name4, name5, name6, name7]
-names = [name1, name2, name3, name4]
+names = [name1, name2, name3, name4, name7]
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
@@ -127,13 +127,14 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # need to only consider files that appear in all reductions
     valid_basenames = []
-
-    for basename in basenames:
+    valid_objnames = []
+    for basename, objname in zip(basenames, objnames):
         cond = True
         for name in names:
             cond &= os.path.exists(os.path.join(paths[name], basename))
         if cond:
             valid_basenames.append(basename)
+            valid_objnames.append(objname)
 
     # -------------------------------------------------------------------------
     # ge bjd vs rv for all objects
@@ -153,6 +154,7 @@ if __name__ == "__main__":
         for jt, valid_basename in enumerate(valid_basenames):
             try:
                 file_n = os.path.join(paths[name], valid_basename)
+                print(f'\tReading: {file_n}')
                 table = Table.read(file_n, hdu=9)
                 hdr = fits.getheader(file_n, hdu=0)
             except Exception as e:
@@ -163,7 +165,7 @@ if __name__ == "__main__":
                 rvs[name].append(np.nan)
                 continue
             # filter out unwanted object types
-            if objnames[jt] not in OBJECTS:
+            if valid_objnames[jt] not in OBJECTS:
                 times[name].append(np.nan)
                 ervs[name].append(np.nan)
                 rvs[name].append(np.nan)
