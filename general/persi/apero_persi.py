@@ -32,6 +32,8 @@ PERSISTENCE_CODE = '/cosmos99/spirou/misc/persi-code/persitools/persicorr.py'
 PERSIFILE = '/cosmos99/spirou/misc/persi-code/'
 # path to the calibrations
 CALIBDIR = '/cosmos99/spirou/apero-data/spirou_offline/calib/'
+# fiber to user
+FIBER = 'AB'
 # -----------------------------------------------------------------------------
 # test mode
 TEST = True
@@ -54,22 +56,23 @@ def run_persicorr(targets: List[str], test: bool = False):
     findexdb = drs_database.FileIndexDatabase(params)
     findexdb.load_db()
     # set up the condition to get files
-    condition = 'KW_OUTPUT="EXT_E2DS_FF" '
+    condition = f'KW_OUTPUT="EXT_E2DS_FF" AND KW_FIBER="{FIBER}"'
     # add object names
     target_conditions = []
     for target in targets:
         target_conditions.append(f'KW_OBJNAME="{target}"')
     # push target conditons
-    condition += '(' + ' OR '.join(target_conditions) + ')'
+    condition += ' AND (' + ' OR '.join(target_conditions) + ')'
     # get database table
     files = findexdb.get_entries('ABSPATH', condition=condition)
-
+    # print how many files we found to do
+    print('Found {0} files'.format(len(files)))
+    # if in test mode just find the files
     if test:
         print('Running persicorr:')
         for filename in files:
             print(f'\t - {filename}')
         return
-
     # run persi code wrapper
     persi_code.main(files, path_to_persifile=PERSIFILE,
                     mode='e2dsff', do_plot=False, replace=True,
