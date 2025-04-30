@@ -27,10 +27,10 @@ name4 = 'spirou@maestria'
 name5 = 'newworlds'
 name6 = 'lam'
 name7 = 'cfht'
-
+name8 = 'cfht@canfar'
 
 # names = [name1, name2, name3, name4, name5, name6, name7]
-names = [name1, name2, name3, name4, name7]
+names = [name1, name2, name3, name4, name7, name8]
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
@@ -49,6 +49,7 @@ outpaths[name4] = '/scratch2/spirou/misc/compare/maestria/lbl'
 outpaths[name5] = '/scratch2/spirou/misc/compare/newworlds/lbl'
 outpaths[name6] = '/scratch2/spirou/misc/compare/lam/lbl'
 outpaths[name7] = '/scratch2/spirou/misc/compare/cfht/lbl'
+outpaths[name8] = '/scratch2/spirou/misc/compare/cfht_canfar/lbl'
 
 paths = outpaths
 
@@ -62,6 +63,7 @@ COLORS[name4] = 'orange'
 COLORS[name5] = 'purple'
 COLORS[name6] = 'k'
 COLORS[name7] = 'm'
+COLORS[name8] = 'c'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[name1] = 'o'
@@ -71,6 +73,7 @@ MARKERS[name4] = '^'
 MARKERS[name5] = 'x'
 MARKERS[name6] = 'v'
 MARKERS[name7] = 'd'
+MARKERS[name8] = '^'
 # markers needing facecolor
 has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------
