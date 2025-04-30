@@ -9,7 +9,7 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from apero_checks.core import io
 from apero_checks.core import misc
@@ -26,7 +26,7 @@ from apero_checks.core import apero_functions
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test whether observation directory exists in the APERO raw data directory
     if it doesn't it means symlinks have not be created (i.e. trigger has not
@@ -56,20 +56,20 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     # -------------------------------------------------------------------------
     # test if observation directory exists in our list
     if obsdir not in obsdirs:
+        msg = ('OBSDIR TEST: Observation directory {0} does not exist in '
+               '{1} - TEST FAILED')
+        out_msg = msg.format(obsdir, raw_directory)
         if log:
-            msg = ('OBSDIR TEST: Observation directory {0} does not exist in '
-                   '{1} - TEST FAILED')
-            margs = [obsdir, raw_directory]
-            misc.log_msg(msg.format(*margs), level='warning')
-        return False
+            misc.log_msg(out_msg, level='warning')
+        return False, out_msg
     # -------------------------------------------------------------------------
+    msg = ('OBSDIR TEST: Observation directory {0} exists in {1} '
+           '- TEST PASSED')
+    out_msg = msg.format(obsdir, raw_directory)
     if log:
-        msg = ('OBSDIR TEST: Observation directory {0} exists in {1} '
-               '- TEST PASSED')
-        margs = [obsdir, raw_directory]
-        misc.log_msg(msg.format(*margs), level='')
+        misc.log_msg(out_msg, level='')
     # -------------------------------------------------------------------------
-    return True
+    return True, out_msg
 
 
 # =============================================================================

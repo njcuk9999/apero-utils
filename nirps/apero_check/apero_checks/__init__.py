@@ -16,9 +16,15 @@ from apero_checks.core import misc
 # =============================================================================
 # Define variables
 # =============================================================================
+add_log_result = misc.add_log_result
+
+define_log_results = misc.define_log_results
+
 end_msg = misc.end_msg
 
 load_params = misc.load_params
+
+log_tests = general.log_tests
 
 run_tests = general.run_tests
 

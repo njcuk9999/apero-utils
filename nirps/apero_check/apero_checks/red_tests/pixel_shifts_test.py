@@ -9,7 +9,7 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import os
 import glob
@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 from apero_checks.core import apero_functions
 from apero_checks.core import misc
+from apero_checks.core import io
 
 
 # =============================================================================
@@ -31,7 +32,7 @@ from apero_checks.core import misc
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test for pixel shifts in pp files (tmp directory) -
     Checks the DETOFFDX and DETOFFDY header keys to look for any non-zero values
@@ -63,42 +64,43 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # check if directory exists
     if not os.path.exists(obsdir_path):
+        out_msg = ('tmp directory {} does not exist'.format(obsdir))
         if log:
-            print('tmp directory {} does not exist'.format(obsdir))
-        return False
+            print(out_msg)
+        return False, out_msg
 
     # list of all the files in observation directory
     files = glob.glob(os.path.join(obsdir_path, '*.fits'))
 
     # check if there are files in the directory
     if len(files) == 0:
+        out_msg = ('No files in directory {}'.format(obsdir))
         if log:
-            print('No files in directory {}'.format(obsdir))
-        return False
+            print(out_msg)
+        return False, out_msg
 
     passed = True
     failed_msg = ''
 
     # check pixel shift header keys for all files in obsdir
     for filename in tqdm(files, leave=False):
-
-        hdr = fits.getheader(filename)
-        filename = os.path.basename(filename)
-        dx = float(hdr['DETOFFDX'])
-        dy = float(hdr['DETOFFDY'])
+        # get dx and dy from header
+        dx = io.get_header_key(filename, 'DETOFFDX', dtype=float)
+        dy = io.get_header_key(filename, 'DETOFFDY', dtype=float)
+        # test condition
         if dx != 0 or dy != 0:
             # there is a shift
             passed = False
             failed_msg += ('Shift dx = {}, dy = {} detected in file '
                            '{} \n').format(dx, dy, filename)
 
+    if len(failed_msg) > 0:
+        out_msg = (failed_msg)
+    else:
+        out_msg = ('No shifts detected')
     if log:
-        if len(failed_msg) > 0:
-            print(failed_msg)
-        else:
-            print('No shifts detected')
-
-    return passed
+        print(out_msg)
+    return passed, out_msg
 
 
 # =============================================================================

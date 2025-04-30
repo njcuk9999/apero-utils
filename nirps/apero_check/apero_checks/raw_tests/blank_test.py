@@ -9,7 +9,7 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 
 # =============================================================================
@@ -23,7 +23,7 @@ from typing import Any, Dict
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Blank test - this tests whether test was run (should always return True)
     All other tests should return True or False, and only print messages if
@@ -43,10 +43,12 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     _ = params
     # -------------------------------------------------------------------------
     # all print out messages must be wrapped in if log
+    out_msg = ('\nBLANK TEST: This is a blank test - it should always '
+               'return True')
+    out_msg += ('\nOBSDIR: {0}'.format(obsdir))
     if log:
-        print('BLANK TEST: This is a blank test - it should always return True')
-        print('OBSDIR: {0}'.format(obsdir))
-    return True
+        print(out_msg)
+    return True, out_msg
 
 
 # =============================================================================

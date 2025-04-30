@@ -41,6 +41,9 @@ nirps he online:
             - DRS_POST_T
             - DRS_POST_V
             - DRS_POST_P
+            - EXT_S1D_W
+            - SC1D_W_FILE
+            - RC1D_W_FILE
         # input dpr types
         science dpr types:
             - OBJ_FP

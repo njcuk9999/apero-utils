@@ -9,17 +9,21 @@ Created on 2023-07-03 at 16:28
 
 @author: cook
 """
+import os
+
 from astropy.time import Time
 
 # =============================================================================
 # Define variables
 # =============================================================================
-__VERSION__ = '0.0.13'
-__DATE__ = '2023-07-07'
+__VERSION__ = '0.0.34'
+__DATE__ = '2024-09-25'
 __AUTHOR__ = 'Neil Cook'
 # get astropy time
 AstropyTime = Time
 _ = AstropyTime.now
+# log file for checks
+CHECK_LOG_FILE = os.path.expanduser('~/.apero/checks/check_fail_log.fits')
 
 
 # =============================================================================

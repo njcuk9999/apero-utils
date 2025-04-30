@@ -11,7 +11,7 @@ Created on 2023-07-03 at 14:37
 """
 import glob
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 import numpy as np
 from astropy.io import fits
@@ -20,6 +20,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline
 
 from apero_checks.core import apero_functions
 from apero_checks.core import misc
+from apero_checks.core import io
 
 
 def estimate_sigma(sp):
@@ -124,7 +125,7 @@ def lowpassfilter(input_vect: np.ndarray, width: int = 101,
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test for excess modal noise in telluric stars. It checks for tcorr files
     of vetted telluric stars and computes the rms of the pixel to pixel vs
@@ -160,18 +161,20 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
 
     # check if directory exists
     if not os.path.exists(obsdir_path):
+        out_msg = ('red directory {} does not exist'.format(obsdir))
         if log:
-            print('red directory {} does not exist'.format(obsdir))
-        return True
+            print(out_msg)
+        return True, out_msg
 
     # list of all the files in observation directory
     files = glob.glob(os.path.join(obsdir_path, '*e2ds*tcorr_A.fits'))
 
     # check if there are files in the directory
     if len(files) == 0:
+        out_msg = ('No torr files in directory {}'.format(obsdir))
         if log:
-            print('No torr files in directory {}'.format(obsdir))
-        return True
+            print(out_msg)
+        return True, out_msg
 
     passed = True
     failed_msg = ''
@@ -179,8 +182,15 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     no_telluric_stars = True
     # check pixel shift header keys for all files in obsdir
     for filename in tqdm(files, leave=False):
-        hdr = fits.getheader(filename)
-        if hdr['DRSOBJN'] not in vetted_stars:
+        
+        # get DRSOBJN for filename
+        drsobjn = io.get_header_key(filename, 'DRSOBJN',
+                                    required=False, default=None)
+        drsmode = io.get_header_key(filename, 'DRSMODE',
+                                    required=False, default=None)
+
+
+        if drsobjn not in vetted_stars:
             continue
 
         no_telluric_stars = False
@@ -198,13 +208,13 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
         else:
             rms_pixel_to_pixel_lf = 0
 
-        if hdr['DRSMODE'] == 'HA':
+        if drsmode == 'HA':
             threshold = threshold_HA
-        elif hdr['DRSMODE'] == 'HE':
+        elif drsmode == 'HE':
             threshold = threshold_HE
         else:
             # no threshold for other modes
-            return True
+            return True, 'No threshold given for non HA/HE file'
 
         rmsmsg = '(rms20 = {:.4f}, rms1 = {:.4f}), rmslf = {:4,f})'
         margs = [rms_pixel_to_pixel_20, rms_pixel_to_pixel,
@@ -214,26 +224,29 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
             passed = False
             if log:
                 msg = ('Excess modal noise detected in {0} {1}\nfile={2}\n\n')
-                fargs = [hdr['DRSOBJN'], rmsmsg.format(*margs), filename]
+                fargs = [drsobjn, rmsmsg.format(*margs), filename]
                 failed_msg += msg.format(*fargs)
         else:
             msg = ('No excess noise detected in {0} {1}\nfile={2}\n\n')
             if log:
-                fargs = [hdr['DRSOBJN'], rmsmsg.format(*margs), filename]
+                fargs = [drsobjn, rmsmsg.format(*margs), filename]
                 failed_msg += msg.format(*fargs)
 
     if no_telluric_stars:
+        out_msg = 'No telluric stars in directory {}'.format(obsdir)
         if log:
-            print('No telluric stars in directory {}'.format(obsdir))
-        return True
+            print(out_msg)
+        return True, out_msg
+
+    if len(failed_msg) > 0:
+        out_msg = (failed_msg)
+    else:
+        out_msg = ('No excess noise detected in telluric stars')
 
     if log:
-        if len(failed_msg) > 0:
-            print(failed_msg)
-        else:
-            print('No excess noise detected in telluric stars')
+        print(out_msg)
 
-    return passed
+    return passed, out_msg
 
 
 # =============================================================================

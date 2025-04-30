@@ -11,13 +11,13 @@ Created on 2023-07-03 at 14:37
 """
 import glob
 import os
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from astropy.io import fits
 from tqdm import tqdm
 
 from apero_checks.core import misc
-
+from apero_checks.core import io
 
 # =============================================================================
 # Define variables
@@ -30,7 +30,7 @@ from apero_checks.core import misc
 # =============================================================================
 # Define functions
 # =============================================================================
-def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
+def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     """
     Test with observation directory exists
 
@@ -64,33 +64,34 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     obsdir_path = os.path.join(raw_directory, obsdir)
     # deal with no observation directory
     if not os.path.exists(obsdir_path):
+        out_msg = ('Observation directory {0} does not exist - TEST FAILED')
         if log:
-            print('Observation directory {0} does not exist - TEST FAILED')
-        return False
+            print(out_msg)
+        return False, out_msg
     # get the files for this observation directory
     files = glob.glob(os.path.join(obsdir_path, '*.fits'))
     # deal with no files
     if len(files) == 0:
+        # pass a True if no file is found on that night
+        out_msg = ('No files found for night {}'.format(obsdir))
         if log:
-            # pass a True if no file is found on that night
-            print('No files found for night {}'.format(obsdir))
-        return False
+            print(out_msg)
+        return False, out_msg
     # -------------------------------------------------------------------------
     # create table to store keywords
     dpr_counts = dict()
     # fill table looping through files
     for ifile in tqdm(range(len(files))):
-        # get the header
-        hdr = fits.getheader(files[ifile])
+        # get filename for this iteration
+        filename = files[ifile]
         # get dpr type and obs name
-        dpr_type = str(hdr.get(header_keys['DPR_TYPE'], None))
+        dpr_type = io.get_header_key(filename, header_keys['DPR_TYPE'],
+                                     required=False, default=None)
         # count dpr type instances
         if dpr_type in dpr_counts:
             dpr_counts[dpr_type] += 1
         else:
             dpr_counts[dpr_type] = 1
-        # close the header
-        del hdr
     # -------------------------------------------------------------------------
     # set the failed messages
     failed_log = []
@@ -123,18 +124,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> bool:
     else:
         passed_logical = False
     # -------------------------------------------------------------------------
+    outmsg = ('\n')
+    outmsg += ('\n' + '*' * 50)
+    outmsg += ('\nQC for night {}'.format(obsdir))
+    outmsg += ('\nPassed QC:')
+    outmsg += ('\n ' + passed_log)
+    outmsg += ('\nFailed QC:')
+    outmsg += ('\n' + failed_log)
+    outmsg += ('\n' + '*' * 50)
+    outmsg += ('\n')
     if log:
-        print('\n')
-        print('*' * 50)
-        print('QC for night {}'.format(obsdir))
-        print('Passed QC:')
-        print(passed_log)
-        print('Failed QC:')
-        print(failed_log)
-        print('*' * 50)
-        print('\n')
+        print(outmsg)
     # -------------------------------------------------------------------------
-    return passed_logical
+    return passed_logical, outmsg
 
 
 # =============================================================================

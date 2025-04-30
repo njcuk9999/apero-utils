@@ -20,18 +20,17 @@ from astropy.table import Table
 # =============================================================================
 # Define variables
 # =============================================================================
-name1 = 'spirou@rali'
-name2 = 'cook@jupiter'
+name1 = 'cook@jupiter'
+name2 = 'spirou@rali'
 name3 = 'cook@nb19'
 name4 = 'spirou@maestria'
 name5 = 'newworlds'
 name6 = 'lam'
 name7 = 'cfht'
+name8 = 'cfht@canfar'
 
-
-names = [name1, name2, name3, name4, name5, name6, name7]
-names = [name1, name2, name3, name4]
-
+# names = [name1, name2, name3, name4, name5, name6, name7]
+names = [name1, name2, name3, name4, name7, name8]
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
@@ -43,13 +42,14 @@ REF_NAME = str(name1)
 # just add another entry here
 #  i.e. paths[NAME3] = path/to/reduced/dir
 outpaths = dict()
-outpaths[name1] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_rali/lbl/lblrdb/'
-outpaths[name2] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/lbl/lblrdb/'
-outpaths[name3] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_nb19/lbl/lblrdb/'
-outpaths[name4] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_maestria/lbl/lblrdb/'
-outpaths[name5] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_newworld/lbl/lblrdb/'
-outpaths[name6] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_lam/lbl/lblrdb/'
-outpaths[name7] = '/scratch2/spirou/drs-data/spirou_minidata2_07286_cfht/lbl/lblrdb/'
+outpaths[name1] = '/scratch2/spirou/misc/compare/jupiter/lbl'
+outpaths[name2] = '/scratch2/spirou/misc/compare/rali/lbl'
+outpaths[name3] = '/scratch2/spirou/misc/compare/nb19/lbl'
+outpaths[name4] = '/scratch2/spirou/misc/compare/maestria/lbl'
+outpaths[name5] = '/scratch2/spirou/misc/compare/newworlds/lbl'
+outpaths[name6] = '/scratch2/spirou/misc/compare/lam/lbl'
+outpaths[name7] = '/scratch2/spirou/misc/compare/cfht/lbl'
+outpaths[name8] = '/scratch2/spirou/misc/compare/cfht_canfar/lbl'
 
 paths = outpaths
 
@@ -63,6 +63,7 @@ COLORS[name4] = 'orange'
 COLORS[name5] = 'purple'
 COLORS[name6] = 'k'
 COLORS[name7] = 'm'
+COLORS[name8] = 'c'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[name1] = 'o'
@@ -72,6 +73,7 @@ MARKERS[name4] = '^'
 MARKERS[name5] = 'x'
 MARKERS[name6] = 'v'
 MARKERS[name7] = 'd'
+MARKERS[name8] = '^'
 # markers needing facecolor
 has_face = ['o', 's', '^', 'd', 'v']
 # -----------------------------------------------------------------------------
@@ -92,7 +94,6 @@ def get_files(path: str) -> List[str]:
         for filename in files:
             if filename.endswith('.fits'):
                 fits_files.append(os.path.join(root, filename))
-
     if len(fits_files) == 0:
         print(f'No files for: {path}')
     return fits_files
@@ -129,13 +130,14 @@ if __name__ == "__main__":
     # -------------------------------------------------------------------------
     # need to only consider files that appear in all reductions
     valid_basenames = []
-
-    for basename in basenames:
+    valid_objnames = []
+    for basename, objname in zip(basenames, objnames):
         cond = True
         for name in names:
             cond &= os.path.exists(os.path.join(paths[name], basename))
         if cond:
             valid_basenames.append(basename)
+            valid_objnames.append(objname)
 
     # -------------------------------------------------------------------------
     # ge bjd vs rv for all objects
@@ -155,6 +157,7 @@ if __name__ == "__main__":
         for jt, valid_basename in enumerate(valid_basenames):
             try:
                 file_n = os.path.join(paths[name], valid_basename)
+                print(f'\tReading: {file_n}')
                 table = Table.read(file_n, hdu=9)
                 hdr = fits.getheader(file_n, hdu=0)
             except Exception as e:
@@ -165,7 +168,7 @@ if __name__ == "__main__":
                 rvs[name].append(np.nan)
                 continue
             # filter out unwanted object types
-            if objnames[jt] not in OBJECTS:
+            if valid_objnames[jt] not in OBJECTS:
                 times[name].append(np.nan)
                 ervs[name].append(np.nan)
                 rvs[name].append(np.nan)

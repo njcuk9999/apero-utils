@@ -553,7 +553,8 @@ def get_sheet(params: Dict[str, Any], sheetkind: str) -> pd.DataFrame:
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
-    current_dataframe = google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+    current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
+                                                 sheet=sheet_name)
     # return google sheet as current dataframe
     return current_dataframe
 
@@ -633,7 +634,8 @@ def update_response_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
         pass
     # push dataframe back to server
     if len(dataframe) > 0:
-        google_sheet.df_to_sheet(dataframe, index=False, replace=False)
+        io.push_to_googlesheet(google_sheet, dataframe, index=False,
+                               replace=False, logger=misc.log_msg)
     # print progress
     msg = 'Valid rows added to response google-sheet'
     misc.log_msg(params, msg, level='info')
@@ -675,8 +677,8 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
     google_sheet = gspd.spread.Spread(sheet_id, sheet=sheet_name)
 
     # get current data frame
-    current_dataframe = google_sheet.sheet_to_df(index=0, sheet=sheet_name)
-
+    current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
+                                                 sheet=sheet_name)
     # remove all rows from dataframe that are already in current_dataframe
     mask = np.in1d(dataframe['HASHKEY'], current_dataframe['HASHKEY'])
     dataframe = dataframe[~mask]
@@ -686,7 +688,8 @@ def update_archive_sheet(params: Dict[str, Any], dataframe: pd.DataFrame):
         new_dataframe = pd.concat([current_dataframe, dataframe],
                                   ignore_index=True)
 
-        google_sheet.df_to_sheet(new_dataframe, index=False, replace=True)
+        io.push_to_googlesheet(google_sheet, new_dataframe, index=False,
+                               replace=True)
     # print progress
     msg = 'All rows added to archive google-sheet'
     misc.log_msg(params, msg, level='info')

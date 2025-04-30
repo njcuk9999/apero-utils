@@ -35,6 +35,8 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
     apero_checks.splash('APERO Raw data checks')
     # get params updated for input yaml file
     all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
+    # set up log results
+    log_results = apero_checks.define_log_results()
     # loop around profiles
     for profile in all_params:
         # get profile params
@@ -44,18 +46,23 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
         # if we do not have a test name then we run all tests and upload
         if params['test_name'] in [None, 'None']:
             # run the tests
-            test_results = apero_checks.run_tests(params, test_type='raw')
+            test_results = apero_checks.run_tests(params, log_results,
+                                                  test_type='raw')
             # update results with the override
             test_results = apero_checks.check_override(params, test_results,
+                                                       log_results,
                                                        test_type='raw')
             # upload the tests
             apero_checks.upload_tests(params, test_results, test_type='raw')
         # otherwise we run a single test
         else:
             # run single test
-            apero_checks.run_single_test(params, test_type='raw')
+            apero_checks.run_single_test(params, log_results, test_type='raw')
+        # log failures to file
+        apero_checks.log_tests(log_results)
     # finish with an end message
     apero_checks.end_msg()
+
 
 # =============================================================================
 # Start of code

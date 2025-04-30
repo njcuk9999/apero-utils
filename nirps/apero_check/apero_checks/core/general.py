@@ -11,11 +11,12 @@ Created on 2023-07-03 at 17:03
 """
 import os
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Union
 
 import numpy as np
 import gspread_pandas as gspd
 import pandas as pd
+from astropy.table import Table, vstack
 
 from apero_checks import raw_tests
 from apero_checks import red_tests
@@ -56,6 +57,7 @@ def get_obs_dirs(params) -> List[str]:
         print('')
         # if user input is "n" then exit
         if 'y' not in user_input.lower():
+            misc.log_msg('User chose to exit.', level='warning')
             return []
         obsdirs = io.get_obs_dirs(params['raw dir'])
     elif isinstance(params['obsdir'], list):
@@ -91,42 +93,47 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
 
     :return: bool, True if test passed, False otherwise
     """
+    all_msg = ''
     # try to run test
     try:
-
         if test_type == 'raw':
             # print which test we are running
             msg = '\tRunning raw test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
             # run raw tests
-            output = raw_tests.test_dict[test_name](params, obsdir, log=log)
+            output, outmsg = raw_tests.test_dict[test_name](params, obsdir, log=log)
         elif test_type == 'red':
             # print which test we are running
             msg = '\tRunning red test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
             # run red tests
-            output = red_tests.test_dict[test_name](params, obsdir, log=log)
+            output, outmsg = red_tests.test_dict[test_name](params, obsdir, log=log)
         else:
             emsg = 'RUN_TEST error: test_type must be set to "raw" or "red"'
             raise base.AperoChecksError(emsg)
         # print whether test passed or failed
         if output:
-            misc.log_msg('\t\tPASSED', color='green')
+            msg = '\n\t\tAll tests PASSED'
+            misc.log_msg(msg, color='green')
         else:
-            misc.log_msg('\t\tFAILED', color='red')
+            msg = '\n\t\tOne or more tests FAILED'
+            misc.log_msg(msg, color='red')
+        # append messages
+        all_msg += outmsg
     except Exception as e:
         if log:
             raise e
         msg = '\t\tError in test {0} \n\t {1}'
         margs = [test_name, e]
         misc.log_msg(msg.format(*margs), level='warning')
+        all_msg += msg.format(*margs)
         output = False
-    return output
+    return output, all_msg
 
 
-def run_tests(params: Dict[str, Any],
+def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
               test_type: str) -> Dict[str, Dict[str, Any]]:
     """
     Run all tests in silent mode and return a dictionary of test values
@@ -137,6 +144,8 @@ def run_tests(params: Dict[str, Any],
 
     :return:
     """
+    # get profile name
+    pname = params['apero profile name']
     # get observation directories
     obsdirs = get_obs_dirs(params)
     # storage for test values
@@ -182,16 +191,21 @@ def run_tests(params: Dict[str, Any],
                     # skip actually running the test
                     continue
             # run the test
-            output = run_test(params, obsdir, test_name, it=it,
-                              num_tests=len(test_list),
-                              log=False, test_type=test_type)
+            output, out_msg = run_test(params, obsdir, test_name, it=it,
+                                       num_tests=len(test_list),
+                                       log=False, test_type=test_type)
             # add to test values
             test_values[obsdir][test_name] = output
+            # only log false tests
+            if not output:
+                misc.add_log_result(log_results, obsdir, pname,
+                                    test_type, test_name, out_msg)
     # return the test values
     return test_values
 
 
-def run_single_test(params: Dict[str, Any], test_type: str):
+def run_single_test(params: Dict[str, Any], log_results: Dict[str, list],
+                    test_type: str):
     """
     Run a single test in log mode
 
@@ -201,6 +215,8 @@ def run_single_test(params: Dict[str, Any], test_type: str):
 
     :return:
     """
+    # get profile name
+    pname = params['apero profile name']
     # get observation directories
     obsdirs = get_obs_dirs(params)
     # deal with no obsdir
@@ -238,8 +254,11 @@ def run_single_test(params: Dict[str, Any], test_type: str):
         msg += '\n' + '*' * 50
         misc.log_msg(msg, level='info')
         # run single test
-        _ = run_test(params, obsdir, test_name, it=0, num_tests=1, log=True,
-                     test_type=test_type)
+        output, out_msg = run_test(params, obsdir, test_name, it=0,
+                                   num_tests=1, log=True, test_type=test_type)
+        if not output:
+            misc.add_log_result(log_results, obsdir, pname, test_type,
+                                test_name, out_msg)
     # -------------------------------------------------------------------------
     # print a note that the single test does not update the database
     msg = ('*' * 50 + '\nPlease note\n' + '*' * 50 +
@@ -273,7 +292,8 @@ def get_current_dataframe(params, test_type='raw'):
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
-    return google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+    return io.pull_from_googlesheet(google_sheet, index=0, sheet=sheet_name,
+                                    logger=misc.log_msg)
 
 
 def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
@@ -309,10 +329,16 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
         emsg = ('ADD_TO_SHEET error: test_type must be set to "raw" or "red" '
                 'or "override"')
         raise base.AperoChecksError(emsg)
+    # -------------------------------------------------------------------------
+    # make a local name for the file
+    local_path = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
+    local_file = os.path.join(local_path, 'local', f'{sheet_id}_{sheet_name}.csv')
     # load google sheet instance
     google_sheet = gspd.spread.Spread(sheet_id)
     # convert google sheet to pandas dataframe
-    current_dataframe = google_sheet.sheet_to_df(index=0, sheet=sheet_name)
+    current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
+                                                 sheet=sheet_name,
+                                                 logger=misc.log_msg)
     # -------------------------------------------------------------------------
     # append empty rows to dataframe
     current_dataframe = pd.concat([current_dataframe, dataframe],
@@ -343,11 +369,34 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
     current_dataframe = current_dataframe.sort_values(by='obsdir',
                                                       ascending=False)
     # -------------------------------------------------------------------------
+    # load last table in local directory
+    if os.path.exists(local_file):
+        last_dataframe = pd.read_csv(local_file)
+
+        # check that the new dataframe isn't shorter than the old one
+        if len(current_dataframe) < len(last_dataframe):
+            # push dataframe back to server
+            io.push_to_googlesheet(google_sheet, last_dataframe, index=False,
+                                   replace=True, logger=misc.log_msg)
+            emsg = (f'Sheet {sheet_name} ({sheet_id}) has got shorter - '
+                    f'something went wrong. Please delete {last_dataframe} and '
+                    f'try again - note we are resetting the online version to '
+                    f'this last version.')
+            raise base.AperoChecksError(emsg)
+    # if local file still exists remove it
+    if os.path.exists(local_file):
+        os.remove(local_file)
+    # print progress
+    msg = 'Saving local backup ({0})'.format(local_file)
+    misc.log_msg(msg, level='info')
+    # save table to local directory
+    current_dataframe.to_csv(local_file, index=False)
+    # -------------------------------------------------------------------------
     # print progress
     msg = 'Pushing all rows to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
-    # push dataframe back to server
-    google_sheet.df_to_sheet(current_dataframe, index=False, replace=True)
+    io.push_to_googlesheet(google_sheet, current_dataframe, index=False,
+                           replace=True, logger=misc.log_msg)
     # print progress
     msg = 'All rows added to google-sheet ({0})'.format(sheet_name)
     misc.log_msg(msg, level='info')
@@ -406,6 +455,64 @@ def upload_tests(params: Dict[str, Any], results: Dict[str, Dict[str, Any]],
     # add to sheet
     try:
         add_to_sheet(params, dataframe, test_type=test_type)
+        # ---------------------------------------------------------------------
+    finally:
+        # unlock codes
+        unlock()
+
+
+def log_tests(results_dict: Dict[str, Union[list, np.ndarray]]):
+    """
+    Upload test results to google sheet
+
+    :param params: parameters dictionary, containing all parameters that can
+                   be used
+    :param results: a dictionary of dictionarys where each element is a
+                    observation night and each sub-element is a test result
+                    (key = column name, value = True or False)
+    :param test_type: str, either "raw" or "red" (the type of tests to run)
+
+    :return:
+    """
+    # deal with no results
+    if len(results_dict['obsdir']) == 0:
+        msg = 'No rows to add to check log'
+        misc.log_msg(msg, level='warning')
+        return
+    # print message on which observation directory we are processing
+    msg = '*' * 50
+    msg += f'\nSaving to check log'
+    msg += '\n' + '*' * 50
+    misc.log_msg(msg, level='info')
+    # -------------------------------------------------------------------------
+    # we need to make sure failed text is a object numpy array (to stop strings
+    #  trucating)
+    del results_dict['failed_text']
+    # TODO: Figure out how to add error
+    # convert new results to table
+    new_log_table = Table(results_dict)
+    # # remove all \n and \t from failed_text column
+    # for row in range(len(new_log_table)):
+    #     fail_text = new_log_table[row]['failed_text']
+    #     if '\n' in fail_text or '\t' in fail_text:
+    #         new_fail_text = fail_text.replace('\n', ' || ')
+    #         new_fail_text = new_fail_text.replace('\t', ' ')
+    #         new_log_table[row]['failed_text'] = new_fail_text
+    # -------------------------------------------------------------------------
+    # lock codes
+    lock()
+    # get current log file
+    if os.path.exists(base.CHECK_LOG_FILE):
+        current_log_table = Table.read(base.CHECK_LOG_FILE, format='fits')
+        # push new rows into
+        merged_log_table = vstack([current_log_table, new_log_table])
+    else:
+        merged_log_table = new_log_table
+    # -------------------------------------------------------------------------
+    # add to sheet
+    try:
+        # write to file
+        merged_log_table.write(base.CHECK_LOG_FILE, format='fits', overwrite=True)
         # ---------------------------------------------------------------------
     finally:
         # unlock codes
@@ -482,7 +589,13 @@ def store_overrides(params: Dict[str, Any],
 
 def check_override(params: Dict[str, Any],
                    results: Dict[str, Dict[str, Any]],
+                   log_results: Dict[str, list],
                    test_type: str = 'raw'):
+    # Log that we are testing for overrides
+    msg = '*' * 50
+    msg += '\n Testing for overrides'
+    msg += '\n' + '*' * 50
+    misc.log_msg(msg, level='info')
     # get any overrides we have
     override_dataframe = get_current_dataframe(params, 'override')
     # define the sheet id and sheet name (pending)
@@ -520,7 +633,16 @@ def check_override(params: Dict[str, Any],
             continue
         # update the test value - if it has changed
         if results[override_obsdir][override_test_name] != override_test_value:
+            # store previous value
+            prev_value = bool(results[override_obsdir][override_test_name])
+            # update previous value to new value
             results[override_obsdir][override_test_name] = override_test_value
+            # construct message
+            msg = '\tOverride found: {0} {1} [{2}-->{3}]'
+            margs = [override_test_name, override_obsdir, prev_value,
+                     override_test_value]
+            misc.log_msg(msg.format(*margs))
+            # Add to the counter
             counter += 1
     # log that we updated "counter" values
     msg = 'Updated {0} override values'.format(counter)
