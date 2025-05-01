@@ -43,7 +43,7 @@ CAVITY0 = 2.399e7                # Initial guess for cavity length (in nm)
 WAVE_DOMAIN = [965, 2400]        # First to last orders (nm)
 N_ORDERS = 49                    # Number of spectral orders
 WAVE_APPROX = 0.05               # Fractional range for approximate wavelength
-NLINES = 30                      # Number of lines to use per order
+NLINES = 200                     # Number of lines to use per order
 WAVEDEGN = 5                     # Degree of polynomial for wavelength solution
 FP_PEAK_STEP_POLY_DEG = 1        # Degree for robust_polyfit of FP peak step
 FP_PEAK_POLY_DEG = 3             # Degree for robust_polyfit of FP peak count
@@ -272,6 +272,8 @@ if __name__ == "__main__":
     orders_known = []
     orders_mid = []
 
+    fit_cavity = [CAVITY0]
+
     # --- 8. If enough previous solutions exist, robustly fit the cavity using all orders ---
     if n_pickles > 5:
         flag_known_cavity = True
@@ -326,6 +328,7 @@ if __name__ == "__main__":
             p95 = np.nanpercentile((all_int_fp + off) * all_fp_wave, [5, 95])
             mad_off[ioff] = p95[1] - p95[0]
 
+        """
         if offs[np.argmin(mad_off)] != 0:
             plt.close()
             plt.plot(offs, mad_off, 'k-')
@@ -342,6 +345,7 @@ if __name__ == "__main__":
                 dict_fp['int_fp'] += offs[np.argmin(mad_off)]
                 save_pickle(dict_fp, wave_order_file.replace('.csv', '.pkl'))
             exit()
+        """
 
         # --- 10. Fill missing values and robustly filter orders for cavity fit ---
         orders_known = np.array(orders_known)
