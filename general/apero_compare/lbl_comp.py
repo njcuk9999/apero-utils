@@ -30,7 +30,7 @@ name7 = 'cfht'
 name8 = 'cfht@canfar'
 
 # names = [name1, name2, name3, name4, name5, name6, name7]
-names = [name1, name2, name3, name4, name7, name8]
+names = [name1, name2, name3, name4, name6, name7, name8]
 
 # This is a hack but just to test without certain points
 REJECT_DATE_STARTS = [59063.7786]
