@@ -22,7 +22,11 @@ from tqdm import tqdm
 # =============================================================================
 # Define variables
 # =============================================================================
-ads.config.token = 'BBDslYGzAw7hPCVpZlz3KXihb23BsyKLCsFPXtWk'
+question = ('Get token from here: '
+            'https://ui.adsabs.harvard.edu/user/account/login'
+            '\n\tEnter token:\t')
+
+ads.config.token = input(question)
 # -----------------------------------------------------------------------------
 
 BIBCODES = dict()
