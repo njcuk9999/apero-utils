@@ -239,7 +239,11 @@ class Monitor:
         counter = 0
         # interactive loop
         while True:
-            self.update(counter)
+            try:
+                self.update(counter)
+            except Exception as e:
+                print(e)
+                time.sleep(1)
             counter += 1
 
 

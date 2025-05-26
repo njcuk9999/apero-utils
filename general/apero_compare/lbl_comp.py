@@ -28,8 +28,10 @@ name5 = 'newworlds'
 name6 = 'lam'
 name7 = 'cfht'
 name8 = 'cfht@canfar'
+name9 = 'lison@alliance'
+name10 = 'lison@alliance[C22]'
 
-names = [name1, name2, name3, name4, name5, name6, name7, name8]
+names = [name1, name2, name3, name4, name5, name6, name7, name8, name9, name10]
 
 
 # This is a hack but just to test without certain points
@@ -50,6 +52,8 @@ outpaths[name5] = '/scratch2/spirou/misc/compare/newworlds/lbl'
 outpaths[name6] = '/scratch2/spirou/misc/compare/lam/lbl'
 outpaths[name7] = '/scratch2/spirou/misc/compare/cfht/lbl'
 outpaths[name8] = '/scratch2/spirou/misc/compare/cfht_canfar/lbl'
+outpaths[name9] = '/scratch2/spirou/misc/compare/lison_alliance/lbl'
+outpaths[name10] = '/scratch2/spirou/misc/compare/lison_alliance_c22/lbl'
 
 paths = outpaths
 
@@ -64,6 +68,8 @@ COLORS[name5] = 'purple'
 COLORS[name6] = 'k'
 COLORS[name7] = 'm'
 COLORS[name8] = 'c'
+COLORS[name9] = '0.5'
+COLORS[name10] = '0.5'
 # add a marker for each reduction (i.e. o, x, +, v, ^, d, s, .)
 MARKERS = dict()
 MARKERS[name1] = 'o'
@@ -74,8 +80,10 @@ MARKERS[name5] = 'x'
 MARKERS[name6] = 'v'
 MARKERS[name7] = 'd'
 MARKERS[name8] = '^'
+MARKERS[name9] = '>'
+MARKERS[name10] = '<'
 # markers needing facecolor
-has_face = ['o', 's', '^', 'd', 'v']
+has_face = ['o', 's', '^', 'd', 'v', '>', '<']
 # -----------------------------------------------------------------------------
 # objects to consider
 OBJECTS = ['GL699']

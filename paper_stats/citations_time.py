@@ -33,6 +33,7 @@ BIBCODES = dict()
 BIBCODES['APERO2022'] = '2022PASP..134k4509C'
 BIBCODES['LBL2022'] = '2022AJ....164...84A'
 
+
 # =============================================================================
 # Define functions
 # =============================================================================
@@ -91,6 +92,7 @@ if __name__ == "__main__":
                     dec_year = c_obj.year + 0.5
                 else:
                     dec_year = pubdate_to_decimal_year(pubdate)
+
 
                 if dec_year is None:
                     dec_year = int(c_obj.year) + 0.5
