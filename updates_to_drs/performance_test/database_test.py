@@ -16,7 +16,6 @@ import csv
 from datetime import datetime
 import argparse
 import pandas as pd
-import matplotlib.pyplot as plt
 
 
 # =============================================================================
@@ -94,7 +93,6 @@ def monitor(log_file, instrument):
             counter += 1
 
 
-
 class Monitor:
     def __init__(self, log_file):
         self.log_file = log_file
@@ -138,6 +136,7 @@ class Monitor:
 
 
     def plot(self):
+        import matplotlib.pyplot as plt
 
         self.get_data()
         # plot intial plot
@@ -231,6 +230,7 @@ class Monitor:
         time.sleep(1)  # pause before next update (adjust as needed)
 
     def run(self):
+        import matplotlib.pyplot as plt
 
         plt.ion()
         # initial plot
