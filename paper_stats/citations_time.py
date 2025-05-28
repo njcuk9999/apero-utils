@@ -9,16 +9,14 @@ Created on 2025-05-13 at 14:05
 
 @author: cook
 """
-import glob
 import os
 from collections import Counter
 from datetime import datetime
-from time import sleep
-from typing import Any, Dict, List
+from typing import Dict, List
 
 import ads
-import yaml
 import matplotlib.pyplot as plt
+import numpy as np
 from astropy.time import Time
 from tqdm import tqdm
 
@@ -107,7 +105,12 @@ if __name__ == "__main__":
 
 
     plt.close()
-    fig, frame = plt.subplots()
+    fig, frames = plt.subplots(nrows=2)
+
+    dates_dict = dict()
+    ccounts_dict = dict()
+
+    frame = frames[0]
 
     for bibcode in BIBCODES:
         # Convert decimal years to (year, month)
@@ -131,6 +134,9 @@ if __name__ == "__main__":
 
         dates = Time(decimal, format='decimalyear')
 
+        dates_dict[bibcode] = dates
+        ccounts_dict[bibcode] = np.array(ccounts)
+
         # Plot
         frame.plot(dates.plot_date, ccounts, label=bibcode,
                    marker='o')
@@ -141,9 +147,38 @@ if __name__ == "__main__":
         frame.set_ylabel("Cumulative Citations")
         frame.set_title("Cumulative Citations per Month")
 
-    plt.legend(loc=0)
+    # plot different to first
+    keys = list(BIBCODES.keys())
+    first = keys[0]
+    frame = frames[1]
+
+    date_arr = np.arange(min(dates_dict[first].decimalyear),
+                         max(dates_dict[first].decimalyear) + 1/12, 1/12)
+    time_arr = Time(date_arr, format='decimalyear')
+    first_interp = np.interp(date_arr, dates_dict[first].decimalyear,
+                             ccounts_dict[first])
+
+    for key in keys[1:]:
+
+        key_interp = np.interp(date_arr, dates_dict[key].decimalyear,
+                               ccounts_dict[key])
+
+        diff = first_interp - key_interp
+        label = f"{first}-{key}"
+
+        frame.plot(time_arr.plot_date, diff, label=label, marker='o')
+
+        frame.xaxis.axis_date()
+        frame.tick_params(axis='x', rotation=45)
+        frame.set_xlabel("Month")
+        frame.set_ylabel("Difference in citations")
+        frame.set_title("Difference in citations per Month")
+
+    for frame in frames:
+        frame.legend(loc=0)
+        frame.grid(True)
+
     plt.tight_layout()
-    plt.grid(True)
     plt.show(block=True)
 
 # =============================================================================
