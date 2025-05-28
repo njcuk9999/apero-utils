@@ -9,12 +9,15 @@ Created on 2025-05-13 at 14:05
 
 @author: cook
 """
+import glob
+import os
 from collections import Counter
 from datetime import datetime
 from time import sleep
 from typing import Any, Dict, List
 
 import ads
+import yaml
 import matplotlib.pyplot as plt
 from astropy.time import Time
 from tqdm import tqdm
@@ -22,11 +25,17 @@ from tqdm import tqdm
 # =============================================================================
 # Define variables
 # =============================================================================
-question = ('Get token from here: '
-            'https://ui.adsabs.harvard.edu/user/account/login'
-            '\n\tEnter token:\t')
+if 'ADS_TOKEN' in os.environ:
+    ads.config.token = os.environ['ADS_TOKEN']
+else:
+    question = ('Get token from here: '
+                'https://ui.adsabs.harvard.edu/user/settings/token'
+                '\n\tEnter token:\t')
 
-ads.config.token = input(question)
+    ads.config.token = input(question)
+    # set environment
+    os.environ['ADS_TOKEN'] = ads.config.token
+
 # -----------------------------------------------------------------------------
 
 BIBCODES = dict()
@@ -52,18 +61,15 @@ def pubdate_to_decimal_year(pubdate_str):
                  (year_end - year_start).total_seconds(), 3)
 
 
-# Batch query helper
-def fetch_metadata(bibcodes) -> List[Any]:
-    all_results = []
-    for bibcode in tqdm(bibcodes):
-        query = ads.SearchQuery(
-            bibcode=bibcode,
-            fl=['bibcode', 'title', 'author', 'pubdate']
-        )
-        all_results.extend(list(query))
-        sleep(0.5)  # polite pause to avoid API rate limits
-    return all_results
+def get_citations(target_bibcode):
+    # Get list of bibcodes that cite this paper
+    citations = list(ads.SearchQuery(
+        q=f'citations(bibcode:{target_bibcode})',
+        fl=['bibcode', 'pubdate'],  # fields you want
+        rows=10000  # increase if needed
+    ))
 
+    return citations
 
 # =============================================================================
 # Start of code
@@ -76,12 +82,9 @@ if __name__ == "__main__":
 
     for bibcode in BIBCODES:
         # Fetch the paper
-        papers = fetch_metadata([BIBCODES[bibcode]])
+        clist = get_citations(BIBCODES[bibcode])
 
-        if papers:
-            paper = papers[0]
-
-            clist = fetch_metadata(paper.citation)
+        if len(clist) > 0:
             # loop around references and get the year of each paper
             citations[bibcode] = []
             for c_obj in tqdm(clist):
@@ -129,7 +132,10 @@ if __name__ == "__main__":
         dates = Time(decimal, format='decimalyear')
 
         # Plot
-        frame.plot_date(dates.plot_date, ccounts, label=bibcode)
+        frame.plot(dates.plot_date, ccounts, label=bibcode,
+                   marker='o')
+
+        frame.xaxis.axis_date()
         frame.tick_params(axis='x', rotation=45)
         frame.set_xlabel("Month")
         frame.set_ylabel("Cumulative Citations")
@@ -138,9 +144,7 @@ if __name__ == "__main__":
     plt.legend(loc=0)
     plt.tight_layout()
     plt.grid(True)
-    plt.show()
-
-
+    plt.show(block=True)
 
 # =============================================================================
 # End of code
