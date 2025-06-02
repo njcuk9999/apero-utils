@@ -35,6 +35,8 @@ SCI_DPRTYPES = ['OBJ_DARK', 'OBJ_FP', 'OBJ_SKY']
 CCF_OUT_FILE = "CCF_RV"
 # Threshold for flagging bad files (in units of sigma)
 BAD_NSIG = 10.0
+# Define the science fiber
+SCI_FIBER = 'A'
 
 
 # =============================================================================
@@ -116,10 +118,14 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     out_msg = ''
     passed = True
     # loop around objects
-    for objname in tqdm(sci_objnames):
+    tqdm_list = tqdm(sci_objnames)
+    # loop around objects
+    for objname in tqdm_list:
+        # add object name to the tqdm message
+        tqdm_list.set_description(f'Processing: {objname}')
         # get ccf condition
         condition = f'BLOCK_KIND="red" AND KW_OUTPUT="{CCF_OUT_FILE}"'
-        condition += f' AND KW_OBJNAME="{objname}"'
+        condition += f' AND KW_OBJNAME="{objname}" AND FIBER={SCI_FIBER}'
 
         # query database for filenames
         filenames = findexdb.get_entries('ABSPATH', condition=condition)
@@ -163,7 +169,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
             out_msg += f'FAILED: {objname} outlier CCFs identified'
             # loop around bad files
             for it, bad_file in enumerate(bad_files):
-                out_msg += f'\t\t{it + 1}: {bad_file}'
+                out_msg += f'\n\t\t{it + 1}: {bad_file}'
             out_msg += '\nn'
         # otherwise we don't have bad files
         else:
