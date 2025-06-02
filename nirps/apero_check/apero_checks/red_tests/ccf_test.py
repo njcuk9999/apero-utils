@@ -92,7 +92,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     # Get a list of targets for this night
     # -------------------------------------------------------------------------
     # look only at raw data
-    condition = 'BLOCK_KIND="raw" AND OBS_DIR="{obsdir}"'
+    condition = f'BLOCK_KIND="raw" AND OBS_DIR="{obsdir}"'
     # look only at science dprtypes
     subconds = []
     for dprtype in SCI_DPRTYPES:
