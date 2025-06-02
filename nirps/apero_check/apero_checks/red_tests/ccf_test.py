@@ -134,6 +134,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
             # get values
             rv_obj.append(float(hdr['RV_OBJ']))
             ccf_mfwhm.append(float(hdr['CCFMFWHM']))
+            valid_files.append(str(filename))
         # convert to numpy arrays
         rv_obj = np.array(rv_obj)
         ccf_mfwhm = np.array(ccf_mfwhm)
