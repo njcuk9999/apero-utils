@@ -123,7 +123,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     for objname in tqdm_list:
         # get ccf condition
         condition = f'BLOCK_KIND="red" AND KW_OUTPUT="{CCF_OUT_FILE}"'
-        condition += f' AND KW_OBJNAME="{objname}" AND FIBER={SCI_FIBER}'
+        condition += f' AND KW_OBJNAME="{objname}" AND KW_FIBER={SCI_FIBER}'
         # query database for filenames
         filenames = findexdb.get_entries('ABSPATH', condition=condition)
         # add object name to the tqdm message
