@@ -41,9 +41,11 @@ Code Steps (matches main code steps):
 # --- CONSTANTS AND PARAMETERS -------------------------------------------------
 CAVITY0 = 2.399e7                # Initial guess for cavity length (in nm)
 WAVE_DOMAIN = [965, 2400]        # First to last orders (nm)
+# TODO: N_ORDER from E2DS
 N_ORDERS = 49                    # Number of spectral orders
 WAVE_APPROX = 0.05               # Fractional range for approximate wavelength
 NLINES = 200                     # Number of lines to use per order
+# TODO: WAVEDEGN from params
 WAVEDEGN = 5                     # Degree of polynomial for wavelength solution
 FP_PEAK_STEP_POLY_DEG = 1        # Degree for robust_polyfit of FP peak step
 FP_PEAK_POLY_DEG = 3             # Degree for robust_polyfit of FP peak count
