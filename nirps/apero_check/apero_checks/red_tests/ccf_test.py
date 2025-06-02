@@ -121,15 +121,14 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     tqdm_list = tqdm(sci_objnames)
     # loop around objects
     for objname in tqdm_list:
-        # add object name to the tqdm message
-        tqdm_list.set_description(f'Processing: {objname}')
         # get ccf condition
         condition = f'BLOCK_KIND="red" AND KW_OUTPUT="{CCF_OUT_FILE}"'
         condition += f' AND KW_OBJNAME="{objname}" AND FIBER={SCI_FIBER}'
-
         # query database for filenames
         filenames = findexdb.get_entries('ABSPATH', condition=condition)
-
+        # add object name to the tqdm message
+        tqdm_list.set_description(f'Processing: {objname} '
+                                  f'Nfiles={len(filenames)}')
         # get rv_obj and ccf_mfwhm from headers
         rv_obj, ccf_mfwhm, valid_files = [], [], []
         for filename in filenames:
