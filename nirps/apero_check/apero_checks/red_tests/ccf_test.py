@@ -153,11 +153,11 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
 
         # Identify files that are farther than bad_nsig from the
         # median (outliers)
-        bad = nsig > BAD_NSIG
-
-        bad_files = valid_files[bad]
+        bad_mask = nsig > BAD_NSIG
+        # get the bad files
+        bad_files = valid_files[bad_mask]
         # if we have bad files state it here
-        if bad < 0:
+        if np.sum(bad_mask) > 0:
             passed = False
             # add to out message
             out_msg += f'FAILED: {objname} outlier CCFs identified'
