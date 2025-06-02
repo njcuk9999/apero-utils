@@ -103,9 +103,11 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     # deal with no science objects this night (return True)
     if len(sci_objnames) == 0:
         out_msg = 'No SCI objects found for {0}'.format(obsdir_path)
+        if log:
+            print(out_msg)
         return True, out_msg
     if log:
-        print(' Found {0} SCI objects'.format(len(sci_objnames)))
+        print('Found {0} SCI objects'.format(len(sci_objnames)))
 
     # -------------------------------------------------------------------------
     # loop around each object
