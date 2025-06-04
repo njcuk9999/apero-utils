@@ -229,13 +229,12 @@ if __name__ == "__main__":
     os.chdir('/Users/eartigau/spip')
 
     # --- 2. Load and filter the Uranium-Neon line catalog ---
+    # Source: https://iopscience.iop.org/article/10.1088/0067-0049/195/2/24
     tbl_hc_lines_file = 'J_ApJS_195_24_table2.dat.fits'
     tbl = Table.read(tbl_hc_lines_file)
     ion = tbl['Ion']
     keep = np.array([True if 'U' in ion[i] else False for i in range(len(ion))])
     tbl = tbl[keep]
-    WAVE_DOMAIN = [965, 2400]
-    WAVE_APPROX = 0.05
     keep = (tbl['lambda'].data > WAVE_DOMAIN[0] * (1 - WAVE_APPROX)) * (tbl['lambda'].data < (WAVE_DOMAIN[1] * (1 + WAVE_APPROX)))
     tbl = tbl[keep]
     wave_ref0 = tbl['lambda'].data
@@ -252,7 +251,6 @@ if __name__ == "__main__":
     wave_ref0 = tbl['lambda'].data
 
     # --- 4. Define function to get approximate wavelength for an order ---
-    N_ORDERS = 49
     def get_approx_wave(ord):
         wave0 = 1/np.polyval(np.polyfit([0.,N_ORDERS],[1/WAVE_DOMAIN[0],1/WAVE_DOMAIN[1] ],1),ord)
         return wave0, wave0*(1-WAVE_APPROX), wave0*(1+WAVE_APPROX)

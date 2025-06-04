@@ -9,18 +9,17 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
+import os
 from typing import Any, Dict, Tuple
 
-import os
-import glob
+import gspread_pandas as gspd
+import numpy as np
 from astropy.io import fits
 from tqdm import tqdm
-import numpy as np
 
 from apero_checks.core import apero_functions
-from apero_checks.core import misc
 from apero_checks.core import io
-
+from apero_checks.core import misc
 
 # =============================================================================
 # Define variables
@@ -37,6 +36,9 @@ CCF_OUT_FILE = "CCF_RV"
 BAD_NSIG = 10.0
 # Define the science fiber
 SCI_FIBER = 'A'
+# URL for ignore list
+OBJ_FLAG_SHEET_ID = '1aXSy0CgM7l3RfZFDoQLs1i8k3LgATB01Tygw7eiYBMo'
+OBJ_FLAG_SHEET_NAME = '9193989'
 
 
 # =============================================================================
@@ -47,6 +49,22 @@ def sigma(x):
     # Median Absolute Deviation (MAD) scaled to approximate std
     # deviation for normal dist.
     return np.nanmedian(np.abs(x - np.nanmedian(x))) * 1.4826
+
+
+def load_object_flags():
+
+    # add gspread directory and auth files
+    io.gsp_setup()
+    # load google sheet instance
+    google_sheet = gspd.spread.Spread(OBJ_FLAG_SHEET_ID)
+    # convert google sheet to pandas dataframe
+    table =  io.pull_from_googlesheet(google_sheet, index=0,
+                                      sheet=OBJ_FLAG_SHEET_NAME,
+                                      logger=misc.log_msg)
+
+    # only keep checks with BAD_CCF in the column name
+    mask = table['CHECK'] == 'BAD_CCF'
+
 
 
 def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
@@ -169,7 +187,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
             # loop around bad files
             for it, bad_file in enumerate(bad_files):
                 out_msg += f'\n\t\t{it + 1}: {bad_file}'
-            out_msg += '\nn'
+            out_msg += '\n\n'
         # otherwise we don't have bad files
         else:
             out_msg += f'PASSED: {objname} had no bad outliers\n\n'
