@@ -116,8 +116,21 @@ class Monitor:
             except Exception as _:
                 print(f'Cannot load {self.log_file}. Trying again...')
                 time.sleep(1)
-        # Compute deltas per second (assumes 5s interval)
-        delta_df = df.diff().fillna(0) / 5  # Change per second
+        # Compute time difference between rows
+        time_deltas = df.index.to_series().diff().dt.total_seconds()
+
+        # Calculate raw diffs
+        delta_df = df.diff().fillna(0)
+
+        # Zero out rows where the time delta is too large (e.g., > 10s)
+        invalid = time_deltas > 10  # or choose another threshold
+        delta_df[invalid] = 0
+
+        # Normalize by actual time difference (if not too large)
+        time_deltas = time_deltas.where(time_deltas <= 10, 5)
+
+        delta_df = delta_df.divide(time_deltas, axis=0).fillna(0)
+
         # Calculate hit ratio (avoid division by zero)
         ratio = df["Innodb_buffer_pool_reads"] / df["Innodb_buffer_pool_read_requests"]
         infs = [float('inf'), -float('inf')]
