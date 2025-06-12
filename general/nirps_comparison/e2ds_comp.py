@@ -13,6 +13,7 @@ import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.ticker import MaxNLocator
 from astropy.io import fits
 from astropy.table import Table
 from astropy import constants
@@ -34,6 +35,9 @@ mpl.rcParams.update({'font.size': 24})
 # Set background color in plots
 PLOT_BACKGROUND_COLOR = '#FEFDE1'
 PLOT_BACKGROUND_COLOR2 = '#E1F0FE'
+
+# set plot path
+PLOT_PATH = '/data/cook/nirps_comp/plots'
 
 
 # =============================================================================
@@ -171,6 +175,9 @@ def plot_spec_zoom(wavemap1, spectrum1, wavemap2, spectrum2,
 
     frames[0].legend(loc='lower center')
 
+    frames[0].xaxis.set_major_locator(MaxNLocator(nbins=4))
+    frames[1].xaxis.set_major_locator(MaxNLocator(nbins=4))
+
     return frames
 
 
@@ -231,6 +238,7 @@ if __name__ == "__main__":
     frames_blank[1].text(0.5, 0.5, 'Zoom in', ha='center', va='center',
                          transform=frames_blank[1].transAxes)
     plt.suptitle('Blank')
+    plt.savefig(os.path.join(PLOT_PATH, 'e2ds_comp_blank.png'))
     plt.show()
 
     # -------------------------------------------------------------------------
@@ -243,6 +251,7 @@ if __name__ == "__main__":
                                     label1=f'APERO [{apero_ordnum}]',
                                     label2=f'ESO [{apero_ordnum}]')
     plt.suptitle('Extracted order "60"')
+    plt.savefig(os.path.join(PLOT_PATH, 'e2ds_comp_sameord.png'))
     plt.show()
 
     # -------------------------------------------------------------------------
@@ -255,6 +264,7 @@ if __name__ == "__main__":
                                 label1=f'APERO [{apero_ordnum}]',
                                 label2=f'ESO [{eso_ordnum}]')
     plt.suptitle(f'Echelle order {ech_ordnum}')
+    plt.savefig(os.path.join(PLOT_PATH, 'e2ds_comp_ech.png'))
     plt.show()
     # -------------------------------------------------------------------------
     frames_bshift = plot_spec_zoom(apero_wave[apero_ordnum],
@@ -266,6 +276,7 @@ if __name__ == "__main__":
                                    label1=f'APERO [{apero_ordnum}]',
                                    label2=f'ESO [{eso_ordnum}]')
     plt.suptitle(f'Echelle order {ech_ordnum}, ESO BERV SHIFT={eso_berv:.2f} km/s')
+    plt.savefig(os.path.join(PLOT_PATH, 'e2ds_comp_bshift.png'))
     plt.show()
 
     # -------------------------------------------------------------------------
