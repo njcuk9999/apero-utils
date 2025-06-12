@@ -157,7 +157,7 @@ if __name__ == "__main__":
     plt.legend(loc=0)
 
     plt.xlabel('MJD')
-    plt.ylabel('RV [m/s]')
+    plt.ylabel('CCF RV [m/s]')
     plt.savefig(os.path.join(PLOT_PATH, 'ccf_comp_raw.png'))
     plt.show()
 
@@ -173,7 +173,7 @@ if __name__ == "__main__":
     plt.legend(loc=0)
 
     plt.xlabel('MJD')
-    plt.ylabel('RV - Median(RV) [m/s]')
+    plt.ylabel('CCF RV - Median(RV) [m/s]')
     plt.savefig(os.path.join(PLOT_PATH, 'ccf_comp_rm'
                                         '-med.png'))
     plt.show()
