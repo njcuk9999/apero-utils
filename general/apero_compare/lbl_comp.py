@@ -28,8 +28,8 @@ name5 = 'newworlds'
 name6 = 'lam'
 name7 = 'cfht'
 name8 = 'cfht@canfar'
-name9 = 'lison@alliance'
-name10 = 'lison@alliance[C22]'
+name9 = 'lison@cedar'
+name10 = 'lison@titan'
 
 names = [name1, name2, name3, name4, name5, name6, name7, name8, name9, name10]
 
@@ -52,8 +52,8 @@ outpaths[name5] = '/scratch2/spirou/misc/compare/newworlds/lbl'
 outpaths[name6] = '/scratch2/spirou/misc/compare/lam/lbl'
 outpaths[name7] = '/scratch2/spirou/misc/compare/cfht/lbl'
 outpaths[name8] = '/scratch2/spirou/misc/compare/cfht_canfar/lbl'
-outpaths[name9] = '/scratch2/spirou/misc/compare/lison_alliance/lbl'
-outpaths[name10] = '/scratch2/spirou/misc/compare/lison_alliance_c22/lbl'
+outpaths[name9] = '/scratch2/spirou/misc/compare/lison_cedar/lbl'
+outpaths[name10] = '/scratch2/spirou/misc/compare/lison_titan/lbl'
 
 paths = outpaths
 
