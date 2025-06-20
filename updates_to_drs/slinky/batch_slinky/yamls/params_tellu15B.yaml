@@ -1,0 +1,23 @@
+# Created: 2021-07-01 15:00:00
+
+# NIRPS or SPIROU
+instrument: NIRPS
+
+# creative name
+batchname: TELLU15B
+
+# Number of principal components to be used
+Npca: 15
+npca-max: 15
+
+# List of stars to be processed
+object_of_interest:
+  - 'GJ707'
+  - 'GJ3737'
+  - 'GL406'
+  - 'TOI406'
+  - 'GJ643'
+  - 'GL849'
+  - 'SMETHELLS_20'
+  - 'PROXIMA'
+CUT_MAX_SPAN_CLUSTER: 0.05 # max radius of the cluster in the span-cut

@@ -1,0 +1,37 @@
+# Created: 2021-07-01 15:00:00
+
+# NIRPS or SPIROU
+instrument: SPIROU
+
+# creative name
+batchname: TELLU05
+
+# Number of principal components to be used
+Npca: 5
+npca-max: 5
+
+# List of stars to be processed
+object_of_interest:
+        - 'GL15A'
+        - 'GL48'
+        - 'GL205'
+        - 'GL251'
+        - 'GL317'
+        - 'GJ3378'
+        - 'GL382'
+        - 'GL388'
+        - 'GL406'
+        - 'GL410'
+        - 'GL411'
+        - 'GL480'
+        - 'GL514'
+        - 'GL699'
+        - 'GL725A'
+        - 'GL725B'
+        - 'GL849'
+        - 'GL873'
+        - 'AUMIC'
+        - 'EV_LAC'
+        - 'GJ1286' 
+        - 'GL880'
+        - 'TOI2120'

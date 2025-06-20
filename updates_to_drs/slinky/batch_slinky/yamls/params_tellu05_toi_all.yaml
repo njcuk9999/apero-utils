@@ -1,0 +1,22 @@
+# NIRPS or SPIROU
+instrument: NIRPS
+
+# name pre correction OH
+batchname: TELLU05precorr
+# name post-correction OH
+batchname_corr: TELLU05
+
+# Number of principal components to be used
+Npca: 5
+npca-max: 5
+
+# List of stars to be processed
+object_of_interest:
+    - 'TOI210'
+    - 'TOI1078'
+    - 'TOI2952'
+    - 'TOI3288'
+    - 'TOI3397'
+    - 'TOI4552'
+    - 'TOI4666'
+
