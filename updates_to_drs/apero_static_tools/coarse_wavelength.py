@@ -81,6 +81,7 @@ ROBUST_POLYFIT_SIGMA = 5  # Sigma cut for robust_polyfit on Chebyshev coeffs
 hc_window_kms = 50  # Window size for HC lines (in km/s)
 
 path = '/data/spip/misc/wavesol/2025-05-09/'
+
 hc_spectrum_file = os.path.join(path, '472CC435E5c_pp_e2dsff_AB.fits')
 fp_spectrum_file = os.path.join(path, '0A722986A9a_pp_e2dsff_AB.fits')
 
@@ -779,7 +780,7 @@ if __name__ == "__main__":
     # plt.show()
 
     hdr_wavesol['WAVEORDN'] = N_ORDERS
-    hdr_wavesol['WAVEMDEG'] = WAVEDEGN
+    hdr_wavesol['WAVEDEGN'] = WAVEDEGN
 
     # --- 14. Save the final wavelength solution to a FITS file ---
     fits.writeto('spip_wave_sol.fits', final_wave_sol, header=hdr_wavesol, overwrite=True)
