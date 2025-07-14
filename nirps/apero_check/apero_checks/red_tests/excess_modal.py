@@ -135,11 +135,23 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     noise. The test is passed if the pixel-to-pixel rms is smaller than the
     modal noise rms by a known thershold.
     """
-
     # featureless telluric stars
-    vetted_stars = ['15_PEG', 'HR1903', 'HR3117', 'HR3131', 'HR3314', 'HR4023',
-                    'HR4467', 'HR4468', 'HR4889', 'HR5671', 'HR6743', 'HR7590',
-                    'HR8709', 'ZETVIR']
+    # generated from latex_table_to_csv (from overleaf tex file)
+    vetted_stars = ['HR8709',
+                    'HR3117',
+                    'HR3131',
+                    'HR5107',
+                    'HR4467',
+                    'HR7590',
+                    'HR5671',
+                    'HR6743',
+                    'HR875',
+                    'HR806',
+                    'HR9098',
+                    'HR1903',
+                    'HR3314',
+                    'HR4023',
+                    'HR7830']
 
     sample_order = 58  # order in the middle of H band, clean from tellurics
     threshold_HA = 0.015  # excess noise in HA mode

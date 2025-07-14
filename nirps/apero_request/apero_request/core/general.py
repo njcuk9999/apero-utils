@@ -135,6 +135,9 @@ class Request:
             self.email = email
             self.drsobjn = np.char.array(drsobjn.split(',')).strip()
             self.dprtype = np.char.array(dprtype.split(',')).strip()
+            # always check for NULL in DPRTYPE
+            if 'NULL' not in self.dprtype:
+                self.dprtype += ['NULL']
             self.mode = mode
             self.fibers = fibers
             self.drsoutid = np.char.array(drsoutid.split(',')).strip()
@@ -250,6 +253,14 @@ class Request:
                 cmd += f' --latest={self.end_date_str}'
             cmd += f' --timekey=observed'
             cmd += f' --sizelimit={params["file size limit"]}'
+
+            # need to disable failed qc check if we have RAW_ in outtypes
+            if 'RAW_' in self.drsoutid_str:
+                cmd += f' --failedqc'
+                failedqc = True
+            else:
+                failedqc = False
+            # set command
             self.cmd = cmd
             # need to import apero_get (for this profile)
             from apero.tools.recipes.bin import apero_get
@@ -269,7 +280,8 @@ class Request:
                                    since=self.start_date_str,
                                    latest=self.end_date_str,
                                    timekey='observed',
-                                   sizelimit=params['file size limit'])
+                                   sizelimit=params['file size limit'],
+                                   failedqc=failedqc)
         except Exception as e:
             self.valid = False
             self.reason = f'\tApero get failed with error: {e}'
