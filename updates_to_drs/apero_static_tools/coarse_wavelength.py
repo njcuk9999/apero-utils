@@ -42,6 +42,7 @@ import scipy.optimize
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.widgets import Button
 from astropy.table import Table
 import os
 import scipy.optimize
@@ -708,7 +709,7 @@ if __name__ == "__main__":
                 if (ite == 0) * (np.nanmax(nvalid2) > NSIG_ACCEPT_FP):
                     input_user = 'y'
                 else:
-                    # if True:
+                    continue
 
             # --- Create figure for diagnostics ---
             fig, ax = plt.subplots(2, 1, figsize=(10, 5))
