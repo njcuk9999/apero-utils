@@ -37,19 +37,21 @@ Code Steps (matches main code steps):
     16. Plot the final wavelength solution for all orders.
 ===============================================================================
 """
+from scipy.optimize import curve_fit
+import scipy.optimize
 from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
 from astropy.table import Table
-from scipy.optimize import curve_fit
-from scipy.interpolate import InterpolatedUnivariateSpline as ius
 import os
 import scipy.optimize
 from tqdm import tqdm
 from typing import List, Optional, Union, Any, Tuple
 import scipy
+from apero.core.math import lowpassfilter
 import pickle
 import glob
+from scipy.interpolate import InterpolatedUnivariateSpline as ius
 
 # TODO: Loop 3 times
 #       - first time will be bad
@@ -82,10 +84,12 @@ hc_window_kms = 50  # Window size for HC lines (in km/s)
 
 path = '/data/spip/misc/wavesol/2025-05-09/'
 
-hc_spectrum_file = os.path.join(path, '472CC435E5c_pp_e2dsff_AB.fits')
-fp_spectrum_file = os.path.join(path, '0A722986A9a_pp_e2dsff_AB.fits')
+# hc_spectrum_file = '/Users/eartigau/spip/test2/180881c_pp_e2ds_AB.fits'
+# fp_spectrum_file = '/Users/eartigau/spip/test2/180879a_pp_e2ds_AB.fits'
+hc_spectrum_file = '/scratch2/spip/misc/download/2025-05-23/1F5B7E10A5c_pp_e2dsff_AB.fits'
+fp_spectrum_file = '/scratch2/spip/misc/download/2025-05-23/36ECD2422Aa_pp_e2dsff_AB.fits'
 
-
+working_dir = '/scratch2/spip/misc/statics/2025-05-23'
 
 
 # --- Utility Functions --------------------------------------------------------
@@ -361,15 +365,53 @@ Tuple[np.ndarray, np.ndarray]:
     return fit, keep
 
 
+class YesNoButtonGraph:
+    def __init__(self, fig):
+        self.fig = fig
+        self.response = 'n'
+        self.question = ''
+        self.yes_button = None
+        self.no_button = None
+
+    def add(self, question):
+        self.question = str(question)
+        # Add question text centered above the buttons
+        self.fig.text(0.5, 0.20, question, ha='center', va='center',
+                      fontsize=12)
+        # Move subplots up to leave room for buttons/text
+        plt.subplots_adjust(bottom=0.4)
+        # Define button positions (x, y, width, height)
+        yes_ax = self.fig.add_axes([0.42, 0.08, 0.08, 0.05])
+        no_ax = self.fig.add_axes([0.52, 0.08, 0.08, 0.05])
+        # Create buttons
+        self.yes_button = Button(yes_ax, 'Yes', color='lightgreen',  hovercolor='green')
+        self.no_button = Button(no_ax, 'No', color='lightcoral', hovercolor='red')
+        self.yes_button.on_clicked(self.on_yes)
+        self.no_button.on_clicked(self.on_no)
+
+    def on_yes(self, event):
+        print(f'{self.question}: yes')
+        self.response = 'y'
+        plt.close(self.fig)
+
+    def on_no(self, event):
+        print(f'{self.question}: no')
+        self.response = 'n'
+        plt.close(self.fig)
+
+
 # --- MAIN PIPELINE ------------------------------------------------------------
 
 if __name__ == "__main__":
 
     # --- 1. Change to working directory ---
-    os.chdir(path)
+    os.chdir(working_dir)
 
     # --- 2. Load and filter the Uranium-Neon line catalog ---
-    # Source: https://iopscience.iop.org/article/10.1088/0067-0049/195/2/24
+    #   Our defaut comes from Redman et al 2011: https://iopscience.iop.org/article/10.1088/0067-0049/195/2/24
+    #   via Vizier: https://vizier.cds.unistra.fr/viz-bin/VizieR-3?-source=J/ApJS/195/24/table2
+    #   Note if downloading from Vizier - select FITS (binary) Table and set max rows to unlimited!
+
     tbl_hc_lines_file = 'J_ApJS_195_24_table2.dat.fits'
     tbl = Table.read(tbl_hc_lines_file)
     ion = tbl['Ion']
@@ -469,8 +511,6 @@ if __name__ == "__main__":
 
                 plt.text(med_wave, med_cavity, '\n\n\n' + str(iord), fontsize=8)
 
-
-
         # --- 10. Fill missing values and robustly filter orders for cavity fit ---
         orders_known = np.array(orders_known)
         orders_mid = np.array(orders_mid)
@@ -492,10 +532,18 @@ if __name__ == "__main__":
             7, 3
         )
         oo = np.argsort(all_fp_wave)
-        plt.plot(all_fp_wave[oo], np.polyval(fit_cavity_tmp, all_fp_wave[oo]), 'k-', label='Cavity fit')
+
+        fig, frame = plt.subplots(ncols=1, nrows=1)
+        frame.plot(all_fp_wave[oo], np.polyval(fit_cavity_tmp, all_fp_wave[oo]), 'k-', label='Cavity fit')
         plt.legend()
-        plt.show()
-        input_user = input('Is this cavity valid and to be used as input? (y/n)')
+
+        # yes / no button on graph
+        yninst = YesNoButtonGraph(fig)
+        yninst.add('Is this cavity valid and to be used as input?')
+        plt.show(block=True)
+
+        input_user = yninst.response
+
         if input_user == 'y':
             fit_cavity = fit_cavity_tmp
 
@@ -662,38 +710,43 @@ if __name__ == "__main__":
                 else:
                     # if True:
 
-                    # --- Create figure for diagnostics ---
-                    fig, ax = plt.subplots(2, 1, figsize=(10, 5))
+            # --- Create figure for diagnostics ---
+            fig, ax = plt.subplots(2, 1, figsize=(10, 5))
+            
+            # --- Plot number of valid lines as a function of peak0 guess ---
+            ax[0].plot(peak0_guesses, nvalid2, 'g-')
+            ax[0].plot(peak0_guesses, nvalid2, 'r.')
+            ax[0].set_xlabel('Peak0 guess')
+            ax[0].set_ylabel('Number of valid lines')
+            ax[0].set_title('Number of valid lines as a function of peak0 guess')
+            
+            # --- Plot spectrum and mark reference wavelengths ---
+            ax[1].plot(best_wave, sp)
+            keep = (wave_ref > np.min(best_wave)) & (wave_ref < np.max(best_wave))
+            wave_ref2 = wave_ref[keep]
+            for i in range(len(wave_ref2)):
+                ax[1].axvline(wave_ref2[i], color='0.5', alpha=0.5)
+            ax[1].set_yscale('log')
+            floor_val = np.nanmedian(sp[sp != 0]) * 0.1
+            ax[1].set_ylim(floor_val, np.nanmax(sp[sp != 0]))
+            ax[1].set_xlabel('Wavelength')
+            ax[1].set_ylabel('Flux')
+            
+            # yes / no button on graph
+            yninst = YesNoButtonGraph(fig)
+            yninst.add('Is this valid?')
+            plt.show(block=True)
 
-                    # --- Plot number of valid lines as a function of peak0 guess ---
-                    ax[0].plot(peak0_guesses, nvalid2, 'g-')
-                    ax[0].plot(peak0_guesses, nvalid2, 'r.')
-                    ax[0].set_xlabel('Peak0 guess')
-                    ax[0].set_ylabel('Number of valid lines')
-                    ax[0].set_title('Number of valid lines as a function of peak0 guess')
+            input_user = yninst.response
 
-                    # --- Plot spectrum and mark reference wavelengths ---
-                    ax[1].plot(best_wave, sp)
-                    keep = (wave_ref > np.min(best_wave)) & (wave_ref < np.max(best_wave))
-                    wave_ref2 = wave_ref[keep]
-                    for i in range(len(wave_ref2)):
-                        ax[1].axvline(wave_ref2[i], color='0.5', alpha=0.5)
-                    ax[1].set_yscale('log')
-                    floor_val = np.nanmedian(sp[sp != 0]) * 0.1
-                    ax[1].set_ylim(floor_val, np.nanmax(sp[sp != 0]))
-                    ax[1].set_xlabel('Wavelength')
-                    ax[1].set_ylabel('Flux')
-
-                    plt.show()
-                    input_user = input('Is this valid? (y/n)')
-
-                # --- 12n. If user accepts, save the wavelength solution and pickle ---
-                if input_user == 'y':
-                    tbl = Table((np.arange(len(best_wave)), best_wave), names=('pixel', 'wavelength'))
-                    tbl.write(wave_order_file, format='csv', overwrite=True)
-                    print(f"Saved to {wave_order_file}")
-                    pickle_file = wave_order_file.replace('.csv', '.pkl')
-                    save_pickle(dict_fp, pickle_file)
+            # --- 12n. If user accepts, save the wavelength solution and pickle ---
+            if 'y' in input_user.lower():
+                tbl = Table((np.arange(len(best_wave)), best_wave),
+                            names=('pixel', 'wavelength'))
+                tbl.write(wave_order_file, format='csv', overwrite=True)
+                print(f"Saved to {wave_order_file}")
+                pickle_file = wave_order_file.replace('.csv', '.pkl')
+                save_pickle(dict_fp, pickle_file)
 
     # --- 13. Build the final 2D wavelength solution for all orders ---
     final_wave_sol = np.zeros((N_ORDERS, sp1.shape[1])) + np.nan
@@ -802,4 +855,4 @@ if __name__ == "__main__":
         meanwave_order = np.mean(final_wave_sol[iord])
         mean_log_flux = np.log10(np.nanmedian(sp1[iord][sp1[iord] > 0]))
         ax[0].text(meanwave_order, mean_log_flux, str(iord), fontsize=8)
-    plt.show()
+    plt.show(block=True)
