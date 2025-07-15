@@ -137,7 +137,7 @@ class Request:
             self.dprtype = np.char.array(dprtype.split(',')).strip()
             # always check for NULL in DPRTYPE
             if 'NULL' not in self.dprtype:
-                self.dprtype += ['NULL']
+                self.dprtype = np.append(self.dprtype, 'NULL')
             self.mode = mode
             self.fibers = fibers
             self.drsoutid = np.char.array(drsoutid.split(',')).strip()
@@ -264,8 +264,12 @@ class Request:
             self.cmd = cmd
             # need to import apero_get (for this profile)
             from apero.tools.recipes.bin import apero_get
+            # print info on the request
+            message = (f'Request:\n\tTimestamp: {self.timestamp}'
+                       f'\n\tEmail Address: {self.email}')
+            misc.log_msg(params, message)
             # print the command we are running
-            message = f'Running command: {self.cmd}'
+            message = f'\tRunning command: {self.cmd}'
             misc.log_msg(params, message)
             # run apero get to make the objects dir in apero dir
             llget = apero_get.main(objnames=self.drsobjn_str,
