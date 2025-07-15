@@ -1,0 +1,3 @@
+Usage:
+
+batch_slinky.py yamls/param_tellu05.yaml
