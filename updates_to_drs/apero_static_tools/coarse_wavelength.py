@@ -224,6 +224,7 @@ def get_lines_pix(sp_tmp, fp=False):
     else:
         return mus, sigmas, flux
 
+
 def fit_cheby(xvector: np.ndarray, yvector: np.ndarray, deg: int,
               domain: List[float], weight: Optional[np.ndarray] = None
               ) -> Union[np.ndarray, Any]:
@@ -234,6 +235,7 @@ def fit_cheby(xvector: np.ndarray, yvector: np.ndarray, deg: int,
     domain_cheby = 2 * (xvector - domain[0]) / (domain[1] - domain[0]) - 1
     coeffs = np.polynomial.chebyshev.chebfit(domain_cheby, yvector, deg, w=weight)
     return coeffs
+
 
 def val_cheby(coeffs: np.ndarray, xvector: Union[np.ndarray, int, float],
               domain: List[float]) -> Union[np.ndarray, int, float]:
@@ -447,6 +449,7 @@ if __name__ == "__main__":
                     iord_wave_center[ii] = np.median(dict_fp['fp_wave'])
                     iord_cavity_center[ii] = np.median(dict_fp['fp_wave'] * dict_fp['int_fp'])
 
+                # TODO: Plot afterwards?
                 plt.plot(dict_fp['fp_wave'], dict_fp['fp_wave'] * dict_fp['int_fp'], '.', alpha=0.3)
                 med_wave = np.nanmedian(dict_fp['fp_wave'])
                 med_cavity = np.nanmedian(dict_fp['fp_wave'] * dict_fp['int_fp'])
