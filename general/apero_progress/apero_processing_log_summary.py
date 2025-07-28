@@ -164,10 +164,10 @@ if __name__ == "__main__":
 
     # -------------------------------------------------------------------------
     # get the unique recipe names from the errors and runs
-    unique_recipes = set(error_counts.keys()).union(set(run_counts.keys()))
-
+    unique_recipes = run_counts.keys()
+    
     # print how many errors and runs there were for each recipe
-    print("Errors by recipe:")
+    print("\nErrors by recipe:")
     for recipe in unique_recipes:
         error_count = error_counts.get(recipe, 0)
         run_count = run_counts.get(recipe, 'inf')
@@ -184,6 +184,8 @@ if __name__ == "__main__":
         error_message = error_msgs.get(apero_id, '')
         error_table.add_row((apero_id.encode('utf-8'), recipe.encode('utf-8'), 
                              error_message.encode('utf-8')))
+    # Write the error table to a fits file
+    print(f"\nWriting error table to {error_file_path}")
     error_table.write(error_file_path, format='fits', overwrite=True)
 
 
