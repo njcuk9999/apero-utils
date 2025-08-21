@@ -15,14 +15,17 @@ from tqdm import tqdm
 # =============================================================================
 # the PID of the APERO processing run
 # Get the PID from here: /cosmos99/spirou/apero-data/spirou_offline/msg/tool/other
-APERO_PID = 'PID-00017534957092926630-VLWQ'
+APERO_PID = 'PID-00017500796841586900-CRX7'
 # the working directory where the log and report files are located
-WORKING_DIR = '/cosmos99/spirou/apero-data/spirou_offline/'
+# WORKING_DIR = '/cosmos99/spirou/apero-data/spirou_offline/'
+WORKING_DIR = '/cosmos99/spirou/apero-data/spirou_008/'
+
+LOG_DIR = 'log'  # or "msg"
 # the paths to the log and report files
-PATH_TO_LOG = os.path.join(WORKING_DIR, 'msg/tool/other')
+PATH_TO_LOG = os.path.join(WORKING_DIR, LOG_DIR, 'tool', 'other')
 LOG_FILE = 'APEROL-{APERO_PID}_apero_processing.log'
 # the path to the report file
-PATH_TO_REPORT = os.path.join(WORKING_DIR, 'msg/report/processing')
+PATH_TO_REPORT = os.path.join(WORKING_DIR, LOG_DIR, 'report', 'processing')
 REPORT_FILE = '{APERO_PID}_apero_processing_ids.txt'
 
 
