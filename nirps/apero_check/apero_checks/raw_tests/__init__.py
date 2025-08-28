@@ -46,8 +46,8 @@ test_dict['CRIT'] = critical_test.critical_test
 test_dep['CRIT'] = ['BLANK']
 
 # Test that the system is in good health
-test_dict['SYSTEM'] =  sys_test.test
-test_dict['SYSTEM'] = ['BLANK']
+test_dict['SYSTEM'] = sys_test.test
+test_dep['SYSTEM'] = ['BLANK']
 
 # obs dir test - this tests whether the obsdir given exists on disk and has
 #                fits files in its directory
