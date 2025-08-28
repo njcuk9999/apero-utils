@@ -11,6 +11,7 @@ Created on 2023-07-03 at 14:36
 """
 # only import from this directory
 from apero_checks.raw_tests import blank_test
+from apero_checks.raw_tests import critical_test
 from apero_checks.raw_tests import calib_test
 from apero_checks.raw_tests import calib_ob_test
 from apero_checks.raw_tests import eng_test
@@ -38,6 +39,9 @@ test_dict = dict()
 # blank test - this tests whether the apero raw tests ran
 test_dict['BLANK'] = blank_test.test
 
+# critical test - this tests whether the critical tests passed
+test_dict['CRIT'] = critical_test.critical_test
+
 # obs dir test - this tests whether the obsdir given exists on disk and has
 #                fits files in its directory
 test_dict['HAS_OBSDIR'] = obsdir_test.test
@@ -55,10 +59,6 @@ test_dict['CALIB_TEST'] = calib_test.test
 #                 night directory
 test_dict['COB_TEST'] = calib_ob_test.test
 
-# science quality test - Some basic quality checks for science files. Currently:
-#                        saturation, flux
-test_dict['SCI_QUAL'] = qual_test.sci_qual_test
-
 # calib quality test - Some basic quality checks for calibration files. Currently:
 #                      saturation, flux
 test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
@@ -67,10 +67,18 @@ test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
 #                           database this should return False
 test_dict['ASTROM_TEST'] = astrom_test.test
 
+# critical test - this tests whether the critical tests passed but includes
+#                 science checks
+test_dict['CRIT_SCI'] = critical_test.critical_sci_test
+
+# science quality test - Some basic quality checks for science files. Currently:
+#                        saturation, flux
+test_dict['SCI_QUAL'] = qual_test.sci_qual_test
 
 # previous science data test - this tests whether the previous 3 nights had
 #                              science data
 test_dict['NO_SCI'] = no_sci_test.test
+
 
 # Test that the system is in good health
 test_dict['SYSTEM'] =  sys_test.test
