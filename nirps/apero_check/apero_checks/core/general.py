@@ -193,8 +193,7 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
 
 
 def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
-              test_type: str,
-              test_results: Optional[dict] = None) -> Dict[str, Dict[str, Any]]:
+              test_type: str) -> Dict[str, Dict[str, Any]]:
     """
     Run all tests in silent mode and return a dictionary of test values
 
@@ -254,7 +253,7 @@ def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
             output, out_msg = run_test(params, obsdir, test_name, it=it,
                                        num_tests=len(test_list),
                                        log=False, test_type=test_type,
-                                       test_results=test_results)
+                                       test_results=test_values)
             # add to test values
             test_values[obsdir][test_name] = output
             # only log false tests
@@ -266,7 +265,7 @@ def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
 
 
 def run_single_test(params: Dict[str, Any], log_results: Dict[str, list],
-                    test_type: str, test_results: Optional[dict] = None):
+                    test_type: str):
     """
     Run a single test in log mode
 
@@ -317,7 +316,7 @@ def run_single_test(params: Dict[str, Any], log_results: Dict[str, list],
         # run single test
         output, out_msg = run_test(params, obsdir, test_name, it=0,
                                    num_tests=1, log=True, test_type=test_type,
-                                   test_results=test_results)
+                                   test_results=None)
         if not output:
             misc.add_log_result(log_results, obsdir, pname, test_type,
                                 test_name, out_msg)
