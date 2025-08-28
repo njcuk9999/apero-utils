@@ -11,7 +11,7 @@ Created on 2023-07-03 at 17:03
 """
 import os
 import time
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import gspread_pandas as gspd
@@ -77,8 +77,47 @@ def get_obs_dirs(params) -> List[str]:
     return obsdirs
 
 
+def check_dependencies(test_name: str, test_deps: dict,
+                       test_results: Optional[dict] = None
+                       ) -> Tuple[bool, str]:
+    """
+    Check that all dependencies for a test have passed
+
+    :param test_name: str, the name of the test to check dependencies for
+    :param test_deps: dict, the dictionary of test dependencies where each key
+                      is a test name and each value is a list of test names
+                      that must pass before this test can be run
+    :param test_results: dict, the dictionary of test results where each key
+                         is a test name and each value is True or False
+
+    :return: bool, True if all dependencies passed, False otherwise
+    """
+    # if no test_results then we assume all dependencies passed
+    if test_results is None:
+        msg = 'No test_results provided, assuming all dependencies passed'
+        return True, msg
+    # make sure we have dependencies for this test
+    if test_name not in test_deps:
+        msg = 'No dependencies for test {0}'.format(test_name)
+        return True, msg
+    # get dependencies
+    dependencies = test_deps[test_name]
+    # loop around dependencies and check if they passed
+    for dep in dependencies:
+        if dep not in test_results:
+            msg = 'No result for dependency {0}, assuming it passed'.format(dep)
+            return True, msg
+        if not test_results[dep]:
+            msg = 'Dependency {0} for test {1} failed, skipping this test'
+            return False, msg.format(dep, test_name)
+
+    # if we get here then all dependencies passed
+    return True, 'All dependencies passed'
+
+
 def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
-             num_tests: int, log: bool = True, test_type: str = 'raw'):
+             num_tests: int, log: bool = True, test_type: str = 'raw',
+             test_results: Optional[dict] = None) -> Tuple[bool, str]:
     """
     Run a single test
 
@@ -101,15 +140,35 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
             msg = '\tRunning raw test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
-            # run raw tests
-            output, outmsg = raw_tests.test_dict[test_name](params, obsdir, log=log)
+            # check dependencies
+            deps_passed, dep_msg = check_dependencies(test_name,
+                                                      raw_tests.test_dep,
+                                                    test_results)
+            # deal with dependencies passed/not passed
+            if deps_passed:
+                # get test function
+                test_func = raw_tests.test_dict[test_name]
+                # run raw tests
+                output, outmsg = test_func(params, obsdir, log=log)
+            else:
+                output, outmsg = deps_passed, dep_msg
         elif test_type == 'red':
             # print which test we are running
             msg = '\tRunning red test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
-            # run red tests
-            output, outmsg = red_tests.test_dict[test_name](params, obsdir, log=log)
+                        # check dependencies
+            deps_passed, dep_msg = check_dependencies(test_name,
+                                                      red_tests.test_dep,
+                                                    test_results)
+            # deal with dependencies passed/not passed
+            if deps_passed:
+                # get test function
+                test_func = red_tests.test_dict[test_name]
+                # run red tests
+                output, outmsg = test_func(params, obsdir, log=log)
+            else:
+                output, outmsg = deps_passed, dep_msg
         else:
             emsg = 'RUN_TEST error: test_type must be set to "raw" or "red"'
             raise base.AperoChecksError(emsg)
@@ -134,7 +193,8 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
 
 
 def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
-              test_type: str) -> Dict[str, Dict[str, Any]]:
+              test_type: str,
+              test_results: Optional[dict] = None) -> Dict[str, Dict[str, Any]]:
     """
     Run all tests in silent mode and return a dictionary of test values
 
@@ -193,7 +253,8 @@ def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
             # run the test
             output, out_msg = run_test(params, obsdir, test_name, it=it,
                                        num_tests=len(test_list),
-                                       log=False, test_type=test_type)
+                                       log=False, test_type=test_type,
+                                       test_results=test_results)
             # add to test values
             test_values[obsdir][test_name] = output
             # only log false tests
@@ -205,7 +266,7 @@ def run_tests(params: Dict[str, Any], log_results: Dict[str, list],
 
 
 def run_single_test(params: Dict[str, Any], log_results: Dict[str, list],
-                    test_type: str):
+                    test_type: str, test_results: Optional[dict] = None):
     """
     Run a single test in log mode
 
@@ -255,7 +316,8 @@ def run_single_test(params: Dict[str, Any], log_results: Dict[str, list],
         misc.log_msg(msg, level='info')
         # run single test
         output, out_msg = run_test(params, obsdir, test_name, it=0,
-                                   num_tests=1, log=True, test_type=test_type)
+                                   num_tests=1, log=True, test_type=test_type,
+                                   test_results=test_results)
         if not output:
             misc.add_log_result(log_results, obsdir, pname, test_type,
                                 test_name, out_msg)

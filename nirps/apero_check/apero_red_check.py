@@ -46,7 +46,8 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
         if params['test_name'] in [None, 'None']:
             # run the tests
             test_results = apero_checks.run_tests(params, log_results,
-                                                  test_type='red')
+                                                  test_type='red',
+                                                  test_results=test_results)
             # update results with the override
             test_results = apero_checks.check_override(params, test_results,
                                                        log_results,
@@ -56,7 +57,8 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
         # otherwise we run a single test
         else:
             # run single test
-            apero_checks.run_single_test(params, log_results, test_type='red')
+            apero_checks.run_single_test(params, log_results, test_type='red',
+                                         test_results=test_results)
         # log failures to file
         apero_checks.log_tests(log_results)
     # finish with an end message

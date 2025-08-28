@@ -12,6 +12,7 @@ Created on 2023-07-03 at 14:37
 import os
 from typing import Any, Dict, Tuple
 import pandas as pd
+from astropy.time import Time
 
 
 # =============================================================================
@@ -27,6 +28,9 @@ CSV_FILE = '/nirps_raw/nirps/critical-checks-output/check_status.csv'
 # The description of each critical check
 CHECK_DESC_FILE = ('/cosmos99/nirps/git-bin/nirpsdl/assets/'
                    'critical_checks_description.csv')
+
+# First test date (before this date there was no critical checks)
+FIRST_TEST_DATE = Time('2025-08-25T00:00:00', format='fits')
 
 
 # =============================================================================
@@ -61,6 +65,18 @@ def test(params: Dict[str, Any], obsdir: str, tkind: str,
     """
     # updating the global variables - just for local testing
     global CSV_FILE, CHECK_DESC_FILE
+    # -------------------------------------------------------------------------
+    # get a machine readable date
+    mr_obsdir = Time(obsdir + 'T00:00:00', format='fits')
+    # -------------------------------------------------------------------------
+    # Don't test if obsdir is before FIRST_TEST_DATE
+    if mr_obsdir < FIRST_TEST_DATE:
+        out_msg = ('\nCRITICAL TEST: Obsdir {0} is before first test date '
+                   '{1}, automatically passing'.format(obsdir, FIRST_TEST_DATE))
+        if log:
+            print(out_msg)
+        return True, out_msg
+    # -------------------------------------------------------------------------
     # we don't use parameters here but all tests must take params as first
     #   and can use any argument from parameters
     _ = params
