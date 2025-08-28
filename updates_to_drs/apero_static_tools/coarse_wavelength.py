@@ -80,7 +80,7 @@ FP_STEP_MAD_THRESHOLD = 2.0  # Threshold for mini selection
 FP_STEP_VALID_MIN = 5  # Minimum number of valid points for fit
 CHEBY_FIT_DEG = 5  # Degree for Chebyshev fit
 ROBUST_POLYFIT_DEG = 7  # Degree for robust_polyfit on Chebyshev coeffs
-ROBUST_POLYFIT_SIGMA = 5  # Sigma cut for robust_polyfit on Chebyshev coeffs
+ROBUST_POLYFIT_SIGMA = 3  # Sigma cut for robust_polyfit on Chebyshev coeffs
 hc_window_kms = 50  # Window size for HC lines (in km/s)
 
 path = '/data/spip/misc/wavesol/2025-05-09/'
