@@ -32,6 +32,11 @@ CHECK_DESC_FILE = ('/cosmos99/nirps/git-bin/nirpsdl/assets/'
 # First test date (before this date there was no critical checks)
 FIRST_TEST_DATE = Time('2025-08-25T00:00:00', format='fits')
 
+# Define the types of critical tests
+DESC_TYPES = dict()
+DESC_TYPES['CRITICAL'] = 'raw'
+DESC_TYPES['CRITICAL_SCI'] = 'sci'
+
 
 # =============================================================================
 # Define functions
@@ -129,13 +134,14 @@ def test(params: Dict[str, Any], obsdir: str, tkind: str,
         # get the check name and description
         check_name = desc['name']
         check_desc = desc['description']
+        check_type = desc['type']
 
         # if we have a type then check that it matches tkind
         # TODO: need to update the column name "type" once csv is updated
         # then we can remove the if 'type' part
         if 'type' in desc:
             check_type = desc['type'] 
-            if check_type != tkind:
+            if check_type != DESC_TYPES[tkind]:
                 continue
         # check if the check_name is in the row
         if check_name not in row:

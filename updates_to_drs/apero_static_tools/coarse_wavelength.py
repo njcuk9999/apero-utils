@@ -583,6 +583,8 @@ if __name__ == "__main__":
                             mini[i] = pix_ref2[imin] - linepix[i]
                             mini_wave[i] = wave_ref[g][imin]
 
+                        # TODO: Got to here 2025-08-29
+
                         # --- Histogram the offsets to find the best alignment cluster ---
                         n, vals = np.histogram(
                             mini,
