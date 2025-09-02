@@ -33,7 +33,7 @@ CHECK_DESC_FILE = ('/cosmos99/nirps/git-bin/nirpsdl/assets/'
 FIRST_TEST_DATE = Time('2025-08-25T00:00:00', format='fits')
 
 # Define the types of critical tests
-DESC_TYPES = dict()
+DESC_TYPES: Dict[str, str] = dict()
 DESC_TYPES['CRITICAL'] = 'raw'
 DESC_TYPES['CRITICAL_SCI'] = 'sci'
 
@@ -181,7 +181,7 @@ if __name__ == "__main__":
     # define the observation directory
     _obsdir = '2021-03-15'
     # run the test
-    test(_params, _obsdir, log=True)
+    test(_params, _obsdir, log=True, tkind='CRITICAL')
 
 # =============================================================================
 # End of code

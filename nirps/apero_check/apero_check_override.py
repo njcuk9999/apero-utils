@@ -14,6 +14,7 @@ from typing import Optional
 import apero_checks
 from apero_checks import override
 from apero_checks.core import misc
+from apero_checks.core import general
 
 # =============================================================================
 # Define variables
@@ -41,7 +42,7 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
         # add profile name to parameters
         params['apero profile name'] = profile
         # find test
-        allowed, test_type = override.find_override_test(params)
+        allowed, test_type = general.find_override_test(params)
         # if not allowed
         if not allowed:
             msg = '\tCannot override test="{0}"'

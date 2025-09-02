@@ -24,6 +24,7 @@ from apero_checks.core import base
 from apero_checks.core import io
 from apero_checks.core import misc
 
+
 # =============================================================================
 # Define variables
 # =============================================================================
@@ -160,7 +161,7 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
                         # check dependencies
             deps_passed, dep_msg = check_dependencies(test_name,
                                                       red_tests.test_dep,
-                                                    test_results)
+                                                      test_results)
             # deal with dependencies passed/not passed
             if deps_passed:
                 # get test function
@@ -181,6 +182,16 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
             misc.log_msg(msg, color='red')
         # append messages
         all_msg += outmsg
+
+        # deal with overrides (we need to do this if test has been overridden
+        #   by another user as we use these in future tests that depend on
+        #   this test)
+        override_value = get_override(params, obsdir, test_name)
+
+        if override_value is not None:
+            output = override_value
+            all_msg += f'\n\t\tOverride applied: {override_value}'
+
     except Exception as e:
         if log:
             raise e
@@ -357,6 +368,52 @@ def get_current_dataframe(params, test_type='raw'):
                                     logger=misc.log_msg)
 
 
+def find_override_test(params: Dict[str, Any], test_name: str = None):
+    # get test_name
+    if test_name is None:
+        test_name = params['test_name']
+    # test raw tests
+    if test_name in raw_tests.override_list:
+        return True, 'raw'
+    # test red tests
+    elif test_name in red_tests.override_list:
+        return True, 'red'
+    # otherwise do not allow override
+    else:
+        return False, None
+
+
+def get_override(params: Dict[str, Any], obs_dir: str, test_name: str):
+
+    # first check that we can override this test (if not don't run this)
+    can_override, _ = find_override_test(params, test_name=test_name)
+    if not can_override:
+        return None
+    # define the sheet id and sheet name for override sheet
+    sheet_id = params['over sheet id']
+    sheet_name = params['over sheet name']
+    # load google sheet instance
+    google_sheet = gspd.spread.Spread(sheet_id)
+    # convert google sheet to pandas dataframe
+    current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
+                                                 sheet=sheet_name,
+                                                 logger=misc.log_msg)
+    # get the test_value if we have the correct obs_dir and test_name
+    if len(current_dataframe) == 0:
+        return None
+    # filter by obs_dir, test_name and test_type
+    mask = (current_dataframe['obsdir'] == obs_dir)
+    mask &= (current_dataframe['test_name'] == test_name)
+    mask &= (current_dataframe['test_type'] == params['raw sheet name'])
+    # apply mask
+    df_filt = current_dataframe[mask]
+    # deal with no rows
+    if len(df_filt) == 0:
+        return None
+    # return the override value
+    return df_filt['test_value'].values[0]
+
+
 def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
                  test_type='raw'):
     """
@@ -418,8 +475,8 @@ def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
         current_dataframe = current_dataframe.loc[idx]
         # reset the index of the filtered dataframe
         current_dataframe.reset_index(drop=True)
-    elif test_type in 'override':
-        # Drop dulicates based on
+    elif test_type == 'override':
+        # Drop dulicates based on obsdir, test_type and test_name keeping
         dkwargs = dict(subset=['obsdir', 'test_type', 'test_name'],
                        keep='first', inplace=True)
         current_dataframe.drop_duplicates(**dkwargs)
