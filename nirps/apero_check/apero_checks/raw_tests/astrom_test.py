@@ -9,7 +9,7 @@ Created on 2023-07-03 at 14:37
 
 @author: cook
 """
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Optional, Tuple
 
 from apero_checks.core import base
 from apero_checks.core import apero_functions
@@ -21,6 +21,8 @@ from apero_checks.core import apero_functions
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
 
+# Cache values, we only need to run test once (as it affects all nights)
+ASTROM_CACHE: Optional[Tuple[bool, str]] = None
 
 # =============================================================================
 # Define functions
@@ -40,6 +42,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
 
     :return: bool, True if passed, False otherwise
     """
+    global ASTROM_CACHE
     # get the apero profiles run.ini file
     runfile = params['processing']['run file']
     # deal with no run file
@@ -47,6 +50,11 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
         emsg = ('APERO_CALIB_TEST error: "processing.run file" must be '
                 'defined in yaml')
         raise base.AperoChecksError(emsg)
+    # deal with result cached from before (this can be done as this test does
+    #  not depend on obsdir or any input from the user)
+    if ASTROM_CACHE is not None:
+        return ASTROM_CACHE[0], ASTROM_CACHE[1]
+
     # update apero profile
     apero_params = apero_functions.update_apero_profile(params)
     # get the proxy apero recipe
@@ -91,6 +99,8 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
         # all print out messages must be wrapped in if log
         if log:
             print(out_msg)
+        # cache results
+        ASTROM_CACHE = [False, out_msg]
         # return False
         return False, out_msg
     else:
@@ -98,6 +108,8 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
         out_msg = 'No unfound objects.'
         if log:
             print(out_msg)
+        # cache results
+        ASTROM_CACHE = [True, out_msg]
         # return True
         return True, out_msg
 

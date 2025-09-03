@@ -37,6 +37,10 @@ LOCK_DIR = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 # define maximum lock out time in minutes
 MAX_COUNT = 30
 # -----------------------------------------------------------------------------
+# cache for override (get override function only)
+#   this is so we don't load the google sheet for every test - this is not
+#   required
+OVERRIDE_CACHE = None
 
 
 # =============================================================================
@@ -78,9 +82,9 @@ def get_obs_dirs(params) -> List[str]:
     return obsdirs
 
 
-def check_dependencies(test_name: str, test_deps: dict,
+def check_dependencies(test_name: str, test_deps: dict, obsdir: str,
                        test_results: Optional[dict] = None
-                       ) -> Tuple[bool, str]:
+                       ) -> Tuple[bool, str, Union[str, None]]:
     """
     Check that all dependencies for a test have passed
 
@@ -91,29 +95,35 @@ def check_dependencies(test_name: str, test_deps: dict,
     :param test_results: dict, the dictionary of test results where each key
                          is a test name and each value is True or False
 
-    :return: bool, True if all dependencies passed, False otherwise
+    :return: tuple, 1. bool, True if all dependencies passed, False otherwise
+             2. str, the pass/fail message
+             3. str if failed (the depedency which failed), None otherwise
     """
     # if no test_results then we assume all dependencies passed
     if test_results is None:
         msg = 'No test_results provided, assuming all dependencies passed'
-        return True, msg
+        return True, msg, None
+
+    test_result = test_results[obsdir]
+
     # make sure we have dependencies for this test
     if test_name not in test_deps:
         msg = 'No dependencies for test {0}'.format(test_name)
-        return True, msg
+        return True, msg, None
     # get dependencies
     dependencies = test_deps[test_name]
+
     # loop around dependencies and check if they passed
     for dep in dependencies:
-        if dep not in test_results:
+        if dep not in test_result:
             msg = 'No result for dependency {0}, assuming it passed'.format(dep)
-            return True, msg
-        if not test_results[dep]:
+            return True, msg, None
+        if not test_result[dep]:
             msg = 'Dependency {0} for test {1} failed, skipping this test'
-            return False, msg.format(dep, test_name)
+            return False, msg.format(dep, test_name), dep
 
     # if we get here then all dependencies passed
-    return True, 'All dependencies passed'
+    return True, 'All dependencies passed', None
 
 
 def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
@@ -138,13 +148,15 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
     try:
         if test_type == 'raw':
             # print which test we are running
+            misc.log_msg('*'*40, level='test')
             msg = '\tRunning raw test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
+            misc.log_msg('*'*40, level='test')
             # check dependencies
-            deps_passed, dep_msg = check_dependencies(test_name,
-                                                      raw_tests.test_dep,
-                                                    test_results)
+            dout = check_dependencies(test_name, raw_tests.test_dep,
+                                      obsdir, test_results)
+            deps_passed, dep_msg, dep_failed = dout
             # deal with dependencies passed/not passed
             if deps_passed:
                 # get test function
@@ -158,10 +170,10 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
             msg = '\tRunning red test {0} [{1}/{2}]'
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
-                        # check dependencies
-            deps_passed, dep_msg = check_dependencies(test_name,
-                                                      red_tests.test_dep,
-                                                      test_results)
+            # check dependencies
+            dout = check_dependencies(test_name, red_tests.test_dep,
+                                      obsdir, test_results)
+            deps_passed, dep_msg, dep_failed = dout
             # deal with dependencies passed/not passed
             if deps_passed:
                 # get test function
@@ -173,25 +185,34 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
         else:
             emsg = 'RUN_TEST error: test_type must be set to "raw" or "red"'
             raise base.AperoChecksError(emsg)
+        # ---------------------------------------------------------------------
         # print whether test passed or failed
-        if output:
-            msg = '\n\t\tAll tests PASSED'
+        if not deps_passed:
+            omsg = (f'\n\t - Skipping {test_name} '
+                    f'[Dependency={str(dep_failed)} failed]\n')
+            misc.log_msg(omsg, color='yellow')
+        elif output:
+            msg = '\n\t - All tests PASSED'
             misc.log_msg(msg, color='green')
         else:
-            msg = '\n\t\tOne or more tests FAILED'
+            msg = '\n\t - One or more tests FAILED'
             misc.log_msg(msg, color='red')
         # append messages
         all_msg += outmsg
-
+        # ---------------------------------------------------------------------
         # deal with overrides (we need to do this if test has been overridden
         #   by another user as we use these in future tests that depend on
         #   this test)
-        override_value = get_override(params, obsdir, test_name)
+        # only override if dependencies passed
+        if deps_passed:
+            override_value = get_override(params, obsdir, test_name)
 
-        if override_value is not None:
-            output = override_value
-            all_msg += f'\n\t\tOverride applied: {override_value}'
+            if override_value is not None:
 
+                omsg = (f'\n\t - Override applied to {test_name}: '
+                        f'{output} --> {override_value}\n')
+                misc.log_msg(omsg, color='yellow')
+                output = override_value
     except Exception as e:
         if log:
             raise e
@@ -385,6 +406,8 @@ def find_override_test(params: Dict[str, Any], test_name: str = None):
 
 def get_override(params: Dict[str, Any], obs_dir: str, test_name: str):
 
+    global OVERRIDE_CACHE
+
     # first check that we can override this test (if not don't run this)
     can_override, _ = find_override_test(params, test_name=test_name)
     if not can_override:
@@ -392,12 +415,19 @@ def get_override(params: Dict[str, Any], obs_dir: str, test_name: str):
     # define the sheet id and sheet name for override sheet
     sheet_id = params['over sheet id']
     sheet_name = params['over sheet name']
-    # load google sheet instance
-    google_sheet = gspd.spread.Spread(sheet_id)
-    # convert google sheet to pandas dataframe
-    current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
-                                                 sheet=sheet_name,
-                                                 logger=misc.log_msg)
+
+    # see if we have googlesheet cached for this run
+    if OVERRIDE_CACHE is not None:
+        current_dataframe = OVERRIDE_CACHE
+    else:
+        # load google sheet instance
+        google_sheet = gspd.spread.Spread(sheet_id)
+        # convert google sheet to pandas dataframe
+        current_dataframe = io.pull_from_googlesheet(google_sheet, index=0,
+                                                     sheet=sheet_name,
+                                                     logger=misc.log_msg)
+        # save to cache
+        OVERRIDE_CACHE = current_dataframe
     # get the test_value if we have the correct obs_dir and test_name
     if len(current_dataframe) == 0:
         return None
@@ -410,8 +440,13 @@ def get_override(params: Dict[str, Any], obs_dir: str, test_name: str):
     # deal with no rows
     if len(df_filt) == 0:
         return None
-    # return the override value
-    return df_filt['test_value'].values[0]
+    # return the override value as a boolean
+    value = df_filt['test_value'].values[0]
+    if str(value).upper() in ['TRUE', 'T', '1']:
+        return True
+    else:
+        return False
+
 
 
 def add_to_sheet(params: Dict[str, Any], dataframe: pd.DataFrame,
