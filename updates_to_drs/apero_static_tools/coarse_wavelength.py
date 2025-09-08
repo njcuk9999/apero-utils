@@ -582,9 +582,7 @@ if __name__ == "__main__":
                             imin = np.argmin(np.abs(pix_ref2 - linepix[i]))
                             mini[i] = pix_ref2[imin] - linepix[i]
                             mini_wave[i] = wave_ref[g][imin]
-
-                        # TODO: Got to here 2025-08-29
-
+                            
                         # --- Histogram the offsets to find the best alignment cluster ---
                         n, vals = np.histogram(
                             mini,
@@ -657,43 +655,45 @@ if __name__ == "__main__":
                 else:
                     continue
 
-            # --- Create figure for diagnostics ---
-            fig, ax = plt.subplots(2, 1, figsize=(10, 5))
-            
-            # --- Plot number of valid lines as a function of peak0 guess ---
-            ax[0].plot(peak0_guesses, nvalid2, 'g-')
-            ax[0].plot(peak0_guesses, nvalid2, 'r.')
-            ax[0].set_xlabel('Peak0 guess')
-            ax[0].set_ylabel('Number of valid lines')
-            ax[0].set_title('Number of valid lines as a function of peak0 guess')
-            
-            # --- Plot spectrum and mark reference wavelengths ---
-            ax[1].plot(best_wave, sp)
-            keep = (wave_ref > np.min(best_wave)) & (wave_ref < np.max(best_wave))
-            wave_ref2 = wave_ref[keep]
-            for i in range(len(wave_ref2)):
-                ax[1].axvline(wave_ref2[i], color='0.5', alpha=0.5)
-            ax[1].set_yscale('log')
-            floor_val = np.nanmedian(sp[sp != 0]) * 0.1
-            ax[1].set_ylim(floor_val, np.nanmax(sp[sp != 0]))
-            ax[1].set_xlabel('Wavelength')
-            ax[1].set_ylabel('Flux')
-            
-            # yes / no button on graph
-            yninst = YesNoButtonGraph(fig)
-            yninst.add('Is this valid?')
-            plt.show(block=True)
+                # --- Create figure for diagnostics ---
+                fig, ax = plt.subplots(2, 1, figsize=(10, 5))
+                
+                # --- Plot number of valid lines as a function of peak0 guess ---
+                ax[0].plot(peak0_guesses, nvalid2, 'g-')
+                ax[0].plot(peak0_guesses, nvalid2, 'r.')
+                ax[0].set_xlabel('Peak0 guess')
+                ax[0].set_ylabel('Number of valid lines')
+                ax[0].set_title('Number of valid lines as a function of peak0 guess')
+                
+                # --- Plot spectrum and mark reference wavelengths ---
+                ax[1].plot(best_wave, sp)
+                keep = (wave_ref > np.min(best_wave)) & (wave_ref < np.max(best_wave))
+                wave_ref2 = wave_ref[keep]
+                for i in range(len(wave_ref2)):
+                    ax[1].axvline(wave_ref2[i], color='0.5', alpha=0.5)
+                ax[1].set_yscale('log')
+                floor_val = np.nanmedian(sp[sp != 0]) * 0.1
+                ax[1].set_ylim(floor_val, np.nanmax(sp[sp != 0]))
+                ax[1].set_xlabel('Wavelength')
+                ax[1].set_ylabel('Flux')
+                
+                # yes / no button on graph
+                yninst = YesNoButtonGraph(fig)
+                yninst.add('Is this valid?')
+                plt.show(block=True)
 
-            input_user = yninst.response
+                input_user = yninst.response
 
-            # --- 12n. If user accepts, save the wavelength solution and pickle ---
-            if 'y' in input_user.lower():
-                tbl = Table((np.arange(len(best_wave)), best_wave),
-                            names=('pixel', 'wavelength'))
-                tbl.write(wave_order_file, format='csv', overwrite=True)
-                print(f"Saved to {wave_order_file}")
-                pickle_file = wave_order_file.replace('.csv', '.pkl')
-                save_pickle(dict_fp, pickle_file)
+                # --- 12n. If user accepts, save the wavelength solution and pickle ---
+                if 'y' in input_user.lower():
+                    tbl = Table((np.arange(len(best_wave)), best_wave),
+                                names=('pixel', 'wavelength'))
+                    tbl.write(wave_order_file, format='csv', overwrite=True)
+                    print(f"Saved to {wave_order_file}")
+                    pickle_file = wave_order_file.replace('.csv', '.pkl')
+                    save_pickle(dict_fp, pickle_file)
+
+    # TODO: Got to here 2025-09-04
 
     # --- 13. Build the final 2D wavelength solution for all orders ---
     final_wave_sol = np.zeros((N_ORDERS, sp1.shape[1])) + np.nan
