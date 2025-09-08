@@ -52,48 +52,48 @@ test_dep['SYSTEM'] = ['BLANK']
 # obs dir test - this tests whether the obsdir given exists on disk and has
 #                fits files in its directory
 test_dict['HAS_OBSDIR'] = obsdir_test.test
-test_dep['HAS_OBSDIR'] = ['BLANK']
+test_dep['HAS_OBSDIR'] = ['BLANK', 'CRIT']
 
 # calib test - Are the expected calibrations present in the night folder
 #            add eventual extra calibrations to the 'must have' objects
 test_dict['CALIB_TEST'] = calib_test.test       
-test_dep['CALIB_TEST'] = ['BLANK', 'HAS_OBSDIR']
+test_dep['CALIB_TEST'] = ['BLANK', 'CRIT', 'HAS_OBSDIR']
 
 # calib ob test - Do we have the expected OB NAMES for calibrations for this
 #                 night directory
 test_dict['COB_TEST'] = calib_ob_test.test
-test_dep['COB_TEST'] = ['BLANK', 'HAS_OBSDIR']
+test_dep['COB_TEST'] = ['BLANK', 'CRIT', 'HAS_OBSDIR']
 
 # eng test - Check the consistency of headers with what we expect from
 #            enginnering. Consistency of FP temperature with set point,
 #            enclosure, pumps, valves
 test_dict['ENG_TEST'] = eng_test.test
-test_dep['ENG_TEST'] = ['BLANK', 'HAS_OBSDIR', 'CALIB_TEST']
+test_dep['ENG_TEST'] = ['BLANK', 'CRIT', 'HAS_OBSDIR', 'CALIB_TEST']
 
 # calib quality test - Some basic quality checks for calibration files. Currently:
 #                      saturation, flux
 test_dict['CALIB_QUAL'] = qual_test.calib_qual_test
-test_dep['CALIB_QUAL'] = ['BLANK', 'HAS_OBSDIR', 'CALIB_TEST']
+test_dep['CALIB_QUAL'] = ['BLANK', 'CRIT', 'HAS_OBSDIR', 'CALIB_TEST']
 
 # astrometric object test - If we have any objects missing from the astrometric
 #                           database this should return False
 test_dict['ASTROM_TEST'] = astrom_test.test
-test_dep['ASTROM_TEST'] = ['BLANK', 'HAS_OBSDIR']
+test_dep['ASTROM_TEST'] = ['BLANK', 'CRIT', 'HAS_OBSDIR']
 
 # critical test - this tests whether the critical tests passed but includes
 #                 science checks
 test_dict['CRIT_SCI'] = critical_test.critical_sci_test
-test_dep['CRIT_SCI'] = ['BLANK', 'HAS_OBSDIR']
+test_dep['CRIT_SCI'] = ['BLANK', 'CRIT', 'HAS_OBSDIR']
 
 # previous science data test - this tests whether the previous 3 nights had
 #                              science data
 test_dict['NO_SCI'] = no_sci_test.test
-test_dep['NO_SCI'] = ['BLANK', 'HAS_OBSDIR']
+test_dep['NO_SCI'] = ['BLANK', 'CRIT', 'HAS_OBSDIR', 'CRIT_SCI']
 
 # science quality test - Some basic quality checks for science files. Currently:
 #                        saturation, flux
 test_dict['SCI_QUAL'] = qual_test.sci_qual_test
-test_dep['SCI_QUAL'] = ['BLANK', 'HAS_OBSDIR', 'NO_SCI']
+test_dep['SCI_QUAL'] = ['BLANK', 'CRIT', 'HAS_OBSDIR', 'CRIT_SCI', 'NO_SCI']
 
 
 # test 1 - explanation
@@ -112,8 +112,8 @@ override_list = []
 
 # PREV_SCI: There could be nights which do not have science data but should
 #           not be flagged as bad
+override_list.append('CRIT_SCI')
 override_list.append('NO_SCI')
-
 
 # =============================================================================
 # End of code
