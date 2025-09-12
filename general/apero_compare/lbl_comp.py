@@ -27,11 +27,11 @@ name4 = 'spirou@maestria'
 name5 = 'newworlds'
 name6 = 'lam'
 name7 = 'cfht'
-name8 = 'cfht@canfar'
+name8 = 'lison@fir'
 name9 = 'lison@cedar'
 name10 = 'lison@titan'
 
-names = [name1, name2, name3, name4, name5, name6, name7, name8, name9, name10]
+names = [name1, name2, name3, name4, name5, name6, name7, name8, name10]
 
 
 # This is a hack but just to test without certain points
@@ -51,7 +51,7 @@ outpaths[name4] = '/scratch2/spirou/misc/compare/maestria/lbl'
 outpaths[name5] = '/scratch2/spirou/misc/compare/newworlds/lbl'
 outpaths[name6] = '/scratch2/spirou/misc/compare/lam/lbl'
 outpaths[name7] = '/scratch2/spirou/misc/compare/cfht/lbl'
-outpaths[name8] = '/scratch2/spirou/misc/compare/cfht_canfar/lbl'
+outpaths[name8] = '/scratch2/spirou/misc/compare/lison_fir/lbl'
 outpaths[name9] = '/scratch2/spirou/misc/compare/lison_cedar/lbl'
 outpaths[name10] = '/scratch2/spirou/misc/compare/lison_titan/lbl'
 
