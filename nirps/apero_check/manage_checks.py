@@ -43,7 +43,7 @@ COMMENT_START = '2024-12-20'
 # Name people who have left
 EX_MEMBERS = ['Fred', 'Yuri', 'Rose', 'Olivia', 'Romain', 'Etienne', 'Lison']
 # Ignore these columns when checking for False in check tables
-IGNORE_COLS = ['obsdir', 'date', 'BLANK']
+IGNORE_COLS = ['obsdir', 'date', 'BLANK', 'BAD_CCF']
 
 
 # =============================================================================
@@ -98,15 +98,24 @@ def allocation_histogram(allocation_table: Table):
     colors = ['red', 'blue', 'orange', 'purple', 'green', 'yellow', 'brown',
               'pink', 'gray', 'cyan', 'magenta', 'olive', 'lime', 'teal'] * 10
     # setup figure
-    plt.figure(figsize=(12, 12))
-    frames = [plt.subplot2grid((1, 4), (0, 0), colspan=3),
-              plt.subplot2grid((1, 4), (0, 3), colspan=1)]
+    if len(exmembers) == 0:
+        fig, frame = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
+        frames = [frame]
+        # define groups
+        group_names = ['Babysitters']
+        groups = [members]
+    else:
+        plt.figure(figsize=(12, 12))
+        frames = [plt.subplot2grid((1, 4), (0, 0), colspan=3),
+                  plt.subplot2grid((1, 4), (0, 3), colspan=1)]
+        # define groups
+        group_names = ['Babysitters', 'Previous Babysitters']
+        groups = [members, exmembers]
     # store max number of times someone was allocated
     max_entry = 0
-    # define groups
-    group_names = ['Babysitters', 'Previous Babysitters']
+
     # loop around members and ex members
-    for it, group in enumerate([members, exmembers]):
+    for it, group in enumerate(groups):
 
         groupmask = np.in1d(allocation_table['Who'], group)
 
@@ -131,13 +140,15 @@ def allocation_histogram(allocation_table: Table):
         frame.set_ylim(0, max_entry + 1)
         frame.tick_params(axis='x', rotation=90)
     # put the y-axis label and ticks on the right side
-    frames[1].yaxis.tick_right()
-    frames[1].yaxis.set_label_position('right')
+    if len(frames) > 1:
+        frames[-1].yaxis.tick_right()
+        frames[-1].yaxis.set_label_position('right')
 
     # construct the title
     targs = [ALLOCATION_START, Time.now().iso.split()[0]]
     title = 'Allocation Histogram\n From {0} to {1}'.format(*targs)
     plt.suptitle(title)
+    plt.subplots_adjust(bottom=0.2)
     # save png
     plt.savefig('results/allocation_histogram.png')
     # Show the plot
@@ -241,15 +252,23 @@ def comment_histogram(stat_table: Table, kind: str):
     colors = ['red', 'blue', 'orange', 'purple', 'green', 'yellow', 'brown',
               'pink', 'gray', 'cyan', 'magenta', 'olive', 'lime', 'teal'] * 10
     # setup figure
-    plt.figure(figsize=(12, 12))
-    frames = [plt.subplot2grid((1, 4), (0, 0), colspan=3),
-              plt.subplot2grid((1, 4), (0, 3), colspan=1)]
+    if len(exmembers) == 0:
+        fig, frame = plt.subplots(nrows=1, ncols=1, figsize=(12, 12))
+        frames = [frame]
+        # define groups
+        group_names = ['Members']
+        groups = [members]
+    else:
+        plt.figure(figsize=(12, 12))
+        frames = [plt.subplot2grid((1, 4), (0, 0), colspan=3),
+                  plt.subplot2grid((1, 4), (0, 3), colspan=1)]
+        # define groups
+        group_names = ['Members', 'Previous Members']
+        groups = [members, exmembers]
     # store max number of times someone was allocated
     max_entry = 0
-    # define groups
-    group_names = ['Members', 'Previous Members']
     # loop around members and ex members
-    for it, group in enumerate([members, exmembers]):
+    for it, group in enumerate(groups):
 
         groupmask = np.in1d(stat_table['who'], group)
 
@@ -278,13 +297,15 @@ def comment_histogram(stat_table: Table, kind: str):
         frame.set_ylim(0, max_entry + 1)
         frame.tick_params(axis='x', rotation=90)
     # put the y-axis label and ticks on the right side
-    frames[1].yaxis.tick_right()
-    frames[1].yaxis.set_label_position('right')
+    if len(frames) > 1:
+        frames[-1].yaxis.tick_right()
+        frames[-1].yaxis.set_label_position('right')
 
     # construct the title
     targs = [kind, COMMENT_START, Time.now().iso.split()[0]]
     title = '{0} Comment Histogram\n From {1} to {2}'.format(*targs)
     plt.suptitle(title)
+    plt.subplots_adjust(bottom=0.2)
     # save png
     plt.savefig('results/{0}_comment_histogram.png'.format(kind))
     # Show the plot
