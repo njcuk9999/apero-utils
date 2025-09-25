@@ -503,10 +503,10 @@ if __name__ == "__main__":
                 sp = fits.getdata(hc_spectrum_file)[iord]
 
                 # --- 12b. Find the NLINES brightest HC lines in this order ---
-                linepix, _, flux = get_lines_pix(sp)
-                if len(linepix) > NLINES:
+                hc_pix, _, flux = get_lines_pix(sp)
+                if len(hc_pix) > NLINES:
                     oo = np.argsort(-flux)
-                    linepix = linepix[oo[0:NLINES]]
+                    hc_pix = hc_pix[oo[0:NLINES]]
                     flux = flux[oo[0:NLINES]]
 
                 hdr_wavesol = fits.getheader(hc_spectrum_file)
@@ -516,14 +516,14 @@ if __name__ == "__main__":
 
                 # --- 12h. Create a synthetic spectrum with spikes at the HC line positions ---
                 sp_test = np.zeros_like(sp)
-                sp_test[linepix.astype(int)] = 1
+                sp_test[hc_pix.astype(int)] = 1
                 gg = gauss(np.arange(-5, 6), 0, 1, 1.5, 0)
                 sp_test += np.convolve(sp_test, gg, mode='same')
 
                 # --- 12i. Get the approximate wavelength range for this order ---
                 wave0, wave_start, wave_end = get_approx_wave(iord)
                 g = (wave_ref0 > wave_start) & (wave_ref0 < wave_end)
-                wave_ref = wave_ref0[g]
+                waveord = wave_ref0[g]
 
                 # --- 12j. Estimate the range of possible FP cavity orders for this order ---
 
@@ -560,7 +560,7 @@ if __name__ == "__main__":
                     )
 
                     # --- Map reference wavelengths to pixel positions using the fit ---
-                    pix_ref = np.polyval(fit, wave_ref)
+                    pix_ref = np.polyval(fit, waveord)
                     g = (pix_ref > 0) & (pix_ref < len(sp))
 
                     # --- If enough valid points, count how many HC lines match FP peaks ---
@@ -575,13 +575,13 @@ if __name__ == "__main__":
                     if nvalid2[ii] > 0:  # Only keep best
 
                         # --- Compute pixel offsets between HC and FP lines ---
-                        mini = np.zeros(len(linepix))
-                        mini_wave = np.zeros(len(linepix))
+                        mini = np.zeros(len(hc_pix))
+                        mini_wave = np.zeros(len(hc_pix))
 
-                        for i in range(len(linepix)):
-                            imin = np.argmin(np.abs(pix_ref2 - linepix[i]))
-                            mini[i] = pix_ref2[imin] - linepix[i]
-                            mini_wave[i] = wave_ref[g][imin]
+                        for i in range(len(hc_pix)):
+                            imin = np.argmin(np.abs(pix_ref2 - hc_pix[i]))
+                            mini[i] = pix_ref2[imin] - hc_pix[i]
+                            mini_wave[i] = waveord[g][imin]
                             
                         # --- Histogram the offsets to find the best alignment cluster ---
                         n, vals = np.histogram(
@@ -594,7 +594,7 @@ if __name__ == "__main__":
 
                         # --- If enough lines are well-aligned, fit a polynomial to them ---
                         if np.sum(g) > FP_STEP_VALID_MIN:
-                            hc_pix2 = linepix[g]
+                            hc_pix2 = hc_pix[g]
                             mini2 = mini[g]
                             mini_wave2 = mini_wave[g]
 
@@ -667,8 +667,8 @@ if __name__ == "__main__":
                 
                 # --- Plot spectrum and mark reference wavelengths ---
                 ax[1].plot(best_wave, sp)
-                keep = (wave_ref > np.min(best_wave)) & (wave_ref < np.max(best_wave))
-                wave_ref2 = wave_ref[keep]
+                keep = (waveord > np.min(best_wave)) & (waveord < np.max(best_wave))
+                wave_ref2 = waveord[keep]
                 for i in range(len(wave_ref2)):
                     ax[1].axvline(wave_ref2[i], color='0.5', alpha=0.5)
                 ax[1].set_yscale('log')
