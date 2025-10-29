@@ -21,6 +21,10 @@ from tqdm import tqdm
 # Define functions
 # =============================================================================
 def count_files(base_dir: str):
+    # print progress
+    print('\n\n' + '=' * 60)
+    print('Counting files in directory:', base_dir)
+    print('=' * 60 + '\n')
     # First count how many files exist (for tqdm total)
     all_files = []
 
@@ -56,6 +60,12 @@ def count_files(base_dir: str):
         "total_size_bytes": total_size
     }
 
+def print_stats(stats: dict, path: str):
+    print(f"Directory: {os.path.abspath(path)}")
+    print(f"Total files: {stats['total_files']}")
+    print(f"Symlinks: {stats['symlinks']}")
+    print(f"Non-symlinks: {stats['non_symlinks']}")
+    print(f"Total size: {stats['total_size_bytes'] / 1_048_576:.2f} MB")
 
 # =============================================================================
 # Start of code
@@ -64,13 +74,27 @@ def count_files(base_dir: str):
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
     import sys
-    path = sys.argv[1] if len(sys.argv) > 1 else "."
-    stats = count_files(path)
-    print(f"Directory: {os.path.abspath(path)}")
-    print(f"Total files: {stats['total_files']}")
-    print(f"Symlinks: {stats['symlinks']}")
-    print(f"Non-symlinks: {stats['non_symlinks']}")
-    print(f"Total size: {stats['total_size_bytes'] / 1_048_576:.2f} MB")
+
+    if len(sys.argv) == 2:
+        path = sys.argv[1]
+        stats = count_files(path)
+        print_stats(stats, path)
+    elif len(sys.argv) == 3:
+        root = sys.argv[1]
+        all_stats = dict()
+        for _path in os.listdir(root):
+            path = os.path.join(root, _path)
+            if os.path.isdir(path):
+                stats = count_files(path)
+                print_stats(stats, path)
+                all_stats[path] = stats
+        # Now print summary
+        print('\n\n\n\n' + '=' * 60)
+        print('Summary of all directories under:', root)
+        print('=' * 60 + '\n')
+        for key in all_stats:
+            print_stats(all_stats[key], key)
+
 
 # =============================================================================
 # End of code
