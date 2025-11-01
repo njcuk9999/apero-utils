@@ -15,10 +15,13 @@ import shutil
 import sys
 from typing import Any, Dict, List, Union
 
-import astropy.units as uu
 import numpy as np
 import yaml
 from astropy.time import Time, TimeDelta
+import requests
+from astropy import units as uu
+from astropy.table import Table
+from astropy.time import Time
 
 # =============================================================================
 # Define variables
@@ -26,6 +29,17 @@ from astropy.time import Time, TimeDelta
 # start time
 START_TIME = Time.now()
 # -----------------------------------------------------------------------------
+# The URL to google (must have the "sheet_id" and "gid" parts)
+GOOGLE_URL = 'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
+# allocation sheet info
+ALLOCATION_ID = '1s116aabnMH0zJ5YbXrGBWIVP17lmYXl6tYzLteoSEAc'
+ALLOCATION_SHEET = '0'
+# checks sheet info
+CHECKS_ID = '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M'
+# nirps he sheet info
+RAW_SHEET = dict(NIRPS_HA='1017212188', NIRPS_HE='1741354113')
+RED_SHEET = dict(NIRPS_HA='279548254', NIRPS_HE='541545005')
+COMM_SHEET = dict(NIRPS_HA='346030560', NIRPS_HE='68390787')
 # define messages
 MANUAL_START = 'MANUAL_START'
 MANUAL_END = 'MANUAL_END'
@@ -39,6 +53,9 @@ GSPARAM = ('OE4_WF0Btk29', 'Gmb8SrbTJ3UF')
 
 MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
             ARI_START, ARI_END]
+# do not check these columns for True's and False's
+EXCLUDE_SHEET_COLS = ['obsdir', 'date']
+
 
 # =============================================================================
 # Define classes
@@ -80,6 +97,10 @@ class TriggerLog:
         with open(self.filename, 'a') as logfile:
             for line in lines:
                 logfile.write(line + '\n')
+
+
+class ManualTriggerException(Exception):
+    pass
 
 
 # =============================================================================
@@ -384,6 +405,8 @@ def run_processing(settings: Dict[str, Any]):
         pdict = settings['PROFILES'][profile]
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
+        # confirm checks for night
+        confirm_checks(pdict, obsdirs=obs_dirs)
         # update the apero profile
         params = update_apero_profile(pdict)
         # get preset
@@ -707,6 +730,86 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     # change back to original path
     os.chdir(cwd)
 
+
+def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
+    """
+    This function reads a Google sheet and returns the content as an
+    astropy table
+
+    :param sheet_id:
+    :param gid:
+    :return: the astropy table
+    """
+    # Construct the URL
+    google_url = GOOGLE_URL.format(sheet_id=sheet_id, gid=gid)
+    # print that we are getting table from url
+    print(f'Getting table from: {google_url}')
+    # Send a GET request to the URL
+    response = requests.get(google_url)
+    # read the csv file
+    table = Table.read(response.text, format='ascii.csv')
+    # return the astropy table
+    return table
+
+
+def confirm_checks(pdict: Dict[str, Any], obsdirs: Union[List[str], str]):
+    # print that we are confirming checks
+    print_process('Checking raw checks have been dealt with')
+    # if we ahve no obsdirs skip
+    if obsdirs == '*':
+        print('\t obsdirs=="*": skipping confirmation')
+        return
+    elif isinstance(obsdirs, str):
+        obsdirs = obsdirs.split(',')
+    # import apero in place
+    from apero.base import base
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = pdict['general']['apero profile']
+    # reload IPARAMS
+    base.IPARAMS = base.load_install_yaml()
+    # get instrument
+    instrument = base.IPARAMS['INSTRUMENT']
+    # Deal with instruments not covered by apero checks
+    if instrument not in RAW_SHEET:
+        print(f'\t {instrument} not valid for checks: skipping confirmation')
+        return
+    # read the raw sheet
+    raw_table = read_google_sheet_csv(CHECKS_ID, RAW_SHEET[instrument])
+    # read the comm sheet
+    comm_table = read_google_sheet_csv(CHECKS_ID, COMM_SHEET[instrument])
+
+    # loop arond obsdirs
+    for obsdir in obsdirs:
+        # if observation directory not in the raw checks we should not continue
+        if obsdir not in raw_table['obsdir']:
+            msg = ('Check confirmarion failed.'
+                   '\n\nobsdir={0} must be in raw checks.'
+                   '\n\nPlease run the apero raw checks.')
+            raise ManualTriggerException(msg)
+        # if observation directory in comments then we return true
+        if obsdir in comm_table['obsdir']:
+            continue
+        # get row containing obsdir is in raw_table
+        mask = raw_table['obsdir'] == obsdir
+        # get the most recent row
+        pos = np.where(mask)[0][0]
+        # loop around columns
+        for column in raw_table.colnames:
+            # skip excluded columns
+            if column in EXCLUDE_SHEET_COLS:
+                continue
+            # get value
+            value = str(raw_table[column][pos])
+            # if column if False we have a problem
+            if value.upper() not in ['1', 'TRUE', 'T']:
+                msg = ('Cannot continue. Check confirmarion failed.'
+                       '\n\nobsdir={0} {1} = False. '
+                       '\n\nPlease fix (using babysitter manual) or override '
+                       '(if possible) or add a comment to "Comments-{2}"')
+                margs = [obsdir, column, instrument]
+                raise ManualTriggerException(msg.format(*margs))
+
+    print(f'\t Confirmation successful')
 
 def run_lbl_processing(settings: Dict[str, Any]):
     """

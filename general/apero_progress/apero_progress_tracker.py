@@ -5,6 +5,7 @@ Created on ${CURRENT_YEAR}-${CURRENT_MONTH}-${CURRENT_DATE}
 
 @author: cook
 """
+import os
 from astropy.time import Time, TimeDelta
 import matplotlib.pyplot as plt
 import numpy as np
@@ -13,7 +14,37 @@ from tqdm import tqdm
 # =============================================================================
 # Define variables
 # =============================================================================
-PATH = '/cosmos99/spirou/apero-data/spirou_008/log/tool/other/APEROL-PID-00017500796841586900-CRX7_apero_processing.log'
+CASE = 'spirou_offline'
+
+if CASE == 'spirou_offline':
+    # the PID of the APERO processing run
+    # Get the PID from here: /cosmos99/spirou/apero-data/spirou_offline/msg/tool/other
+    APERO_PID = 'PID-00017395509988958830-L4FG'
+    # the working directory where the log and report files are located
+    WORKING_DIR = '/cosmos99/spirou/apero-data/spirou_offline/'
+    # the paths to the log and report files
+    LOG_DIR = 'msg'  # or "log"
+    # Has date
+    has_date = False
+elif CASE == 'spirou_008':
+    # the PID of the APERO processing run
+    # Get the PID from here: /cosmos99/spirou/apero-data/spirou_offline/msg/tool/other
+    APERO_PID = 'PID-00017500796841586900-CRX7'
+    # the working directory where the log and report files are located
+    # WORKING_DIR = '/cosmos99/spirou/apero-data/spirou_offline/'
+    WORKING_DIR = '/cosmos99/spirou/apero-data/spirou_008/'
+    # the paths to the log and report files
+    LOG_DIR = 'log'  # or "msg"
+    # Has date
+    has_date = True
+else:
+    raise ValueError("Invalid CASE. Choose 'spirou_offline' or 'spirou_008'.")
+# the paths to the log and report files
+PATH_TO_LOG = os.path.join(WORKING_DIR, LOG_DIR, 'tool', 'other')
+LOG_FILE = 'APEROL-{APERO_PID}_apero_processing.log'
+# the path to the report file
+PATH_TO_REPORT = os.path.join(WORKING_DIR, LOG_DIR, 'report', 'processing')
+REPORT_FILE = '{APERO_PID}_apero_processing_ids.txt'
 
 # =============================================================================
 # Define functions
@@ -27,9 +58,19 @@ PATH = '/cosmos99/spirou/apero-data/spirou_008/log/tool/other/APEROL-PID-0001750
 # Main code here
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
+    # get log file
+    log_filename = os.path.join(PATH_TO_LOG, LOG_FILE.format(APERO_PID=APERO_PID))
     # load log file
-    with open(PATH, 'r') as file:
+    with open(log_filename, 'r') as file:
         log_content = file.readlines()
+
+    counter = 0
+    # get creation date of log file
+    creation_time = os.path.getctime(log_filename)
+
+    ctime = Time(creation_time, format='unix', scale='utc').fits
+    date_part = ctime.split('T')[0]
+    running_hour = int(ctime.split('T')[1].split(':')[0])
 
     # loop around each line and get out the timestamp
     timestamps = []
@@ -39,12 +80,25 @@ if __name__ == "__main__":
         # if the line has at least 2 parts, the first part is the timestamp
         if len(parts) >= 2:
             timestamp = parts[0]
-            # we actually want an mjd date which just has the date and hour
-            # so we split the timestamp by the space character
-            date_part = parts[0].split(' ')[0]
-            hour_part = parts[0].split(' ')[1].split(':')[0]
+            # if has_date is False we need to get the date
+            if has_date:
+                # we actually want an mjd date which just has the date and hour
+                # so we split the timestamp by the space character
+                date_part = parts[0].split(' ')[0]
+                hour_part = parts[0].split(' ')[1].split(':')[0]
+            else:
+                # need to figure out if the hour part has jumped to the next day
+                hour_part = int(timestamp.split(':')[0])
+
+                if hour_part < running_hour:
+                    # increment the date part by one day
+                    date_part = Time(date_part, format='iso').mjd + 1
+                    date_part = Time(date_part, format='mjd').fits.split('T')[0]
+                # update the running hour
+                running_hour = int(hour_part)
+
             # convert into a mjd using astropy Time
-            iso_time = f"{date_part} {hour_part}:00:00"
+            iso_time = f"{date_part} {str(hour_part).zfill(2)}:00:00"
             # append the iso time to the timestamps list
             timestamps.append(iso_time)
 
@@ -69,9 +123,9 @@ if __name__ == "__main__":
 
     # plot the histogram 
     plt.hist(t_datetime, bins=bin_edges_datetime, edgecolor='black', alpha=0.7)
-    plt.xlabel('MJD Time')
-    plt.ylabel('Count')
-    plt.title('Histogram of times from log file (binned by hour)')
+    plt.xlabel('Time')
+    plt.ylabel('Number of messages printed per hour')
+    plt.title('Histogram of messages from log file (binned by hour)')
     plt.xticks(rotation=45)
     plt.grid(axis='y', alpha=0.75)
     # log the y-axis

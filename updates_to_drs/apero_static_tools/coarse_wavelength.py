@@ -59,10 +59,10 @@ from scipy.interpolate import InterpolatedUnivariateSpline as ius
 #       - second time should be good
 #       - third time to make sure
 # --- CONSTANTS AND PARAMETERS -------------------------------------------------
-CAVITY0 = 2.4004e7  # Initial guess for cavity length (in nm)   # TODO: ASK USER
+CAVITY0 = 23990000.0  # Initial guess for cavity length (in nm)   # TODO: ASK USER
 WAVE_DOMAIN = [955, 2450]  # First to last orders (nm)   # TODO: ASK USER
 N_ORDERS = 49  # Number of spectral orders
-WAVE_APPROX = 0.05  # Fractional range for approximate wavelength
+WAVE_APPROX = 0.2  # Fractional range for approximate wavelength
 NLINES = 50  # Number of lines to use per order
 WAVEDEGN = 5  # Degree of polynomial for wavelength solution
 FP_PEAK_STEP_POLY_DEG = 1  # Degree for robust_polyfit of FP peak step
@@ -80,17 +80,18 @@ FP_STEP_MAD_THRESHOLD = 2.0  # Threshold for mini selection
 FP_STEP_VALID_MIN = 5  # Minimum number of valid points for fit
 CHEBY_FIT_DEG = 5  # Degree for Chebyshev fit
 ROBUST_POLYFIT_DEG = 7  # Degree for robust_polyfit on Chebyshev coeffs
-ROBUST_POLYFIT_SIGMA = 5  # Sigma cut for robust_polyfit on Chebyshev coeffs
+ROBUST_POLYFIT_SIGMA = 3  # Sigma cut for robust_polyfit on Chebyshev coeffs
 hc_window_kms = 50  # Window size for HC lines (in km/s)
 
-path = '/data/spip/misc/wavesol/2025-05-09/'
+path = '/scratch2/spirou/misc/coarse_wavelength'
 
 # hc_spectrum_file = '/Users/eartigau/spip/test2/180881c_pp_e2ds_AB.fits'
 # fp_spectrum_file = '/Users/eartigau/spip/test2/180879a_pp_e2ds_AB.fits'
-hc_spectrum_file = '/scratch2/spip/misc/download/2025-05-23/1F5B7E10A5c_pp_e2dsff_AB.fits'
-fp_spectrum_file = '/scratch2/spip/misc/download/2025-05-23/36ECD2422Aa_pp_e2dsff_AB.fits'
+hc_spectrum_file = '/scratch2/spirou/drs-data/spirou_xxs_08/assets/calib/2488251c_pp_e2dsff_AB.fits'
+fp_spectrum_file = '/scratch2/spirou/drs-data/spirou_xxs_08/assets/calib/2488244a_pp_e2dsff_AB.fits'
 
-working_dir = '/scratch2/spip/misc/statics/2025-05-23'
+# working_dir = '/scratch2/spip/misc/statics/2025-05-23'
+working_dir = path
 
 
 # --- Utility Functions --------------------------------------------------------
@@ -278,7 +279,7 @@ def get_peak0_guess(iord):
     return np.polyval(fit, iord)
 
 
-def robust_polyfit(x: np.ndarray, y: np.ndarray, degree: int, nsigcut: float, accept_width: Optional[float] = None) -> \
+def robust_polyfit_old(x: np.ndarray, y: np.ndarray, degree: int, nsigcut: float, accept_width: Optional[float] = None) -> \
 Tuple[np.ndarray, np.ndarray]:
     """
     Perform a robust polynomial fit to the data, iteratively rejecting outliers.
@@ -309,6 +310,80 @@ Tuple[np.ndarray, np.ndarray]:
     return fit, keep
 
 
+def robust_polyfit(xvector: np.ndarray, yvector: np.ndarray, degree: int,
+                   nsigcut: float) -> Tuple[np.ndarray, np.ndarray]:
+    """
+    A robust polyfit function that iteratively fits a polynomial to the data until
+    the dispersion of values is accounted for by a weight vector. This is
+    equivalent to a soft-edged sigma-clipping
+
+    :param xvector: np.ndarray, the x array to pass to np.polyval
+    :param yvector: np.ndarray, the y array to pass to np.polyval
+    :param degree: int, the degree of polynomial fit passed to np.polyval
+    :param nsigcut: float, the threshold sigma above which a point is considered
+    and outlier
+    :return: a tuple containing the polynomial fit (as a NumPy array)
+    and a boolean mask of the good values (p>50% of valid)
+    """
+    # Initialize the fit to None
+    fit = None
+    # -------------------------------------------------------------------------
+    # remove nans
+    finite_mask = np.isfinite(yvector) & np.isfinite(xvector)
+    xvector = xvector[finite_mask]
+    yvector = yvector[finite_mask]
+
+    # test length of vectors
+    if len(xvector) < degree + 1:
+        emsg = 'Not enough xvector points to fit polynomial in robust_polyfit'
+        raise ValueError(emsg)
+    if len(yvector) < degree + 1:
+        emsg = 'Not enough yvector points to fit polynomial in robust_polyfit'
+        raise ValueError(emsg)
+    # -------------------------------------------------------------------------
+    # Create an array of weights, initialized to 1 for all values
+    weight = np.ones_like(xvector)
+    # Pre-compute the odd_cut value
+    odd_cut = np.exp(-.5 * nsigcut ** 2)
+    # Initialize an array of weights from the previous iteration,
+    # set to 0 for all values
+    weight_before = np.zeros_like(weight)
+    # Set the maximum number of iterations and initialize the iteration counter
+    nite_max = 20
+    count = 0
+    # Enter a loop that will iterate until either the maximum difference
+    # between the current and previous weights
+    # becomes smaller than a certain threshold, or until the maximum number of
+    # iterations is reached
+    while (np.max(abs(weight - weight_before)) > 1e-9) and (count < nite_max):
+        # Calculate the polynomial fit using the x- and y-values, and the
+        # given degree, weighting the fit by the weights. Weights are computed
+        # from the dispersion to the fit and the sigmax
+        fit = np.polyfit(xvector, yvector, degree, w=weight)
+        # Calculate the residuals of the polynomial fit by subtracting the
+        # result of np.polyval from the original y-values
+        res = yvector - np.polyval(fit, xvector)
+        # Calculate the new sigma values as the median absolute deviation of
+        # the residuals
+        sig = np.nanmedian(np.abs(res))
+        # Calculate the odds of being part of the "valid" values
+        num = np.exp(-0.5 * (res / sig) ** 2) * (1 - odd_cut)
+        # Calculate the odds of being an outlier
+        den = odd_cut + num
+        # Update the weights from the previous iteration
+        weight_before = np.array(weight)
+        # Calculate the new weights as the odds ratio that is fed back to
+        # the fit
+        weight = num / den
+        # Increment the iteration counter
+        count += 1
+    # Set the mask of good values to be those for which there is a 50%
+    # likelihood of being valid
+    keep = np.array(weight > 0.5)
+    # return the fit and keep vectors
+    return fit, keep
+
+
 class YesNoButtonGraph:
     def __init__(self, fig):
         self.fig = fig
@@ -324,6 +399,7 @@ class YesNoButtonGraph:
                       fontsize=12)
         # Move subplots up to leave room for buttons/text
         plt.subplots_adjust(bottom=0.4)
+        plt.suptitle('CORASE_WAVELENGTH.py')
         # Define button positions (x, y, width, height)
         yes_ax = self.fig.add_axes([0.42, 0.08, 0.08, 0.05])
         no_ax = self.fig.add_axes([0.52, 0.08, 0.08, 0.05])
@@ -364,18 +440,18 @@ if __name__ == "__main__":
     keep = (tbl['lambda'].data > WAVE_DOMAIN[0] * (1 - WAVE_APPROX)) * (
                 tbl['lambda'].data < (WAVE_DOMAIN[1] * (1 + WAVE_APPROX)))
     tbl = tbl[keep]
-    wave_ref0 = tbl['lambda'].data
-    flux_ref0 = tbl['RFlux'].data
+    wave_ref0 = np.array(tbl['lambda'].data)
+    flux_ref0 = np.array(tbl['RFlux'].data)
 
     # --- 3. Deduplicate lines, keeping only the brightest within 20 km/s ---
     keep = np.zeros_like(wave_ref0, dtype=bool)
     for i in range(len(wave_ref0)):
-        dv = (1 - wave_ref0[i] / wave_ref0) * 3e5
+        dv = (1 - wave_ref0[i] / wave_ref0) * 299792.458
         g = np.abs(dv) < hc_window_kms
         if flux_ref0[i] == np.max(flux_ref0[g]):
             keep[i] = True
     tbl = tbl[keep]
-    wave_ref0 = tbl['lambda'].data
+    wave_ref0 = np.array(tbl['lambda'].data)
 
     # --- 4. Define function to get approximate wavelength for an order ---
     def get_approx_wave(ord):
@@ -395,6 +471,7 @@ if __name__ == "__main__":
     # --- 7. Initialize cavity fit and bookkeeping arrays ---
     flag_known_cavity = False
     n_pickles = len(glob.glob('wave_order_*.pkl'))
+    print('Found {0} previous solutions'.format(n_pickles))
     all_fp_wave = np.zeros(0)
     all_int_fp = np.zeros(0)
     orders_known = []
@@ -503,10 +580,10 @@ if __name__ == "__main__":
                 sp = fits.getdata(hc_spectrum_file)[iord]
 
                 # --- 12b. Find the NLINES brightest HC lines in this order ---
-                linepix, _, flux = get_lines_pix(sp)
-                if len(linepix) > NLINES:
+                hc_pix, _, flux = get_lines_pix(sp)
+                if len(hc_pix) > NLINES:
                     oo = np.argsort(-flux)
-                    linepix = linepix[oo[0:NLINES]]
+                    hc_pix = hc_pix[oo[0:NLINES]]
                     flux = flux[oo[0:NLINES]]
 
                 hdr_wavesol = fits.getheader(hc_spectrum_file)
@@ -515,15 +592,15 @@ if __name__ == "__main__":
                 fp_pix, mu_pix, amp, peak_count = get_lines_pix(fp1[iord], fp=True)
 
                 # --- 12h. Create a synthetic spectrum with spikes at the HC line positions ---
-                sp_test = np.zeros_like(sp)
-                sp_test[linepix.astype(int)] = 1
+                synth_spectrum = np.zeros_like(sp)
+                synth_spectrum[hc_pix.astype(int)] = 1
                 gg = gauss(np.arange(-5, 6), 0, 1, 1.5, 0)
-                sp_test += np.convolve(sp_test, gg, mode='same')
+                synth_spectrum += np.convolve(synth_spectrum, gg, mode='same')
 
                 # --- 12i. Get the approximate wavelength range for this order ---
                 wave0, wave_start, wave_end = get_approx_wave(iord)
                 g = (wave_ref0 > wave_start) & (wave_ref0 < wave_end)
-                wave_ref = wave_ref0[g]
+                waveord = np.array(wave_ref0)[g]
 
                 # --- 12j. Estimate the range of possible FP cavity orders for this order ---
 
@@ -560,13 +637,13 @@ if __name__ == "__main__":
                     )
 
                     # --- Map reference wavelengths to pixel positions using the fit ---
-                    pix_ref = np.polyval(fit, wave_ref)
+                    pix_ref = np.polyval(fit, waveord)
                     g = (pix_ref > 0) & (pix_ref < len(sp))
 
                     # --- If enough valid points, count how many HC lines match FP peaks ---
                     if np.sum(g) > FP_STEP_VALID_MIN:
                         pix_ref2 = pix_ref[g].astype(int)
-                        nvalid[ii] = np.sum(sp_test[pix_ref2])
+                        nvalid[ii] = np.sum(synth_spectrum[pix_ref2])
 
                     # --- Compute a normalized metric for plotting and selection ---
                     nvalid2[ii] = nvalid[ii] - np.nanmedian(nvalid[ii - 11:ii])
@@ -575,14 +652,14 @@ if __name__ == "__main__":
                     if nvalid2[ii] > 0:  # Only keep best
 
                         # --- Compute pixel offsets between HC and FP lines ---
-                        mini = np.zeros(len(linepix))
-                        mini_wave = np.zeros(len(linepix))
+                        mini = np.zeros(len(hc_pix))
+                        mini_wave = np.zeros(len(hc_pix))
 
-                        for i in range(len(linepix)):
-                            imin = np.argmin(np.abs(pix_ref2 - linepix[i]))
-                            mini[i] = pix_ref2[imin] - linepix[i]
-                            mini_wave[i] = wave_ref[g][imin]
-
+                        for i in range(len(hc_pix)):
+                            imin = np.argmin(np.abs(pix_ref2 - hc_pix[i]))
+                            mini[i] = pix_ref2[imin] - hc_pix[i]
+                            mini_wave[i] = waveord[g][imin]
+                            
                         # --- Histogram the offsets to find the best alignment cluster ---
                         n, vals = np.histogram(
                             mini,
@@ -594,7 +671,7 @@ if __name__ == "__main__":
 
                         # --- If enough lines are well-aligned, fit a polynomial to them ---
                         if np.sum(g) > FP_STEP_VALID_MIN:
-                            hc_pix2 = linepix[g]
+                            hc_pix2 = hc_pix[g]
                             mini2 = mini[g]
                             mini_wave2 = mini_wave[g]
 
@@ -650,48 +727,48 @@ if __name__ == "__main__":
                     continue
 
                 # --- 12m. Plot the results and ask the user for validation ---
-                if (ite == 0) * (np.nanmax(nvalid2) > NSIG_ACCEPT_FP):
-                    input_user = 'y'
-                else:
-                    continue
+                # if (ite == 0) * (np.nanmax(nvalid2) > NSIG_ACCEPT_FP):
+                #     input_user = 'y'
+                # else:
+                #     continue
 
-            # --- Create figure for diagnostics ---
-            fig, ax = plt.subplots(2, 1, figsize=(10, 5))
-            
-            # --- Plot number of valid lines as a function of peak0 guess ---
-            ax[0].plot(peak0_guesses, nvalid2, 'g-')
-            ax[0].plot(peak0_guesses, nvalid2, 'r.')
-            ax[0].set_xlabel('Peak0 guess')
-            ax[0].set_ylabel('Number of valid lines')
-            ax[0].set_title('Number of valid lines as a function of peak0 guess')
-            
-            # --- Plot spectrum and mark reference wavelengths ---
-            ax[1].plot(best_wave, sp)
-            keep = (wave_ref > np.min(best_wave)) & (wave_ref < np.max(best_wave))
-            wave_ref2 = wave_ref[keep]
-            for i in range(len(wave_ref2)):
-                ax[1].axvline(wave_ref2[i], color='0.5', alpha=0.5)
-            ax[1].set_yscale('log')
-            floor_val = np.nanmedian(sp[sp != 0]) * 0.1
-            ax[1].set_ylim(floor_val, np.nanmax(sp[sp != 0]))
-            ax[1].set_xlabel('Wavelength')
-            ax[1].set_ylabel('Flux')
-            
-            # yes / no button on graph
-            yninst = YesNoButtonGraph(fig)
-            yninst.add('Is this valid?')
-            plt.show(block=True)
+                # --- Create figure for diagnostics ---
+                fig, ax = plt.subplots(2, 1, figsize=(10, 5))
+                
+                # --- Plot number of valid lines as a function of peak0 guess ---
+                ax[0].plot(peak0_guesses, nvalid2, 'g-')
+                ax[0].plot(peak0_guesses, nvalid2, 'r.')
+                ax[0].set_xlabel('Peak0 guess')
+                ax[0].set_ylabel('Number of valid lines')
+                ax[0].set_title('Number of valid lines as a function of peak0 guess')
+                
+                # --- Plot spectrum and mark reference wavelengths ---
+                ax[1].plot(best_wave, sp)
+                keep = (waveord > np.min(best_wave)) & (waveord < np.max(best_wave))
+                wave_ref2 = waveord[keep]
+                for i in range(len(wave_ref2)):
+                    ax[1].axvline(wave_ref2[i], color='0.5', alpha=0.5)
+                ax[1].set_yscale('log')
+                floor_val = np.nanmedian(sp[sp != 0]) * 0.1
+                ax[1].set_ylim(floor_val, np.nanmax(sp[sp != 0]))
+                ax[1].set_xlabel('Wavelength')
+                ax[1].set_ylabel('Flux')
+                
+                # yes / no button on graph
+                yninst = YesNoButtonGraph(fig)
+                yninst.add('Is this valid?')
+                plt.show(block=True)
 
-            input_user = yninst.response
+                input_user = yninst.response
 
-            # --- 12n. If user accepts, save the wavelength solution and pickle ---
-            if 'y' in input_user.lower():
-                tbl = Table((np.arange(len(best_wave)), best_wave),
-                            names=('pixel', 'wavelength'))
-                tbl.write(wave_order_file, format='csv', overwrite=True)
-                print(f"Saved to {wave_order_file}")
-                pickle_file = wave_order_file.replace('.csv', '.pkl')
-                save_pickle(dict_fp, pickle_file)
+                # --- 12n. If user accepts, save the wavelength solution and pickle ---
+                if 'y' in input_user.lower():
+                    tbl = Table((np.arange(len(best_wave)), best_wave),
+                                names=('pixel', 'wavelength'))
+                    tbl.write(wave_order_file, format='csv', overwrite=True)
+                    print(f"Saved to {wave_order_file}")
+                    pickle_file = wave_order_file.replace('.csv', '.pkl')
+                    save_pickle(dict_fp, pickle_file)
 
     # --- 13. Build the final 2D wavelength solution for all orders ---
     final_wave_sol = np.zeros((N_ORDERS, sp1.shape[1])) + np.nan

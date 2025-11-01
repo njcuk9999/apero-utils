@@ -47,10 +47,6 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
             # run the tests
             test_results = apero_checks.run_tests(params, log_results,
                                                   test_type='red')
-            # update results with the override
-            test_results = apero_checks.check_override(params, test_results,
-                                                       log_results,
-                                                       test_type='raw')
             # upload the tests
             apero_checks.upload_tests(params, test_results, test_type='red')
         # otherwise we run a single test

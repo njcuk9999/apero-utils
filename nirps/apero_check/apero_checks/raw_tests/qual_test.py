@@ -197,6 +197,12 @@ def qual_test(params: Dict[str, Any], obsdir: str, dprgroups: List[str],
     for filename in tqdm(files, leave=False):
         # lets only open the file once
         with fits.open(filename) as hdul:
+            # deal with bad files
+            if len(hdul) < 4:
+                emsg = 'QUAL_TEST: File {0} has wrong number of HDUs'
+                eargs = [filename]
+                raise ValueError(emsg.format(*eargs))
+            # otherwise load the image, nread and hdr
             image = hdul[1].data
             nread = hdul[3].data
             hdr = hdul[0].header
