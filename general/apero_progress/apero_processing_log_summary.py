@@ -15,7 +15,7 @@ from tqdm import tqdm
 # =============================================================================
 # the PID of the APERO processing run
 # Get the PID from here: /cosmos99/spirou/apero-data/spirou_offline/msg/tool/other
-APERO_PID = 'PID-00017534957092926630-VLWQ'
+APERO_PID = 'PID-00017538829472220370-1G44'
 # the working directory where the log and report files are located
 WORKING_DIR = '/cosmos99/spirou/apero-data/spirou_offline/'
 # the paths to the log and report files
