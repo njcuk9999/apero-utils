@@ -2,7 +2,7 @@ spirou offline:
     # general settings
     general:
         # directory where raw data is downloaded
-        raw dir: /spirou/cfht_nights/common/raw
+        raw dir: /titan02/spirou/cfht/raw
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /cosmos99/spirou/apero-settings/spirou_offline
