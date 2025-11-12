@@ -13,15 +13,16 @@ import argparse
 import os
 import shutil
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Union
 
 import numpy as np
-import yaml
-from astropy.time import Time, TimeDelta
 import requests
+import yaml
 from astropy import units as uu
 from astropy.table import Table
 from astropy.time import Time
+from astropy.time import TimeDelta
 
 # =============================================================================
 # Define variables
@@ -319,6 +320,8 @@ def make_sym_links(settings: Dict[str, Any]):
         inpath = pdict['general']['raw dir']
         # get the raw directory from params
         outpath = params['DRS_DATA_RAW']
+        # remove any broken symlinks
+        remove_broken_symlinks(outpath)
         # get obs dirs
         obs_dirs = settings['OBS_DIRS']
         # deal with getting all obs_dirs
@@ -494,7 +497,6 @@ def run_apero_get(settings: Dict[str, Any]):
 
     :param settings: dict, settings dictionary
     """
-    from apero.core import constants
     # loop around profiles
     for profile in settings['PROFILES']:
         # print progress
@@ -530,6 +532,8 @@ def run_apero_get(settings: Dict[str, Any]):
         # get the object dir in the apero reduction path
         red_path = pparams['DRS_DATA_REDUC']
         obj_path = os.path.join(os.path.dirname(red_path), 'objects')
+        # remove any broken symlinks
+        remove_broken_symlinks(obj_path)
         # get the output path
         lbl_in_path = pdict['general']['lbl path']
         outpath_objects = os.path.join(lbl_in_path, 'science')
@@ -543,10 +547,13 @@ def run_apero_get(settings: Dict[str, Any]):
         # check directories exist - try to make them if they don't
         # ----------------------------------------------------------
         directories = [obj_path, outpath_templates, outpath_calib,
-                       outpath_objects]
+                       outpath_fp, outpath_objects]
         for directory in directories:
             if not os.path.exists(directory):
                 os.makedirs(directory)
+        # remove any broken links
+        for directory in directories:
+            remove_broken_symlinks(directory)
         # ----------------------------------------------------------
         # reset reduced directories
         # ----------------------------------------------------------
@@ -852,6 +859,41 @@ def get_earliest_raw_file(apero_params, obsdirs):
     earliest_time -= TimeDelta(1 * uu.hour)
     # return this time as an iso time
     return earliest_time.iso
+
+
+
+def remove_broken_symlinks(path: str):
+    """
+    Removes broken symlinks recusively from the given directory
+
+    :param params: ParamDict, parameter dictionary of constants
+    :param path: str, path to remove all symlinks from
+    :return:
+    """
+    # if we don't have this directory just return - it will be created later
+    if not os.path.exists(path):
+        return
+    # convert to Path
+    rootpath = Path(path)
+    # save a counter
+    count = 0
+    # loop around all sub-directories
+    for path in rootpath.rglob('*'):
+        # test for symlink and for path existing
+        if path.is_symlink() and not path.exists():
+            try:
+                path.unlink()
+                count += 1
+            except Exception as e:
+                emsg = 'Failed to remove path {0}\n\tError {1}: {2}'
+                eargs = [path, type(e), str(e)]
+                print_process(emsg.format(*eargs))
+                return
+    # print how many broken symlinks we removed (as a warning)
+    wmsg = 'Remove {0} broken symlinks'
+    wargs = [count]
+    print_process(wmsg.format(*wargs))
+
 
 
 # =============================================================================
