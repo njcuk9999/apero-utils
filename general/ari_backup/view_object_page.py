@@ -20,8 +20,8 @@ from sphinx.application import Sphinx
 # =============================================================================
 # define the paths for each apero profile
 APERO_PROFILES = dict()
-# APERO_PROFILES['nirps_he_online'] = '/cosmos99/nirps/apero-data/nirps_he_online/other/ari/nirps_he_online_udem/object_pages/'
-# APERO_PROFILES['nirps_ha_online'] = '/cosmos99/nirps/apero-data/nirps_ha_online/other/ari/nirps_ha_online_udem/object_pages/'
+APERO_PROFILES['nirps_he_online'] = '/cosmos99/nirps/apero-data/nirps_he_online/other/ari/nirps_he_online_udem/object_pages/'
+APERO_PROFILES['nirps_ha_online'] = '/cosmos99/nirps/apero-data/nirps_ha_online/other/ari/nirps_ha_online_udem/object_pages/'
 APERO_PROFILES['spirou_offline'] = '/cosmos99/spirou/apero-data/spirou_offline/other/ari/spirou_offline_udem/object_pages/'
 # -----------------------------------------------------------------------------
 MINI_CONF = """project = 'TempDocs'
@@ -83,6 +83,19 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     for apero_profile in APERO_PROFILES:
         print(f"Apero profile: {apero_profile}")
+
+        # build object table page
+        indir_table = os.path.join(os.path.dirname(os.path.dirname((APERO_PROFILES[apero_profile]))))
+        outdir_table = os.path.join(OUTDIR, apero_profile, 'object_table')
+        if not os.path.exists(outdir_table):
+            os.makedirs(outdir_table)
+        # copy files to objec table dir
+        for infile in ['object_table.csv', 'object_table.rst']:
+            shutil.copy(os.path.join(indir_table, infile),
+                        os.path.join(outdir_table, infile))
+        # run sphinx on this directory
+        build_with_sphinx(outdir_table, outdir_table)
+
 
         # get list of object directories
         object_names = [d for d in os.listdir(APERO_PROFILES[apero_profile])

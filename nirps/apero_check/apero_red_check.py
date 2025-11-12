@@ -29,11 +29,13 @@ __AUTHOR__ = apero_checks.base.__AUTHOR__
 # Define functions
 # =============================================================================
 def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
-         test_name: Optional[str] = None, today: bool = False):
+         test_name: Optional[str] = None, today: bool = False,
+         yest: bool = False, since: str = 'None', until: str = 'None'):
     # print splash
     apero_checks.splash('APERO Reduction checks')
     # get params updated for input yaml file
-    all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
+    all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today,
+                                          yest, since, until)
     # set up log results
     log_results = apero_checks.define_log_results()
     # loop around profiles
