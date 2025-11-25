@@ -95,8 +95,8 @@ parameters['processing'] = Const('processing', processing_dict, dtype=dict,
 
 # define the sheet id for the google sheet
 parameters['raw sheet id'] = Const('raw sheet id',
-                               '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
-                               dtype=str)
+                                   '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
+                                   dtype=str, path='check.raw sheet id')
 # define the sheet name for the google sheet
 parameters['raw sheet name'] = Const('raw sheet name', None, dtype=str,
                                      not_none=True,
@@ -104,24 +104,53 @@ parameters['raw sheet name'] = Const('raw sheet name', None, dtype=str,
 
 # define the sheet id for the google sheet
 parameters['red sheet id'] = Const('red sheet id',
-                               '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
-                               dtype=str)
+                                   '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
+                                   dtype=str, path='check.red sheet id')
 
 # define the sheet name for the google sheet
 parameters['red sheet name'] = Const('red sheet name', None, dtype=str,
                                      not_none=True,
                                      path='check.red sheet name')
 
-
 # define the sheet id for the google sheet
 parameters['over sheet id'] = Const('over sheet id',
                                     '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M',
-                                    dtype=str)
+                                    dtype=str, path='check.over sheet id')
 
 # define the sheet name for the google sheet
 parameters['over sheet name'] = Const('over sheet name',
-                                      'OVERRIDES',
+                                      'OVERRIDES', path='check.over sheet name',
                                       dtype=str)
+
+# allow disabling dependencies check
+parameters['disable dependencies check'] = Const('disable dependencies check',
+                                                 False,
+                                                 dtype=bool,
+                                                 path='check.disable dependencies check')
+
+# define the critial checks csv file (set to None to skip)
+parameters['critical csv file'] = Const('critical csv file',
+                                        '/nirps_raw/nirps/nirps/critical-checks-output/check_status.csv',
+                                        dtype=str,
+                                        path='check.critical csv file')
+
+# define the critical checks description file (set to None to skip)
+parameters['critical desc file'] = Const('critical desc file',
+                                         '/cosmos99/nirps/git-bin/nirpsdl/assets/critical_checks_description.csv',
+                                         dtype=str,
+                                         path='check.critical desc file')
+
+# define the system disk path
+parameters['system disk path'] = Const('system disk path', '/cosmos99',
+                                        dtype=str,
+                                        path='check.system disk path')
+
+# define the system email server
+parameters['system email server'] = Const('system email server', 'localhost',
+                                          dtype=str,
+                                          path='check.system email server')
+
+
 
 # =============================================================================
 # Start of code

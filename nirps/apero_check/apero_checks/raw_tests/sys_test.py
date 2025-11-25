@@ -26,15 +26,22 @@ CACHE = dict()
 # =============================================================================
 # Define functions
 # =============================================================================
-def test_email_server() -> Tuple[bool, str]:
+def test_email_server(params) -> Tuple[bool, str]:
     """
     Test the email server is working (used to send emails)
 
     :return:
     """
-    server = 'localhost'
+    # disk path
+    email_server = params['system email server']
+    if email_server == 'None':
+        msg = 'Email server check disabled'
+        print('"check.system disk path = None"'
+              '\n\t - No email server set, skipping test')
+        return True, msg
+
     try:
-        with smtplib.SMTP(server) as smtp:
+        with smtplib.SMTP(email_server) as smtp:
             smtp.ehlo()  # Identify ourselves
             reason = ('Email server is reachable and responding')
             return True, reason
@@ -44,24 +51,30 @@ def test_email_server() -> Tuple[bool, str]:
         return False, emsg.format(*eargs)
 
 
-def test_disk_space() -> Tuple[bool, str]:
+def test_disk_space(params) -> Tuple[bool, str]:
     """
     Test the disk space is sufficient for reductions
     :return:
     """
-
+    # disk path
+    disk_path = params['system disk path']
+    if disk_path == 'None':
+        msg = 'Disk usage check disabled'
+        print('"check.system email server = None"'
+              '\n\t - No disk path set, skipping test')
+        return True, msg
     # get the disk stats
-    total, used, free = shutil.disk_usage(DISK_PATH)
+    total, used, free = shutil.disk_usage(disk_path)
     # calculate the disk usage
     usage = (used / total) * 100
     # fail if usage it over 90%
     if usage > 90:
         msg = 'Disk usage: {0} > 90% (Currently = {1:.2f}%)'
-        margs = [DISK_PATH, usage]
+        margs = [disk_path, usage]
         return False, msg.format(*margs)
     else:
         msg = 'Disk usage: {0} okay (Currently = {1:.2f}%)'
-        margs = [DISK_PATH, usage]
+        margs = [disk_path, usage]
         return True, msg.format(*margs)
 
 
@@ -103,7 +116,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
             pass_it, reason_it = CACHE[test_name]
         else:
             # run this test
-            pass_it, reason_it = test_functions[test_name]()
+            pass_it, reason_it = test_functions[test_name](params)
             # add to cache
             CACHE[test_name] = (pass_it, reason_it)
         # print progress

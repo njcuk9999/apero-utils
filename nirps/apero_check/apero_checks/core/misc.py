@@ -260,6 +260,8 @@ def load_params(yaml_file: Optional[str] = None,
                 # get get
                 if ykey in yaml_value:
                     yaml_value = yaml_value[ykey]
+                elif parameters.parameters[parameter].value is not None:
+                    yaml_value = parameters.parameters[parameter].value
                 else:
                     emsg = 'YAML path {0} for {1} is invalid'
                     eargs = [path, parameter]

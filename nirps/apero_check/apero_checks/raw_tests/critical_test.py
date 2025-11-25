@@ -22,13 +22,6 @@ from astropy.time import Time
 #  file (these can be overwritten by the yaml file) and may change
 #  depending on the profile used (i.e. NIRPS_HA or NIRPS_HE)
 
-# The critical check log file
-CSV_FILE = '/nirps_raw/nirps/critical-checks-output/check_status.csv'
-
-# The description of each critical check
-CHECK_DESC_FILE = ('/cosmos99/nirps/git-bin/nirpsdl/assets/'
-                   'critical_checks_description.csv')
-
 # First test date (before this date there was no critical checks)
 FIRST_TEST_DATE = Time('2025-08-25T00:00:00', format='fits')
 
@@ -68,8 +61,6 @@ def test(params: Dict[str, Any], obsdir: str, tkind: str,
 
     :return: bool, True if passed, False otherwise
     """
-    # updating the global variables - just for local testing
-    global CSV_FILE, CHECK_DESC_FILE
     # -------------------------------------------------------------------------
     # get a machine readable date
     mr_obsdir = Time(obsdir + 'T00:00:00', format='fits')
@@ -84,32 +75,45 @@ def test(params: Dict[str, Any], obsdir: str, tkind: str,
     # -------------------------------------------------------------------------
     # we don't use parameters here but all tests must take params as first
     #   and can use any argument from parameters
-    _ = params
+    csv_file = params['critical csv file']
+    desc_file = params['critical desc file']
+    # deal with override
+    if csv_file == 'None' or desc_file == 'None':
+        out_msg = 'No critial csv or desc file set. Automatically passing test.'
+
+        print('"check.critical csv file = None" or '
+              '"check.critical desc file = None" '
+              '\n\t- No critical csv or desc file set, '
+              'skipping test')
+
+        return True, out_msg
     # -------------------------------------------------------------------------
     # files are only accessible on the NIRPS system - we get around this by
-    #   checking ~/CSV_FILE if CSV_FILE does not exist (we assume testing
+    #   checking ~/csv_file if csv_file does not exist (we assume testing
     #   user has drive mounted in home directory)
-    if not os.path.exists(CSV_FILE):
-        alt_file = os.path.expanduser('~') + CSV_FILE
-        CSV_FILE = alt_file
-        CHECK_DESC_FILE = os.path.expanduser('~') + CHECK_DESC_FILE
+    if not os.path.exists(csv_file):
+        alt_file = os.path.expanduser('~') + csv_file
+        csv_file = alt_file
+        desc_file = os.path.expanduser('~') + desc_file
+        params['critical csv file'] = csv_file
+        params['critical desc file'] = desc_file
     # -------------------------------------------------------------------------
     # Load the csv file using pandas
     try:
-        df = pd.read_csv(CSV_FILE, index_col=0)
+        df = pd.read_csv(csv_file, index_col=0)
     except Exception as _:
         out_msg = ('\nCRITICAL TEST: Could not read the critical checks '
-                   'csv file: {0}'.format(CSV_FILE))
+                   'csv file: {0}'.format(csv_file))
         if log:
             print(out_msg)
         return False, out_msg
     # -------------------------------------------------------------------------
     # load the check descriptions
     try:
-        df_desc = pd.read_csv(CHECK_DESC_FILE)
+        df_desc = pd.read_csv(desc_file)
     except Exception as _:
         out_msg = ('\nCRITICAL TEST: Could not read the critical checks '
-                   'description csv file: {0}'.format(CHECK_DESC_FILE))
+                   'description csv file: {0}'.format(desc_file))
         if log:
             print(out_msg)
         return False, out_msg
@@ -117,7 +121,7 @@ def test(params: Dict[str, Any], obsdir: str, tkind: str,
     # check that obsdir is in the index (if not return False)
     if obsdir not in df.index:
         out_msg = ('\nCRITICAL TEST: No entry for obsdir {0} in critical '
-                   'checks csv file: {1}'.format(obsdir, CSV_FILE))
+                   'checks csv file: {1}'.format(obsdir, csv_file))
         if log:
             print(out_msg)
         return False, out_msg
@@ -146,7 +150,7 @@ def test(params: Dict[str, Any], obsdir: str, tkind: str,
         # check if the check_name is in the row
         if check_name not in row:
             out_msg = ('\nCRITICAL TEST: Check name {0} not in critical '
-                       'checks csv file: {1}'.format(check_name, CSV_FILE))
+                       'checks csv file: {1}'.format(check_name, csv_file))
             msgs.append(out_msg)
             passed = False
         # check if the row value is False

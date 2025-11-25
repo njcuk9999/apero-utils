@@ -82,7 +82,7 @@ def get_obs_dirs(params) -> List[str]:
     return obsdirs
 
 
-def check_dependencies(test_name: str, test_deps: dict, obsdir: str,
+def check_dependencies(params, test_name: str, test_deps: dict, obsdir: str,
                        test_results: Optional[dict] = None
                        ) -> Tuple[bool, str, Union[str, None]]:
     """
@@ -99,6 +99,10 @@ def check_dependencies(test_name: str, test_deps: dict, obsdir: str,
              2. str, the pass/fail message
              3. str if failed (the depedency which failed), None otherwise
     """
+    # if disabled don't run
+    if params['disable dependencies check']:
+        msg = 'check.disable dependencies check = True. Skippying dependencies'
+        return True, msg, None
     # if no test_results then we assume all dependencies passed
     if test_results is None:
         msg = 'No test_results provided, assuming all dependencies passed'
@@ -154,7 +158,7 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
             misc.log_msg(msg.format(*margs), level='test')
             misc.log_msg('*'*40, level='test')
             # check dependencies
-            dout = check_dependencies(test_name, raw_tests.test_dep,
+            dout = check_dependencies(params, test_name, raw_tests.test_dep,
                                       obsdir, test_results)
             deps_passed, dep_msg, dep_failed = dout
             # deal with dependencies passed/not passed
@@ -171,7 +175,7 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
             margs = [test_name, it + 1, num_tests]
             misc.log_msg(msg.format(*margs), level='test')
             # check dependencies
-            dout = check_dependencies(test_name, red_tests.test_dep,
+            dout = check_dependencies(params, test_name, red_tests.test_dep,
                                       obsdir, test_results)
             deps_passed, dep_msg, dep_failed = dout
             # deal with dependencies passed/not passed
