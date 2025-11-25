@@ -102,8 +102,12 @@ nirps ha online:
         profile: nirps_ha_profile_online.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HA
+        raw sheet id: 1017212188
         # define the red sheet name for the google sheet
         red sheet name: RED-ONLINE-NIRPS-HA
+        raw sheet id: 279548254
+        # define the comm sheet name for the google sheet
+        comments sheet id: 346030560
 
 
 

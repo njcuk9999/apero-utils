@@ -102,9 +102,12 @@ nirps he offline:
         profile: nirps_he_profile_offline.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
+        raw sheet id: 1741354113
         # define the red sheet name for the google sheet
         red sheet name: RED-OFFLINE-NIRPS-HE
-
+        raw sheet id: 798870830
+        # define the comm sheet name for the google sheet
+        comments sheet id: 68390787
 
 
 

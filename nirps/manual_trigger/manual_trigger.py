@@ -32,15 +32,6 @@ START_TIME = Time.now()
 # -----------------------------------------------------------------------------
 # The URL to google (must have the "sheet_id" and "gid" parts)
 GOOGLE_URL = 'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
-# allocation sheet info
-ALLOCATION_ID = '1s116aabnMH0zJ5YbXrGBWIVP17lmYXl6tYzLteoSEAc'
-ALLOCATION_SHEET = '0'
-# checks sheet info
-CHECKS_ID = '1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M'
-# nirps he sheet info
-RAW_SHEET = dict(NIRPS_HA='1017212188', NIRPS_HE='1741354113')
-RED_SHEET = dict(NIRPS_HA='279548254', NIRPS_HE='541545005')
-COMM_SHEET = dict(NIRPS_HA='346030560', NIRPS_HE='68390787')
 # define messages
 MANUAL_START = 'MANUAL_START'
 MANUAL_END = 'MANUAL_END'
@@ -760,6 +751,10 @@ def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
 
 
 def confirm_checks(pdict: Dict[str, Any], obsdirs: Union[List[str], str]):
+
+    # deal with flagged to not run checks
+    if not pdict['check']['run_check']:
+        return
     # print that we are confirming checks
     print_process('Checking raw checks have been dealt with')
     # if we ahve no obsdirs skip
@@ -776,15 +771,18 @@ def confirm_checks(pdict: Dict[str, Any], obsdirs: Union[List[str], str]):
     base.IPARAMS = base.load_install_yaml()
     # get instrument
     instrument = base.IPARAMS['INSTRUMENT']
+    # get cchecks, raw sheet and comm sheet ids from pdict
+    checks_id = pdict['check'].get('raw sheet id', None)
+    raw_sheet_id = pdict['check'].get('raw checks sheet id', None)
+    comm_sheet_id = pdict['check'].get('comments sheet id', None)
     # Deal with instruments not covered by apero checks
-    if instrument not in RAW_SHEET:
+    if checks_id is None or raw_sheet_id is None or comm_sheet_id is None:
         print(f'\t {instrument} not valid for checks: skipping confirmation')
         return
     # read the raw sheet
-    raw_table = read_google_sheet_csv(CHECKS_ID, RAW_SHEET[instrument])
+    raw_table = read_google_sheet_csv(checks_id, raw_sheet_id)
     # read the comm sheet
-    comm_table = read_google_sheet_csv(CHECKS_ID, COMM_SHEET[instrument])
-
+    comm_table = read_google_sheet_csv(checks_id, comm_sheet_id)
     # loop arond obsdirs
     for obsdir in obsdirs:
         # if observation directory not in the raw checks we should not continue

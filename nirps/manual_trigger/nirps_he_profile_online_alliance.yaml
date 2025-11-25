@@ -100,8 +100,12 @@ nirps he online:
         profile: nirps_he_profile_online.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
+        raw sheet id: 1741354113
         # define the red sheet name for the google sheet
         red sheet name: RED-ONLINE-NIRPS-HE
+        raw sheet id: 1017212188
+      # define the comm sheet name for the google sheet
+        comments sheet id: 68390787
         # define the google sheet id
         raw sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
         red sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
@@ -121,3 +125,5 @@ nirps he online:
         # system email server
         # TODO: update this - does this work on this server?
         system email server: 'None'
+
+
