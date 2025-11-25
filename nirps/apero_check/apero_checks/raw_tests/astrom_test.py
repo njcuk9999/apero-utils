@@ -62,8 +62,6 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     # update apero params with parameters that normally come from run.ini file
     apero_params = apero_functions.add_run_ini_params(apero_params,
                                                       apero_recipe, runfile)
-    # we do not use obsdir here
-    _ = obsdir
     # imports after apero profile update
     from apero.core.core import drs_database
     from apero.tools.module.processing import drs_precheck
@@ -76,7 +74,8 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     findexdbm = drs_database.FileIndexDatabase(apero_params)
     findexdbm.load_db()
     # get the unfound table
-    unfound_table = drs_precheck.obj_check(apero_params, findexdbm, log=False)
+    unfound_table = drs_precheck.obj_check(apero_params, findexdbm, log=False,
+                                           obsdir=obsdir)
     # -------------------------------------------------------------------------
     # We get a False condition if there are unfound objects
     if len(unfound_table) > 0:
