@@ -153,6 +153,11 @@ for i in range(len(ordered_tbl)):
     # Construct full input and output file paths
     input_file = os.path.join(input_path, OBS_DIR, fname)
     output_file = os.path.join(output_path, OBS_DIR, fname)
+
+    # check that input file exists and skip if not
+    if not os.path.exists(input_file):
+        print(f'Input file does not exist, skipping: {input_file} ❌')
+        continue
     # Print copy operation (with fun emojis for Neil and Lison!)
     print(f'Copying {input_file} to {output_file} 🚀✨')
     
