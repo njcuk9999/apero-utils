@@ -158,6 +158,10 @@ for i in range(len(ordered_tbl)):
     if not os.path.exists(input_file):
         print(f'Input file does not exist, skipping: {input_file} ❌')
         continue
+    # check that the output file does not already exist
+    if os.path.exists(output_file):
+        print(f'Output file already exists, skipping: {output_file} ⚠️')
+        continue
     # Print copy operation (with fun emojis for Neil and Lison!)
     print(f'Copying {input_file} to {output_file} 🚀✨')
     
