@@ -12,6 +12,7 @@ Created on 2023-07-03 at 14:51
 from typing import Optional
 
 import apero_checks
+from apero_checks.core import io
 
 # =============================================================================
 # Define variables
@@ -33,6 +34,8 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
          yest: bool = False, since: str = 'None', until: str = 'None'):
     # print splash
     apero_checks.splash('APERO Reduction checks')
+    # add gspread directory and auth files
+    io.gsp_setup()
     # get params updated for input yaml file
     all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today,
                                           yest, since, until)
