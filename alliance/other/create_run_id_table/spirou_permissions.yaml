@@ -1,0 +1,1717 @@
+RUN_ID:
+  17BE93:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering
+    USERS: []
+  18AE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering
+    USERS: []
+  18AE94:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Mountu
+    USERS: []
+  18AE95:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Mountu
+    USERS: []
+  18AE96:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Mountu
+    USERS: []
+  18AE97:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Mountu
+    USERS: []
+  18AE98:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Mountu
+    USERS: []
+  18BD50:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering
+    USERS: []
+  18BE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering Team
+    USERS: []
+  18BE93:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  18BE94:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: ''
+    USERS: []
+  18BE95:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  18BE96:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  18BE97:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  18BE98:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  18BE99:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  18BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: ENGINEERING
+    USERS: []
+  19AC07:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  19AC11:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Emily Deibert
+    USERS: []
+  19AC21:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Antoine Darveau-Bernier
+    USERS: []
+  19AC26:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Farbod Jahandar
+    USERS: []
+  19AD97:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Baptiste Klein
+    USERS: []
+  19AD99:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19AE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering Team
+    USERS: []
+  19AE99:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  19AF02:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  19AF07:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Xavier Bonfils
+    USERS: []
+  19AF09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  19AF14:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jose Almenara
+    USERS: []
+  19AF16:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Guillaume Hebrard
+    USERS: []
+  19AF17:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Arthur Vigan
+    USERS: []
+  19AF26:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Julien Morin
+    USERS: []
+  19AH28:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Lauren Weiss
+    USERS: []
+  19AP40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  19AP41:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Laurie Rousseau-Nepton
+    USERS: []
+  19AP42:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  19AQ56:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19AQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19AQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19AQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19AT02:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Michihiro Takami
+    USERS: []
+  19BC07:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Anne Boucher
+    USERS: []
+  19BC08:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Anne Boucher
+    USERS: []
+  19BC10:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  19BC25:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  19BC26:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Antoine Darveau-Bernier
+    USERS: []
+  19BC31:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Farbod Jahandar
+    USERS: []
+  19BC96:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Loic Albert
+    USERS: []
+  19BD95:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Sharon Morsink
+    USERS: []
+  19BD97:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Baptiste Klein
+    USERS: []
+  19BE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering Team
+    USERS: []
+  19BE99:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19BF01:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Fabrice Martins
+    USERS: []
+  19BF02:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jerome Bouvier
+    USERS: []
+  19BF06:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  19BF09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Arthur Vigan
+    USERS: []
+  19BF11:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Elisabetta Caffau
+    USERS: []
+  19BF14:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Rosine Lallement
+    USERS: []
+  19BF33:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Melissa Hobson
+    USERS: []
+  19BF99:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Rosine Lallement
+    USERS: []
+  19BH31:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Eric Gaidos
+    USERS: []
+  19BP40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  19BP42:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  19BP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  19BQ54:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19BQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19BQ56:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19BQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19BQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  19BS10:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Junbo Zhang
+    USERS: []
+  19BT09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Sheng-Yuan Liu
+    USERS: []
+  20AC01:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Emily Deibert
+    USERS: []
+  20AC06:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: James Sikora
+    USERS: []
+  20AC24:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Olivia Lim
+    USERS: []
+  20AC25:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  20AC32:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stefan Pelletier
+    USERS: []
+  20AC38:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Melissa Marquette
+    USERS: []
+  20AD87:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  20AE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering Team
+    USERS: []
+  20AE99:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Luc Arnold
+    USERS: []
+  20AF11:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Mickael Bonnefoy
+    USERS: []
+  20AH93:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Eric Gaidos
+    USERS: []
+  20AO09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ignas Snellen
+    USERS: []
+  20AO27:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Pierre Maxted
+    USERS: []
+  20AO39:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stevanus Kristianto-Nugroho
+    USERS: []
+  20AP40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  20AP42:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  20AP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  20AQ54:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20AQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20AQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20AQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20AQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20BC22:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Olivia Lim
+    USERS: []
+  20BC27:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: James Sikora
+    USERS: []
+  20BC28:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Melissa Marquette
+    USERS: []
+  20BC30:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Farbod Jahandar
+    USERS: []
+  20BC35:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stefan Pelletier
+    USERS: []
+  20BD97:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Caroline Piaulet
+    USERS: []
+  20BF04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Fabrice Martins
+    USERS: []
+  20BF09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Florian Debras
+    USERS: []
+  20BF18:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Xavier Bonfils
+    USERS: []
+  20BF98:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Kim Pouilly
+    USERS: []
+  20BH33:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: C.-C. Lin
+    USERS: []
+  20BH97:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andreea Petric
+    USERS: []
+  20BH98:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Eric Gaidos
+    USERS: []
+  20BP40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  20BP42:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  20BP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  20BQ54:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20BQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20BQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20BQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  20BS04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  21AC02:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Anne Boucher
+    USERS: []
+  21AC17:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Diana Dragomir
+    USERS: []
+  21AC18:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jonathan Gagne
+    USERS: []
+  21AC20:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Taylor Bell
+    USERS: []
+  21AC22:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jonathan Gagne
+    USERS: []
+  21AC33:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  21AC39:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Diana Valencia
+    USERS: []
+  21AC40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stefan Pelletier
+    USERS: []
+  21AF02:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  21AO04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Aurora Kesseli
+    USERS: []
+  21AP40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  21AP42:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  21AP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  21AQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  21AQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  21AQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  21AQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  21AS07:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  21BC09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Michael Radica
+    USERS: []
+  21BC14:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Romain Allart
+    USERS: []
+  21BC16:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Emily Deibert
+    USERS: []
+  21BC28:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  21BC29:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ariane Deslieres
+    USERS: []
+  21BC33:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Dominic Couture
+    USERS: []
+  21BC36:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Louis-Philippe Coulombe
+    USERS: []
+  21BC38:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stefan Pelletier
+    USERS: []
+  21BD87:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Baptiste Klein
+    USERS: []
+  21BD94:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Luc Arnold
+    USERS: []
+  21BE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering Team
+    USERS: []
+  21BF01:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Fabrice Martins
+    USERS: []
+  21BF13:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stefano Bellotti
+    USERS: []
+  21BF16:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Xavier Bonfils
+    USERS: []
+  21BF19:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Florian Debras
+    USERS: []
+  21BF21:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Benjamin Finociety
+    USERS: []
+  21BF96:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Kim Pouilly
+    USERS: []
+  21BF97:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  21BH01:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Eric Gaidos
+    USERS: []
+  21BP40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  21BP42:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  21BP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  21BQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  21BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  21BQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  21BQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22AC25:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  22AC30:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stefan Pelletier
+    USERS: []
+  22AD90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Loic Albert
+    USERS: []
+  22AF09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Claire Moutou
+    USERS: []
+  22AF14:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Lisa Lehman
+    USERS: []
+  22AP40:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  22AP42:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  22AP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  22AQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22AQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22AQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22AQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22BC16:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ariane Deslieres
+    USERS: []
+  22BC20:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Emily Deibert
+    USERS: []
+  22BC27:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  22BD13:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Florian Debras
+    USERS: []
+  22BE65:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Luc Arnold
+    USERS: []
+  22BE66:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Luc Arnold
+    USERS: []
+  22BE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering Team
+    USERS: []
+  22BF04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Rajeev Manick
+    USERS: []
+  22BF06:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Xavier Bonfils
+    USERS: []
+  22BF09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Evelyne Alecian
+    USERS: []
+  22BF10:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  22BF19:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Florian Debras
+    USERS: []
+  22BP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  22BP45:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  22BP46:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  22BQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22BQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22BQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  22BS06:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  22BS19:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Guo Chen
+    USERS: []
+  23AC07:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Nico Cowan
+    USERS: []
+  23AC09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Marta Bryan
+    USERS: []
+  23AD98:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: ''
+    USERS: []
+  23AF11:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Evelyne Alecian
+    USERS: []
+  23AF13:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  23AF21:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Lisa Lehman
+    USERS: []
+  23AH18:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: C.-C. Lin
+    USERS: []
+  23AH92:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jennifer van Saders
+    USERS: []
+  23AO35:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Lauren Doyle
+    USERS: []
+  23AP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  23AP45:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  23AP46:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  23AQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  23AQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  23AQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  23AQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  23AS04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  23AT02:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Michihiro Takami
+    USERS: []
+  23BC10:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  23BC11:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Thomas Navarro
+    USERS: []
+  23BC22:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Michael Radica
+    USERS: []
+  23BC28:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  23BC29:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Anne Boucher
+    USERS: []
+  23BD01:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Julien Morin
+    USERS: []
+  23BE90:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Engineering Team
+    USERS: []
+  23BF12:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  23BF22:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Evelyne Alecian
+    USERS: []
+  23BF98:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Stefano Bellotti
+    USERS: []
+  23BH06:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Willem Hoogendam
+    USERS: []
+  23BO48:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Manuel Mallorquin Diaz
+    USERS: []
+  23BP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  23BP45:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  23BP46:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  23BQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  23BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  23BQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  23BQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24AC04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Marta Bryan
+    USERS: []
+  24AC16:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Romain Allart
+    USERS: []
+  24AC24:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Romain Allart
+    USERS: []
+  24AC25:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  24AD02:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  24AD04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  24AD09:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  24AD98:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Mary Laychak
+    USERS: []
+  24AF11:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Florian Debras
+    USERS: []
+  24AF13:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Evelyne Alecian
+    USERS: []
+  24AF17:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  24AO39:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Manuel Mallorquin Diaz
+    USERS: []
+  24AP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  24AP45:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  24AP46:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  24AQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24AQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24AQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24AQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24AS04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Tianjun Gan
+    USERS: []
+  24AS08:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Yuanheng Yang
+    USERS: []
+  24AS15:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Liang Wang
+    USERS: []
+  24BC05:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  24BC12:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  24BC22:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Ryan Cloutier
+    USERS: []
+  24BC26:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Hiroyuki Tako Ishikawa
+    USERS: []
+  24BC29:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Nicole Gromek
+    USERS: []
+  24BF12:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Evelyne Alecian
+    USERS: []
+  24BF13:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  24BF15:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  24BF17:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Guillaume Hebrard
+    USERS: []
+  24BF30:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Julien Morin
+    USERS: []
+  24BF96:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  24BP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  24BQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24BQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24BQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  24BS05:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Xinyan Hua
+    USERS: []
+  25AC04:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  25AF23:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  25AP03:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  25AP43:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Donati
+    USERS: []
+  25AP45:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  25AQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25AQ56:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25AQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25AQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25AQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25BC08:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Etienne Artigau
+    USERS: []
+  25BF27:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Andres Carmona
+    USERS: []
+  25BP45:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: Jean-Francois Donati
+    USERS: []
+  25BQ55:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25BQ57:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25BQ58:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
+  25BQ59:
+    GROUPS:
+    - ADMIN.UDEM_ASTRO
+    - ADMIN.ALLIANCE
+    PI: QSO Team
+    USERS: []
