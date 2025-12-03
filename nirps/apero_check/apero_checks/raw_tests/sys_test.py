@@ -36,7 +36,7 @@ def test_email_server(params) -> Tuple[bool, str]:
     email_server = params['system email server']
     if email_server == 'None':
         msg = 'Email server check disabled'
-        print('"check.system disk path = None"'
+        print('"check.system email server = None"'
               '\n\t - No email server set, skipping test')
         return True, msg
 
