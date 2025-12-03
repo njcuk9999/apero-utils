@@ -102,11 +102,11 @@ parameters['raw sheet name'] = Const('raw sheet name', None, dtype=str,
                                      not_none=True,
                                      path='check.raw sheet name')
 
-# define the sheet id for the raw checks
-parameters['raw checks sheet id'] = Const('raw checks sheet id',
-                                          '1741354113', # HA: 1017212188
-                                          dtype=str,
-                                          path='check.raw checks sheet id')
+# # define the sheet id for the raw checks
+# parameters['raw checks sheet id'] = Const('raw checks sheet id',
+#                                           '1741354113', # HA: 1017212188
+#                                           dtype=str,
+#                                           path='check.raw checks sheet id')
 
 # define the sheet id for the google sheet
 parameters['red sheet id'] = Const('red sheet id',
@@ -118,11 +118,11 @@ parameters['red sheet name'] = Const('red sheet name', None, dtype=str,
                                      not_none=True,
                                      path='check.red sheet name')
 
-# define the sheet id for the raw checks
-parameters['red checks sheet id'] = Const('raw checks sheet id',
-                                          '541545005', # HA: 279548254
-                                          dtype=str,
-                                          path='check.raw checks sheet id')
+# # define the sheet id for the raw checks
+# parameters['red checks sheet id'] = Const('raw checks sheet id',
+#                                           '541545005', # HA: 279548254
+#                                           dtype=str,
+#                                           path='check.raw checks sheet id')
 
 # define the sheet id for the google sheet
 parameters['over sheet id'] = Const('over sheet id',
