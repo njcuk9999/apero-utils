@@ -19,7 +19,7 @@ spirou V0.7.282 mini2:
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
-            - all
+            - None
     # apero_get settings
     get:
         science fibers:
