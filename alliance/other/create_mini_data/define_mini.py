@@ -2,6 +2,9 @@ from astropy.table import Table, vstack
 import numpy as np
 import os
 import shutil
+import pandas as pd
+from sqlalchemy import create_engine
+
 
 # Define the CSV file containing NIRPS observation metadata
 csv_file = 'nirps_mini_output.csv'
@@ -12,8 +15,37 @@ input_path = '/project/6102120/apero/nirps_data/internal/nirps_raw/raw-data/nirp
 # Define output path where the mini dataset will be copied
 output_path = '/project/6102120/apero/nirps_data/private/nirps_he_raw_minidata'
 
+
+query = """
+SELECT FILENAME, OBS_DIR, KW_MID_OBS_TIME, KW_OBJNAME, KW_DPRTYPE 
+FROM findex_nirps_he_online_db 
+WHERE BLOCK_KIND="raw" 
+AND KW_OBJNAME IN ("PROXIMA", "TOI4552", "HD195094", "HR1903", "HR4023", "HR3131",
+                   "HR6743", "HR7590", "HR8709", "HR9098", "HR3117", "HR3314",
+                   "HR4467","CALIB") 
+ORDER BY OBS_DIR
+"""
+
+# ---- MySQL connection ----
+HOST = "rali.astro.umontreal.ca"
+USER ="nirps"
+PASSWORD = "Covid19!"
+DB = "nirps"
+
+
+# SQLAlchemy connection string
+engine = create_engine(
+    f"mysql+pymysql://{USER}:{PASSWORD}@{HOST}/{DB}"
+)
+
+# Execute the query and load the results into a Pandas DataFrame
+df = pd.read_sql(query, engine)
+
+# save csv to file for reference
+df.to_csv(csv_file, index=False)
+
 # Read the CSV file into an Astropy Table
-tbl0 = Table.read(csv_file, format='csv')
+tbl0 = Table.from_pandas(df)
 
 # Filter out calibration files by removing rows where KW_OBJNAME is 'CALIB'
 tbl = tbl0[tbl0['KW_OBJNAME'] != 'CALIB']

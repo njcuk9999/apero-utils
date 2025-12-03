@@ -1,31 +1,33 @@
-nirps he online:
+spirou V0.7.282 mini2:
     # general settings
     general:
         # directory where raw data is downloaded
-        raw dir: /project/6102120/apero/nirps_data/internal/nirps_raw/raw-data/nirps_he
+        raw dir: /project/6102120/apero/spirou_data/internal/spirou_raw/raw-data
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /project/6102120/apero/nirps_bin/settings/nirps_he_online
+        apero profile: /project/6102120/apero/spirou_bin/settings/spirou_mini2_07295
       # the install directory for apero (git hub repo)
-        apero install: /project/6102120/apero/nirps_bin/scripts/apero_drs_07
+        apero install: /project/6102120/apero/spirou_bin/scripts/apero_drs_07
         # directory where lbl files are processed
-        lbl path: /project/6102120/apero/nirps_data/internal/nirps_he_online/lbl
+        lbl path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/lbl
         # start date if not using --obsdir argument
-        start date: 2022-11-01
+        start date: 2018-01-01
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: online_run.ini
+        run file: mini_run2.ini
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
-            - None
+            - all
     # apero_get settings
     get:
         science fibers:
+            - AB
             - A
-        calib fibers:
             - B
+        calib fibers:
+            - C
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - EXT_E2DS_FF
@@ -35,21 +37,20 @@ nirps he online:
             - TELLU_PCLEAN
             - SC1D_V_FILE
             - RC1D_V_FILE
+            - TELLU_TEMP
+            - TELLU_TEMP_S1DV
             - CCF_RV
             - DRS_POST_E
             - DRS_POST_S
             - DRS_POST_T
             - DRS_POST_V
             - DRS_POST_P
-            - EXT_S1D_W
-            - SC1D_W_FILE
-            - RC1D_W_FILE
         # input dpr types
         science dpr types:
+            - POLAR_FP
+            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
-            - OBJ_SKY
-            - TELLU_SKY
         # apero template types
         template out types:
             - TELLU_TEMP
@@ -62,17 +63,18 @@ nirps he online:
     # apero_get settings for lbl
     get-lbl:
         science fibers:
-            - A
+            - AB
         calib fibers:
-            - B
+            - C
         # input telluric
         science out types:
             - TELLU_OBJ
         # input dpr types
         science dpr types:
+            - POLAR_FP
+            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
-            - OBJ_SKY
         # apero template types
         template out types:
             - TELLU_TEMP_S1DV
@@ -89,41 +91,15 @@ nirps he online:
     # ari-settings
     ari:
         # ari profile
-        profile: nirps_he_online_alliance.yaml
+        profile: spirou_mini_alliance.yaml
     # check settings
     check:
         # whether to run check
-        run_check: True
-        # check path
-        path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
-        # profile
-        profile: nirps_he_profile_online.yaml
-        # define the raw sheet name for the google sheet
-        raw sheet name: RAW-NIRPS-HE
-        raw sheet id: 1741354113
-        # define the red sheet name for the google sheet
-        red sheet name: RED-ONLINE-NIRPS-HE
-        raw sheet id: 1017212188
-      # define the comm sheet name for the google sheet
-        comments sheet id: 68390787
-        # define the google sheet id
-        raw sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
-        red sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
-        over sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
-        # disable dependencies check
-        # TODO: set to False when not testing
-        disable dependencies check: True
-        # critical check files (from nirpsdl)
-        # TODO: update these
-        # critical csv file: /nirps_raw/nirps/nirps/critical-checks-output/check_status.csv
-        # critical desc file: /cosmos99/nirps/git-bin/nirpsdl/assets/critical_checks_description.csv
-        critical csv file: 'None'
-        critical desc file: 'None'
-        # system disk path
-        # TODO: update this - does this work on this server?
-        system disk path: 'None'
-        # system email server
-        # TODO: update this - does this work on this server?
-        system email server: 'None'
+        run_check: False
+
+
+
+
+
 
 
