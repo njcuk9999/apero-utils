@@ -9,7 +9,7 @@
 if [ $? -ne 0 ]; then
     echo "ERROR: This script must be sourced, not executed."
     echo "Use: source activate.sh <instrument> <profile>"
-    exit 1
+    return 1
 fi
 
 # Set the user configuration file
@@ -21,7 +21,7 @@ APERO_USERS_CONF="$APERO_BIN_PATH/apero_users.conf"
 if [[ -z "$APERO_SERVER" ]]; then
     echo "ERROR: APERO_SERVER is not set."
     echo "Please run: $APERO_BIN_PATH/apero_install.sh"
-    exit 1
+    return 1
 fi
 
 # -----------------------------------------------
@@ -30,7 +30,7 @@ fi
 if [[ ! -f "$APERO_USERS_CONF" ]]; then
     echo "ERROR: Cannot find apero_users.conf at:"
     echo "  $APERO_USERS_CONF"
-    exit 1
+    return 1
 fi
 
 # -----------------------------------------------
@@ -42,7 +42,7 @@ LOOKUP="[$APERO_SERVER.$USER]"
 if ! grep -q "^$LOOKUP" "$APERO_USERS_CONF"; then
     echo "ERROR: User entry '$LOOKUP' not found in apero_users.conf"
     echo "Please contact the APERO administrator to be added."
-    exit 1
+    return 1
 fi
 
 # -----------------------------------------------
