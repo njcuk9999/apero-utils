@@ -644,7 +644,6 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     os.chdir(cwd)
 
 
-
 def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     """
     Run the manual trigger in batch mode
