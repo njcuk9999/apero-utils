@@ -1,0 +1,39 @@
+i# Created: 2021-07-01 15:00:00
+
+# NIRPS or SPIROU
+instrument: NIRPS
+
+# creative name
+batchname: TELLU05
+
+# Number of principal components to be used
+Npca: 5
+npca-max: 5
+
+# List of stars to be processed
+object_of_interest:
+        - 'TOI756'
+#         - 'BPS_CS_22881M0003'
+#  - 'GJ3618'
+#  - 'GJ3622'
+#  - 'GJ3693'
+#  - 'GJ3737'
+#  - 'GJ643'
+#  - 'GJ707'
+#  - 'GJ_1028'
+#  - 'GL406'
+#  - 'GL849'
+#  - 'LP_500M35'
+#  - 'LP_938M71'
+#  - 'NLTT5556'
+#  - 'PROXIMA'
+#  - 'SCR_J1546M5534'
+#  - 'SIPS_J1259M4336'
+#  - 'SMETHELLS_20'
+#  - 'TIC151584725'
+#  - 'TIC427346731'
+#  - 'TOI210'
+#  - 'TOI406'
+#  - 'WASP69'
+#  - 'YC_CMI'
+

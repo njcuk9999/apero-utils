@@ -1,0 +1,45 @@
+nirps_ha_online_udem:
+  yaml: ../manual_trigger/nirps_ha_profile_online.yaml
+  profile: nirps ha online
+nirps_ha_offline_udem:
+  yaml: ../manual_trigger/nirps_ha_profile_offline.yaml
+  profile: nirps ha offline
+
+nirps_he_online_udem:
+  yaml: ../manual_trigger/nirps_he_profile_online.yaml
+  profile: nirps he online
+nirps_he_offline_udem:
+  yaml: ../manual_trigger/nirps_he_profile_offline.yaml
+  profile: nirps he offline
+
+spirou_online_udem:
+  yaml: ../manual_trigger/spirou_profile_online.yaml
+  profile: spirou online
+spirou_offline_udem:
+  yaml: ../manual_trigger/spirou_profile_offline.yaml
+  profile: spirou offline
+
+spirou_online:
+  yaml: ../manual_trigger/spirou_profile_online.yaml
+  profile: spirou online
+spirou_offline:
+  yaml: ../manual_trigger/spirou_profile_offline.yaml
+  profile: spirou offline
+
+# whether to run in test mode
+test: False
+# the valid time period for files in days
+valid time: 7
+# the file size limit in GB
+file size limit: 10
+# local directory to save tar files to (should not contain anything else)
+local path: /cosmos99/nirps/apero-data/misc/apero-request/
+# email address to send from
+email from: nirps-client@astro.umontreal.ca
+# SSH PATH to copy the website to
+ssh:
+  directory: /export/www/home/cook/www/apero-drs/requests/nirps_client/
+  user: cook
+  host: venus.astro.umontreal.ca
+  options: ssh -oport=5822
+  url: http://apero.exoplanets.ca/requests/nirps_client/

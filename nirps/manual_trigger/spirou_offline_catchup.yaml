@@ -1,0 +1,114 @@
+spirou offline:
+    # general settings
+    general:
+        # instrument
+        activate_instrument: spirou
+        # profile (is in apero-activate)
+        activate_profile: spirou_offline
+        # directory where raw data is downloaded
+        raw dir: /titan02/spirou/cfht/raw
+        # the apero profile to use (controlled sym link raw data directory and all
+        #    apero reduced data directories)
+        apero profile: /cosmos99/spirou/apero-settings/spirou_offline
+        # the install directory for apero (git hub repo)
+        apero install: /cosmos99/spirou/apero-bin/apero-drs
+        # directory where lbl files are processed
+        lbl path: /cosmos99/spirou/lbl-data/spirou_offline/
+        # start date if not using --obsdir argument
+        start date: 2018-01-01
+    # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
+    batch:
+      # whether to run in batch mode
+      run batch: False
+    # apero_processing settings
+    processing:
+        # apero processing run.ini file
+        run file: offline_catchup_run.ini
+        # reset data
+        #  options are "None", "all" or a list "tmp", "red", "out"
+        reset:
+            - None
+    # apero_get settings
+    get-obj:
+        # path to copy everything to
+        out path: /cosmos99/spirou/apero-data/spirou_offline/objects
+        # science fiber(s) to get
+        science fibers:
+            - AB
+            - A
+            - B
+        calib fibers:
+            - C
+        # apero get valid header key: DRSOUTID (for apero red dir)
+        science out types:
+            - EXT_E2DS_FF
+            - EXT_S1D_V
+            - TELLU_OBJ
+            - TELLU_RECON
+            - TELLU_PCLEAN
+            - SC1D_V_FILE
+            - RC1D_V_FILE
+            - CCF_RV
+            - DRS_POST_E
+            - DRS_POST_S
+            - DRS_POST_T
+            - DRS_POST_V
+            - DRS_POST_P
+            - EXT_S1D_W
+            - SC1D_W_FILE
+            - RC1D_W_FILE
+        # input dpr types
+        science dpr types:
+            - POLAR_FP
+            - POLAR_DARK
+            - OBJ_FP
+            - OBJ_DARK
+        # apero template types
+        template out types:
+            - TELLU_TEMP
+            - TELLU_TEMP_S1DV
+        # sym links in apero get
+        symlinks: True
+        # reset options (if symlinks = True)
+        reset:
+            # - objects
+    # apero_get settings for comm directory
+    get-comm:
+        # path to copy everything to
+        out path: /cosmos99/spirou/apero-data/spirou_offline/comm
+        # apero get valid header key: DRSOUTID (for apero red dir)
+        science out types:
+            - DRS_POST_E
+            - DRS_POST_S
+            - DRS_POST_T
+            - DRS_POST_V
+            - DRS_POST_P
+        # input dpr types
+        science dpr types:
+            - POLAR_FP
+            - POLAR_DARK
+            - OBJ_FP
+            - OBJ_DARK
+        # apero template types
+        template out types:
+            - TELLU_TEMP
+            - TELLU_TEMP_S1DV
+            - TELLU_TEMP_S1DW
+        # permissions file
+        permissions file: /cosmos99/spirou/apero-bin/apero-drs/apero/tools/resources/get/spirou_permissions.yaml
+        # group permissions file
+        group file: /cosmos99/spirou/apero-bin/apero-drs/apero/tools/resources/get/apero_groups.yaml
+        # group server
+        group server: udem_astro
+        # out suffix
+        out suffix:
+        # out prefix
+        out prefix: 'APERO_v0.7_'
+    # ari-settings
+    ari:
+        # ari profile
+        profile: spirou_offline_udem.yaml
+    # check settings
+    check:
+        # whether to run check
+        run_check: False

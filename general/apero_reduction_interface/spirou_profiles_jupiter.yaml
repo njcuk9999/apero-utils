@@ -1,0 +1,149 @@
+# General settings (do not remove)
+settings:
+  # Instrument (either SPIROU or NIRPS)
+  instrument: SPIROU
+  # Working directory: where to store the website data
+  working directory: /scratch2/spirou/misc/apero-ari/working/
+  # Finder charts (None if not needed)
+  find directory: None
+  # number of cores to use in multiprocessing steps
+  N_CORES: 10
+  # Spectrum wavelength ranges in nm
+  SpecWave:
+    limit0:
+      - 965
+      - 2500
+    limit1:
+      - 1082
+      - 1085
+    limit2:
+      - 1600
+      - 1604
+    limit3:
+      - 2050
+      - 2055
+  # SSH PATH to copy the website to
+  ssh:
+    directory: /export/www/home/cook/www/apero-drs/
+    user: cook
+    host: venus.astro.umontreal.ca
+    options: ssh -oport=5822
+  # whether to reset the working directory
+  reset: False
+  # whether to filter by objects
+  filter objects: False
+  # objects to filter by
+  objects:
+    - GL699
+
+# -----------------------------------------------------------------------------
+# name:
+#     apero profile: str, absolute path to APERO profile (settings)
+#     lbl path: str, absolute path to LBL directory
+#     username: str, username for html
+#     account: str, account for html
+#     skip obj table: bool: if True, skip making the object table
+#     skip recipe table: bool: if True, skip making the recipe table
+#     skip msg table: bool: if True, skip making the msg table
+spirou 07.282 cook@jupiter mini2:
+  apero profile: /scratch2/spirou/drs-settings/setup_07XXX_mini2
+  lbl path: /scratch3/lbl/data/minidata_comp/minidata2_07282_jupiter
+  skip obj table: False
+  skip recipe table: True
+  skip msg table: True
+
+# -----------------------------------------------------------------------------
+# Header keys
+headers:
+  pp:
+    PP_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    PP_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ext:
+    EXT_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    EXT_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+    EXT_Y:
+      key: EXTSN009
+      label: 'SNR[Order 8 (#71 1.08$\mu$m)]'
+      dtype: float
+    EXT_H:
+      key: EXTSN035
+      label: 'SNR[Order 35 (#44 1.75$\mu$m)]'
+      dtype: float
+    EXT_DPRTYPE:
+      key: DPRTYPE
+      label: 'DPR TYPE'
+      dtype: str
+    EXT_SEEING:
+      key: WDSEEMED
+      label: Seeing at start
+      dtype: float
+    EXT_AIRMASS:
+      key: AIRMASS
+      label: Airmass at start
+      dtype: float
+    EXT_EXPTIME:
+        key: EXPTIME
+        label: Exposure Time
+        dtype: float
+  tcorr:
+    TCORR_MJDMID:
+      key: MJDMID
+      label: MJD
+      dtype: float
+      timefmt: mjd
+    TCORR_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+  ccf:
+    CCF_MASK:
+      key: CCFMASK
+      label: CCF Mask
+      dtype: str
+    CCF_MJDMID:
+      key: MJDMID
+      label: CCF MJD
+      dtype: float
+      timefmt: mjd
+    CCF_PROC:
+      key: DRSPDATE
+      label: Process Date
+      dtype: str
+      timefmt: iso
+    CCF_DV:
+      key: RV_CORR
+      label: CCF RV
+      unit: km/s
+      dtype: float
+    CCF_SDV:
+      key: DVRMS_CC
+      label: CCF RV Error
+      unit: m/s
+      dtype: float
+    CCF_FWHM:
+      key: CCFMFWHM
+      label: CCF FWHM
+      unit: km/s
+      dtype: float
+  LBL:
+    EXT_H:
+      key: EXTSN035
+      label: 'SNR[Order 35 (#44 1.75$\mu$m)]'
+      dtype: float

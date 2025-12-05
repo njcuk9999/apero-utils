@@ -3,10 +3,12 @@ Utility functions to manage object ID sheet.
 
 @author: vandalt
 """
+import re
 import warnings
-import requests
+
 import numpy as np
 import pandas as pd
+import requests
 from astropy.table import Table
 from astroquery.mast import Catalogs
 from astroquery.simbad import Simbad
@@ -26,6 +28,7 @@ COLNAMES = ['OBJECT',
             'FOUND',
             'MANUAL_EDIT',
             'COMMENTS']
+FITS_FLOAT_COLS = ['RA_DEG', 'DEC_DEG', 'MJDEND', 'OBJRV', 'OBJTEMP']
 ID_COLS = ['GAIADR2ID', 'TWOMASSID']
 VAL_COLS = ['RV', 'TEFF']
 NA_COLS = ID_COLS + VAL_COLS
@@ -178,7 +181,13 @@ def sheet_append(df_new, df_sheet):
     df_sheet = df_sheet.copy()
     df_new = df_new.copy()
 
+    # Add rows
     df_sheet = df_sheet.append(df_new, ignore_index=True)
+
+    # Handle nan aliases (the next methods assume string aliases)
+    na_mask = df_sheet.ALIASES.isna()
+    df_sheet.loc[na_mask, "ALIASES"] = df_sheet.OBJECT[na_mask]
+
     df_sheet = unique_sheet(df_sheet)
     df_sheet = sort_sheet(df_sheet)
 
@@ -300,7 +309,7 @@ def get_aliases_gaia(gaia_ids):
 
 def get_aliases_twomass(twomass):
     """
-    Get Simbad aliases corresponding to gaia ids.
+    Get Simbad aliases corresponding to 2MASS ids.
     Args:
         twomass (pd.Series): series of 2MASS IDs
     Returns:
@@ -468,7 +477,8 @@ def check_tess(df):
     # Keep order consistent with dataframe
     toi_inds = df.index[df['OBJECT'].str.startswith('TOI')]
     tois = df['OBJECT'].loc[toi_inds]
-    tois = tois.str.split('-').map(lambda x: x[1]) + '.01'
+    # tois = tois.str.split('-').map(lambda x: x[1]) + '.01'
+    tois = tois.str[3:].str.strip('-') + '.01'
     tois = tois.tolist()
     toi_to_tic = df_toi.loc[df_toi['TOI'].isin(tois)]
     toi_to_tic = toi_to_tic.set_index('TOI', drop=False)
@@ -636,3 +646,31 @@ def twomass_from_simbad(df):
                                       )
 
     return df
+
+
+def read_dfits_tbl(fname: str) -> Table:
+    tbl = Table.read(fname, format="ascii.tab")
+
+    # Strip spaces in column names
+    tmp_tbl = Table()
+    for colname in tbl.colnames:
+        tmp_tbl[colname.strip()] = tbl[colname]
+    tbl = tmp_tbl
+
+    pattern = re.compile("^col\d*$")
+    for colname in tbl.colnames:
+        if pattern.match(colname):
+            del tbl[colname]
+
+    for colname in tbl.colnames:
+        for i, val in enumerate(tbl[colname]):
+            try:
+                tbl[colname][i] = val.strip()
+            except:
+                AttributeError
+        if colname in FITS_FLOAT_COLS:
+            # If the column has empty string, fill with nan
+            tbl[colname][tbl[colname] == ""] = np.nan
+            tbl[colname] = tbl[colname].astype(float)
+
+    return tbl

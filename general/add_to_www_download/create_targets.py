@@ -42,22 +42,22 @@ else:
 
     TARGETS = []
     # # priority 0
-    # TARGETS += ['TOI-442', ' Gl699', ' Gl876', ' Gl436', ' Gl514', ' Gl382',
-    #             ' Gl846', ' Trappist-1', ' Gl15A', ' HD189733', ' GJ1002',
-    #             ' GJ1214']
-    # # priority 1
-    # TARGETS += ['AUMic', ' Gl388', ' TYC 4384-1735-1', ' TOI-1278', ' TOI-1759',
-    #             ' TOI-1452']
-    # # priority 2
-    # TARGETS += ['TOI-233', ' K2-147', ' TOI-736', ' K2-33', ' TOI-876', ' TOI-732']
-    # # priority 3
-    # TARGETS += ['epsilonEri', ' GJ9827', ' Gl725A', ' Gl412A', ' Gl687', ' Gl725B']
+    TARGETS += ['TOI-442', ' Gl699', ' Gl876', ' Gl436', ' Gl514', ' Gl382',
+                ' Gl846', ' Trappist-1', ' Gl15A', ' HD189733', ' GJ1002',
+                ' GJ1214']
+    # priority 1
+    TARGETS += ['AUMic', ' Gl388', ' TYC 4384-1735-1', ' TOI-1278', ' TOI-1759',
+                ' TOI-1452']
+    # priority 2
+    TARGETS += ['TOI-233', ' K2-147', ' TOI-736', ' K2-33', ' TOI-876', ' TOI-732']
+    # priority 3
+    TARGETS += ['epsilonEri', ' GJ9827', ' Gl725A', ' Gl412A', ' Gl687', ' Gl725B']
     # priority 4
-    # TARGETS += ['Gl411', ' TYC3980-1081-1', ' GJ1289', ' GJ1286', ' Gl536']
-    # # priority 5
-    # TARGETS += ['V883Ori', ' DRTau', ' XZTau', ' BBW76', ' NYOri', ' V582Aur']
-    # # # priority 6
-    # TARGETS += ['TauBoo', ' V900Mon', ' V1057Cyg', ' V1515Cyg', ' WASP-127']
+    TARGETS += ['Gl411', ' TYC3980-1081-1', ' GJ1289', ' GJ1286', ' Gl536']
+    # priority 5
+    TARGETS += ['V883Ori', ' DRTau', ' XZTau', ' BBW76', ' NYOri', ' V582Aur']
+    # # priority 6
+    TARGETS += ['TauBoo', ' V900Mon', ' V1057Cyg', ' V1515Cyg', ' WASP-127']
     # # priority 7
     TARGETS += ['HD 185603', 'RULup', 'K2-277', 'Gl905', 'HD 133112']
 

@@ -202,6 +202,9 @@ def get_object_rv(obj=None,
         if mask is None:
             mask = 'sept18_andres_trans50'
         fpattern = '*{0}*{1}_AB.fits'.format(sp_type, mask)
+
+        print(ccf_parent, obj, fpattern)
+
         ccf_files = np.array(
                 glob.glob(os.path.join(ccf_parent, obj, fpattern))
                 )

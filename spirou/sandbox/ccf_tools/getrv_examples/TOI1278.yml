@@ -4,8 +4,8 @@
 ### Combination of obj, mask, sanitization to consider ###
 ##########################################################
 # pattern: TOI-1278/*_tcorr_*_gl846_neg_AB.fits
-outdir: /home/user/path/to/ccfs/per_object
-path: /home/user/path/to/ccfs/per_object
+outdir: /Users/eartigau/TOI-1278
+path: /Users/eartigau/new_ccf/TOI-1278
 object: TOI-1278
 mask: gl846_neg
 sanitize: tcorr  # sani, tcorr, or all
@@ -28,15 +28,15 @@ median: False
 ####################
 ### What to show ###
 ####################
-do_plots: False
-show_plots: False
-verbose: False
+do_plots: True
+show_plots: True
+verbose: True
 
 ####################
 ### What to save ###
 ####################
-save_plots: False
-save_weights: False
-save_table: False
-save_cube: False
+save_plots: True
+save_weights: True
+save_table: True
+save_cube: True
 save_rv: True
