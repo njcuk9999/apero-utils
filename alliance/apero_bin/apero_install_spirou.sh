@@ -1,6 +1,6 @@
 # Set the project ID (it may change in future)
 export APERO_PROJECT_ID="6102120"
-export APERO_SERVER="allaince"
+export APERO_SERVER="alliance"
 
 # define the apero bin path
 APERO_BIN_PATH="/project/$APERO_PROJECT_ID/apero/apero_bin"
