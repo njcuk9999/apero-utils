@@ -39,6 +39,7 @@ fi
 if [[ ! -f "$APERO_USERS_CONF" ]]; then
     echo "ERROR: Cannot find apero_users.conf at:"
     echo "  $APERO_USERS_CONF"
+    echo "Please contact the APERO administrators to be added."
     return 1
 fi
 
@@ -51,7 +52,7 @@ ESCAPED_LOOKUP=$(printf '%s\n' "$LOOKUP" | sed 's/[][\.^$*+?{|}()]/\\&/g')
 # Check if header exists in the file
 if ! grep -q "^$ESCAPED_LOOKUP" "$APERO_USERS_CONF"; then
     echo "ERROR: User entry '$LOOKUP' not found in apero_users.conf"
-    echo "Please contact the APERO administrator to be added."
+    echo "Please contact the APERO administrators to be added."
     return 1
 fi
 
@@ -64,12 +65,16 @@ LINE=$(grep -n "^$ESCAPED_LOOKUP" "$APERO_USERS_CONF" | head -n 1 | cut -d: -f1)
 # ensure LINE is numeric
 if ! [[ "$LINE" =~ ^[0-9]+$ ]]; then
     echo "ERROR: Could not locate user header '$LOOKUP' in $APERO_USERS_CONF"
+    echo "Please contact the APERO administrators to be added."
     return 1
 fi
 
 # name is next line, email the line after that
 NAME=$(sed -n "$((LINE+1))p" "$APERO_USERS_CONF")
 EMAIL=$(sed -n "$((LINE+2))p" "$APERO_USERS_CONF")
+USER_INSTR=$(sed -n "$((LINE+3))p" "$APERO_USERS_CONF" | tr -d '[:space:]')
+# Convert comma list → space list
+USER_INSTR_LIST=$(echo "$USER_INSTR" | tr ',' ' ')
 
 # -----------------------------------------------
 # Export environment variables for user
@@ -96,10 +101,18 @@ fi
 # -----------------------------
 #  Validate instrument
 # -----------------------------
+# 1. Check if instrument actually exists in system instrument file
 if ! grep -q "^$INSTRUMENT=" "$INSTRUMENT_FILE"; then
     echo "ERROR: Unknown instrument '$INSTRUMENT'"
     echo "Available instruments:"
     cut -d= -f1 "$INSTRUMENT_FILE"
+    return 1
+fi
+# 2. Check if user is authorized to use the selected instrument
+if [[ ! " $USER_INSTR_LIST " =~ " $INSTRUMENT " ]]; then
+    echo "ERROR: Instrument '$INSTRUMENT' exists but you are not authorized to use it."
+    echo "Authorized instruments for $NAME: $USER_INSTR_LIST"
+    echo "Please contact the APERO administrators to be added."
     return 1
 fi
 
