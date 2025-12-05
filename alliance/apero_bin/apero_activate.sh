@@ -46,9 +46,10 @@ fi
 # 2. Build lookup key [server.username]
 # -----------------------------------------------
 LOOKUP="[$APERO_SERVER.$USER]"
+ESCAPED_LOOKUP=$(printf '%s\n' "$LOOKUP" | sed 's/[][\.^$*+?{|}()]/\\&/g')
 
 # Check if header exists in the file
-if ! grep -q "^$LOOKUP" "$APERO_USERS_CONF"; then
+if ! grep -q "^$ESCAPED_LOOKUP" "$APERO_USERS_CONF"; then
     echo "ERROR: User entry '$LOOKUP' not found in apero_users.conf"
     echo "Please contact the APERO administrator to be added."
     return 1
@@ -58,7 +59,13 @@ fi
 # Extract name and email (lines after the header)
 # -----------------------------------------------
 # Get the line number where the header appears
-LINE=$(grep -n "^$LOOKUP" "$APERO_USERS_CONF" | cut -d: -f1)
+LINE=$(grep -n "^$ESCAPED_LOOKUP" "$APERO_USERS_CONF" | head -n 1 | cut -d: -f1)
+
+# ensure LINE is numeric
+if ! [[ "$LINE" =~ ^[0-9]+$ ]]; then
+    echo "ERROR: Could not locate user header '$LOOKUP' in $APERO_USERS_CONF"
+    return 1
+fi
 
 # name is next line, email the line after that
 NAME=$(sed -n "$((LINE+1))p" "$APERO_USERS_CONF")
