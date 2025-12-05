@@ -131,3 +131,6 @@ dmypy.json
 # Other
 .sync/
 .idea/
+.vscode
+/nirps/apero_check/GL666B/NIRPS_2023-05-03T08_50_02_301.fits
+/nirps/apero_check/GL666B/NIRPS_2025-03-19T09_33_27_249.fits

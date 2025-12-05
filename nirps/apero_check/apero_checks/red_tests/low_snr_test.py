@@ -72,7 +72,7 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
 
     # check if directory exists
     if not os.path.exists(obsdir_path):
-        out_msg = ('tmp directory {} does not exist'.format(obsdir))
+        out_msg = ('red directory {} does not exist'.format(obsdir))
         if log:
             print(out_msg)
         return False, out_msg

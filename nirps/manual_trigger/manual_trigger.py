@@ -9,16 +9,22 @@ Created on 2023-03-08 at 11:59
 
 @author: cook
 """
+import subprocess
 import argparse
 import os
 import shutil
 import sys
+from pathlib import Path
 from typing import Any, Dict, List, Union
+import getpass
 
-import astropy.units as uu
 import numpy as np
+import requests
 import yaml
-from astropy.time import Time, TimeDelta
+from astropy import units as uu
+from astropy.table import Table
+from astropy.time import Time
+from astropy.time import TimeDelta
 
 # =============================================================================
 # Define variables
@@ -26,6 +32,8 @@ from astropy.time import Time, TimeDelta
 # start time
 START_TIME = Time.now()
 # -----------------------------------------------------------------------------
+# The URL to google (must have the "sheet_id" and "gid" parts)
+GOOGLE_URL = 'https://docs.google.com/spreadsheets/d/{sheet_id}/export?format=csv&gid={gid}'
 # define messages
 MANUAL_START = 'MANUAL_START'
 MANUAL_END = 'MANUAL_END'
@@ -39,6 +47,9 @@ GSPARAM = ('OE4_WF0Btk29', 'Gmb8SrbTJ3UF')
 
 MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
             ARI_START, ARI_END]
+# do not check these columns for True's and False's
+EXCLUDE_SHEET_COLS = ['obsdir', 'date']
+
 
 # =============================================================================
 # Define classes
@@ -82,6 +93,10 @@ class TriggerLog:
                 logfile.write(line + '\n')
 
 
+class ManualTriggerException(Exception):
+    pass
+
+
 # =============================================================================
 # Define functions
 # =============================================================================
@@ -99,8 +114,11 @@ def get_args():
                         help='Observation directory name(s) separated by '
                              'commas')
     # test mode - do not run apero recipes just test
-    parser.add_argument('--test', type=bool, default=False,
+    parser.add_argument('--test', action='store_true', default=False,
                         help='Do not run apero recipes just test')
+    # batch mode - run an sbatch
+    parser.add_argument('--batch', action='store_true', default=False,
+                        help='Run in batch mode (sbatch)')
     # link switch
     parser.add_argument('--links', type=bool, default=True)
     parser.add_argument('--only_links', type=bool, default=False)
@@ -146,6 +164,8 @@ def get_settings():
     settings['OBS_DIRS'] = obs_dirs
     # add the test mode
     settings['TEST'] = args.test
+    # add the batch mode
+    settings['BATCH'] = args.batch
     # deal with since parameter
     if args.since in [None, 'None', 'Null']:
         settings['SINCE'] = None
@@ -298,6 +318,8 @@ def make_sym_links(settings: Dict[str, Any]):
         inpath = pdict['general']['raw dir']
         # get the raw directory from params
         outpath = params['DRS_DATA_RAW']
+        # remove any broken symlinks
+        remove_broken_symlinks(outpath)
         # get obs dirs
         obs_dirs = settings['OBS_DIRS']
         # deal with getting all obs_dirs
@@ -384,6 +406,8 @@ def run_processing(settings: Dict[str, Any]):
         pdict = settings['PROFILES'][profile]
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
+        # confirm checks for night
+        confirm_checks(pdict, obsdirs=obs_dirs)
         # update the apero profile
         params = update_apero_profile(pdict)
         # get preset
@@ -471,7 +495,6 @@ def run_apero_get(settings: Dict[str, Any]):
 
     :param settings: dict, settings dictionary
     """
-    from apero.core import constants
     # loop around profiles
     for profile in settings['PROFILES']:
         # print progress
@@ -489,69 +512,54 @@ def run_apero_get(settings: Dict[str, Any]):
         if len(settings['SINCE']) == 0:
             print(f'\tNo files found - skipping profile: {profile}')
             continue
+
+        # ---------------------------------------------------------------------
+        # deal with get objects directory
+        # ---------------------------------------------------------------------
         # get the output types
-        red_outtypes = ','.join(pdict['get']['science out types'])
-        lbl_outtypes = ','.join(pdict['get-lbl']['science out types'])
+        obj_outtypes = ','.join(pdict['get-obj']['science out types'])
         # get the dpr types
-        red_dprtypes = ','.join(pdict['get']['science dpr types'])
-        lbl_dprtypes = ','.join(pdict['get-lbl']['science dpr types'])
-        simfp_dprtypes = ','.join(pdict['get-lbl']['simfp dprtypes'])
+        obj_dprtypes = ','.join(pdict['get-obj']['science dpr types'])
         # scifiber and calfiber must be strings (comma separated)
-        red_scifibers = ','.join(pdict['get']['science fibers'])
-        # red_calfibers = ','.join(pdict['get']['calib fibers'])
-        lbl_scifibers = ','.join(pdict['get-lbl']['science fibers'])
-        lbl_calfibers = ','.join(pdict['get-lbl']['calib fibers'])
+        obj_scifibers = ','.join(pdict['get-obj']['science fibers'])
         # template output types
-        red_template_outtypes = ','.join(pdict['get']['template out types'])
-        lbl_template_outtypes = ','.join(pdict['get-lbl']['template out types'])
-        # get the object dir in the apero reduction path
-        red_path = pparams['DRS_DATA_REDUC']
-        obj_path = os.path.join(os.path.dirname(red_path), 'objects')
-        # get the output path
-        lbl_in_path = pdict['general']['lbl path']
-        outpath_objects = os.path.join(lbl_in_path, 'science')
-        outpath_templates = os.path.join(lbl_in_path, 'templates')
-        outpath_calib = os.path.join(lbl_in_path, 'calib')
-        outpath_fp = os.path.join(lbl_in_path, 'science/FP')
+        obj_template_outtypes = ','.join(pdict['get-obj']['template out types'])
         # whether we want symlinks
-        red_symlinks = pdict['get']['symlinks']
-        lbl_symlinks = pdict['get-lbl']['symlinks']
+        obj_symlinks = pdict['get-obj']['symlinks']
+        # get the object directory out path
+        obj_path = pdict['get-obj']['out path']
+        # ---------------------------------------------------------------------
+        # deal with get comms directory
+        # ---------------------------------------------------------------------
+        # get the output types
+        comm_outtypes = ','.join(pdict['get-comm']['science out types'])
+        # get the dpr types
+        comm_dprtypes = ','.join(pdict['get-comm']['science dpr types'])
+        # template output types
+        comm_template_outtypes = ','.join(pdict['get-comm']['template out types'])
+        # get the comm directory out path
+        comm_path = pdict['get-comm']['comm path']
+        # get the permission file for comm directory
+        comm_pfile = pdict['get-comm']['permission file']
+        # get the group file for comm directory
+        comm_gfile = pdict['get-comm']['group file']
+        # get the group server for comm directory
+        comm_gserver = pdict['get-comm']['group server']
+        # get the prefix for files in the comm directory
+        comm_prefix = pdict['get-comm'].get('prefix', None)
+        # get the suffix for files in the comm directory
+        comm_suffix = pdict['get-comm'].get('suffix', None)
+
         # ----------------------------------------------------------
         # check directories exist - try to make them if they don't
         # ----------------------------------------------------------
-        directories = [obj_path, outpath_templates, outpath_calib,
-                       outpath_objects]
+        directories = [obj_path, comm_path]
         for directory in directories:
             if not os.path.exists(directory):
                 os.makedirs(directory)
-        # ----------------------------------------------------------
-        # reset reduced directories
-        # ----------------------------------------------------------
-        if red_symlinks:
-            directories = [outpath_objects]
-            dtypes = ['objects']
-            reset = pdict['get']['reset']
-            for it, directory in enumerate(directories):
-                if dtypes[it] is None:
-                    continue
-                if reset is None:
-                    continue
-                if dtypes[it] in reset:
-                    reset_directory(directory)
-        # ----------------------------------------------------------
-        # reset lbl directories
-        # ----------------------------------------------------------
-        if lbl_symlinks:
-            directories = [obj_path, outpath_templates, outpath_calib]
-            dtypes = ['science', 'templates', 'calib']
-            reset = pdict['get-lbl']['reset']
-            for it, directory in enumerate(directories):
-                if dtypes[it] is None:
-                    continue
-                if reset is None:
-                    continue
-                if dtypes[it] in reset:
-                    reset_directory(directory)
+        # remove any broken links
+        for directory in directories:
+            remove_broken_symlinks(directory)
 
         # ---------------------------------------------------------------------
         # need to import apero_get (for this profile)
@@ -560,52 +568,32 @@ def run_apero_get(settings: Dict[str, Any]):
         # Copy to reduced 'objects' directory
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
-        apero_get.main(objnames='*', dprtypes=red_dprtypes,
-                       outtypes=red_outtypes, outpath=obj_path,
-                       fibers=red_scifibers, symlinks=red_symlinks,
+        apero_get.main(objnames='*', dprtypes=obj_dprtypes,
+                       outtypes=obj_outtypes, outpath=obj_path,
+                       fibers=obj_scifibers, symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=red_template_outtypes,
-                       outpath=obj_path, fibers=red_scifibers,
-                       symlinks=red_symlinks,
+        apero_get.main(objnames='*', outtypes=obj_template_outtypes,
+                       outpath=obj_path, fibers=obj_scifibers,
+                       symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # --------------------------------------------------------------
-        # Copy to LBL directory
+        # Copy to reduced 'comm' directory
         # --------------------------------------------------------------
-        # run apero get for objects for lbl
-        apero_get.main(objnames='*', dprtypes=lbl_dprtypes,
-                       outtypes=lbl_outtypes,
-                       outpath=outpath_objects, fibers=lbl_scifibers,
-                       symlinks=lbl_symlinks,
-                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get to make the objects dir in apero dir
+        apero_get.main(objnames='*', dprtypes=comm_dprtypes,
+                       outtypes=comm_outtypes, outpath=comm_path,
+                       test=settings['TEST'], since=settings['SINCE'],
+                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                       group_server=comm_gserver, out_prefix=comm_prefix,
+                       out_suffix=comm_suffix)
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=lbl_template_outtypes,
-                       outpath=outpath_templates, fibers=lbl_scifibers,
-                       symlinks=False, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for simultaneous FP
-        apero_get.main(objnames='None', dprtypes=simfp_dprtypes,
-                       outtypes='EXT_E2DS_FF', nosubdir=True,
-                       outpath=outpath_fp, fibers=lbl_calfibers,
-                       symlinks=lbl_symlinks,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for extracted FP_FP
-        apero_get.main(objnames='None', dprtypes='FP_FP',
-                       outtypes='EXT_E2DS_FF',
-                       outpath=outpath_fp, fibers=lbl_calfibers,
-                       symlinks=lbl_symlinks, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for calibs (wave + blaze) science fiber
-        apero_get.main(objnames='None', outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=lbl_scifibers,
-                       symlinks=lbl_symlinks, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for calibs (wave + blaze) science fiber
-        apero_get.main(objnames='None',
-                       outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=lbl_calfibers,
-                       symlinks=lbl_symlinks, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
+        apero_get.main(objnames='*', outtypes=comm_template_outtypes,
+                       outpath=comm_path,
+                       test=settings['TEST'], since=settings['SINCE'],
+                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                       group_server=comm_gserver, out_prefix=comm_prefix,
+                       out_suffix=comm_suffix)
 
 
 def reset_directory(directory: str, reset: bool = False):
@@ -654,6 +642,138 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
     # change back to original path
     os.chdir(cwd)
+
+
+def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
+    """
+    Run the manual trigger in batch mode
+
+    :param settings: dict, settings dictionary
+    """
+    # -------------------------------------------------------------------------
+    # get some system variables
+    apero_user = os.getenv('APERO_USER', getpass.getuser())
+    apero_user_email = os.getenv('APERO_USER_EMAIL', None)
+    # -------------------------------------------------------------------------
+    # loop around profiles
+    if len(settings['PROFILES']) > 1:
+        wmsg = 'Warning: running in batch mode with multiple profiles. '
+        wmsg += ' Cannot run in batch mode.'
+        return False
+    # ---------------------------------------------------------------------
+    # get the only profile we have
+    profile = list(settings['PROFILES'].keys())[0]
+    # get the yaml dictionary for this profile
+    pdict = settings['PROFILES'][profile]
+    # get the instrument
+    instrument = pdict['general']['activate_instrument']
+    # get the activate_profile name
+    activate_profile = pdict['general']['activate_profile']
+    # ---------------------------------------------------------------------
+    # if any profile has "run batch" False we skip all profiles
+    if not pdict['batch'].get('run batch', False):
+        wmsg = ('Skipping all profiles, '
+                'profile {0}: run batch is False')
+        wargs = [profile]
+        print(wmsg.format(*wargs))
+        return False
+    # deal with first profile setting the sbatch parameters
+    bparams = ['time', 'nodes', 'cpus', 'mem', 'account', 'log path']
+    bvalues = ['1:00:00', 1, 1, 0, None,
+               os.path.expanduser('~/.apero/batchlogs/')]
+
+    # store values across all profiles
+    all_values = dict()
+    # load the values
+    for bparam, bvalue in zip(bparams, bvalues):
+        if bparam not in all_values:
+            value = pdict['batch'].get(bparam, bvalue)
+            if value is not None:
+                all_values[bparam] = value
+    # ---------------------------------------------------------------------
+    # construct out and error log paths
+    script_path = os.path.join(all_values['log path'], 'scripts')
+    log_path = os.path.join(all_values['log path'], 'logs')
+    err_path = os.path.join(all_values['log path'], 'errors')
+    # make sure this path exists
+    for _path in [script_path, log_path, err_path]:
+        if not os.path.exists(_path):
+            os.makedirs(_path)
+    # ---------------------------------------------------------------------
+    # define log file names
+    job_name = f'manual_trigger_{activate_profile}_{apero_user}'
+    log_script_file = os.path.join(script_path, f'sbatch_{job_name}.sh')
+    log_out_file = '%j_%x.out'
+    log_err_file = '%j_%x.err'
+    # ---------------------------------------------------------------------
+    # Construct the two commands we need to run
+    # ---------------------------------------------------------------------
+    # Command 1 = apero-activate command
+    command1 = f'apero-activate {instrument} {activate_profile}'
+    # ---------------------------------------------------------------------
+    # Command 2 = call to manual trigger
+    # we need to reconstruct the command the user ran
+    args = []
+    # loop around sys.argv to get arguments (but avoid --batch)
+    for arg in sys.argv[1:]:
+        if '--batch' in arg:
+            continue
+        args.append(arg)
+    # we want to run the manual trigger
+    command2 = f'{__file__} ' + ' '.join(args)
+    # ---------------------------------------------------------------------
+    # construct the batch script
+    bscript = '!/bin/bash\n'
+    # add max duration time
+    bscript += f'#SBATCH --time={all_values["time"]}\n'
+    # add number of nodes
+    bscript += f'#SBATCH --nodes={all_values["nodes"]}\n'
+    # add number of cpus
+    bscript += f'#SBATCH --cpus-per-task={all_values["cpus"]}\n'
+    # add memory if greater than 0
+    if all_values['mem'] > 0:
+        bscript += f'#SBATCH --mem={all_values["mem"]}\n'
+    # add account if not None
+    if all_values['account'] is not None:
+        bscript += f'#SBATCH --account={all_values["account"]}\n'
+    # add job name
+    bscript += f'#SBATCH --job-name={job_name}\n'
+    # add output and error log paths
+    bscript += f'#SBATCH --output={os.path.join(log_path, log_out_file)}\n'
+    bscript += f'#SBATCH --error={os.path.join(err_path, log_err_file)}\n'
+    # add email if we have one
+    if apero_user_email is not None:
+        bscript += f'#SBATCH --mail-user={apero_user_email}\n'
+        bscript += f'#SBATCH --mail-type=BEGIN,END,FAIL\n'
+    # add the activate command
+    bscript += 'echo "RUNNING: apero-activate"\n'
+    bscript += command1 + '\n'
+    # add the manual trigger command
+    bscript += 'echo "RUNNING: manual trigger"\n'
+    bscript += command2 + '\n'
+    # ---------------------------------------------------------------------
+    # write the batch script to the log directory
+    with open(log_script_file, 'w') as f:
+        f.write(bscript)
+    # ---------------------------------------------------------------------
+    if settings['TEST']:
+        print('Not running sbatch command [TEST MODE ACTIVATED]')
+        print('Batch script would be:')
+        print('-' * 50)
+        print(bscript)
+        print('-' * 50)
+        return True
+    # run using a subprocess command
+    proc = subprocess.run(
+        ["sbatch"],
+        input=bscript,
+        text=True,
+        capture_output=True
+    )
+    # ---------------------------------------------------------------------
+    print("Submitted:", proc.stdout)
+    # ---------------------------------------------------------------------
+    return True
 
 
 def run_apero_checks(pdict: Dict[str, Any], mode: str,
@@ -708,15 +828,92 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     os.chdir(cwd)
 
 
-def run_lbl_processing(settings: Dict[str, Any]):
+def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
     """
-    Run the LBL processing
+    This function reads a Google sheet and returns the content as an
+    astropy table
 
-    :param settings: dict, settings dictionary
+    :param sheet_id:
+    :param gid:
+    :return: the astropy table
     """
-    _ = settings
-    print('\tNot implemented.')
-    return
+    # Construct the URL
+    google_url = GOOGLE_URL.format(sheet_id=sheet_id, gid=gid)
+    # print that we are getting table from url
+    print(f'Getting table from: {google_url}')
+    # Send a GET request to the URL
+    response = requests.get(google_url)
+    # read the csv file
+    table = Table.read(response.text, format='ascii.csv')
+    # return the astropy table
+    return table
+
+
+def confirm_checks(pdict: Dict[str, Any], obsdirs: Union[List[str], str]):
+
+    # deal with flagged to not run checks
+    if not pdict['check']['run_check']:
+        return
+    # print that we are confirming checks
+    print_process('Checking raw checks have been dealt with')
+    # if we ahve no obsdirs skip
+    if obsdirs == '*':
+        print('\t obsdirs=="*": skipping confirmation')
+        return
+    elif isinstance(obsdirs, str):
+        obsdirs = obsdirs.split(',')
+    # import apero in place
+    from apero.base import base
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = pdict['general']['apero profile']
+    # reload IPARAMS
+    base.IPARAMS = base.load_install_yaml()
+    # get instrument
+    instrument = base.IPARAMS['INSTRUMENT']
+    # get cchecks, raw sheet and comm sheet ids from pdict
+    checks_id = pdict['check'].get('raw sheet id', None)
+    raw_sheet_id = pdict['check'].get('raw checks sheet id', None)
+    comm_sheet_id = pdict['check'].get('comments sheet id', None)
+    # Deal with instruments not covered by apero checks
+    if checks_id is None or raw_sheet_id is None or comm_sheet_id is None:
+        print(f'\t {instrument} not valid for checks: skipping confirmation')
+        return
+    # read the raw sheet
+    raw_table = read_google_sheet_csv(checks_id, raw_sheet_id)
+    # read the comm sheet
+    comm_table = read_google_sheet_csv(checks_id, comm_sheet_id)
+    # loop arond obsdirs
+    for obsdir in obsdirs:
+        # if observation directory not in the raw checks we should not continue
+        if obsdir not in raw_table['obsdir']:
+            msg = ('Check confirmarion failed.'
+                   '\n\nobsdir={0} must be in raw checks.'
+                   '\n\nPlease run the apero raw checks.')
+            raise ManualTriggerException(msg)
+        # if observation directory in comments then we return true
+        if obsdir in comm_table['obsdir']:
+            continue
+        # get row containing obsdir is in raw_table
+        mask = raw_table['obsdir'] == obsdir
+        # get the most recent row
+        pos = np.where(mask)[0][0]
+        # loop around columns
+        for column in raw_table.colnames:
+            # skip excluded columns
+            if column in EXCLUDE_SHEET_COLS:
+                continue
+            # get value
+            value = str(raw_table[column][pos])
+            # if column if False we have a problem
+            if value.upper() not in ['1', 'TRUE', 'T']:
+                msg = ('Cannot continue. Check confirmarion failed.'
+                       '\n\nobsdir={0} {1} = False. '
+                       '\n\nPlease fix (using babysitter manual) or override '
+                       '(if possible) or add a comment to "Comments-{2}"')
+                margs = [obsdir, column, instrument]
+                raise ManualTriggerException(msg.format(*margs))
+
+    print(f'\t Confirmation successful')
 
 
 def get_earliest_raw_file(apero_params, obsdirs):
@@ -751,6 +948,40 @@ def get_earliest_raw_file(apero_params, obsdirs):
     return earliest_time.iso
 
 
+def remove_broken_symlinks(path: str):
+    """
+    Removes broken symlinks recusively from the given directory
+
+    :param params: ParamDict, parameter dictionary of constants
+    :param path: str, path to remove all symlinks from
+    :return:
+    """
+    # if we don't have this directory just return - it will be created later
+    if not os.path.exists(path):
+        return
+    # convert to Path
+    rootpath = Path(path)
+    # save a counter
+    count = 0
+    # loop around all sub-directories
+    for path in rootpath.rglob('*'):
+        # test for symlink and for path existing
+        if path.is_symlink() and not path.exists():
+            try:
+                path.unlink()
+                count += 1
+            except Exception as e:
+                emsg = 'Failed to remove path {0}\n\tError {1}: {2}'
+                eargs = [path, type(e), str(e)]
+                print_process(emsg.format(*eargs))
+                return
+    # print how many broken symlinks we removed (as a warning)
+    wmsg = 'Remove {0} broken symlinks'
+    wargs = [count]
+    print_process(wmsg.format(*wargs))
+
+
+
 # =============================================================================
 # Start of code
 # =============================================================================
@@ -759,6 +990,11 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # get settings
     trigger_settings = get_settings()
+    # deal with batch mode
+    if trigger_settings.get('BATCH', False):
+        processed = run_in_batch_mode(trigger_settings)
+        if processed:
+            sys.exit(0)
     # log that we have started manual trigger
     for profile in trigger_settings['PROFILES']:
         trigger_settings['LOG'][profile].write(MANUAL_START)

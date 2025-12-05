@@ -37,6 +37,15 @@ FIBER = 'AB'
 # -----------------------------------------------------------------------------
 # test mode
 TEST = True
+# run persistence correction
+PERSI_CORR = True
+# set the output types
+APERO_OUTTYPES = ['EXT_E2DS_FF', 'EXT_S1D_V', 'TELLU_OBJ', 'SC1D_V_FILE',
+                  'DRS_POST_E', 'DRS_POST_S', 'DRS_POST_T',
+                  'TELLU_TEMP', 'TELLU_TEMP_S1DV']
+# set the run files
+RUN_FILE1 = 'persi_part1.ini'
+RUN_FILE2 = 'persi_part2.ini'
 
 # =============================================================================
 # Define functions
@@ -104,7 +113,7 @@ if __name__ == "__main__":
     # Step 1: Back up files
     # ----------------------------------------------------------------------
     apero_get.main(outpath=BACKUP_PATH, objnames=','.join(OBJECT_NAMES),
-                   outtypes='EXT_E2DS_FF', fibers='AB', test=TEST)
+                   outtypes=APERO_OUTTYPES, fibers='AB', test=TEST)
 
     # ----------------------------------------------------------------------
     # Step 2: Remove all traces of target
@@ -114,18 +123,19 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # Step 3: Run apero processing up to and including extraction
     # ----------------------------------------------------------------------
-    apero_processing.main(runfile='persi_part1.ini',
+    apero_processing.main(runfile=RUN_FILE1,
                           science_targets=','.join(OBJECT_NAMES), test=TEST)
 
     # ----------------------------------------------------------------------
     # Step 4: Run persistence correction
     # ----------------------------------------------------------------------
-    run_persicorr(targets=OBJECT_NAMES, test=TEST)
+    if PERSI_CORR:
+        run_persicorr(targets=OBJECT_NAMES, test=TEST)
 
     # ----------------------------------------------------------------------
     # Step 5: Run apero processing telluric correction onwards
     # ----------------------------------------------------------------------
-    apero_processing.main(runfile='persi_part2.ini',
+    apero_processing.main(runfile=RUN_FILE2,
                           science_targets=','.join(OBJECT_NAMES), test=TEST)
 
 # =============================================================================

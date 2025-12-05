@@ -1,6 +1,10 @@
 nirps he offline:
     # general settings
     general:
+        # instrument
+        activate_instrument: nirps
+        # profile (is in apero-activate)
+        activate_profile: nirps_he_offline
         # directory where raw data is downloaded
         raw dir: /nirps_raw/nirps/raw-data/nirps_he
         # the apero profile to use (controlled sym link raw data directory and all
@@ -12,6 +16,10 @@ nirps he offline:
         lbl path: /cosmos99/nirps/lbl-data/nirps_he_offline/
         # start date if not using --obsdir argument
         start date: 2022-11-01
+    # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
+    batch:
+      # whether to run in batch mode
+      run batch: False
     # apero_processing settings
     processing:
         # apero processing run.ini file
@@ -21,7 +29,10 @@ nirps he offline:
         reset:
             - all
     # apero_get settings
-    get:
+    get-obj:
+        # path to copy everything to
+        out path: /cosmos99/nirps/apero-data/nirps_he_offline/objects
+        # science fiber(s) to get
         science fibers:
             - A
         calib fibers:
@@ -35,8 +46,6 @@ nirps he offline:
             - TELLU_PCLEAN
             - SC1D_V_FILE
             - RC1D_V_FILE
-            - TELLU_TEMP
-            - TELLU_TEMP_S1DV
             - CCF_RV
             - DRS_POST_E
             - DRS_POST_S
@@ -61,15 +70,17 @@ nirps he offline:
         # reset options (if symlinks = True)
         reset:
             # - objects
-    # apero_get settings for lbl
-    get-lbl:
-        science fibers:
-            - A
-        calib fibers:
-            - B
-        # input telluric
+    # apero_get settings for comm directory
+    get-comm:
+        # path to copy everything to
+        out path: /cosmos99/nirps/apero-data/nirps_he_offline/comm
+        # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
-            - TELLU_OBJ
+            - DRS_POST_E
+            - DRS_POST_S
+            - DRS_POST_T
+            - DRS_POST_V
+            - DRS_POST_P
         # input dpr types
         science dpr types:
             - OBJ_FP
@@ -77,17 +88,19 @@ nirps he offline:
             - OBJ_SKY
         # apero template types
         template out types:
+            - TELLU_TEMP
             - TELLU_TEMP_S1DV
-        # apero simultaneous FP dprtypes
-        simfp dprtypes:
-            - OBJ_FP
-        # sym links in apero get
-        symlinks: True
-        # reset options (if symlinks = True)
-        reset:
-            - science
-            - telluric
-            - calib
+            - TELLU_TEMP_S1DW
+        # permissions file
+        permissions file: /cosmos99/nirps/git-bin/apero-drs-online/apero/tools/resources/get/nirps_permissions.yaml
+        # group permissions file
+        group file: /cosmos99/nirps/git-bin/apero-drs-online/apero/tools/resources/get/apero_groups.yaml
+        # group server
+        group server: udem_astro
+        # out suffix
+        out suffix:
+        # out prefix
+        out prefix: 'APERO_v0.7_'
     # ari-settings
     ari:
         # ari profile
@@ -104,8 +117,18 @@ nirps he offline:
         raw sheet name: RAW-NIRPS-HE
         # define the red sheet name for the google sheet
         red sheet name: RED-OFFLINE-NIRPS-HE
-
-
-
-
-
+        # define the comm sheet name for the google sheet
+        comments sheet id: 68390787
+        # define the google sheet id
+        raw sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
+        red sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
+        over sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
+        # disable dependencies check
+        disable dependencies check: False
+        # critical check files (from nirpsdl)
+        critical csv file: /nirps_raw/nirps/nirps/critical-checks-output/check_status.csv
+        critical desc file: /cosmos99/nirps/git-bin/nirpsdl/assets/critical_checks_description.csv
+        # system disk path
+        system disk path: /cosmos99
+        # system email server
+        system email server: localhost

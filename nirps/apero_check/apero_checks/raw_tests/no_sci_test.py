@@ -30,9 +30,6 @@ DPRTYPE_KEY = 'HIERARCH ESO DPR TYPE'
 # dprtype key that defines science files
 SCIENCE_DPRTYPES = ['OBJECT,SKY', 'OBJECT,FP']
 
-# We define this manually as we need to check HE and HA
-PATHS_TO_RAW = ['/nirps_raw/nirps/raw-data/nirps_ha',
-                '/nirps_raw/nirps/raw-data/nirps_he']
 
 # =============================================================================
 # Define functions
@@ -53,27 +50,19 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     :return: bool, True if passed, False otherwise
     """
     # we don't use params
-    _ = params
-    # define parameters we use here
-    files = []
-    # loop around all raw directories
-    for raw_directory in PATHS_TO_RAW:
-        # get a list of all files
-        obsdir_path = os.path.join(raw_directory, obsdir)
-        # skip if path doesn't exist
-        if not os.path.exists(obsdir_path):
-            continue
-        # get all files for this night
-        files += glob.glob(os.path.join(obsdir_path, '*.fits'))
+    raw_directory = params['raw dir']
+    # get a list of all files
+    obsdir_path = os.path.join(raw_directory, obsdir)
+    # get all files for this night
+    files = glob.glob(os.path.join(obsdir_path, '*.fits'))
     # no files is bad
     if len(files) == 0:
         # pass a True if no file is found on that night
         out_msg = ('No files found for night {}'.format(obsdir))
-        for raw_directory in PATHS_TO_RAW:
-            # get a list of all files
-            obsdir_path = os.path.join(raw_directory, obsdir)
-            # print paths checked
-            out_msg += ('\n\tChecked: {0}'.format(obsdir_path))
+        # get a list of all files
+        obsdir_path = os.path.join(raw_directory, obsdir)
+        # print paths checked
+        out_msg += ('\n\tChecked: {0}'.format(obsdir_path))
         if log:
             print(out_msg)
         # no files mean we fail

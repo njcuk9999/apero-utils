@@ -27,20 +27,6 @@ from apero_checks.core import misc
 # =============================================================================
 # Define functions
 # =============================================================================
-def find_override_test(params: Dict[str, Any]):
-    # get test_name
-    test_name = params['test_name']
-    # test raw tests
-    if test_name in raw_tests.override_list:
-        return True, 'raw'
-    # test red tests
-    elif test_name in red_tests.override_list:
-        return True, 'red'
-    # otherwise do not allow override
-    else:
-        return False, None
-
-
 DictReturn = Dict[str, Dict[str, Any]]
 
 def override_tests(params: Dict[str, Any],

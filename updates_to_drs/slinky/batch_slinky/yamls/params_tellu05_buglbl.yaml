@@ -1,0 +1,15 @@
+# Created: 2021-07-01 15:00:00
+
+# NIRPS or SPIROU
+instrument: SPIROU
+
+# creative name
+batchname: TELLU05
+
+# Number of principal components to be used
+Npca: 5
+npca-max: 5
+
+# List of stars to be processed
+object_of_interest:
+        - 'GL514'

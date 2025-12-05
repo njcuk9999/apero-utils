@@ -12,6 +12,7 @@ Created on 2023-07-03 at 14:51
 from typing import Optional
 
 import apero_checks
+from apero_checks.core import io
 
 # =============================================================================
 # Define variables
@@ -30,11 +31,15 @@ __AUTHOR__ = apero_checks.base.__AUTHOR__
 # Define functions
 # =============================================================================
 def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
-         test_name: Optional[str] = None, today: bool = False):
+         test_name: Optional[str] = None, today: bool = False,
+         yest: bool = False, since: str = 'None', until: str = 'None'):
     # print splash
     apero_checks.splash('APERO Raw data checks')
+    # add gspread directory and auth files
+    io.gsp_setup()
     # get params updated for input yaml file
-    all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today)
+    all_params = apero_checks.load_params(yaml_file, obsdir, test_name, today,
+                                          yest, since, until)
     # set up log results
     log_results = apero_checks.define_log_results()
     # loop around profiles
@@ -48,10 +53,6 @@ def main(yaml_file: Optional[str] = None, obsdir: Optional[str] = None,
             # run the tests
             test_results = apero_checks.run_tests(params, log_results,
                                                   test_type='raw')
-            # update results with the override
-            test_results = apero_checks.check_override(params, test_results,
-                                                       log_results,
-                                                       test_type='raw')
             # upload the tests
             apero_checks.upload_tests(params, test_results, test_type='raw')
         # otherwise we run a single test

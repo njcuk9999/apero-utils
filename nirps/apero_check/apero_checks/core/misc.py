@@ -14,6 +14,7 @@ import argparse
 import copy
 from typing import Any, Dict, Optional, Tuple
 
+import numpy as np
 from astropy.time import Time, TimeDelta
 from astropy import units as uu
 
@@ -28,7 +29,8 @@ from apero_checks.core import parameters
 __VERSION__ = base.__VERSION__
 __DATE__ = base.__DATE__
 __AUTHOR__ = base.__AUTHOR__
-
+# Define the oldest date of data
+OLDEST_DATE = '2022-05-04'
 
 # =============================================================================
 # Define functions
@@ -67,6 +69,14 @@ def get_args() -> Dict[str, Any]:
     parser.add_argument('--testfilter', '--test_filter', '--tf',
                         type=str, default='None',
                         help='Only calculate/upload certain tests')
+    parser.add_argument('--since', type=str, default='None',
+                        help='If we do not give an ooobsdir process '
+                             'observation directories since this date '
+                             '(this date included)')
+    parser.add_argument('--until', type=str, default='None',
+                        help='If we do not give an ooobsdir process '
+                             'observation directories until this date '
+                             '(thie date included)')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -101,32 +111,8 @@ def add_source(name: str, value: Any, source: str):
     else:
         return f'{name}={value}   [{source}]'
 
-def load_params(yaml_file: Optional[str] = None,
-                obsdir: Optional[str] = None,
-                test_name: Optional[str] = None,
-                today: bool = False,
-                yest: bool = False) -> Dict[str, Any]:
-    # set up the return dictionary
-    params = dict()
-    # string for printing variables used
-    sources = dict()
-    # load default parameters
-    for key in parameters.parameters:
-        params[key] = copy.deepcopy(parameters.parameters[key].value)
-    # -------------------------------------------------------------------------
-    # read from command line
-    args = get_args()
-    # get yaml file from cmd args
-    yaml_file , yaml_source = add_cmd_arg(args, 'yaml', yaml_file)
-    sources['yaml'] = add_source('yaml', yaml_file, yaml_source)
-    # -------------------------------------------------------------------------
-    # TODO: this is a hack - eventually all profiles should be in a shared
-    #       directory
-    # deal with yaml file just containing a path to another yaml file
-    yaml_params = io.read_yaml(yaml_file)
-    if len(yaml_params) == 1 and 'path' in yaml_params:
-        yaml_file = yaml_params['path']
-    # -------------------------------------------------------------------------
+
+def load_obsdir(params, sources, args, obsdir, today, yest, since, until):
     # get obs dir from cmd args
     params['obsdir'] , obsdir_source = add_cmd_arg(args, 'obsdir', obsdir)
     sources['obsdir'] = add_source('obsdir', params['obsdir'], obsdir_source)
@@ -154,6 +140,48 @@ def load_params(yaml_file: Optional[str] = None,
             timenow = base.AstropyTime.now()
             timeyest = timenow - TimeDelta(1 * uu.day)
             params['obsdir'] = timeyest.iso.split(' ')[0]
+
+    if params['obsdir'] is None:
+        # deal with getting since from input or cmd args
+        since, since_source = add_cmd_arg(args, 'since', since, null=None)
+        sources['since'] = add_source('since', since, since_source)
+        # deal with getting until from input or cmd args
+        until, until_source = add_cmd_arg(args, 'until', until, null=None)
+        sources['until'] = add_source('until', until, until_source)
+
+        # if both since and until are None we just return None - the rest of
+        #   the code will deal with obsdir = None
+        if since in ['None', 'Null', None] and until in ['None', 'Null', None]:
+            return params, sources
+
+        # if we have until and don't have since use oldest date given
+        if since in ['None', 'Null', None]:
+            since = Time(OLDEST_DATE + ' 00:00:00', format='iso')
+        else:
+            since = Time(since  + ' 00:00:00', format='iso')
+        # if we have since and don't have until use today
+        if until in ['None', 'Null', None]:
+            until = base.AstropyTime.now()
+        else:
+            until = Time(until + ' 00:00:00', format='iso')
+        # now generate all dates between
+        n_days = int((until - since).to_value('day'))
+        # get astropy time array of dates
+        dates = since + np.arange(n_days + 1) * uu.day
+        # force into dates (remove the HH:MM:SS)
+        str_dates = []
+        for date in dates:
+            str_dates.append(date.iso.split(' ')[0])
+        # Ask user if they want to add this many nights
+        question = ('OBSDIR:  --since={0}  --until={1}'
+                    '\n Adding {2} nights, is this correct?'
+                    '\n [Y]es or [N]o?\t')
+        qargs = [since.iso.split(' ')[0], until.iso.split(' ')[0],
+                 n_days]
+        uinput = input(question.format(*qargs))
+        # push back into obsdir
+        if 'Y' in uinput.upper():
+            params['obsdir'] = ','.join(str_dates)
     # -------------------------------------------------------------------------
     # deal with obsdir being a comma separated list
     if params['obsdir'] is not None:
@@ -162,6 +190,38 @@ def load_params(yaml_file: Optional[str] = None,
         # clean up obsdir
         for it, obs in enumerate(params['obsdir']):
             params['obsdir'][it] = obs.strip()
+
+    return params, sources
+
+def load_params(yaml_file: Optional[str] = None,
+                obsdir: Optional[str] = None,
+                test_name: Optional[str] = None,
+                today: bool = False, yest: bool = False,
+                since: str = 'None', until: str = 'None') -> Dict[str, Any]:
+    # set up the return dictionary
+    params = dict()
+    # string for printing variables used
+    sources = dict()
+    # load default parameters
+    for key in parameters.parameters:
+        params[key] = copy.deepcopy(parameters.parameters[key].value)
+    # -------------------------------------------------------------------------
+    # read from command line
+    args = get_args()
+    # get yaml file from cmd args
+    yaml_file , yaml_source = add_cmd_arg(args, 'yaml', yaml_file)
+    sources['yaml'] = add_source('yaml', yaml_file, yaml_source)
+    # -------------------------------------------------------------------------
+    # TODO: this is a hack - eventually all profiles should be in a shared
+    #       directory
+    # deal with yaml file just containing a path to another yaml file
+    yaml_params = io.read_yaml(yaml_file)
+    if len(yaml_params) == 1 and 'path' in yaml_params:
+        yaml_file = yaml_params['path']
+    # -------------------------------------------------------------------------
+    # deal with obsdir
+    params, sources = load_obsdir(params, sources, args, obsdir, today, yest,
+                                  since, until)
     # -------------------------------------------------------------------------
     # get test name from cmd args
     params['test_name'], tname_source = add_cmd_arg(args, 'test_run', test_name)
@@ -200,6 +260,8 @@ def load_params(yaml_file: Optional[str] = None,
                 # get get
                 if ykey in yaml_value:
                     yaml_value = yaml_value[ykey]
+                elif parameters.parameters[parameter].value is not None:
+                    yaml_value = parameters.parameters[parameter].value
                 else:
                     emsg = 'YAML path {0} for {1} is invalid'
                     eargs = [path, parameter]
