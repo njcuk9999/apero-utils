@@ -12,8 +12,17 @@ if [ $? -ne 0 ]; then
     return 1
 fi
 
+# -----------------------------------------------
+# set up variables
+# -----------------------------------------------
+# Set the bin path
+APERO_BIN_PATH="/project/$APERO_PROJECT_ID/apero/apero_bin"
 # Set the user configuration file
 APERO_USERS_CONF="$APERO_BIN_PATH/apero_users.conf"
+# Set the instrument file
+INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
+# Set the porfile file
+PROFILE_FILE="$APERO_BIN_PATH/apero_profiles.conf"
 
 # -----------------------------------------------
 # Check APERO_SERVER is set
@@ -76,9 +85,6 @@ if [ -z "$INSTRUMENT" ]; then
     return 1
 fi
 
-APERO_BIN_PATH="/project/$APERO_PROJECT_ID/apero/apero_bin"
-INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
-PROFILE_FILE="$APERO_BIN_PATH/apero_profiles.conf"
 
 # -----------------------------
 #  Validate instrument
