@@ -1,6 +1,10 @@
 spirou_mini2_07295:
     # general settings
     general:
+        # instrument
+        activate_instrument: spirou
+        # profile (is in apero-activate)
+        activate_profile: spirou_mini2_07295
         # directory where raw data is downloaded
         raw dir: /project/6102120/apero/spirou_data/internal/spirou_raw/raw-data
         # the apero profile to use (controlled sym link raw data directory and all

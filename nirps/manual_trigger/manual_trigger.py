@@ -9,12 +9,14 @@ Created on 2023-03-08 at 11:59
 
 @author: cook
 """
+import subprocess
 import argparse
 import os
 import shutil
 import sys
 from pathlib import Path
 from typing import Any, Dict, List, Union
+import getpass
 
 import numpy as np
 import requests
@@ -112,8 +114,11 @@ def get_args():
                         help='Observation directory name(s) separated by '
                              'commas')
     # test mode - do not run apero recipes just test
-    parser.add_argument('--test', type=bool, default=False,
+    parser.add_argument('--test', action='store_true', default=False,
                         help='Do not run apero recipes just test')
+    # batch mode - run an sbatch
+    parser.add_argument('--batch', action='store_true', default=False,
+                        help='Run in batch mode (sbatch)')
     # link switch
     parser.add_argument('--links', type=bool, default=True)
     parser.add_argument('--only_links', type=bool, default=False)
@@ -159,6 +164,8 @@ def get_settings():
     settings['OBS_DIRS'] = obs_dirs
     # add the test mode
     settings['TEST'] = args.test
+    # add the batch mode
+    settings['BATCH'] = args.batch
     # deal with since parameter
     if args.since in [None, 'None', 'Null']:
         settings['SINCE'] = None
@@ -637,6 +644,139 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     os.chdir(cwd)
 
 
+
+def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
+    """
+    Run the manual trigger in batch mode
+
+    :param settings: dict, settings dictionary
+    """
+    # -------------------------------------------------------------------------
+    # get some system variables
+    apero_user = os.getenv('APERO_USER', getpass.getuser())
+    apero_user_email = os.getenv('APERO_USER_EMAIL', None)
+    # -------------------------------------------------------------------------
+    # loop around profiles
+    if len(settings['PROFILES']) > 1:
+        wmsg = 'Warning: running in batch mode with multiple profiles. '
+        wmsg += ' Cannot run in batch mode.'
+        return False
+    # ---------------------------------------------------------------------
+    # get the only profile we have
+    profile = list(settings['PROFILES'].keys())[0]
+    # get the yaml dictionary for this profile
+    pdict = settings['PROFILES'][profile]
+    # get the instrument
+    instrument = pdict['general']['activate_instrument']
+    # get the activate_profile name
+    activate_profile = pdict['general']['activate_profile']
+    # ---------------------------------------------------------------------
+    # if any profile has "run batch" False we skip all profiles
+    if not pdict['batch'].get('run batch', False):
+        wmsg = ('Skipping all profiles, '
+                'profile {0}: run batch is False')
+        wargs = [profile]
+        print(wmsg.format(*wargs))
+        return False
+    # deal with first profile setting the sbatch parameters
+    bparams = ['time', 'nodes', 'cpus', 'mem', 'account', 'log path']
+    bvalues = ['1:00:00', 1, 1, 0, None,
+               os.path.expanduser('~/.apero/batchlogs/')]
+
+    # store values across all profiles
+    all_values = dict()
+    # load the values
+    for bparam, bvalue in zip(bparams, bvalues):
+        if bparam not in all_values:
+            value = pdict['batch'].get(bparam, bvalue)
+            if value is not None:
+                all_values[bparam] = value
+    # ---------------------------------------------------------------------
+    # construct out and error log paths
+    script_path = os.path.join(all_values['log path'], 'scripts')
+    log_path = os.path.join(all_values['log path'], 'logs')
+    err_path = os.path.join(all_values['log path'], 'errors')
+    # make sure this path exists
+    for _path in [script_path, log_path, err_path]:
+        if not os.path.exists(_path):
+            os.makedirs(_path)
+    # ---------------------------------------------------------------------
+    # define log file names
+    job_name = f'manual_trigger_{activate_profile}_{apero_user}'
+    log_script_file = os.path.join(script_path, f'sbatch_{job_name}.sh')
+    log_out_file = '%j_%x.out'
+    log_err_file = '%j_%x.err'
+    # ---------------------------------------------------------------------
+    # Construct the two commands we need to run
+    # ---------------------------------------------------------------------
+    # Command 1 = apero-activate command
+    command1 = f'apero-activate {instrument} {activate_profile}'
+    # ---------------------------------------------------------------------
+    # Command 2 = call to manual trigger
+    # we need to reconstruct the command the user ran
+    args = []
+    # loop around sys.argv to get arguments (but avoid --batch)
+    for arg in sys.argv[1:]:
+        if '--batch' in arg:
+            continue
+        args.append(arg)
+    # we want to run the manual trigger
+    command2 = f'{__file__} ' + ' '.join(args)
+    # ---------------------------------------------------------------------
+    # construct the batch script
+    bscript = '!/bin/bash\n'
+    # add max duration time
+    bscript += f'#SBATCH --time={all_values["time"]}\n'
+    # add number of nodes
+    bscript += f'#SBATCH --nodes={all_values["nodes"]}\n'
+    # add number of cpus
+    bscript += f'#SBATCH --cpus-per-task={all_values["cpus"]}\n'
+    # add memory if greater than 0
+    if all_values['mem'] > 0:
+        bscript += f'#SBATCH --mem={all_values["mem"]}\n'
+    # add account if not None
+    if all_values['account'] is not None:
+        bscript += f'#SBATCH --account={all_values["account"]}\n'
+    # add job name
+    bscript += f'#SBATCH --job-name={job_name}\n'
+    # add output and error log paths
+    bscript += f'#SBATCH --output={os.path.join(log_path, log_out_file)}\n'
+    bscript += f'#SBATCH --error={os.path.join(err_path, log_err_file)}\n'
+    # add email if we have one
+    if apero_user_email is not None:
+        bscript += f'#SBATCH --mail-user={apero_user_email}\n'
+        bscript += f'#SBATCH --mail-type=BEGIN,END,FAIL\n'
+    # add the activate command
+    bscript += 'echo "RUNNING: apero-activate"\n'
+    bscript += command1 + '\n'
+    # add the manual trigger command
+    bscript += 'echo "RUNNING: manual trigger"\n'
+    bscript += command2 + '\n'
+    # ---------------------------------------------------------------------
+    # write the batch script to the log directory
+    with open(log_script_file, 'w') as f:
+        f.write(bscript)
+    # ---------------------------------------------------------------------
+    if settings['TEST']:
+        print('Not running sbatch command [TEST MODE ACTIVATED]')
+        print('Batch script would be:')
+        print('-' * 50)
+        print(bscript)
+        print('-' * 50)
+        return True
+    # run using a subprocess command
+    proc = subprocess.run(
+        ["sbatch"],
+        input=bscript,
+        text=True,
+        capture_output=True
+    )
+    # ---------------------------------------------------------------------
+    print("Submitted:", proc.stdout)
+    # ---------------------------------------------------------------------
+    return True
+
+
 def run_apero_checks(pdict: Dict[str, Any], mode: str,
                      obsdirs: Union[List[str], str]):
     """
@@ -776,16 +916,6 @@ def confirm_checks(pdict: Dict[str, Any], obsdirs: Union[List[str], str]):
 
     print(f'\t Confirmation successful')
 
-def run_lbl_processing(settings: Dict[str, Any]):
-    """
-    Run the LBL processing
-
-    :param settings: dict, settings dictionary
-    """
-    _ = settings
-    print('\tNot implemented.')
-    return
-
 
 def get_earliest_raw_file(apero_params, obsdirs):
 
@@ -817,7 +947,6 @@ def get_earliest_raw_file(apero_params, obsdirs):
     earliest_time -= TimeDelta(1 * uu.hour)
     # return this time as an iso time
     return earliest_time.iso
-
 
 
 def remove_broken_symlinks(path: str):
@@ -862,6 +991,11 @@ if __name__ == "__main__":
     # ----------------------------------------------------------------------
     # get settings
     trigger_settings = get_settings()
+    # deal with batch mode
+    if trigger_settings.get('BATCH', False):
+        processed = run_in_batch_mode(trigger_settings)
+        if processed:
+            sys.exit(0)
     # log that we have started manual trigger
     for profile in trigger_settings['PROFILES']:
         trigger_settings['LOG'][profile].write(MANUAL_START)

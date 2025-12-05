@@ -1,6 +1,10 @@
 nirps_he_minidata_07295:
     # general settings
     general:
+        # instrument
+        activate_instrument: nirps
+        # profile (is in apero-activate)
+        activate_profile: nirps_he_minidata_07295
         # directory where raw data is downloaded
         raw dir: /project/6102120/apero/nirps_data/internal/nirps_raw/raw-data/nirps_he
         # the apero profile to use (controlled sym link raw data directory and all
@@ -12,6 +16,22 @@ nirps_he_minidata_07295:
         lbl path: /project/6102120/apero/nirps_data/private/nirps_he_minidata_07295/lbl
         # start date if not using --obsdir argument
         start date: 2022-11-01
+  # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
+    batch:
+      # whether to run in batch mode
+      run batch: True
+      # wall time
+      time: '4:00:00'
+      # nodes
+      nodes: 1
+      # cpus per task
+      cpus per task: 192
+      # memory
+      mem: 0
+      # account
+      account: rrg-rdoyon
+      # log path
+      log path: /scratch2/spirou/drs-data/nirps_he_minidata_07295/batch
     # apero_processing settings
     processing:
         # apero processing run.ini file

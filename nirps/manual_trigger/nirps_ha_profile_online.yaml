@@ -1,6 +1,10 @@
 nirps ha online:
     # general settings
     general:
+        # instrument
+        activate_instrument: nirps
+        # profile (is in apero-activate)
+        activate_profile: nirps_ha_online
         # directory where raw data is downloaded
         raw dir: /nirps_raw/nirps/raw-data/nirps_ha
         # the apero profile to use (controlled sym link raw data directory and all
@@ -12,6 +16,10 @@ nirps ha online:
         lbl path: /cosmos99/nirps/lbl-data/nirps_ha_online/
         # start date if not using --obsdir argument
         start date: 2022-11-01
+    # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
+    batch:
+      # whether to run in batch mode
+      run batch: False
     # apero_processing settings
     processing:
         # apero processing run.ini file
