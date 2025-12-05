@@ -12,8 +12,58 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
+# Set the user configuration file
+APERO_USERS_CONF="$APERO_BIN_PATH/apero_users.conf"
+
+# -----------------------------------------------
+# Check APERO_SERVER is set
+# -----------------------------------------------
+if [[ -z "$APERO_SERVER" ]]; then
+    echo "ERROR: APERO_SERVER is not set."
+    echo "Please run: $APERO_BIN_PATH/apero_install.sh"
+    exit 1
+fi
+
+# -----------------------------------------------
+# Validate APERO_BIN_PATH and conf file
+# -----------------------------------------------
+if [[ ! -f "$APERO_USERS_CONF" ]]; then
+    echo "ERROR: Cannot find apero_users.conf at:"
+    echo "  $APERO_USERS_CONF"
+    exit 1
+fi
+
+# -----------------------------------------------
+# 2. Build lookup key [server.username]
+# -----------------------------------------------
+LOOKUP="[$APERO_SERVER.$USER]"
+
+# Check if header exists in the file
+if ! grep -q "^$LOOKUP" "$APERO_USERS_CONF"; then
+    echo "ERROR: User entry '$LOOKUP' not found in apero_users.conf"
+    echo "Please contact the APERO administrator to be added."
+    exit 1
+fi
+
+# -----------------------------------------------
+# Extract name and email (lines after the header)
+# -----------------------------------------------
+# Get the line number where the header appears
+LINE=$(grep -n "^$LOOKUP" "$APERO_USERS_CONF" | cut -d: -f1)
+
+# name is next line, email the line after that
+NAME=$(sed -n "$((LINE+1))p" "$APERO_USERS_CONF")
+EMAIL=$(sed -n "$((LINE+2))p" "$APERO_USERS_CONF")
+
+# -----------------------------------------------
+# Export environment variables for user
+# -----------------------------------------------
+export APERO_USER="$USER"
+export APERO_USER_NAME="$NAME"
+export APERO_USER_EMAIL="$EMAIL"
+
 # -----------------------------
-#  Basic setup & arguments
+#  Basic setup & arguments for apero-activate
 # -----------------------------
 INSTRUMENT="$1"
 PROFILE="$2"
@@ -39,7 +89,6 @@ if ! grep -q "^$INSTRUMENT=" "$INSTRUMENT_FILE"; then
     cut -d= -f1 "$INSTRUMENT_FILE"
     return 1
 fi
-
 
 # -----------------------------
 #  Validate profile belongs to instrument
@@ -109,6 +158,9 @@ get_profile_commands() {
 echo "================================================="
 echo "Welcome to APERO-$INSTRUMENT @ Alliance"
 echo "================================================="
+echo "User = $APERO_USER_NAME [$APERO_USER]"
+echo "Email = $APERO_USER_EMAIL"
+echo "-------------------------------------------------"
 echo "Activating instrument: $INSTRUMENT"
 echo "Using profile:        $PROFILE"
 echo "================================================="
