@@ -1,4 +1,4 @@
-nirps he online:
+nirps_he_minidata_07295:
     # general settings
     general:
         # directory where raw data is downloaded
@@ -21,9 +21,13 @@ nirps he online:
         reset:
             - None
     # apero_get settings
-    get:
+    get-obj:
+        # path to copy everything to
+        out path: /project/6102120/apero/nirps_data/private/nirps_he_minidata_07295/objects
+        # science fiber(s) to get
         science fibers:
             - A
+        # calibration fiber(s) to get
         calib fibers:
             - B
         # apero get valid header key: DRSOUTID (for apero red dir)
@@ -59,33 +63,38 @@ nirps he online:
         # reset options (if symlinks = True)
         reset:
             # - objects
-    # apero_get settings for lbl
-    get-lbl:
-        science fibers:
-            - A
-        calib fibers:
-            - B
-        # input telluric
+    # apero_get settings for comm directory
+    get-comm:
+        # path to copy everything to
+        out path: /project/6102120/apero/nirps_data/comm/nirps_he_minidata_07295
+        # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
-            - TELLU_OBJ
+            - DRS_POST_E
+            - DRS_POST_S
+            - DRS_POST_T
+            - DRS_POST_V
+            - DRS_POST_P
         # input dpr types
         science dpr types:
             - OBJ_FP
             - OBJ_DARK
             - OBJ_SKY
+            - TELLU_SKY
         # apero template types
         template out types:
+            - TELLU_TEMP
             - TELLU_TEMP_S1DV
-        # apero simultaneous FP dprtypes
-        simfp dprtypes:
-            - OBJ_FP
-        # sym links in apero get
-        symlinks: True
-        # reset options (if symlinks = True)
-        reset:
-            - science
-            - telluric
-            - calib
+            - TELLU_TEMP_S1DW
+        # permissions file
+        permissions file: /project/6102120/apero/nirps_bin/scripts/apero_drs_07/apero/tools/resources/get/nirps_permissions.yaml
+        # group permissions file
+        group file: /project/6102120/apero/nirps_bin/scripts/apero_drs_07/apero/tools/resources/get/apero_groups.yaml
+        # group server
+        group server: alliance
+        # out suffix
+        out suffix:
+        # out prefix
+        out prefix: 'APERO_v0.7_'
     # ari-settings
     ari:
         # ari profile
@@ -100,10 +109,8 @@ nirps he online:
         profile: nirps_he_profile_mini_alliance.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
-#        raw sheet checks id: 1741354113
         # define the red sheet name for the google sheet
         red sheet name: RED-ONLINE-NIRPS-HE
-#        raw sheet checks id: 1017212188
       # define the comm sheet name for the google sheet
         comments sheet id: 68390787
         # define the google sheet id
@@ -111,12 +118,9 @@ nirps he online:
         red sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
         over sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
         # disable dependencies check
-        # TODO: set to False when not testing
+        # TODO: Set this to FALSE after testing
         disable dependencies check: True
         # critical check files (from nirpsdl)
-        # TODO: update these
-        # critical csv file: /nirps_raw/nirps/nirps/critical-checks-output/check_status.csv
-        # critical desc file: /cosmos99/nirps/git-bin/nirpsdl/assets/critical_checks_description.csv
         critical csv file: 'None'
         critical desc file: /project/6102120/apero/nirps_bin/scripts/nirpsdl/assets/critical_checks_description.csv
         # system disk path

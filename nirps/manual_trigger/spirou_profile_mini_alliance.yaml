@@ -1,4 +1,4 @@
-spirou V0.7.282 mini2:
+spirou_mini2_07295:
     # general settings
     general:
         # directory where raw data is downloaded
@@ -21,7 +21,10 @@ spirou V0.7.282 mini2:
         reset:
             - None
     # apero_get settings
-    get:
+    get-obj:
+        # path to copy everything to
+        out path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/objects
+        # science fiber(s) to get
         science fibers:
             - AB
             - A
@@ -37,14 +40,15 @@ spirou V0.7.282 mini2:
             - TELLU_PCLEAN
             - SC1D_V_FILE
             - RC1D_V_FILE
-            - TELLU_TEMP
-            - TELLU_TEMP_S1DV
             - CCF_RV
             - DRS_POST_E
             - DRS_POST_S
             - DRS_POST_T
             - DRS_POST_V
             - DRS_POST_P
+            - EXT_S1D_W
+            - SC1D_W_FILE
+            - RC1D_W_FILE
         # input dpr types
         science dpr types:
             - POLAR_FP
@@ -60,15 +64,17 @@ spirou V0.7.282 mini2:
         # reset options (if symlinks = True)
         reset:
             # - objects
-    # apero_get settings for lbl
-    get-lbl:
-        science fibers:
-            - AB
-        calib fibers:
-            - C
-        # input telluric
+    # apero_get settings for comm directory
+    get-comm:
+        # path to copy everything to
+        out path: /cosmos99/spirou/apero-data/spirou_offline/comm/spirou_mini2_07295/
+        # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
-            - TELLU_OBJ
+            - DRS_POST_E
+            - DRS_POST_S
+            - DRS_POST_T
+            - DRS_POST_V
+            - DRS_POST_P
         # input dpr types
         science dpr types:
             - POLAR_FP
@@ -77,17 +83,19 @@ spirou V0.7.282 mini2:
             - OBJ_DARK
         # apero template types
         template out types:
+            - TELLU_TEMP
             - TELLU_TEMP_S1DV
-        # apero simultaneous FP dprtypes
-        simfp dprtypes:
-            - OBJ_FP
-        # sym links in apero get
-        symlinks: True
-        # reset options (if symlinks = True)
-        reset:
-            - science
-            - telluric
-            - calib
+            - TELLU_TEMP_S1DW
+        # permissions file
+        permissions file: /project/6102120/apero/spirou_bin/scripts/apero_drs_07/apero/tools/resources/get/nirps_permissions.yaml
+        # group permissions file
+        group file: /project/6102120/apero/spirou_bin/scripts/apero_drs_07/apero/tools/resources/get/apero_groups.yaml
+        # group server
+        group server: alliance
+        # out suffix
+        out suffix:
+        # out prefix
+        out prefix: 'APERO_v0.7_'
     # ari-settings
     ari:
         # ari profile
@@ -96,10 +104,3 @@ spirou V0.7.282 mini2:
     check:
         # whether to run check
         run_check: False
-
-
-
-
-
-
-

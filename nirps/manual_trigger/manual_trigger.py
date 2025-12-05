@@ -505,74 +505,54 @@ def run_apero_get(settings: Dict[str, Any]):
         if len(settings['SINCE']) == 0:
             print(f'\tNo files found - skipping profile: {profile}')
             continue
+
+        # ---------------------------------------------------------------------
+        # deal with get objects directory
+        # ---------------------------------------------------------------------
         # get the output types
-        red_outtypes = ','.join(pdict['get']['science out types'])
-        lbl_outtypes = ','.join(pdict['get-lbl']['science out types'])
+        obj_outtypes = ','.join(pdict['get-obj']['science out types'])
         # get the dpr types
-        red_dprtypes = ','.join(pdict['get']['science dpr types'])
-        lbl_dprtypes = ','.join(pdict['get-lbl']['science dpr types'])
-        simfp_dprtypes = ','.join(pdict['get-lbl']['simfp dprtypes'])
+        obj_dprtypes = ','.join(pdict['get-obj']['science dpr types'])
         # scifiber and calfiber must be strings (comma separated)
-        red_scifibers = ','.join(pdict['get']['science fibers'])
-        # red_calfibers = ','.join(pdict['get']['calib fibers'])
-        lbl_scifibers = ','.join(pdict['get-lbl']['science fibers'])
-        lbl_calfibers = ','.join(pdict['get-lbl']['calib fibers'])
+        obj_scifibers = ','.join(pdict['get-obj']['science fibers'])
         # template output types
-        red_template_outtypes = ','.join(pdict['get']['template out types'])
-        lbl_template_outtypes = ','.join(pdict['get-lbl']['template out types'])
-        # get the object dir in the apero reduction path
-        red_path = pparams['DRS_DATA_REDUC']
-        obj_path = os.path.join(os.path.dirname(red_path), 'objects')
-        # remove any broken symlinks
-        remove_broken_symlinks(obj_path)
-        # get the output path
-        lbl_in_path = pdict['general']['lbl path']
-        outpath_objects = os.path.join(lbl_in_path, 'science')
-        outpath_templates = os.path.join(lbl_in_path, 'templates')
-        outpath_calib = os.path.join(lbl_in_path, 'calib')
-        outpath_fp = os.path.join(lbl_in_path, 'science/FP')
+        obj_template_outtypes = ','.join(pdict['get-obj']['template out types'])
         # whether we want symlinks
-        red_symlinks = pdict['get']['symlinks']
-        lbl_symlinks = pdict['get-lbl']['symlinks']
+        obj_symlinks = pdict['get-obj']['symlinks']
+        # get the object directory out path
+        obj_path = pdict['get-obj']['out path']
+        # ---------------------------------------------------------------------
+        # deal with get comms directory
+        # ---------------------------------------------------------------------
+        # get the output types
+        comm_outtypes = ','.join(pdict['get-comm']['science out types'])
+        # get the dpr types
+        comm_dprtypes = ','.join(pdict['get-comm']['science dpr types'])
+        # template output types
+        comm_template_outtypes = ','.join(pdict['get-comm']['template out types'])
+        # get the comm directory out path
+        comm_path = pdict['get-comm']['comm path']
+        # get the permission file for comm directory
+        comm_pfile = pdict['get-comm']['permission file']
+        # get the group file for comm directory
+        comm_gfile = pdict['get-comm']['group file']
+        # get the group server for comm directory
+        comm_gserver = pdict['get-comm']['group server']
+        # get the prefix for files in the comm directory
+        comm_prefix = pdict['get-comm'].get('prefix', None)
+        # get the suffix for files in the comm directory
+        comm_suffix = pdict['get-comm'].get('suffix', None)
+
         # ----------------------------------------------------------
         # check directories exist - try to make them if they don't
         # ----------------------------------------------------------
-        directories = [obj_path, outpath_templates, outpath_calib,
-                       outpath_fp, outpath_objects]
+        directories = [obj_path, comm_path]
         for directory in directories:
             if not os.path.exists(directory):
                 os.makedirs(directory)
         # remove any broken links
         for directory in directories:
             remove_broken_symlinks(directory)
-        # ----------------------------------------------------------
-        # reset reduced directories
-        # ----------------------------------------------------------
-        if red_symlinks:
-            directories = [outpath_objects]
-            dtypes = ['objects']
-            reset = pdict['get']['reset']
-            for it, directory in enumerate(directories):
-                if dtypes[it] is None:
-                    continue
-                if reset is None:
-                    continue
-                if dtypes[it] in reset:
-                    reset_directory(directory)
-        # ----------------------------------------------------------
-        # reset lbl directories
-        # ----------------------------------------------------------
-        if lbl_symlinks:
-            directories = [obj_path, outpath_templates, outpath_calib]
-            dtypes = ['science', 'templates', 'calib']
-            reset = pdict['get-lbl']['reset']
-            for it, directory in enumerate(directories):
-                if dtypes[it] is None:
-                    continue
-                if reset is None:
-                    continue
-                if dtypes[it] in reset:
-                    reset_directory(directory)
 
         # ---------------------------------------------------------------------
         # need to import apero_get (for this profile)
@@ -581,52 +561,32 @@ def run_apero_get(settings: Dict[str, Any]):
         # Copy to reduced 'objects' directory
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
-        apero_get.main(objnames='*', dprtypes=red_dprtypes,
-                       outtypes=red_outtypes, outpath=obj_path,
-                       fibers=red_scifibers, symlinks=red_symlinks,
+        apero_get.main(objnames='*', dprtypes=obj_dprtypes,
+                       outtypes=obj_outtypes, outpath=obj_path,
+                       fibers=obj_scifibers, symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=red_template_outtypes,
-                       outpath=obj_path, fibers=red_scifibers,
-                       symlinks=red_symlinks,
+        apero_get.main(objnames='*', outtypes=obj_template_outtypes,
+                       outpath=obj_path, fibers=obj_scifibers,
+                       symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # --------------------------------------------------------------
-        # Copy to LBL directory
+        # Copy to reduced 'comm' directory
         # --------------------------------------------------------------
-        # run apero get for objects for lbl
-        apero_get.main(objnames='*', dprtypes=lbl_dprtypes,
-                       outtypes=lbl_outtypes,
-                       outpath=outpath_objects, fibers=lbl_scifibers,
-                       symlinks=lbl_symlinks,
-                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get to make the objects dir in apero dir
+        apero_get.main(objnames='*', dprtypes=comm_dprtypes,
+                       outtypes=comm_outtypes, outpath=comm_path,
+                       test=settings['TEST'], since=settings['SINCE'],
+                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                       group_server=comm_gserver, out_prefix=comm_prefix,
+                       out_suffix=comm_suffix)
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=lbl_template_outtypes,
-                       outpath=outpath_templates, fibers=lbl_scifibers,
-                       symlinks=False, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for simultaneous FP
-        apero_get.main(objnames='None', dprtypes=simfp_dprtypes,
-                       outtypes='EXT_E2DS_FF', nosubdir=True,
-                       outpath=outpath_fp, fibers=lbl_calfibers,
-                       symlinks=lbl_symlinks,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for extracted FP_FP
-        apero_get.main(objnames='None', dprtypes='FP_FP',
-                       outtypes='EXT_E2DS_FF',
-                       outpath=outpath_fp, fibers=lbl_calfibers,
-                       symlinks=lbl_symlinks, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for calibs (wave + blaze) science fiber
-        apero_get.main(objnames='None', outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=lbl_scifibers,
-                       symlinks=lbl_symlinks, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
-        # run apero get for calibs (wave + blaze) science fiber
-        apero_get.main(objnames='None',
-                       outtypes='FF_BLAZE,WAVE_NIGHT',
-                       outpath=outpath_calib, fibers=lbl_calfibers,
-                       symlinks=lbl_symlinks, nosubdir=True,
-                       test=settings['TEST'], since=settings['SINCE'])
+        apero_get.main(objnames='*', outtypes=comm_template_outtypes,
+                       outpath=comm_path,
+                       test=settings['TEST'], since=settings['SINCE'],
+                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                       group_server=comm_gserver, out_prefix=comm_prefix,
+                       out_suffix=comm_suffix)
 
 
 def reset_directory(directory: str, reset: bool = False):
