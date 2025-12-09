@@ -137,6 +137,11 @@ def get_args():
     # add a parameter to override the run.ini file provided by the yaml
     parser.add_argument('--run', type=str, default='None',
                         help='Override the run.ini file provided by the yaml')
+    # force yes (for resets in non-interactive mode)
+    parser.add_argument('--force_yes', action='store_true', default=False,
+                        help='Force yes for resets in non-interactive mode. '
+                             'Warning this will force reset of all data '
+                             '- only use if you know what you are doing!')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -166,6 +171,8 @@ def get_settings():
     settings['TEST'] = args.test
     # add the batch mode
     settings['BATCH'] = args.batch
+    # get the force yes mode
+    settings['FORCE_YES'] = args.force_yes
     # deal with since parameter
     if args.since in [None, 'None', 'Null']:
         settings['SINCE'] = None
@@ -417,8 +424,17 @@ def run_processing(settings: Dict[str, Any]):
             # have to check a list
             cond1 = 'None' in p_reset
             cond2 = None in p_reset
+            # deal with non-interactive mode
+            if not sys.stdin.isatty():
+                if settings['FORCE_YES'] and not cond1 and not cond2:
+                    apero_reset(params, pdict)
+                elif not settings['FORCE_YES']:
+                    msg = ('Manual trigger in non-interactive mode but user '
+                           'asked to reset. Please use --force_yes to allow '
+                           'reset')
+                    raise ManualTriggerException(msg)
             # only ask if either of these are true
-            if not cond1 and not cond2:
+            elif not cond1 and not cond2:
                 # ask user because this is dangerous
                 msg = 'Are you sure you want to reset {0}? [Y]es/[N]o: '
                 uinput = input(msg.format(pdict['processing']['reset']))

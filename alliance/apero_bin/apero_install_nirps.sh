@@ -19,3 +19,6 @@ alias apero-checks="cd /project/6102120/apero/spirou_bin/scripts/apero-utils/nir
 # activate apero profiles
 #   please add apero profiles to apero_profiles.conf
 alias apero-activate="source $APERO_BIN_PATH/apero_activate.sh"
+
+# apero salloc launcher
+alias apero-salloc="$APERO_BIN_PATH/apero_salloc.sh"

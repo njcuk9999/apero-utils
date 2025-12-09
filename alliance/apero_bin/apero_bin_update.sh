@@ -1,4 +1,3 @@
-  GNU nano 7.2                                                apero_bin_update.sh
 #!/bin/bash
 
 # Set the project ID (it may change in future)
