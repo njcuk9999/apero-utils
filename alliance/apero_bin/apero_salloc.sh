@@ -126,7 +126,7 @@ fi
 # Make salloc command
 # -----------------------------------------------------------------------------
 
-COMMAND = "salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=$MEM --account=$ACCOUNT $EMAIL_FLAG $X11_FLAG"
+COMMAND="salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=$MEM --account=$ACCOUNT $EMAIL_FLAG $X11_FLAG"
 
 echo
 echo "Running:"
