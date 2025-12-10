@@ -14,24 +14,35 @@ fi
 
 echo "=== SLURM salloc launcher ==="
 
-# Time
+# -----------------------------------------------------------------------------
+# Ask about time allocation
+# -----------------------------------------------------------------------------
 read -p "Enter time (HH:MM:SS) [default 4:00:00]: " TIME
 TIME=${TIME:-4:00:00}
 
-# Nodes
+# -----------------------------------------------------------------------------
+# Ask about Nodes
+# -----------------------------------------------------------------------------
 read -p "Enter number of nodes [default 1]: " NODES
 NODES=${NODES:-1}
 
-# CPUs
-read -p "Enter number of CPUs per task [default 20]: " CPUS
-CPUS=${CPUS:-20}
+# -----------------------------------------------------------------------------
+# Ask about CPUS
+# -----------------------------------------------------------------------------
+read -p "Enter number of CPUs per task [default 1]: " CPUS
+CPUS=${CPUS:-1}
 
-# Memory
+# -----------------------------------------------------------------------------
+# Ask about Memory
+# -----------------------------------------------------------------------------
 read -p "Enter mem per CPU (e.g., 4096M) [default 4096M]: " MEM
 MEM=${MEM:-4096M}
 
+# -----------------------------------------------------------------------------
+# Ask about user account
+# -----------------------------------------------------------------------------
 echo
-echo "Available APERO accounts:"
+echo "Available $APERO_SERVER accounts:"
 echo
 
 # Parse groups and map them to env variables
@@ -72,7 +83,52 @@ if [[ -z "$ACCOUNT" ]]; then
     exit 1
 fi
 
+
+# -----------------------------------------------------------------------------
+# Ask about email
+# -----------------------------------------------------------------------------
+EMAIL_FLAG=""
+
+# If APERO_USER_EMAIL exists, ask whether to use it
+if [[ -n "$APERO_USER_EMAIL" ]]; then
+    echo
+    read -p "Use email notifications for $APERO_USER_EMAIL? [Y/n]: " USE_EMAIL
+    USE_EMAIL=${USE_EMAIL:-Y}
+
+    if [[ "$USE_EMAIL" =~ ^[Yy]$ ]]; then
+        EMAIL_FLAG="--mail-type=ALL --mail-user=$APERO_USER_EMAIL"
+    fi
+
+else
+    # Email variable NOT set → ask user to enter manually
+    echo
+    read -p "Enter email for notifications (leave blank for none): " ENTERED_EMAIL
+    if [[ -n "$ENTERED_EMAIL" ]]; then
+        EMAIL_FLAG="--mail-type=ALL --mail-user=$ENTERED_EMAIL"
+    fi
+fi
+
+# -----------------------------------------------------------------------------
+# Ask about interactive session
+# -----------------------------------------------------------------------------
+# Ask whether user wants an interactive X11 session
+X11_FLAG=""
+
+echo
+read -p "Request an interactive X11 session? [Y/N]: " WANT_X11
+WANT_X11=${WANT_X11:-N}
+
+if [[ "$WANT_X11" =~ ^[Yy]$ ]]; then
+    X11_FLAG="--x11"
+fi
+
+# -----------------------------------------------------------------------------
+# Make salloc command
+# -----------------------------------------------------------------------------
+
+COMMAND = "salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=$MEM --account=$ACCOUNT $EMAIL_FLAG $X11_FLAG"
+
 echo
 echo "Running:"
-echo "salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=$MEM --account=$ACCOUNT"
+echo $COMMAND
 echo
