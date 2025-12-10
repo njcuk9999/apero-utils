@@ -129,6 +129,17 @@ fi
 COMMAND="salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=$MEM --account=$ACCOUNT $EMAIL_FLAG $X11_FLAG"
 
 echo
-echo "Running:"
-echo $COMMAND
+echo "The following salloc command will be run:"
 echo
+echo " $COMMAND"
+echo
+
+read -p "Run this command? [Y/n]: " CONFIRM
+CONFIRM=${CONFIRM:-Y}
+
+if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    echo "Aborted by user."
+    exit 1
+fi
+
+eval "$COMMAND"
