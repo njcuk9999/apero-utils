@@ -1,0 +1,79 @@
+#!/bin/bash
+
+# Get core source script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/apero_core.sh
+
+# -----------------------------------------------------------------------------
+# Function: Show help for APERO environment setup
+# -----------------------------------------------------------------------------
+show_help() {
+    echo ""
+    echo "APERO Environment Setup [$APERO_INSTRUMENT]"
+    echo "----------------------"
+    echo
+    echo "Please only source this file"
+    echo
+    echo "Project ID:      $APERO_PROJECT_ID"
+    echo "Server:          $APERO_SERVER"
+    echo "Instrument:      $APERO_INSTRUMENT"
+    echo "APERO Path:      $APERO_PATH"
+    echo "APERO Bin Path:  $APERO_BIN_PATH"
+    echo ""
+    echo "Available aliases:"
+    echo "  goapero        : cd to the APERO project directory"
+    echo "  dfits          : run dfits for $APERO_INSTRUMENT"
+    echo "  fitsort        : run fitsort for $APERO_INSTRUMENT"
+    echo "  apero-trigger  : cd to manual trigger scripts for $APERO_INSTRUMENT"
+    echo "  apero-checks   : cd to APERO checks for $APERO_INSTRUMENT"
+    echo "  apero-activate : source the APERO profile activation script"
+    echo "  apero-salloc   : run APERO salloc launcher"
+    echo "  apero-find     : run APERO file finder tool"
+    echo ""
+    echo "Usage example:"
+    echo "  source this_script.sh      # sets up environment and aliases"
+    echo "  goapero                    # quickly navigate to APERO directory"
+    echo "  dfits file.fits            # run dfits on a FITS file"
+    echo ""
+}
+# -----------------------------------------------------------------------------
+#  Set global variables and aliases
+# -----------------------------------------------------------------------------
+export APERO_BIN_PATH=$APERO_BIN_PATH
+
+# global location aliases
+alias goapero="cd $APERO_PATH"
+
+# software aliases
+alias dfits="$APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/fitsio/dfits"
+alias fitsort="$APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/fitsio/fitsort"
+
+# apero tools
+alias apero-trigger="cd $APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/manual_trigger"
+alias apero-checks="cd $APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/apero_check"
+
+# activate apero profiles
+#   please add apero profiles to apero_profiles.conf
+alias apero-activate="source $APERO_BIN_PATH/apero_activate.sh"
+
+# apero salloc launcher
+alias apero-salloc="$APERO_BIN_PATH/apero_salloc.sh"
+
+# apero find launcher
+alias apero-find="$APERO_BIN_PATH/apero_find.sh"
+
+# -----------------------------------------------------------------------------
+#  Detect if not sourced - show help and exit
+# -----------------------------------------------------------------------------
+(return 0 2>/dev/null)
+if [ $? -ne 0 ]; then
+    show_help
+    exit 1
+fi
+# -----------------------------------------------------------------------------
+#  Check for help flag
+# -----------------------------------------------------------------------------
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    return 0
+fi

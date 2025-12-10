@@ -1,12 +1,64 @@
 #!/bin/bash
 
-# define the apero bin path
-APERO_BIN_PATH="/project/$APERO_PROJECT_ID/apero/apero_bin"
+# Get core source script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/apero_core.sh
 
 # define conf file
 CONF_FILE="$APERO_BIN_PATH/apero_groups.conf"
 
+show_help() {
+    cat << EOF
+
+Usage: apero_salloc.sh
+
+This script helps you launch a SLURM salloc session interactively.
+
+It will ask for the following options:
+
+  - Time          : Job time in HH:MM:SS format (default: 4:00:00)
+  - CPUs          : Number of CPUs per task (default: 20)
+  - Nodes         : Number of nodes (default: 1)
+  - Memory        : Memory per CPU, e.g., 4096M (default: 4096M)
+  - Account       : Select from accounts defined in your apero_users.conf
+  - Email         : Optional email notifications (uses APERO_USER_EMAIL if set)
+  - X11           : Optional interactive X11 session
+  - Confirmation  : Asks before running the salloc command
+
+Your accounts are read from the conf file:
+    $CONF_FILE
+
+Environment variables used:
+  - APERO_USER_EMAIL : optional email
+  - APERO_SERVER     : default server/account (if used)
+
+Example usage:
+
+    apero_salloc.sh
+
+Pressing Ctrl+C at any prompt will abort the script.
+
+EOF
+}
+# -----------------------------------------------------------------------------
+# Detect if script is sourced, and exit if it is
+# -----------------------------------------------------------------------------
+if [ "${BASH_SOURCE[0]}" != "$0" ]; then
+    echo "ERROR: This script should NOT be sourced."
+    show_help
+    return 1 2>/dev/null || exit 1
+fi
+# -----------------------------------------------------------------------------
+#  Check for help flag
+# -----------------------------------------------------------------------------
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
+
+# -----------------------------------------------------------------------------
 # Test if conf file exists
+# -----------------------------------------------------------------------------
 if [[ ! -f "$CONF_FILE" ]]; then
     echo "Error: $CONF_FILE not found!"
     exit 1
@@ -83,7 +135,6 @@ if [[ -z "$ACCOUNT" ]]; then
     exit 1
 fi
 
-
 # -----------------------------------------------------------------------------
 # Ask about email
 # -----------------------------------------------------------------------------
@@ -131,7 +182,7 @@ COMMAND="salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=
 echo
 echo "The following salloc command will be run:"
 echo
-echo " $COMMAND"
+echo ">> $COMMAND"
 echo
 
 read -p "Run this command? [Y/n]: " CONFIRM

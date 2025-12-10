@@ -3,26 +3,70 @@
 #  This script runs the commands defined for INSTRUMENT.PROFILE in apero_profiles.conf
 
 # -----------------------------------------------------------------------------
-#  Detect if sourced
-# -----------------------------------------------------------------------------
-(return 0 2>/dev/null)
-if [ $? -ne 0 ]; then
-    echo "ERROR: This script must be sourced, not executed."
-    echo "Use: source activate.sh <instrument> <profile>"
-    return 1
-fi
-
-# -----------------------------------------------------------------------------
 # set up variables
 # -----------------------------------------------------------------------------
-# Set the bin path
-APERO_BIN_PATH="/project/$APERO_PROJECT_ID/apero/apero_bin"
+# Get core source script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/apero_core.sh
 # Set the user configuration file
 APERO_USERS_CONF="$APERO_BIN_PATH/apero_users.conf"
 # Set the instrument file
 INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
 # Set the porfile file
 PROFILE_FILE="$APERO_BIN_PATH/apero_profiles.conf"
+
+show_help() {
+    echo "Usage: source activate.sh <instrument> <profile>"
+    echo ""
+    echo "This script must be sourced"
+    echo ""
+    echo "This script runs the commands defined for INSTRUMENT.PROFILE in apero_profiles.conf"
+    echo ""
+    echo "Available instruments:"
+    if [[ -f "$INSTRUMENT_FILE" ]]; then
+        cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
+    else
+        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+    fi
+    echo ""
+
+    if [[ -n "$1" ]]; then
+        local instr="$1"
+        if [[ -f "$PROFILE_FILE" ]]; then
+            local profiles=$(grep "^\[$instr\." "$PROFILE_FILE" | sed "s/^\[$instr\.//; s/\].*$//")
+            if [[ -n "$profiles" ]]; then
+                echo "Available profiles for '$instr':"
+                echo "$profiles" | sed 's/^/  - /'
+            else
+                echo "No profiles found for instrument '$instr'."
+            fi
+        else
+            echo "Profile file not found: $PROFILE_FILE"
+        fi
+    fi
+
+    echo ""
+    echo "Example:"
+    echo "  source activate.sh nirps profile1"
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+#  Detect if not sourced - show help and exit
+# -----------------------------------------------------------------------------
+(return 0 2>/dev/null)
+if [ $? -ne 0 ]; then
+    show_help
+    exit 1
+fi
+
+# -----------------------------------------------------------------------------
+#  Check for help flag
+# -----------------------------------------------------------------------------
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    return 0
+fi
 
 # -----------------------------------------------------------------------------
 # Check APERO_SERVER is set
@@ -90,10 +134,7 @@ INSTRUMENT="$1"
 PROFILE="$2"
 
 if [ -z "$INSTRUMENT" ]; then
-    echo "Usage: source activate.sh <instrument> <profile>"
-    echo ""
-    echo "Available instruments:"
-    cut -d= -f1 "$APERO_BIN_PATH/apero_instruments.ini"
+    show_help
     return 1
 fi
 
@@ -131,21 +172,19 @@ PROFILE_LIST=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" \
 # -----------------------------------------------------------------------------
 if [ -z "$PROFILE" ]; then
     echo "No profile selected for instrument '$INSTRUMENT'."
-    echo "Available profiles:"
-    echo "$PROFILE_LIST" | sed 's/^/    /'
+    show_help "$INSTRUMENT"
     return 1
 fi
+
 
 # -----------------------------------------------------------------------------
 # CASE 2 — Profile does not exist
 # -----------------------------------------------------------------------------
 if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     echo "ERROR: Profile '$PROFILE' not found for instrument '$INSTRUMENT'."
-    echo "Available profiles:"
-    echo "$PROFILE_LIST" | sed 's/^/    /'
+    show_help "$INSTRUMENT"
     return 1
 fi
-
 
 # -----------------------------------------------------------------------------
 #  Function: Read commands in a section
@@ -190,6 +229,16 @@ echo "-------------------------------------------------"
 echo "Activating instrument: $INSTRUMENT"
 echo "Using profile:        $PROFILE"
 echo "================================================="
+echo ""
+echo "Available aliases:"
+echo "  goapero        : cd to the APERO project directory"
+echo "  dfits          : run dfits for $APERO_INSTRUMENT"
+echo "  fitsort        : run fitsort for $APERO_INSTRUMENT"
+echo "  apero-trigger  : cd to manual trigger scripts for $APERO_INSTRUMENT"
+echo "  apero-checks   : cd to APERO checks for $APERO_INSTRUMENT"
+echo "  apero-activate : source the APERO profile activation script"
+echo "  apero-salloc   : run APERO salloc launcher"
+echo "  apero-find     : run APERO file finder tool"
 echo ""
 echo ""
 

@@ -5,17 +5,51 @@
 #    This just puts stuff in the ~/.bashrc
 #    Please look at apero_instruement.ini to see list of setup scripts
 
-# Set the project ID (it may change in future)
-APERO_PROJECT_ID="6102120"
+# Get core source script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/apero_core.sh
 
 # Find the bash file to push this into
 TARGET="$HOME/.bashrc"
 
-# Set the apero bin path
-APERO_BIN_PATH="/project/$APERO_PROJECT_ID/apero/apero_bin"
-
 # Set the path to profiles.ini
 INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
+
+
+# -----------------------------------------------------------------------------
+# Function: Show help message
+# -----------------------------------------------------------------------------
+show_help() {
+    echo ""
+    echo "Usage: source apero_install.sh <instrument_name> [--debug]"
+    echo ""
+    echo "This script sets up the specified instrument profile by adding the"
+    echo "necessary source commands to your ~/.bashrc (only once per user)."
+    echo ""
+    echo "Available instruments:"
+    if [[ -f "$INSTRUMENT_FILE" ]]; then
+        grep -o '^[^=]*' "$INSTRUMENT_FILE" | sed 's/^/  - /'
+    else
+        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+    fi
+    echo ""
+    echo "Example:"
+    echo "  source apero_install.sh nirps"
+    echo "  source apero_install.sh spirou --debug"
+    echo ""
+    echo "Notes:"
+    echo "  - The --debug flag prints internal paths for troubleshooting."
+    echo "  - Do not run this script multiple times; it will append only once."
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+#  Check for help flag
+# -----------------------------------------------------------------------------
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
 
 # -----------------------------------------------------------------------------
 # Check if apero_instruments.ini exists
@@ -28,14 +62,10 @@ fi
 # -----------------------------------------------------------------------------
 # Check if instrument name is provided as an argument
 # -----------------------------------------------------------------------------
+# Check if instrument name is provided as an argument
 if [ -z "$1" ]; then
-  echo ""
-  echo "Usage: apero_install.sh <instrument_name>"
-  echo ""
-  echo "Available instruments are:"
-  grep -o '^[^=]*' $INSTRUMENT_FILE
-  echo ""
-  return 1
+    show_help
+    return 1
 fi
 
 # -----------------------------------------------------------------------------
@@ -48,7 +78,13 @@ fi
 # -----------------------------------------------------------------------------
 # Read profiles.ini and find the path for the provided profile
 # -----------------------------------------------------------------------------
-INSTRUMENT_PATH=$(grep "^$1=" $INSTRUMENT_FILE | cut -d'=' -f2)
+# Check if profile path exists
+INSTRUMENT_PATH=$(grep "^$1=" "$INSTRUMENT_FILE" | cut -d'=' -f2)
+if [ -z "$INSTRUMENT_PATH" ]; then
+    echo "Error: Instrument '$1' not found in $INSTRUMENT_FILE."
+    show_help
+    return 1
+fi
 
 # -----------------------------------------------------------------------------
 # Check if profile path exists
