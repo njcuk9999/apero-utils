@@ -132,7 +132,7 @@ PROFILE_LIST=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" \
 if [ -z "$PROFILE" ]; then
     echo "No profile selected for instrument '$INSTRUMENT'."
     echo "Available profiles:"
-    echo "    $PROFILE_LIST"
+    echo "$PROFILE_LIST" | sed 's/^/    /'
     return 1
 fi
 
@@ -142,7 +142,7 @@ fi
 if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     echo "ERROR: Profile '$PROFILE' not found for instrument '$INSTRUMENT'."
     echo "Available profiles:"
-    echo "    $PROFILE_LIST"
+    echo "$PROFILE_LIST" | sed 's/^/    /'
     return 1
 fi
 
