@@ -1,13 +1,56 @@
 #!/bin/bash
 
-# Set the project ID (it may change in future)
-APERO_PROJECT_ID="6102120"
-
-# Set the apero bin path
-APERO_BIN_PATH="/project/$APERO_PROJECT_ID/apero/apero_bin"
-
+# Get core source script
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source $SCRIPT_DIR/apero_core.sh
 # Set the path to instruments ini
 INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
+
+# -----------------------------------------------------------------------------
+# Function: Show help message
+# -----------------------------------------------------------------------------
+show_help() {
+    echo ""
+    echo "APERO Instrument Git Updater"
+    echo "----------------------------"
+    echo "This script loops through instruments defined in:"
+    echo "  $INSTRUMENT_FILE"
+    echo "and attempts to update the corresponding git directories."
+    echo ""
+    echo "It then copies the last successfully updated instrument files"
+    echo "back to the APERO bin directory:"
+    echo "  $APERO_BIN_PATH"
+    echo ""
+    echo "Usage:"
+    echo "  ./this_script.sh"
+    echo ""
+    echo "Notes:"
+    echo "  - Ensure APERO_PROJECT_ID is set correctly."
+    echo "  - The script expects each line of $INSTRUMENT_FILE to be in key=value format:"
+    echo "      instrument_name=script_name"
+    echo "  - Empty lines and lines starting with # are ignored."
+    echo "  - Requires git to be installed and accessible in PATH."
+    echo ""
+    echo "Example:"
+    echo "  ./apero_update_instruments.sh"
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+# Detect if script is sourced, and exit if it is
+# -----------------------------------------------------------------------------
+if [ "${BASH_SOURCE[0]}" != "$0" ]; then
+    echo "ERROR: This script should NOT be sourced."
+    show_help
+    return 1 2>/dev/null || exit 1
+fi
+# -----------------------------------------------------------------------------
+#  Check for help flag
+# -----------------------------------------------------------------------------
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    show_help
+    exit 0
+fi
 
 # Track the last valid git path
 LAST_VALID_GIT_PATH=""
