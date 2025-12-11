@@ -21,7 +21,6 @@ It will ask for the following options:
   - Nodes         : Number of nodes (default: 1)
   - Memory        : Memory per CPU, e.g., 4096M (default: 4096M)
   - Account       : Select from accounts defined in your apero_users.conf
-  - Email         : Optional email notifications (uses APERO_USER_EMAIL if set)
   - X11           : Optional interactive X11 session
   - Confirmation  : Asks before running the salloc command
 
@@ -29,7 +28,6 @@ Your accounts are read from the conf file:
     $CONF_FILE
 
 Environment variables used:
-  - APERO_USER_EMAIL : optional email
   - APERO_SERVER     : default server/account (if used)
 
 Example usage:
@@ -136,30 +134,6 @@ if [[ -z "$ACCOUNT" ]]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Ask about email
-# -----------------------------------------------------------------------------
-EMAIL_FLAG=""
-
-# If APERO_USER_EMAIL exists, ask whether to use it
-if [[ -n "$APERO_USER_EMAIL" ]]; then
-    echo
-    read -p "Use email notifications for $APERO_USER_EMAIL? [Y/n]: " USE_EMAIL
-    USE_EMAIL=${USE_EMAIL:-Y}
-
-    if [[ "$USE_EMAIL" =~ ^[Yy]$ ]]; then
-        EMAIL_FLAG="--mail-type=ALL --mail-user=$APERO_USER_EMAIL"
-    fi
-
-else
-    # Email variable NOT set → ask user to enter manually
-    echo
-    read -p "Enter email for notifications (leave blank for none): " ENTERED_EMAIL
-    if [[ -n "$ENTERED_EMAIL" ]]; then
-        EMAIL_FLAG="--mail-type=ALL --mail-user=$ENTERED_EMAIL"
-    fi
-fi
-
-# -----------------------------------------------------------------------------
 # Ask about interactive session
 # -----------------------------------------------------------------------------
 # Ask whether user wants an interactive X11 session
@@ -177,7 +151,7 @@ fi
 # Make salloc command
 # -----------------------------------------------------------------------------
 
-COMMAND="salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=$MEM --account=$ACCOUNT $EMAIL_FLAG $X11_FLAG"
+COMMAND="salloc --time=$TIME --cpus-per-task=$CPUS --nodes=$NODES --mem-per-cpu=$MEM --account=$ACCOUNT $X11_FLAG"
 
 echo
 echo "The following salloc command will be run:"
