@@ -140,9 +140,12 @@ fi
 # Append only if not present
 # -----------------------------------------------------------------------------
 if ! grep -Fq "$SETUP_SCRIPT" "$TARGET"; then
+    echo ""
     echo "Installing instrument profile for '$1' into $TARGET"
+    echo ""
     printf "\n%s\n" "$SNIPPET" >> "$TARGET"
     source "$SETUP_SCRIPT"
+    source ~/.bashrc
 else
     if [ -f "$SETUP_SCRIPT" ]; then
         if [ "$2" = "--debug" ]; then
