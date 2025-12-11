@@ -41,6 +41,8 @@ show_help() {
 # -----------------------------------------------------------------------------
 # global location aliases
 alias goapero="cd $APERO_PATH"
+alias gobin="cd $APERO_PATH/${APERO_INSTRUMENT}_bin"
+alias godata="cd $APERO_PATH/${APERO_INSTRUMENT}_data"
 
 # software aliases
 alias dfits="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/dfits"

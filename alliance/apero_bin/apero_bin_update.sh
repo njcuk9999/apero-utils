@@ -99,7 +99,7 @@ cd "$APERO_BIN_PATH" || exit 1
 cp "$LAST_VALID_GIT_PATH"/* "$APERO_BIN_PATH"
 
 # Set permissions to 750 for all .sh files
-chmod 750 "$APERO_BIN_PATH"/*.sh
+chmod 750 "$APERO_BIN_PATH"/*
 
 echo "Sync complete."
 
