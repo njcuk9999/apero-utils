@@ -42,7 +42,7 @@ show_help() {
 # -----------------------------------------------------------------------------
 # Function: Show help for APERO environment setup
 # -----------------------------------------------------------------------------
-gobin {
+gobin() {
     local inst="$1"
     local path="$APERO_PATH/${inst}_bin"
     if [[ -d "$path" ]]; then
@@ -53,7 +53,7 @@ gobin {
         return 1
     fi
 }
-godata {
+godata() {
     local inst="$1"
     local path="$APERO_PATH/${inst}_data"
     if [[ -d "$path" ]]; then
