@@ -123,7 +123,7 @@ fi
 SETUP_SCRIPT="$APERO_BIN_PATH/$INSTRUMENT_PATH"
 
 read -r -d '' SNIPPET <<EOF
-# Source instrument profile if present
+# Source $1 profile if present
 if [ -f "$SETUP_SCRIPT" ]; then
     source "$SETUP_SCRIPT"
 fi
