@@ -40,29 +40,41 @@ show_help() {
 }
 
 # -----------------------------------------------------------------------------
-# Function: Show help for APERO environment setup
+# Functions to change directory to the instrument bin and data directory
 # -----------------------------------------------------------------------------
-gobin() {
-    local inst="$1"
-    local path="$APERO_PATH/${inst}_bin"
-    if [[ -d "$path" ]]; then
-        cd "$path" || return
-    else
-        echo "Error: instrument (and therefore direcotory) does not exist:"
+gofunc() {
+    local subdir=$0
+    # deal with no argument
+    if [[ -z "$1" ]]; then
+        echo "Usage: go${subdir} <instrument>"
+        echo ""
+        echo "Change to the <instrument> ${subdir} directory."
+        return 1
+    fi
+    # catch help
+    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    echo "Usage: go${subdir} <instrument>"
+    echo ""
+    echo "Change to the <instrument> ${subdir} directory."
+    return 0
+    fi
+    # set local path
+    local path="$APERO_PATH/${1}_${subdir}"
+    # deal with directory not existing
+    if [[ ! -d "$path" ]]; then
+        echo "Error: directory does not exist:"
         echo "  $path"
         return 1
     fi
+
+    cd "$path" || return
+}
+
+gobin() {
+    gofunc("bin" "$@")
 }
 godata() {
-    local inst="$1"
-    local path="$APERO_PATH/${inst}_data"
-    if [[ -d "$path" ]]; then
-        cd "$path" || return
-    else
-        echo "Error: instrument (and therefore direcotory) does not exist:"
-        echo "  $path"
-        return 1
-    fi
+    gofunc("data" "$@")
 }
 
 # -----------------------------------------------------------------------------
