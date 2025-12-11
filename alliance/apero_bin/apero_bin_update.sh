@@ -96,7 +96,7 @@ echo "Copying updated files back to APERO_BIN_PATH..."
 
 cd "$APERO_BIN_PATH" || exit 1
 
-cp -v "$LAST_VALID_GIT_PATH"/* "$APERO_BIN_PATH"
+cp "$LAST_VALID_GIT_PATH"/* "$APERO_BIN_PATH"
 
 # Set permissions to 750 for all .sh files
 chmod 750 "$APERO_BIN_PATH"/*.sh

@@ -39,18 +39,16 @@ show_help() {
 # -----------------------------------------------------------------------------
 #  Set global variables and aliases
 # -----------------------------------------------------------------------------
-export APERO_BIN_PATH=$APERO_BIN_PATH
-
 # global location aliases
 alias goapero="cd $APERO_PATH"
 
 # software aliases
-alias dfits="$APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/fitsio/dfits"
-alias fitsort="$APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/fitsio/fitsort"
+alias dfits="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/dfits"
+alias fitsort="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/fitsort"
 
 # apero tools
-alias apero-trigger="cd $APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/manual_trigger"
-alias apero-checks="cd $APERO_PATH/{$APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/apero_check"
+alias apero-trigger="cd $APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/manual_trigger"
+alias apero-checks="cd $APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/apero_check"
 
 # activate apero profiles
 #   please add apero profiles to apero_profiles.conf

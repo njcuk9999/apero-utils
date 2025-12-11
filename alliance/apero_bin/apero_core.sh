@@ -33,7 +33,7 @@ else
     APERO_PATH="$(cd "$(dirname "${SCRIPT_DIR}")" && pwd)"
 fi
 # set the bin path
-APERO_BIN_PATH="{$APERO_PATH}/apero_bin"
+APERO_BIN_PATH="$APERO_PATH/apero_bin"
 
 export APERO_PATH=$APERO_PATH
 export APERO_BIN_PATH=$APERO_BIN_PATH
