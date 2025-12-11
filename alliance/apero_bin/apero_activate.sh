@@ -217,6 +217,20 @@ get_profile_commands() {
 }
 
 
+
+
+# -----------------------------------------------------------------------------
+#  Add insturment-specific aliases
+# -----------------------------------------------------------------------------
+export APERO_INSTRUMENT="$INSTRUMENT"
+# software aliases
+alias dfits="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/dfits"
+alias fitsort="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/fitsort"
+
+# apero tools
+alias apero-trigger="cd $APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/manual_trigger"
+alias apero-checks="cd $APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/apero_check"
+
 # -----------------------------------------------------------------------------
 #  Run commands in profile
 # -----------------------------------------------------------------------------
