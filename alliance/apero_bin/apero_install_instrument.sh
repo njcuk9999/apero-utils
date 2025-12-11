@@ -22,8 +22,6 @@ show_help() {
     echo ""
     echo "Available aliases:"
     echo "  goapero        : cd to the APERO project directory"
-    echo "  gobin         : cd to the $APERO_INSTRUMENT bin directory"
-    echo "  godata        : cd to the $APERO_INSTRUMENT data directory"
     echo "  dfits          : run dfits for $APERO_INSTRUMENT"
     echo "  fitsort        : run fitsort for $APERO_INSTRUMENT"
     echo "  apero-trigger  : cd to manual trigger scripts for $APERO_INSTRUMENT"
@@ -43,8 +41,6 @@ show_help() {
 # -----------------------------------------------------------------------------
 # global location aliases
 alias goapero="cd $APERO_PATH"
-alias gobin="cd $APERO_PATH/${APERO_INSTRUMENT}_bin"
-alias godata="cd $APERO_PATH/${APERO_INSTRUMENT}_data"
 
 # software aliases
 alias dfits="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/dfits"
