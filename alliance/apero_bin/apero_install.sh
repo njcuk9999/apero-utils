@@ -21,7 +21,9 @@ INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
 # -----------------------------------------------------------------------------
 show_help() {
     echo ""
-    echo "Usage: source apero_install.sh <instrument_name> [--debug]"
+    echo "Usage: apero_install.sh <instrument_name> [--debug]"
+    echo ""
+    echo "This script should NOT be sourced."
     echo ""
     echo "This script sets up the specified instrument profile by adding the"
     echo "necessary source commands to your ~/.bashrc (only once per user)."
@@ -42,7 +44,14 @@ show_help() {
     echo "  - Do not run this script multiple times; it will append only once."
     echo ""
 }
-
+# -----------------------------------------------------------------------------
+# Detect if script is sourced, and exit if it is
+# -----------------------------------------------------------------------------
+if [ "${BASH_SOURCE[0]}" != "$0" ]; then
+    echo "ERROR: This script should NOT be sourced."
+    show_help
+    return 1 2>/dev/null || exit 1
+fi
 # -----------------------------------------------------------------------------
 #  Check for help flag
 # -----------------------------------------------------------------------------
@@ -56,7 +65,7 @@ fi
 # -----------------------------------------------------------------------------
 if [ ! -f "$INSTRUMENT_FILE" ]; then
   echo "Error: $INSTRUMENT_FILE file not found."
-  return 1
+  exit 1
 fi
 
 # -----------------------------------------------------------------------------
@@ -65,7 +74,7 @@ fi
 # Check if instrument name is provided as an argument
 if [ -z "$1" ]; then
     show_help
-    return 1
+    exit 1
 fi
 
 # -----------------------------------------------------------------------------
@@ -83,7 +92,7 @@ INSTRUMENT_PATH=$(grep "^$1=" "$INSTRUMENT_FILE" | cut -d'=' -f2)
 if [ -z "$INSTRUMENT_PATH" ]; then
     echo "Error: Instrument '$1' not found in $INSTRUMENT_FILE."
     show_help
-    return 1
+    exit 1
 fi
 
 # -----------------------------------------------------------------------------
@@ -98,7 +107,7 @@ if [ -z "$INSTRUMENT_FILE" ]; then
   echo ""
   echo "Or run apero_setup.py to create a new profile"
   echo ""
-  return 1
+  exit 1
 fi
 
 # -----------------------------------------------------------------------------
@@ -131,6 +140,7 @@ fi
 # Append only if not present
 # -----------------------------------------------------------------------------
 if ! grep -Fq "$SETUP_SCRIPT" "$TARGET"; then
+    echo "Installing instrument profile for '$1' into $TARGET"
     printf "\n%s\n" "$SNIPPET" >> "$TARGET"
     source "$SETUP_SCRIPT"
 else
