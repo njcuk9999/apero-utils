@@ -1,7 +1,7 @@
 # These need changing on a different server or project
 export APERO_PROJECT_ID="6102120"
 export APERO_SERVER="alliance"
-TEST_BIN_PATH="/project/$APERO_PROJECT_ID/apero/"
+TEST_BIN_PATH="/project/$APERO_PROJECT_ID/apero"
 
 # -----------------------------------------------------------------------------
 # Do not change under here
@@ -33,7 +33,7 @@ else
     APERO_PATH="$(cd "$(dirname "${SCRIPT_DIR}")" && pwd)"
 fi
 # set the bin path
-APERO_BIN_PATH="$APERO_PATH/apero_bin"
+APERO_BIN_PATH="{$APERO_PATH}/apero_bin"
 
-export APERO_PATH=$PATH_PATH
+export APERO_PATH=$APERO_PATH
 export APERO_BIN_PATH=$APERO_BIN_PATH
