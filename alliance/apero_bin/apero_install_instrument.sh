@@ -43,23 +43,22 @@ show_help() {
 # Functions to change directory to the instrument bin and data directory
 # -----------------------------------------------------------------------------
 gofunc() {
-    local subdir=$0
     # deal with no argument
-    if [[ -z "$1" ]]; then
-        echo "Usage: go${subdir} <instrument>"
+    if [[ -z "$2" ]]; then
+        echo "Usage: go${1} <instrument>"
         echo ""
-        echo "Change to the <instrument> ${subdir} directory."
+        echo "Change to the <instrument> ${1} directory."
         return 1
     fi
     # catch help
-    if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    echo "Usage: go${subdir} <instrument>"
+    if [[ "$2" == "-h" || "$2" == "--help" ]]; then
+    echo "Usage: go${1} <instrument>"
     echo ""
-    echo "Change to the <instrument> ${subdir} directory."
+    echo "Change to the <instrument> ${1} directory."
     return 0
     fi
     # set local path
-    local path="$APERO_PATH/${1}_${subdir}"
+    local path="$APERO_PATH/${2}_${1}"
     # deal with directory not existing
     if [[ ! -d "$path" ]]; then
         echo "Error: directory does not exist:"
