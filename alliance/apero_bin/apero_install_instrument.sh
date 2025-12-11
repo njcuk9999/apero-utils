@@ -43,23 +43,32 @@ show_help() {
 # Functions to change directory to the instrument bin and data directory
 # -----------------------------------------------------------------------------
 gofunc() {
+    # $1 = type (bin, data, etc.)
+    # $2 = instrument
+
+    local type="$1"
+    local inst="$2"
+
     # deal with no argument
-    if [[ -z "$2" ]]; then
-        echo "Usage: go${1} <instrument>"
+    if [[ -z "$inst" ]]; then
+        echo "Usage: go${type} <instrument>"
         echo ""
-        echo "Change to the <instrument> ${1} directory."
+        echo "Change to the <instrument> ${type} directory."
         return 1
     fi
-    # catch help
-    if [[ "$2" == "-h" || "$2" == "--help" ]]; then
-    echo "Usage: go${1} <instrument>"
-    echo ""
-    echo "Change to the <instrument> ${1} directory."
-    return 0
+
+    # help
+    if [[ "$inst" == "-h" || "$inst" == "--help" ]]; then
+        echo "Usage: go${type} <instrument>"
+        echo ""
+        echo "Change to the <instrument> ${type} directory."
+        return 0
     fi
-    # set local path
-    local path="$APERO_PATH/${2}_${1}"
-    # deal with directory not existing
+
+    # set path
+    local path="$APERO_PATH/${inst}_${type}"
+
+    # check directory
     if [[ ! -d "$path" ]]; then
         echo "Error: directory does not exist:"
         echo "  $path"
@@ -70,10 +79,10 @@ gofunc() {
 }
 
 gobin() {
-    gofunc("bin" "$@")
+    gofunc "bin" "$@"
 }
 godata() {
-    gofunc("data" "$@")
+    gofunc "data" "$@"
 }
 
 # -----------------------------------------------------------------------------
