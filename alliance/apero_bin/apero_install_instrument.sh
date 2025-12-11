@@ -4,6 +4,9 @@
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $SCRIPT_DIR/apero_core.sh
 
+# Set instrument
+APERO_INSTRUMENT=$1
+
 # -----------------------------------------------------------------------------
 # Function: Show help for APERO environment setup
 # -----------------------------------------------------------------------------
@@ -38,6 +41,15 @@ show_help() {
     echo "  dfits file.fits            # run dfits on a FITS file"
     echo ""
 }
+
+# -----------------------------------------------------------------------------
+#  Check for help flag
+# -----------------------------------------------------------------------------
+if [[ "$1" == "-h" || "$1" == "--help" ]]; then
+    APERO_INSTRUMENT="NOT SET"
+    show_help
+    return 0
+fi
 
 # -----------------------------------------------------------------------------
 # Functions to change directory to the instrument bin and data directory
@@ -117,10 +129,4 @@ if [ $? -ne 0 ]; then
     show_help
     exit 1
 fi
-# -----------------------------------------------------------------------------
-#  Check for help flag
-# -----------------------------------------------------------------------------
-if [[ "$1" == "-h" || "$1" == "--help" ]]; then
-    show_help
-    return 0
-fi
+
