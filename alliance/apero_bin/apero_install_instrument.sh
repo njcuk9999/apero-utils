@@ -22,6 +22,8 @@ show_help() {
     echo ""
     echo "Available aliases:"
     echo "  goapero        : cd to the APERO project directory"
+    echo "  gobin         : cd to the $APERO_INSTRUMENT bin directory"
+    echo "  godata        : cd to the $APERO_INSTRUMENT data directory"
     echo "  dfits          : run dfits for $APERO_INSTRUMENT"
     echo "  fitsort        : run fitsort for $APERO_INSTRUMENT"
     echo "  apero-trigger  : cd to manual trigger scripts for $APERO_INSTRUMENT"
