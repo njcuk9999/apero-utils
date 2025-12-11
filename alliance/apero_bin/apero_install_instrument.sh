@@ -22,6 +22,8 @@ show_help() {
     echo ""
     echo "Available aliases:"
     echo "  goapero        : cd to the APERO project directory"
+    echo "  gobin         : cd to the $APERO_INSTRUMENT bin directory"
+    echo "  godata        : cd to the $APERO_INSTRUMENT data directory"
     echo "  dfits          : run dfits for $APERO_INSTRUMENT"
     echo "  fitsort        : run fitsort for $APERO_INSTRUMENT"
     echo "  apero-trigger  : cd to manual trigger scripts for $APERO_INSTRUMENT"
@@ -36,6 +38,33 @@ show_help() {
     echo "  dfits file.fits            # run dfits on a FITS file"
     echo ""
 }
+
+# -----------------------------------------------------------------------------
+# Function: Show help for APERO environment setup
+# -----------------------------------------------------------------------------
+gobin {
+    local inst="$1"
+    local path="$APERO_PATH/${inst}_bin"
+    if [[ -d "$path" ]]; then
+        cd "$path" || return
+    else
+        echo "Error: instrument (and therefore direcotory) does not exist:"
+        echo "  $path"
+        return 1
+    fi
+}
+godata {
+    local inst="$1"
+    local path="$APERO_PATH/${inst}_data"
+    if [[ -d "$path" ]]; then
+        cd "$path" || return
+    else
+        echo "Error: instrument (and therefore direcotory) does not exist:"
+        echo "  $path"
+        return 1
+    fi
+}
+
 # -----------------------------------------------------------------------------
 #  Set global variables and aliases
 # -----------------------------------------------------------------------------
