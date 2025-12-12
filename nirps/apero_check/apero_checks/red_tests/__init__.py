@@ -114,6 +114,9 @@ test_dep['PREV_REDUC'] = ['BLANK', 'HAS_OBSDIR', 'APERO_START', 'APERO_END']
 # dictionary to store all tests
 override_list = []
 
+# HAS_OBSDIR: when everything is broken we may have absolutely no data
+override_list.append('HAS_OBSDIR')
+
 # LOW_SNR: There could be objects for which we expect a low SNR
 override_list.append('LOW_SNR')
 
