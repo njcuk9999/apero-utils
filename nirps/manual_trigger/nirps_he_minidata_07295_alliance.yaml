@@ -94,6 +94,12 @@ nirps_he_minidata_07295:
             - DRS_POST_T
             - DRS_POST_V
             - DRS_POST_P
+            - LBL_FITS
+            - LBL_RDB_FITS
+            - LBL_RDB
+            - LBL_RDB2
+            - LBL_RDB_DRIFT
+            - LBL_RDB2_DRIFT
         # input dpr types
         science dpr types:
             - OBJ_FP
