@@ -556,9 +556,9 @@ def run_apero_get(settings: Dict[str, Any]):
         # get the comm directory out path
         comm_path = pdict['get-comm']['out path']
         # get the permission file for comm directory
-        comm_pfile = pdict['get-comm']['permission file']
+        comm_pfile = pdict['get-comm'].get('permission file', None)
         # get the group file for comm directory
-        comm_gfile = pdict['get-comm']['group file']
+        comm_gfile = pdict['get-comm'].get('group file', None)
         # get the group server for comm directory
         comm_gserver = pdict['get-comm']['group server']
         # get the prefix for files in the comm directory
