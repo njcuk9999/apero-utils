@@ -408,7 +408,8 @@ def find_override_test(params: Dict[str, Any], test_name: str = None):
         return False, None
 
 
-def get_override(params: Dict[str, Any], obs_dir: str, test_name: str):
+def get_override(params: Dict[str, Any], obs_dir: str, test_name: str,
+                 test_type: str = None):
 
     global OVERRIDE_CACHE
 
@@ -438,7 +439,10 @@ def get_override(params: Dict[str, Any], obs_dir: str, test_name: str):
     # filter by obs_dir, test_name and test_type
     mask = (current_dataframe['obsdir'] == obs_dir)
     mask &= (current_dataframe['test_name'] == test_name)
-    mask &= (current_dataframe['test_type'] == params['raw sheet name'])
+    if test_type == 'raw':
+        mask &= (current_dataframe['test_type'] == params['raw sheet name'])
+    elif test_type == 'red':
+        mask &= (current_dataframe['test_type'] == params['red sheet name'])
     # apply mask
     df_filt = current_dataframe[mask]
     # deal with no rows
