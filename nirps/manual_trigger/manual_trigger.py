@@ -554,7 +554,7 @@ def run_apero_get(settings: Dict[str, Any]):
         # template output types
         comm_template_outtypes = ','.join(pdict['get-comm']['template out types'])
         # get the comm directory out path
-        comm_path = pdict['get-comm']['comm path']
+        comm_path = pdict['get-comm']['out path']
         # get the permission file for comm directory
         comm_pfile = pdict['get-comm']['permission file']
         # get the group file for comm directory
