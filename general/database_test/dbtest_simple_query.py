@@ -49,7 +49,7 @@ FETCH = [False, False, True]
 # =============================================================================
 # Define functions
 # =============================================================================
-def execute_mysql_connect(_query: str):
+def execute_mysql_connect(_query: str, fetch=True):
     # import mysql
     import mysql.connector as mysql
     # connect and create a MySQL connection object
@@ -63,14 +63,18 @@ def execute_mysql_connect(_query: str):
     # run the cursor
     cursor.execute(command)
     # get the result
-    result = cursor.fetchall()
-    rows = list(result)
+    if fetch:
+        result = cursor.fetchall()
+        rows = list(result)
+
+        cursor.close()
+        conn.close()
+        return rows
+    # cleanup
     cursor.close()
     conn.close()
-    return rows
 
-
-def execute_sqlalchemy(_query: str):
+def execute_sqlalchemy(_query: str, fetch=True):
     # import sqlalchemy
     import sqlalchemy
     # create a database engine for sqlalchemy
@@ -84,10 +88,12 @@ def execute_sqlalchemy(_query: str):
     command = sqlalchemy.text(_query)
     # run the cursor
     result = db.execute(command)
-
-    rows = list(result.fetchall())
-    db.close()
-    return rows
+    if fetch:
+        rows = list(result.fetchall())
+        db.close()
+        return rows
+    else:
+        db.close()
 
 
 def execute_sqlite_connect(_query: str, db_path: str, fetch=True):
@@ -102,6 +108,9 @@ def execute_sqlite_connect(_query: str, db_path: str, fetch=True):
     if fetch:
         # fetch results
         rows = cursor.fetchall()
+        # cleanup
+        cursor.close()
+        conn.close()
         return rows
     else:
         conn.commit()
@@ -120,7 +129,7 @@ if __name__ == "__main__":
 
     for mode in ['sqlite3', 'mysql.connect', 'sqlalchemy']:
 
-        if MODE == 'sqlite3':
+        if mode == 'sqlite3':
             # execute query
             try:
                 for it, query in enumerate(QUERIES):
@@ -128,14 +137,14 @@ if __name__ == "__main__":
                                                     fetch=FETCH[it])
             except Exception as e:
                 print(e)
-        elif MODE == 'mysql.connect':
+        elif mode == 'mysql.connect':
             # execute query
             try:
                 for query in QUERIES:
                     output = execute_mysql_connect(query)
             except Exception as e:
                 print(e)
-        elif MODE == 'sqlalchemy':
+        elif mode == 'sqlalchemy':
             # execute query
             try:
                 for query in QUERIES:
@@ -143,7 +152,7 @@ if __name__ == "__main__":
             except Exception as e:
                 print(e)
         else:
-            raise ValueError(f'Unsupported mode: {MODE}')
+            raise ValueError(f'Unsupported mode: {mode}')
         # print result
         print(f'{mode}: Found {len(output)} rows in {TABLENAME}')
 
