@@ -15,20 +15,41 @@ HOST = 'rali.astro.umontreal.ca'
 USER = 'nirps'
 PASSWD = 'Covid19!'
 DBNAME = 'nirps'
-TABLENAME = 'findex_nirps_he_online_db'
+TABLENAME = 'students'
 # test this one first
-MODE = 'mysql.connect'
+MODE = 'sqlite3'
 # test this one second
-MODE = 'sqlalchemy'
+# MODE = 'mysql.connect'
+# test this one third
+# MODE = 'sqlalchemy'
+# path for sqlite3 database
+SQLITE_DB_PATH = '/home/cook/index.db'
 # -----------------------------------------------------------------------------
 # define the command
-QUERY = f'SELECT COUNT(*) FROM {TABLENAME}'
+QUERY_CREATE = f"""
+CREATE TABLE IF NOT EXISTS {TABLENAME} (
+    id INTEGER,
+    name TEXT
+);
+"""
 
+QUERY_INSERT = f"""
+INSERT INTO {TABLENAME} (id, name)
+VALUES (1, 'Alice');
+"""
+
+QUERY_SELECT = f"""
+SELECT * FROM {TABLENAME};
+"""
+
+
+QUERIES = [QUERY_CREATE, QUERY_INSERT, QUERY_SELECT]
+FETCH = [False, False, True]
 
 # =============================================================================
 # Define functions
 # =============================================================================
-def execute_mysql_connect(_query: str):
+def execute_mysql_connect(_query: str, fetch=True):
     # import mysql
     import mysql.connector as mysql
     # connect and create a MySQL connection object
@@ -42,14 +63,18 @@ def execute_mysql_connect(_query: str):
     # run the cursor
     cursor.execute(command)
     # get the result
-    result = cursor.fetchall()
-    rows = list(result)
+    if fetch:
+        result = cursor.fetchall()
+        rows = list(result)
+
+        cursor.close()
+        conn.close()
+        return rows
+    # cleanup
     cursor.close()
     conn.close()
-    return rows
 
-
-def execute_sqlalchemy(_query: str):
+def execute_sqlalchemy(_query: str, fetch=True):
     # import sqlalchemy
     import sqlalchemy
     # create a database engine for sqlalchemy
@@ -63,10 +88,37 @@ def execute_sqlalchemy(_query: str):
     command = sqlalchemy.text(_query)
     # run the cursor
     result = db.execute(command)
+    if fetch:
+        rows = list(result.fetchall())
+        db.close()
+        return rows
+    else:
+        db.close()
 
-    rows = list(result.fetchall())
-    db.close()
-    return rows
+
+def execute_sqlite_connect(_query: str, db_path: str, fetch=True):
+    import sqlite3
+    # connect to SQLite database file
+    conn = sqlite3.connect(db_path)
+    # get a cursor
+    cursor = conn.cursor()
+    # execute query
+    cursor.execute(str(_query))
+
+    if fetch:
+        # fetch results
+        rows = cursor.fetchall()
+        # cleanup
+        cursor.close()
+        conn.close()
+        return rows
+    else:
+        conn.commit()
+    # cleanup
+    cursor.close()
+    conn.close()
+
+
 
 # =============================================================================
 # Start of code
@@ -74,16 +126,35 @@ def execute_sqlalchemy(_query: str):
 # Main code here
 if __name__ == "__main__":
     # ----------------------------------------------------------------------
-    if MODE == 'mysql.connect':
-        # execute query
-        output = execute_mysql_connect(QUERY)
-    elif MODE == 'sqlalchemy':
-        # execute query
-        output = execute_sqlalchemy(QUERY)
-    else:
-        raise ValueError(f'Unsupported mode: {MODE}')
-    # print result
-    print(f'Found {output} rows in {TABLENAME}')
+
+    for mode in ['sqlite3', 'mysql.connect', 'sqlalchemy']:
+
+        if mode == 'sqlite3':
+            # execute query
+            try:
+                for it, query in enumerate(QUERIES):
+                    output = execute_sqlite_connect(query, SQLITE_DB_PATH,
+                                                    fetch=FETCH[it])
+            except Exception as e:
+                print(e)
+        elif mode == 'mysql.connect':
+            # execute query
+            try:
+                for query in QUERIES:
+                    output = execute_mysql_connect(query)
+            except Exception as e:
+                print(e)
+        elif mode == 'sqlalchemy':
+            # execute query
+            try:
+                for query in QUERIES:
+                    output = execute_sqlalchemy(query)
+            except Exception as e:
+                print(e)
+        else:
+            raise ValueError(f'Unsupported mode: {mode}')
+        # print result
+        print(f'{mode}: Found {len(output)} rows in {TABLENAME}')
 
 
 # =============================================================================
