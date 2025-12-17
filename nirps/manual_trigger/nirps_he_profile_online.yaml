@@ -126,7 +126,7 @@ nirps he online:
         # disable dependencies check
         disable dependencies check: False
         # critical check files (from nirpsdl)
-        critical csv file: /nirps_raw/nirps/nirps/critical-checks-output/check_status.csv
+        critical csv file: /nirps_raw/nirps/critical-checks-output/check_status.csv
         critical desc file: /cosmos99/nirps/git-bin/nirpsdl/assets/critical_checks_description.csv
         # system disk path
         system disk path: /cosmos99
