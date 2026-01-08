@@ -555,16 +555,16 @@ def run_apero_get(settings: Dict[str, Any]):
         comm_template_outtypes = ','.join(pdict['get-comm']['template out types'])
         # get the comm directory out path
         comm_path = pdict['get-comm']['out path']
-        # get the permission file for comm directory
-        comm_pfile = pdict['get-comm'].get('permission file', None)
+        # get the permissions file for comm directory
+        comm_pfile = pdict['get-comm'].get('permissions file', None)
         # get the group file for comm directory
         comm_gfile = pdict['get-comm'].get('group file', None)
         # get the group server for comm directory
         comm_gserver = pdict['get-comm']['group server']
         # get the prefix for files in the comm directory
-        comm_prefix = pdict['get-comm'].get('prefix', None)
+        comm_prefix = pdict['get-comm'].get('out prefix', None)
         # get the suffix for files in the comm directory
-        comm_suffix = pdict['get-comm'].get('suffix', None)
+        comm_suffix = pdict['get-comm'].get('out suffix', None)
 
         # ----------------------------------------------------------
         # check directories exist - try to make them if they don't
@@ -694,7 +694,7 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
         print(wmsg.format(*wargs))
         return False
     # deal with first profile setting the sbatch parameters
-    bparams = ['time', 'nodes', 'cpus', 'mem', 'account', 'log path']
+    bparams = ['time', 'nodes', 'cpus per task', 'mem', 'account', 'log path']
     bvalues = ['1:00:00', 1, 1, 0, None,
                os.path.expanduser('~/.apero/batchlogs/')]
 
@@ -745,7 +745,7 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     # add number of nodes
     bscript += f'#SBATCH --nodes={all_values["nodes"]}\n'
     # add number of cpus
-    bscript += f'#SBATCH --cpus-per-task={all_values["cpus"]}\n'
+    bscript += f'#SBATCH --cpus-per-task={all_values["cpus per task"]}\n'
     # add memory if greater than 0
     if all_values['mem'] > 0:
         bscript += f'#SBATCH --mem={all_values["mem"]}\n'

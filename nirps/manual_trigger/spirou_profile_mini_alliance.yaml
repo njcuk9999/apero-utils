@@ -107,7 +107,7 @@ spirou_mini2_07295:
             - TELLU_TEMP_S1DV
             - TELLU_TEMP_S1DW
         # permissions file
-        permissions file: /project/6102120/apero/spirou_bin/scripts/apero_drs_07/apero/tools/resources/get/nirps_permissions.yaml
+        permissions file: /project/6102120/apero/spirou_bin/scripts/apero_drs_07/apero/tools/resources/get/spirou_permissions.yaml
         # group permissions file
         group file: /project/6102120/apero/spirou_bin/scripts/apero_drs_07/apero/tools/resources/get/apero_groups.yaml
         # group server

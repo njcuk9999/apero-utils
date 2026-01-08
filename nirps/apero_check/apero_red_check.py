@@ -17,6 +17,7 @@ from apero_checks.core import io
 # =============================================================================
 # Define variables
 # =============================================================================
+__NAME__ = 'apero_red_check.py'
 # version, date, author
 __VERSION__ = apero_checks.base.__VERSION__
 __DATE__ = apero_checks.base.__DATE__
