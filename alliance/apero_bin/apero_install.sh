@@ -36,8 +36,8 @@ show_help() {
     fi
     echo ""
     echo "Example:"
-    echo "  source apero_install.sh nirps"
-    echo "  source apero_install.sh spirou --debug"
+    echo "  ./apero_install.sh nirps"
+    echo "  ./apero_install.sh spirou --debug"
     echo ""
     echo "Notes:"
     echo "  - The --debug flag prints internal paths for troubleshooting."
@@ -96,21 +96,6 @@ if [ -z "$INSTRUMENT_PATH" ]; then
 fi
 
 # -----------------------------------------------------------------------------
-# Check if profile path exists
-# -----------------------------------------------------------------------------
-if [ -z "$INSTRUMENT_FILE" ]; then
-  echo ""
-  echo "Profile $1 not found in $INSTRUMENT_FILE."
-  echo ""
-  echo "Available profiles are:"
-  grep -o '^[^=]*' $INSTRUMENT_FILE
-  echo ""
-  echo "Or run apero_setup.py to create a new profile"
-  echo ""
-  exit 1
-fi
-
-# -----------------------------------------------------------------------------
 # print that we found it (may remove later)
 # -----------------------------------------------------------------------------
 if [ "$2" = "--debug" ]; then
@@ -121,6 +106,22 @@ fi
 # Determine the setup script to run based on OS
 # -----------------------------------------------------------------------------
 SETUP_SCRIPT="$APERO_BIN_PATH/$INSTRUMENT_PATH"
+
+# -----------------------------------------------------------------------------
+# Check if the setup script file actually exists
+# -----------------------------------------------------------------------------
+if [ ! -f "$SETUP_SCRIPT" ]; then
+  echo ""
+  echo "Error: Setup script for instrument '$1' not found at:"
+  echo "  $SETUP_SCRIPT"
+  echo ""
+  echo "The instrument is defined in $INSTRUMENT_FILE but the script file is missing."
+  echo ""
+  echo "Available instruments in $INSTRUMENT_FILE:"
+  grep -o '^[^=]*' "$INSTRUMENT_FILE"
+  echo ""
+  exit 1
+fi
 
 read -r -d '' SNIPPET <<EOF
 # Source $1 profile if present

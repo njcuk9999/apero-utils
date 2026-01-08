@@ -12,7 +12,7 @@ source $SCRIPT_DIR/apero_core.sh
 APERO_USERS_CONF="$APERO_BIN_PATH/apero_users.conf"
 # Set the instrument file
 INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
-# Set the porfile file
+# Set the profile file
 PROFILE_FILE="$APERO_BIN_PATH/apero_profiles.conf"
 
 show_help() {

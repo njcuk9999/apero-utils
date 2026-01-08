@@ -1,3 +1,5 @@
+#!/bin/bash
+
 show_help() {
     cat <<EOF
 Usage: apero_find.sh [START_PATH] [PATTERN] [COMMAND]
