@@ -31,7 +31,7 @@ nirps_he_minidata_07295:
       # account
       account: rrg-rdoyon
       # log path
-      log path: /scratch2/spirou/drs-data/nirps_he_minidata_07295/batch
+      log path: /project/6102120/apero/nirps_data/private/nirps_he_minidata_07295/batch
     # apero_processing settings
     processing:
         # apero processing run.ini file

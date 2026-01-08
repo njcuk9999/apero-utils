@@ -10,12 +10,28 @@ spirou_mini2_07295:
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /project/6102120/apero/spirou_bin/settings/spirou_mini2_07295
-      # the install directory for apero (git hub repo)
+        # the install directory for apero (git hub repo)
         apero install: /project/6102120/apero/spirou_bin/scripts/apero_drs_07
         # directory where lbl files are processed
         lbl path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/lbl
         # start date if not using --obsdir argument
         start date: 2018-01-01
+  # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
+    batch:
+      # whether to run in batch mode
+      run batch: True
+      # wall time
+      time: '4:00:00'
+      # nodes
+      nodes: 1
+      # cpus per task
+      cpus per task: 192
+      # memory
+      mem: 0
+      # account
+      account: rrg-rdoyon
+      # log path
+      log path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/batch
     # apero_processing settings
     processing:
         # apero processing run.ini file
