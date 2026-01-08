@@ -223,9 +223,12 @@ get_profile_commands() {
 #  Add insturment-specific aliases
 # -----------------------------------------------------------------------------
 export APERO_INSTRUMENT="$INSTRUMENT"
+# set the apero script path
+APERO_SCRIPT_PATH="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts"
 # software aliases
-alias dfits="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/dfits"
-alias fitsort="$APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/fitsio/fitsort"
+alias dfits="$APERO_SCRIPT_PATH/fitsio/dfits"
+alias fitsort="$APERO_SCRIPT_PATH/fitsio/fitsort"
+alias glow="$APERO_SCRIPT_PATH/glow/glow"
 
 # apero tools
 alias apero-trigger="cd $APERO_PATH/${APERO_INSTRUMENT}_bin/scripts/apero-utils/nirps/manual_trigger"
@@ -250,6 +253,7 @@ echo "  gobin          : cd to the $INSTRUMENT bin directory"
 echo "  godata         : cd to the $INSTRUMENT data directory"
 echo "  dfits          : run dfits for $INSTRUMENT"
 echo "  fitsort        : run fitsort for $INSTRUMENT"
+echo "  glow           : run glow markdown viewer"
 echo "  apero-trigger  : cd to manual trigger scripts for $INSTRUMENT"
 echo "  apero-checks   : cd to APERO checks for $INSTRUMENT"
 echo "  apero-activate : source the APERO profile activation script"
