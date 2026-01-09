@@ -585,11 +585,13 @@ def run_apero_get(settings: Dict[str, Any]):
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
         apero_get.main(objnames='*', dprtypes=obj_dprtypes,
+                       block_kind='red',
                        outtypes=obj_outtypes, outpath=obj_path,
                        fibers=obj_scifibers, symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=obj_template_outtypes,
+                       block_kind='red',
                        outpath=obj_path, fibers=obj_scifibers,
                        symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
@@ -598,6 +600,7 @@ def run_apero_get(settings: Dict[str, Any]):
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
         apero_get.main(objnames='*', dprtypes=comm_dprtypes,
+                       block_kind='out',
                        outtypes=comm_outtypes, outpath=comm_path,
                        test=settings['TEST'], since=settings['SINCE'],
                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
@@ -605,6 +608,7 @@ def run_apero_get(settings: Dict[str, Any]):
                        out_suffix=comm_suffix)
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=comm_template_outtypes,
+                       block_kind='out',
                        outpath=comm_path,
                        test=settings['TEST'], since=settings['SINCE'],
                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
