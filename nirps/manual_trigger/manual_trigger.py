@@ -98,7 +98,7 @@ class ManualTriggerException(Exception):
 
 
 # =============================================================================
-# Define functions
+# Define main functionality
 # =============================================================================
 def get_args():
     """
@@ -131,6 +131,12 @@ def get_args():
     # apero reduction interface switch
     parser.add_argument('--ari', type=bool, default=True)
     parser.add_argument('--only_ari', type=bool, default=False)
+    # apero comm visualization switch
+    parser.add_argument('--comm_visu', type=bool, default=True)
+    parser.add_argument('--only_commvisu', type=bool, default=False)
+    # apero push to datacenter switch
+    parser.add_argument('--push_to_datacenter', type=bool, default=True)
+    parser.add_argument('--only_pushtodatacenter', type=bool, default=False)
     # apero get --since parameter
     parser.add_argument('--since', type=str, default='None',
                         help='APERO get - only copy files processed since this date')
@@ -178,18 +184,25 @@ def get_settings():
         settings['SINCE'] = None
     else:
         settings['SINCE'] = args.since
-    # get switches
+    # get link switches
     settings['MAKELINKS'] = args.links
     settings['ONLY_LINKS'] = args.only_links
-
+    # get apero processing switches
     settings['APERO_PROCESSING'] = args.apero_process
     settings['ONLY_APEROPROCESSING'] = args.only_apero_process
-
+    # get apero get switches
     settings['APERO_GET'] = args.get
     settings['ONLY_APEROGET'] = args.only_aperoget
-
+    # get reduction interface switches
     settings['REDUCTION_INTERFACE'] = args.ari
     settings['ONLY_REDUCTIONINTERFACE'] = args.only_ari
+    # get comm visualization switches
+    settings['COMM_VISUALIZATION'] = args.comm_visu
+    settings['ONLY_COMMVISU'] = args.only_commvisu
+    # get push to datacenter switches
+    settings['PUSH_TO_DATACENTER'] = args.push_to_datacenter
+    settings['ONLY_PUSHTODATACENTER'] = args.only_pushtodatacenter
+
     # -------------------------------------------------------------------------
     # deal with only switches (turn off all other switches)
     # -------------------------------------------------------------------------
@@ -199,24 +212,48 @@ def get_settings():
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = False
+        settings['COMM_VISUALIZATION'] = False
+        settings['PUSH_TO_DATACENTER'] = False
     # only APERO processing
     if settings['ONLY_APEROPROCESSING']:
         settings['MAKELINKS'] = False
         settings['APERO_PROCESSING'] = True
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = False
+        settings['COMM_VISUALIZATION'] = False
+        settings['PUSH_TO_DATACENTER'] = False
     # only apero get
     if settings['ONLY_APEROGET']:
         settings['MAKELINKS'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = True
         settings['REDUCTION_INTERFACE'] = False
+        settings['COMM_VISUALIZATION'] = False
+        settings['PUSH_TO_DATACENTER'] = False
     # only ARI
     if settings['ONLY_REDUCTIONINTERFACE']:
         settings['MAKELINKS'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = True
+        settings['COMM_VISUALIZATION'] = False
+        settings['PUSH_TO_DATACENTER'] = False
+    # only COMM Visualization
+    if settings['ONLY_COMMVISU']:
+        settings['MAKELINKS'] = False
+        settings['APERO_PROCESSING'] = False
+        settings['APERO_GET'] = False
+        settings['REDUCTION_INTERFACE'] = False
+        settings['COMM_VISUALIZATION'] = True
+        settings['PUSH_TO_DATACENTER'] = False
+    # only Push to datacenter
+    if settings['ONLY_PUSHTODATACENTER']:
+        settings['MAKELINKS'] = False
+        settings['APERO_PROCESSING'] = False
+        settings['APERO_GET'] = False
+        settings['REDUCTION_INTERFACE'] = False
+        settings['COMM_VISUALIZATION'] = False
+        settings['PUSH_TO_DATACENTER'] = True
     # ----------------------------------------------------------------------
     # read the yaml file and push into settings
     settings = read_yaml(args.profile, settings)
@@ -248,149 +285,6 @@ def get_settings():
     # ----------------------------------------------------------------------
     # return the settings
     return settings
-
-
-def read_yaml(yaml_filename: str, settings: Dict[str, Any]) -> Dict[str, Any]:
-    """
-    Read the yaml file and add to settings
-
-    :param yaml_filename: str, yaml file name
-    :param settings: dict, settings dictionary
-
-    :return: dict, updated settings dictionary
-    """
-    # read the yaml file
-    with open(yaml_filename, 'r') as f:
-        yaml_data = yaml.load(f, Loader=yaml.FullLoader)
-    # add a profiles sub-dictionary
-    settings['PROFILES'] = dict()
-    # loop around yaml data
-    for key, value in yaml_data.items():
-        # if key is in settings
-        settings['PROFILES'][key] = value
-    # return settings
-    return settings
-
-
-def print_process(msg: str):
-    """
-    print a headering message
-    :param msg: str, print message
-
-    :return: None, prints a message
-    """
-    print('=' * 50)
-    print(msg)
-    print('=' * 50)
-
-
-def update_apero_profile(profile: dict):
-    """
-    Update the apero profile with the correct paths
-    :param profile: dict, the profile to update
-    :return:
-    """
-    from apero.base import base
-    from apero.core import constants
-    from apero.core.constants import param_functions
-    # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
-    # reload DPARAMS and IPARAMS
-    base.DPARAMS = base.load_database_yaml()
-    base.IPARAMS = base.load_install_yaml()
-    # ------------------------------------------------------------------
-    # invalidate cache
-    param_functions.CONFIG_CACHE = dict()
-    # make sure parameters is reloaded (and not cached)
-    return constants.load(cache=False)
-
-
-def make_sym_links(settings: Dict[str, Any]):
-    """
-    Make the symbolic links for the raw data
-
-    :param settings: dict, settings dictionary
-
-    :return: None, creates symbolic links
-    """
-    # loop around profiles
-    for profile in settings['PROFILES']:
-        # get the profile dictionary
-        pdict = settings['PROFILES'][profile]
-        # print progress
-        print(f'\tRunning profile: {profile}')
-        # update the apero profile
-        params = update_apero_profile(pdict)
-        # get raw directory path from profile
-        inpath = pdict['general']['raw dir']
-        # get the raw directory from params
-        outpath = params['DRS_DATA_RAW']
-        # remove any broken symlinks
-        remove_broken_symlinks(outpath)
-        # get obs dirs
-        obs_dirs = settings['OBS_DIRS']
-        # deal with getting all obs_dirs
-        if obs_dirs == '*':
-            obs_dirs = get_obs_dirs(pdict)
-        # loop around obs dirs
-        for obs_dir in obs_dirs:
-            # get the full path
-            full_inpath = os.path.join(inpath, obs_dir)
-            full_outpath = os.path.join(outpath, obs_dir)
-
-            # deal with test mode
-            if settings['TEST']:
-                print(f'\t\tSkipping symlink {full_outpath} [TEST]')
-                continue
-            # check if rawlink exists
-            if not os.path.exists(full_inpath):
-                print(f'\t\tSkipping {full_inpath} [does not exist]')
-                continue
-
-            # print symlink creation
-            print(f'\t\tCreating symlink {full_outpath}')
-            # check if the symlink exists
-            if os.path.islink(full_outpath):
-                continue
-            # check if directory is a real link
-            if os.path.exists(full_outpath):
-                continue
-
-            # make the symlink
-            os.symlink(full_inpath, full_outpath)
-
-
-def get_obs_dirs(profile: Dict[str, Any]) -> List[str]:
-    """
-    Get the observation directories from the raw directory
-    This is used when no obs_dirs are specified in the yaml file
-
-    :param profile: dict, the profile dictionary from the yaml file
-
-    :return: list of observation directories
-    """
-    # get raw directory path from profile
-    path = profile['general']['raw dir']
-    # set start date
-    start_date = str(profile['general']['start date'])
-    # store obs dirs
-    obs_dirs = []
-    # convert start date to a astropy time
-    start = Time(start_date)
-    end = Time.now()
-    # get time delta
-    delta = (end - start).to(uu.day).round()
-    # get a list of days
-    days = start + np.arange(delta.value) * uu.day
-    # loop around days and check for directory in path
-    for day in days:
-        # get the directory name
-        obs_dir = day.iso.split(' ')[0]
-        # check if the directory exists
-        if os.path.exists(os.path.join(path, obs_dir)):
-            obs_dirs.append(obs_dir)
-    # return the obs dirs
-    return obs_dirs
 
 
 def run_processing(settings: Dict[str, Any]):
@@ -469,40 +363,6 @@ def run_processing(settings: Dict[str, Any]):
         trigger_settings['LOG'][profile].write(APERO_END)
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
-
-
-def apero_reset(params: Any, pdict: Dict[str, Any]):
-    """
-    Reset the processing folders
-
-    :param params: ParamDict, parmaeters dictionary of constants for this
-                   profile
-    :param pdict: Dict, the yaml dictionary for this profile
-
-    :return: None, removes files and updates database
-    """
-    # import the drs_reset module
-    from apero.tools.module.setup import drs_reset
-    from apero.tools.recipes.bin import apero_reset
-    # get the reset directories
-    reset_dirs = pdict['processing']['reset']
-    # define the function to use for each type (via a dictionary)
-    reset_funcs = dict()
-    reset_funcs['tmp'] = drs_reset.reset_tmp_folders
-    reset_funcs['red'] = drs_reset.reset_reduced_folders
-    reset_funcs['out'] = drs_reset.reset_out_folders
-    # deal with None in reset dirs
-    if 'None' in reset_dirs:
-        return
-    # print progress
-    print('\t\tResetting processing')
-    # deal with all in reset dirs
-    if 'all' in reset_dirs:
-        apero_reset.main(warn=False)
-    # loop around directories to be reset
-    for reset_dir in reset_dirs:
-        if reset_dir in reset_funcs:
-            reset_funcs[reset_dir](params)
 
 
 def run_apero_get(settings: Dict[str, Any]):
@@ -615,17 +475,6 @@ def run_apero_get(settings: Dict[str, Any]):
                        group_server=comm_gserver, out_prefix=comm_prefix,
                        out_suffix=comm_suffix)
 
-
-def reset_directory(directory: str, reset: bool = False):
-    # if directory does not exist create it
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        return
-    # if we are here and want to reset we should remove the directory tree
-    if reset:
-        shutil.rmtree(directory)
-        if not os.path.exists(directory):
-            os.makedirs(directory)
 
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):
@@ -848,6 +697,229 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     os.chdir(cwd)
 
 
+def run_comm_visualization(settings: Dict[str, Any]):
+    # loop around profiles
+    for profile in settings['PROFILES']:
+        # print progress
+        print(f'\tRunning profile: {profile}')
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
+        # get the comm directory out path
+        comm_path = pdict['get-comm']['out path']
+        # ---------------------------------------------------------------------
+        # need to import apero_get (for this profile)
+        from apero.tools.recipes.bin import apero_visu
+        # run the visualization tool for the comm directory
+        apero_visu.main(mode='info', path=comm_path)
+
+
+def run_push_to_datacenter(settings: Dict[str, Any]):
+    # loop around profiles
+    for profile in settings['PROFILES']:
+        # print progress
+        print(f'\tRunning profile: {profile}')
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
+        # get the comm directory out path
+        comm_path = pdict['get-comm']['out path']
+        # ---------------------------------------------------------------------
+        # push comm_path to data center
+        # TODO: Implement this function
+        print(f'Pushing {comm_path} to data center... [NOT IMPLEMENTED]')
+
+
+# =============================================================================
+# Define worker functionality
+# =============================================================================
+def read_yaml(yaml_filename: str, settings: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Read the yaml file and add to settings
+
+    :param yaml_filename: str, yaml file name
+    :param settings: dict, settings dictionary
+
+    :return: dict, updated settings dictionary
+    """
+    # read the yaml file
+    with open(yaml_filename, 'r') as f:
+        yaml_data = yaml.load(f, Loader=yaml.FullLoader)
+    # add a profiles sub-dictionary
+    settings['PROFILES'] = dict()
+    # loop around yaml data
+    for key, value in yaml_data.items():
+        # if key is in settings
+        settings['PROFILES'][key] = value
+    # return settings
+    return settings
+
+
+def print_process(msg: str):
+    """
+    print a headering message
+    :param msg: str, print message
+
+    :return: None, prints a message
+    """
+    print('=' * 50)
+    print(msg)
+    print('=' * 50)
+
+
+def update_apero_profile(profile: dict):
+    """
+    Update the apero profile with the correct paths
+    :param profile: dict, the profile to update
+    :return:
+    """
+    from apero.base import base
+    from apero.core import constants
+    from apero.core.constants import param_functions
+    # use os to add DRS_UCONFIG to the path
+    os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
+    # reload DPARAMS and IPARAMS
+    base.DPARAMS = base.load_database_yaml()
+    base.IPARAMS = base.load_install_yaml()
+    # ------------------------------------------------------------------
+    # invalidate cache
+    param_functions.CONFIG_CACHE = dict()
+    # make sure parameters is reloaded (and not cached)
+    return constants.load(cache=False)
+
+
+def make_sym_links(settings: Dict[str, Any]):
+    """
+    Make the symbolic links for the raw data
+
+    :param settings: dict, settings dictionary
+
+    :return: None, creates symbolic links
+    """
+    # loop around profiles
+    for profile in settings['PROFILES']:
+        # get the profile dictionary
+        pdict = settings['PROFILES'][profile]
+        # print progress
+        print(f'\tRunning profile: {profile}')
+        # update the apero profile
+        params = update_apero_profile(pdict)
+        # get raw directory path from profile
+        inpath = pdict['general']['raw dir']
+        # get the raw directory from params
+        outpath = params['DRS_DATA_RAW']
+        # remove any broken symlinks
+        remove_broken_symlinks(outpath)
+        # get obs dirs
+        obs_dirs = settings['OBS_DIRS']
+        # deal with getting all obs_dirs
+        if obs_dirs == '*':
+            obs_dirs = get_obs_dirs(pdict)
+        # loop around obs dirs
+        for obs_dir in obs_dirs:
+            # get the full path
+            full_inpath = os.path.join(inpath, obs_dir)
+            full_outpath = os.path.join(outpath, obs_dir)
+
+            # deal with test mode
+            if settings['TEST']:
+                print(f'\t\tSkipping symlink {full_outpath} [TEST]')
+                continue
+            # check if rawlink exists
+            if not os.path.exists(full_inpath):
+                print(f'\t\tSkipping {full_inpath} [does not exist]')
+                continue
+
+            # print symlink creation
+            print(f'\t\tCreating symlink {full_outpath}')
+            # check if the symlink exists
+            if os.path.islink(full_outpath):
+                continue
+            # check if directory is a real link
+            if os.path.exists(full_outpath):
+                continue
+
+            # make the symlink
+            os.symlink(full_inpath, full_outpath)
+
+
+def get_obs_dirs(profile: Dict[str, Any]) -> List[str]:
+    """
+    Get the observation directories from the raw directory
+    This is used when no obs_dirs are specified in the yaml file
+
+    :param profile: dict, the profile dictionary from the yaml file
+
+    :return: list of observation directories
+    """
+    # get raw directory path from profile
+    path = profile['general']['raw dir']
+    # set start date
+    start_date = str(profile['general']['start date'])
+    # store obs dirs
+    obs_dirs = []
+    # convert start date to a astropy time
+    start = Time(start_date)
+    end = Time.now()
+    # get time delta
+    delta = (end - start).to(uu.day).round()
+    # get a list of days
+    days = start + np.arange(delta.value) * uu.day
+    # loop around days and check for directory in path
+    for day in days:
+        # get the directory name
+        obs_dir = day.iso.split(' ')[0]
+        # check if the directory exists
+        if os.path.exists(os.path.join(path, obs_dir)):
+            obs_dirs.append(obs_dir)
+    # return the obs dirs
+    return obs_dirs
+
+
+def apero_reset(params: Any, pdict: Dict[str, Any]):
+    """
+    Reset the processing folders
+
+    :param params: ParamDict, parmaeters dictionary of constants for this
+                   profile
+    :param pdict: Dict, the yaml dictionary for this profile
+
+    :return: None, removes files and updates database
+    """
+    # import the drs_reset module
+    from apero.tools.module.setup import drs_reset
+    from apero.tools.recipes.bin import apero_reset
+    # get the reset directories
+    reset_dirs = pdict['processing']['reset']
+    # define the function to use for each type (via a dictionary)
+    reset_funcs = dict()
+    reset_funcs['tmp'] = drs_reset.reset_tmp_folders
+    reset_funcs['red'] = drs_reset.reset_reduced_folders
+    reset_funcs['out'] = drs_reset.reset_out_folders
+    # deal with None in reset dirs
+    if 'None' in reset_dirs:
+        return
+    # print progress
+    print('\t\tResetting processing')
+    # deal with all in reset dirs
+    if 'all' in reset_dirs:
+        apero_reset.main(warn=False)
+    # loop around directories to be reset
+    for reset_dir in reset_dirs:
+        if reset_dir in reset_funcs:
+            reset_funcs[reset_dir](params)
+
+
+def reset_directory(directory: str, reset: bool = False):
+    # if directory does not exist create it
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+        return
+    # if we are here and want to reset we should remove the directory tree
+    if reset:
+        shutil.rmtree(directory)
+        if not os.path.exists(directory):
+            os.makedirs(directory)
+
+
 def read_google_sheet_csv(sheet_id: str, gid: str) -> Table:
     """
     This function reads a Google sheet and returns the content as an
@@ -1001,7 +1073,6 @@ def remove_broken_symlinks(path: str):
     print_process(wmsg.format(*wargs))
 
 
-
 # =============================================================================
 # Start of code
 # =============================================================================
@@ -1046,7 +1117,7 @@ if __name__ == "__main__":
     if trigger_settings['APERO_GET']:
         print_process('Running apero get')
         run_apero_get(trigger_settings)
-        # deal with only running processing
+        # deal with only running apero-get
         if trigger_settings['ONLY_APEROGET']:
             print_process('Only running apero get')
             sys.exit(0)
@@ -1056,9 +1127,29 @@ if __name__ == "__main__":
         print_process('Running apero reduction interface')
         # run apero reduction interface
         run_apero_reduction_interface(trigger_settings)
-        # deal with only running processing
+        # deal with only running ARI
         if trigger_settings['ONLY_REDUCTIONINTERFACE']:
             print_process('Only running ARI')
+            sys.exit(0)
+    # ----------------------------------------------------------------------
+    # run the visualization on comm directory
+    if trigger_settings['COMM_VISUALIZATION']:
+        print_process('Running comm directory visualization')
+        # run comm visualization
+        run_comm_visualization(trigger_settings)
+        # deal with only running visualization
+        if trigger_settings['ONLY_COMMVISU']:
+            print_process('Only running Comm Visualization')
+            sys.exit(0)
+    # ----------------------------------------------------------------------
+    # push all data to data center
+    if trigger_settings['PUSH_TO_DATACENTER']:
+        print_process('Pushing data to data center')
+        # run data center push
+        run_push_to_datacenter(trigger_settings)
+        # deal with only running push to data center
+        if trigger_settings['ONLY_PUSHTODATACENTER']:
+            print_process('Only running Push to Data Center')
             sys.exit(0)
     # ----------------------------------------------------------------------
     # log that we have finished
