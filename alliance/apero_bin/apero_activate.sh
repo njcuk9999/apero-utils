@@ -193,7 +193,7 @@ if [ -z "$PROFILE" ]; then
     echo "ERROR: No profile selected for instrument '$INSTRUMENT'."
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
-        local profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
+        profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
         if [[ -n "$profiles" ]]; then
             echo "$profiles" | sed 's/^/  - /'
         else
@@ -217,7 +217,7 @@ if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     echo "ERROR: Profile '$PROFILE' not found for instrument '$INSTRUMENT'."
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
-        local profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
+        profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
         if [[ -n "$profiles" ]]; then
             echo "$profiles" | sed 's/^/  - /'
         else
