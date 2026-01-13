@@ -706,11 +706,13 @@ def run_comm_visualization(settings: Dict[str, Any]):
         pdict = settings['PROFILES'][profile]
         # get the comm directory out path
         comm_path = pdict['get-comm']['out path']
+        # get the run ids path (inside the comm path)
+        runid_dir = os.path.join(comm_path, 'runids')
         # ---------------------------------------------------------------------
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_visu
         # run the visualization tool for the comm directory
-        apero_visu.main(mode='info', path=comm_path)
+        apero_visu.main(mode='info', path=runid_dir)
 
 
 def run_push_to_datacenter(settings: Dict[str, Any]):
@@ -1028,14 +1030,14 @@ def get_earliest_raw_file(apero_params, obsdirs):
              condition += '({0})'.format(' OR '.join(sub_conditions))
     # -------------------------------------------------------------------------
     # get times on these specific nights
-    last_modified = indexdbm.get_entries('LAST_MODIFIED', condition=condition)
+    last_modified = indexdbm.get_entries('KW_MID_OBS_TIME', condition=condition)
     # deal with no files found
     if len(last_modified) == 0:
         return []
     # find the earliest time in these
-    earliest_time = Time(np.min(last_modified), format='unix')
-    # take 1 hour before this (just to be safe)
-    earliest_time -= TimeDelta(1 * uu.hour)
+    earliest_time = Time(np.min(last_modified), format='mjd')
+    # take 6 hours before this (just to be safe)
+    earliest_time -= TimeDelta(6 * uu.hour)
     # return this time as an iso time
     return earliest_time.iso
 
