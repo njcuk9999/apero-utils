@@ -136,6 +136,7 @@ PROFILE="$2"
 if [ -z "$INSTRUMENT" ]; then
     # Print a short message instead of the full help menu to avoid noisy output
     echo "ERROR: No instrument selected."
+    echo ""
     echo "Available instruments:"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
         cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
@@ -156,6 +157,7 @@ fi
 # 1. Check if instrument actually exists in system instrument file
 if ! grep -q "^$INSTRUMENT=" "$INSTRUMENT_FILE"; then
     echo "ERROR: Unknown instrument '$INSTRUMENT'"
+    echo ""
     echo "Available instruments:"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
         cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
@@ -191,6 +193,7 @@ PROFILE_LIST=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" \
 # -----------------------------------------------------------------------------
 if [ -z "$PROFILE" ]; then
     echo "ERROR: No profile selected for instrument '$INSTRUMENT'."
+    echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
         profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
@@ -215,6 +218,7 @@ fi
 # -----------------------------------------------------------------------------
 if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     echo "ERROR: Profile '$PROFILE' not found for instrument '$INSTRUMENT'."
+    echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
         profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
