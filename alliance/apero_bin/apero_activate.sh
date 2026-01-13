@@ -136,7 +136,12 @@ PROFILE="$2"
 if [ -z "$INSTRUMENT" ]; then
     # Print a short message instead of the full help menu to avoid noisy output
     echo "ERROR: No instrument selected."
-    echo "Use: source $0 <instrument> <profile>  or run 'source $0 -h' for full help."
+    echo "Available instruments:"
+    if [[ -f "$INSTRUMENT_FILE" ]]; then
+        cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
+    else
+        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+    fi
     return 1
 fi
 
@@ -147,7 +152,12 @@ fi
 # 1. Check if instrument actually exists in system instrument file
 if ! grep -q "^$INSTRUMENT=" "$INSTRUMENT_FILE"; then
     echo "ERROR: Unknown instrument '$INSTRUMENT'"
-    echo "Use: -h or --help for more details."
+    echo "Available instruments:"
+    if [[ -f "$INSTRUMENT_FILE" ]]; then
+        cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
+    else
+        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+    fi
     return 1
 fi
 # 2. Check if user is authorized to use the selected instrument
