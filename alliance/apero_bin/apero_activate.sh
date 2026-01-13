@@ -142,6 +142,10 @@ if [ -z "$INSTRUMENT" ]; then
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
+
+    echo ""
+    echo "Use: -h or --help for more details."
+    echo ""
     return 1
 fi
 
@@ -158,6 +162,10 @@ if ! grep -q "^$INSTRUMENT=" "$INSTRUMENT_FILE"; then
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
+
+    echo ""
+    echo "Use: -h or --help for more details."
+    echo ""
     return 1
 fi
 # 2. Check if user is authorized to use the selected instrument
@@ -194,6 +202,10 @@ if [ -z "$PROFILE" ]; then
     else
         echo "  (Profile file not found: $PROFILE_FILE)"
     fi
+
+    echo ""
+    echo "Use: -h or --help for more details."
+    echo ""
     return 1
 fi
 
@@ -214,6 +226,10 @@ if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     else
         echo "  (Profile file not found: $PROFILE_FILE)"
     fi
+
+    echo ""
+    echo "Use: -h or --help for more details."
+    echo ""
     return 1
 fi
 
