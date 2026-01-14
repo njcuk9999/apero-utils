@@ -11,6 +11,8 @@ source "$SCRIPT_DIR/apero_core.sh"
 # Instruments configuration (bash-friendly .conf)
 INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.conf"
 
+# DEBUG: set DEBUG=1 in environment to see parsing debug
+
 # -----------------------------------------------------------------------------
 # Function: Show help message
 # -----------------------------------------------------------------------------
@@ -24,16 +26,14 @@ show_help() {
     echo ""
     echo "Usage:"
     echo "  ./apero_scripts_update.sh"
+    echo "  DEBUG=1 ./apero_scripts_update.sh    # show parsing debug"
     echo ""
     echo "Notes:"
-    echo "  - Ensure APERO_PROJECT_ID is set correctly."
+    echo "  - Ensure APERO_PROJECT_ID is set correctly (apero_core.sh)."
     echo "  - The config format is bash-friendly, sections [instrument],"
     echo "    with install_script and multiple repo lines:"
     echo "      repo=dir_name branch=branch_name"
     echo "  - Requires git to be installed and accessible in PATH."
-    echo ""
-    echo "Example:"
-    echo "  ./apero_scripts_update.sh"
     echo ""
 }
 
@@ -66,6 +66,13 @@ CURRENT_INSTRUMENT=""
 INSTALL_SCRIPT=""
 REPOS=()
 
+# Helper: debug print if DEBUG=1
+dbg() {
+    if [[ "${DEBUG:-0}" -eq 1 ]]; then
+        echo "DEBUG: $*"
+    fi
+}
+
 process_instrument() {
     local instrument="$1"
     local install_script="$2"
@@ -76,11 +83,38 @@ process_instrument() {
         return
     fi
 
+    echo "----------------------------"
     echo "Instrument: $instrument"
     echo "Install script: $install_script"
 
     local INSTRUMENT_BIN="${instrument}_bin"
-    local SCRIPT_PATH="/project/$APERO_PROJECT_ID/apero/${INSTRUMENT_BIN}/scripts"
+    # Prefer APERO_PATH (set by apero_core.sh). Fallback to constructed /project path
+    local BASE_PATH="${APERO_PATH:-/project/$APERO_PROJECT_ID/apero}"
+    local SCRIPT_PATH="${BASE_PATH}/${INSTRUMENT_BIN}/scripts"
+
+    # If scripts path doesn't exist, try the bin root as fallback
+    if [[ ! -d "$SCRIPT_PATH" && -d "${BASE_PATH}/${INSTRUMENT_BIN}" ]]; then
+        dbg "note: scripts subdir not found; using ${BASE_PATH}/${INSTRUMENT_BIN} as script path"
+        SCRIPT_PATH="${BASE_PATH}/${INSTRUMENT_BIN}"
+    fi
+
+    # If still not found, try to discover candidate directories under BASE_PATH
+    if [[ ! -d "$SCRIPT_PATH" ]]; then
+        dbg "attempting to discover instrument directory under $BASE_PATH"
+        # look for directories matching instrument name, prefer ones ending with _bin
+        candidate=$(find "$BASE_PATH" -maxdepth 3 -type d -iname "*${instrument}*bin" -print -quit 2>/dev/null || true)
+        if [[ -z "$candidate" ]]; then
+            candidate=$(find "$BASE_PATH" -maxdepth 4 -type d -iname "*${instrument}*" -print -quit 2>/dev/null || true)
+        fi
+        if [[ -n "$candidate" ]]; then
+            dbg "Found candidate instrument dir: $candidate"
+            if [[ -d "$candidate/scripts" ]]; then
+                SCRIPT_PATH="$candidate/scripts"
+            else
+                SCRIPT_PATH="$candidate"
+            fi
+        fi
+    fi
 
     if [[ ! -d "$SCRIPT_PATH" ]]; then
         echo "✗ Scripts path does not exist: $SCRIPT_PATH"
@@ -95,6 +129,12 @@ process_instrument() {
         return
     }
 
+    if [[ ${#repos[@]} -eq 0 ]]; then
+        echo "  (No repos configured for instrument: $instrument)"
+        echo
+        return
+    fi
+
     for entry in "${repos[@]}"; do
         # entry format: dir_name|branch_name
         local repo_dir="${entry%%|*}"
@@ -108,11 +148,11 @@ process_instrument() {
         fi
 
         echo "    → Fetching..."
-        (cd "$REPO_PATH" && git fetch) || { echo "    ✗ git fetch failed"; continue; }
+        (cd "$REPO_PATH" && git fetch --all --prune) || { echo "    ✗ git fetch failed"; continue; }
         echo "    → Checking out branch: $branch_name"
         (cd "$REPO_PATH" && git checkout "$branch_name") || { echo "    ✗ git checkout failed"; continue; }
         echo "    → Pulling..."
-        (cd "$REPO_PATH" && git pull) || { echo "    ✗ git pull failed"; continue; }
+        (cd "$REPO_PATH" && git pull --ff-only) || { echo "    ✗ git pull failed"; continue; }
         echo "    ✓ Updated $repo_dir"
     done
 
@@ -121,8 +161,9 @@ process_instrument() {
 
 # Parse the INSTRUMENT_FILE
 while IFS= read -r line || [ -n "$line" ]; do
-    # trim whitespace
-    line="$(echo "$line" | sed 's/^\s\+//;s/\s\+$//')"
+    # trim whitespace (POSIX safe)
+    line="$(printf '%s' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
+    dbg "parsed line='${line}'"
     # skip comments and empty lines
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -135,8 +176,6 @@ while IFS= read -r line || [ -n "$line" ]; do
         CURRENT_INSTRUMENT="${BASH_REMATCH[1]}"
         INSTALL_SCRIPT=""
         REPOS=()
-        echo "----------------------------"
-        echo "Section: $CURRENT_INSTRUMENT"
         continue
     fi
 
@@ -145,9 +184,18 @@ while IFS= read -r line || [ -n "$line" ]; do
         continue
     fi
 
-    if [[ "$line" =~ ^repo=([^[:space:]]+)\s+branch=([^[:space:]]+)$ ]]; then
-        repo_dir="${BASH_REMATCH[1]}"
-        branch_name="${BASH_REMATCH[2]}"
+    # robust parsing for repo lines: repo=<name> [other tokens] branch=<branch>
+    if [[ "$line" == repo=* ]]; then
+        rest="${line#repo=}"
+        # first token is repo dir
+        repo_dir="$(printf '%s' "$rest" | awk '{print $1}')"
+        # extract branch=NAME if present
+        branch_name="$(printf '%s' "$rest" | sed -n 's/.*branch=\([^[:space:]]*\).*/\1/p')"
+        # default branch if none provided
+        if [[ -z "$branch_name" ]]; then
+            branch_name="master"
+        fi
+        dbg "Parsed repo: $repo_dir  branch: $branch_name"
         REPOS+=("${repo_dir}|${branch_name}")
         continue
     fi
