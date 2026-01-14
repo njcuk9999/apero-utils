@@ -135,6 +135,9 @@ fi
 DOCS_SRC="$(dirname "$LAST_VALID_GIT_PATH")/../docs"
 DOCS_DEST_DIR="$APERO_PATH/docs"
 
+echo "=================================================="
+echo "Updating apero_bin and docs"
+echo "=================================================="
 echo "Last valid GIT_PATH: $LAST_VALID_GIT_PATH"
 echo "Copying updated files back to APERO_BIN_PATH..."
 
