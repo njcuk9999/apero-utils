@@ -652,16 +652,31 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
         print(bscript)
         print('-' * 50)
         return True
-    # run using a subprocess command
-    proc = subprocess.run(
-        ["sbatch"],
-        input=bscript,
-        text=True,
-        capture_output=True
-    )
-    # ---------------------------------------------------------------------
-    print("Submitted:", proc.stdout)
-    # ---------------------------------------------------------------------
+
+    else:
+        # get user to confirm batch submission
+        msg = f'About to submit batch job {job_name}.'
+        msg += '\tBatch script would be:'
+        msg += '-' * 50
+        msg += bscript
+        msg += '-' * 50
+        msg += 'Submit batch job? [Y]es/[N]o: '
+        uinput = input(msg)
+        if 'Y' in uinput.upper():
+            # run using a subprocess command
+            proc = subprocess.run(
+                ["sbatch"],
+                input=bscript,
+                text=True,
+                capture_output=True
+            )
+        # -----------------------------------------------------------------
+            print("Submitted:", proc.stdout)
+            print('\n Please check the queue with >> squeue -u $USER')
+        else:
+            print('Batch job not submitted by user. Exiting.')
+            return True
+    # -------------------------------------------------------------------------
     return True
 
 
