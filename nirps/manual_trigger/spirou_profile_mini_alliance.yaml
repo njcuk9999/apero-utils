@@ -16,7 +16,7 @@ spirou_mini2_07295:
         lbl path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/lbl
         # start date if not using --obsdir argument
         start date: 2018-01-01
-  # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
+    # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
     batch:
       # whether to run in batch mode
       run batch: True

@@ -283,6 +283,26 @@ def get_settings():
         for profile in settings['PROFILES']:
             settings['PROFILES'][profile]['processing']['run file'] = args.run
     # ----------------------------------------------------------------------
+    # Splash screen
+    print('*' * 50)
+    print('* APERO MANUAL TRIGGER')
+    print('*' * 50)
+    print(f'Start Time: {START_TIME.fits}')
+    print(f'Yaml file: {args.profile}')
+    print(f'Profiles: {list(settings["PROFILES"].keys())}')
+    print(f'Observation Directories: {settings["OBS_DIRS"]}')
+    print(f'Test Mode: {settings["TEST"]}')
+    print(f'Batch Mode: {settings["BATCH"]}')
+    print('*' * 50)
+    print('Running with settings:')
+    print(f'  Make Links: {settings["MAKELINKS"]}')
+    print(f'  APERO Processing: {settings["APERO_PROCESSING"]}')
+    print(f'  APERO Get: {settings["APERO_GET"]}')
+    print(f'  Reduction Interface: {settings["REDUCTION_INTERFACE"]}')
+    print(f'  Comm Visualization: {settings["COMM_VISUALIZATION"]}')
+    print(f'  Push to Datacenter: {settings["PUSH_TO_DATACENTER"]}')
+    print('*' * 50)
+    # ----------------------------------------------------------------------
     # return the settings
     return settings
 
@@ -546,11 +566,11 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
         wargs = [profile]
         print(wmsg.format(*wargs))
         return False
+    # ---------------------------------------------------------------------
     # deal with first profile setting the sbatch parameters
     bparams = ['time', 'nodes', 'cpus per task', 'mem', 'account', 'log path']
     bvalues = ['1:00:00', 1, 1, 0, None,
                os.path.expanduser('~/.apero/batchlogs/')]
-
     # store values across all profiles
     all_values = dict()
     # load the values
@@ -559,12 +579,6 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
             value = pdict['batch'].get(bparam, bvalue)
             if value is not None:
                 all_values[bparam] = value
-    # ---------------------------------------------------------------------
-    # deal with run batch set to False
-    if not all_values.get('run batch', False):
-        wmsg = 'Not running in batch mode as yaml "batch.run batch" is False'
-        print(wmsg)
-        return False
     # ---------------------------------------------------------------------
     # construct out and error log paths
     script_path = os.path.join(all_values['log path'], 'scripts')
