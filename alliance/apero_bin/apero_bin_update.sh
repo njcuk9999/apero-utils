@@ -105,8 +105,6 @@ while IFS= read -r line || [ -n "$line" ]; do
         fi
         CURRENT_INSTRUMENT="${BASH_REMATCH[1]}"
         INSTALL_SCRIPT=""
-        echo "----------------------------"
-        echo "Section: $CURRENT_INSTRUMENT"
         continue
     fi
 
@@ -164,4 +162,6 @@ else
     echo "Note: docs not found at $DOCS_SRC - skipping docs copy."
 fi
 
+echo "=================================================="
 echo "Sync complete."
+echo "=================================================="

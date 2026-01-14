@@ -203,5 +203,6 @@ if [[ -n "$CURRENT_INSTRUMENT" ]]; then
     process_instrument "$CURRENT_INSTRUMENT" "$INSTALL_SCRIPT" "${REPOS[@]}"
 fi
 
+echo "=================================================="
 echo "Sync complete."
-
+echo "=================================================="
