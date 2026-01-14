@@ -87,7 +87,7 @@ spirou_mini2_07295:
     # apero_get settings for comm directory
     get-comm:
         # path to copy everything to
-        out path: /cosmos99/spirou/apero-data/spirou_offline/comm/spirou_mini2_07295/
+        out path: /project/6102120/apero/spirou_data/comm/spirou_mini2_07295
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - DRS_POST_E
@@ -95,6 +95,12 @@ spirou_mini2_07295:
             - DRS_POST_T
             - DRS_POST_V
             - DRS_POST_P
+            - LBL_FITS
+            - LBL_RDB_FITS
+            - LBL_RDB
+            - LBL_RDB2
+            - LBL_RDB_DRIFT
+            - LBL_RDB2_DRIFT
         # input dpr types
         science dpr types:
             - POLAR_FP
