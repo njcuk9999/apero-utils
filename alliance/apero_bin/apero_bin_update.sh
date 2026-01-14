@@ -131,6 +131,10 @@ if [[ -z "$LAST_VALID_GIT_PATH" ]]; then
     exit 1
 fi
 
+# Derive docs source relative to the last valid git path (works per instrument)
+DOCS_SRC="$(cd "$(dirname "$LAST_VALID_GIT_PATH")/.." && pwd)/docs"
+DOCS_DEST_DIR="$APERO_PATH/docs"
+
 echo "Last valid GIT_PATH: $LAST_VALID_GIT_PATH"
 echo "Copying updated files back to APERO_BIN_PATH..."
 
@@ -145,10 +149,7 @@ chmod 640 "$APERO_BIN_PATH"/*.conf "$APERO_BIN_PATH"/*.ini 2>/dev/null || true
 # -----------------------------------------------------------------------------
 # Copy docs from apero-utils/alliance/docs to $APERO_PATH/docs/
 # -----------------------------------------------------------------------------
-# Source docs path (assume apero-utils is under $APERO_PATH)
-DOCS_SRC="/project/$APERO_PROJECT_ID/apero/${INSTRUMENT_BIN}/scripts/apero-utils/alliance/docs"
-DOCS_DEST_DIR="$APERO_PATH/docs"
-
+# DOCS_SRC derived above from LAST_VALID_GIT_PATH
 if [[ -d "$DOCS_SRC" ]]; then
     echo "Copying docs from $DOCS_SRC to $DOCS_DEST_DIR"
     mkdir -p "$DOCS_DEST_DIR"
