@@ -696,6 +696,12 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
             print('Batch job not submitted by user. Exiting.')
             return True
     # -------------------------------------------------------------------------
+    # print successful submission
+    print('Submission successful')
+    # print where the log and errors will be saved
+    print(f'Batch logs will be saved to: {log_path}')
+    print(f'Batch errors will be saved to: {err_path}')
+    # -------------------------------------------------------------------------
     return True
 
 
