@@ -568,9 +568,10 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
         return False
     # ---------------------------------------------------------------------
     # deal with first profile setting the sbatch parameters
-    bparams = ['time', 'nodes', 'cpus per task', 'mem', 'account', 'log path']
+    bparams = ['time', 'nodes', 'cpus per task', 'mem', 'account', 'log path',
+               'apero bin path']
     bvalues = ['1:00:00', 1, 1, 0, None,
-               os.path.expanduser('~/.apero/batchlogs/')]
+               os.path.expanduser('~/.apero/batchlogs/'), None]
     # store values across all profiles
     all_values = dict()
     # load the values
@@ -584,6 +585,7 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     script_path = os.path.join(all_values['log path'], 'scripts')
     log_path = os.path.join(all_values['log path'], 'logs')
     err_path = os.path.join(all_values['log path'], 'errors')
+    apero_bin_path = all_values.get('apero bin path', None)
     # make sure this path exists
     for _path in [script_path, log_path, err_path]:
         if not os.path.exists(_path):
@@ -598,7 +600,13 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     # Construct the two commands we need to run
     # ---------------------------------------------------------------------
     # Command 1 = apero-activate command
-    command1 = f'apero-activate {instrument} {activate_profile}'
+    if apero_bin_path is None:
+        command1 = ('echo "apero-activate" not used because APERO_BIN_PATH '
+                    'not set in batch.apero bin path')
+    else:
+        # get full path to apero-activate
+        program1 = os.path.join(str(apero_bin_path), 'apero-activate')
+        command1 = f'{program1} {instrument} {activate_profile}'
     # ---------------------------------------------------------------------
     # Command 2 = call to manual trigger
     # we need to reconstruct the command the user ran

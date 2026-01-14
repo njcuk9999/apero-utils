@@ -32,6 +32,8 @@ spirou_mini2_07295:
       account: rrg-rdoyon
       # log path
       log path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/batch
+      # apero bin path
+      apero bin path: /project/6102120/apero/apero_bin
     # apero_processing settings
     processing:
         # apero processing run.ini file
