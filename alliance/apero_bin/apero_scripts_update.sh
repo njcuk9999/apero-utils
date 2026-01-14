@@ -83,9 +83,9 @@ process_instrument() {
         return
     fi
 
-    echo "----------------------------"
+    echo "=================================================="
     echo "Instrument: $instrument"
-    echo "Install script: $install_script"
+    echo "=================================================="
 
     local INSTRUMENT_BIN="${instrument}_bin"
     # Prefer APERO_PATH (set by apero_core.sh). Fallback to constructed /project path
@@ -122,7 +122,9 @@ process_instrument() {
         return
     fi
 
-    echo "→ Entering scripts path: $SCRIPT_PATH"
+    echo "Scripts path: $SCRIPT_PATH"
+    echo
+
     cd "$SCRIPT_PATH" || {
         echo "ERROR: Cannot cd to $SCRIPT_PATH"
         echo
@@ -141,19 +143,27 @@ process_instrument() {
         local branch_name="${entry##*|}"
         local REPO_PATH="$SCRIPT_PATH/$repo_dir"
 
-        echo "  Repo: $repo_dir (branch: $branch_name)"
+        echo "--------------------------------------------------"
+        echo "Repo: $repo_dir (branch: $branch_name)"
+        echo "--------------------------------------------------"
+
         if [[ ! -d "$REPO_PATH/.git" ]]; then
-            echo "    ✗ Not a git repo: $REPO_PATH"
+            echo "✗ Not a git repo: $REPO_PATH"
+            echo
             continue
         fi
 
-        echo "    → Fetching..."
-        (cd "$REPO_PATH" && git fetch --all --prune) || { echo "    ✗ git fetch failed"; continue; }
-        echo "    → Checking out branch: $branch_name"
-        (cd "$REPO_PATH" && git checkout "$branch_name") || { echo "    ✗ git checkout failed"; continue; }
-        echo "    → Pulling..."
-        (cd "$REPO_PATH" && git pull --ff-only) || { echo "    ✗ git pull failed"; continue; }
-        echo "    ✓ Updated $repo_dir"
+        echo "Fetching..."
+        (cd "$REPO_PATH" && git fetch --all --prune) || { echo "✗ git fetch failed"; echo; continue; }
+
+        echo "Checking out branch: $branch_name"
+        (cd "$REPO_PATH" && git checkout "$branch_name") || { echo "✗ git checkout failed"; echo; continue; }
+
+        echo "Pulling..."
+        (cd "$REPO_PATH" && git pull --ff-only) || { echo "✗ git pull failed"; echo; continue; }
+
+        echo "✓ Updated $repo_dir"
+        echo
     done
 
     echo

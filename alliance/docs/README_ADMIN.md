@@ -1,10 +1,23 @@
 # This is a page to remember how to do admin stuff
 
+## How to update update apero and apero-utils
 
+Assuming you have installed apero (with apero_install.sh)
 
+type:
+```
+goapero
+cat apero_instruments.conf
+```
 
+And check all instruments and repos have their correct branches.
 
-## How to update alliance apero_bin directory
+Then to update apero and apero-utils type:
+```
+./apero_bin_update.sh
+```
+
+## How to update alliance apero_bin directory and docs
 
 Assuming you have installed apero (with apero_install.sh)
 
