@@ -612,7 +612,8 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     command2 = f'{__file__} ' + ' '.join(args)
     # ---------------------------------------------------------------------
     # construct the batch script
-    bscript = '!/bin/bash\n'
+    # Use a valid shebang
+    bscript = '#!/bin/bash\n'
     # add max duration time
     bscript += f'#SBATCH --time={all_values["time"]}\n'
     # add number of nodes
@@ -656,23 +657,37 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     else:
         # get user to confirm batch submission
         msg = f'About to submit batch job {job_name}.'
-        msg += '\tBatch script would be:'
-        msg += '-' * 50
+        msg += '\n\n\tBatch script would be:'
+        msg += '-' * 50 + '\n'
         msg += bscript
-        msg += '-' * 50
+        msg += '-' * 50 + '\n'
         msg += 'Submit batch job? [Y]es/[N]o: '
         uinput = input(msg)
         if 'Y' in uinput.upper():
-            # run using a subprocess command
-            proc = subprocess.run(
-                ["sbatch"],
-                input=bscript,
-                text=True,
-                capture_output=True
-            )
-        # -----------------------------------------------------------------
-            print("Submitted:", proc.stdout)
-            print('\n Please check the queue with >> squeue -u $USER')
+            # run using a subprocess command; pass '-' so sbatch reads from stdin
+            try:
+                proc = subprocess.run(
+                    ["sbatch", "-"],
+                    input=bscript,
+                    text=True,
+                    capture_output=True,
+                    check=False
+                )
+            except FileNotFoundError:
+                print("ERROR: 'sbatch' command not found. "
+                      "Is Slurm installed and in PATH?")
+                return True
+            # check return code and report useful information
+            if proc.returncode == 0:
+                print("Submitted:", proc.stdout.strip())
+                print('\n Please check the queue with >> squeue -u $USER')
+            else:
+                print("sbatch returned non-zero exit code:", proc.returncode)
+                if proc.stdout:
+                    print("stdout:", proc.stdout)
+                if proc.stderr:
+                    print("stderr:", proc.stderr)
+                return True
         else:
             print('Batch job not submitted by user. Exiting.')
             return True
@@ -1079,11 +1094,10 @@ def get_earliest_raw_file(apero_params, obsdirs):
 
 def remove_broken_symlinks(path: str):
     """
-    Removes broken symlinks recusively from the given directory
+    Removes broken symlinks recursively from the given directory.
 
-    :param params: ParamDict, parameter dictionary of constants
     :param path: str, path to remove all symlinks from
-    :return:
+    :return: None
     """
     # if we don't have this directory just return - it will be created later
     if not os.path.exists(path):
