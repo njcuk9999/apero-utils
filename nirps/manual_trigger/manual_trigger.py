@@ -561,7 +561,7 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
                 all_values[bparam] = value
     # ---------------------------------------------------------------------
     # deal with run batch set to False
-    if not all_values['run batch']:
+    if not all_values.get('run batch', False):
         wmsg = 'Not running in batch mode as yaml "batch.run batch" is False'
         print(wmsg)
         return False
