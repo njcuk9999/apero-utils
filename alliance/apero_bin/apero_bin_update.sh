@@ -3,8 +3,8 @@
 # Get core source script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source $SCRIPT_DIR/apero_core.sh
-# Set the path to instruments ini
-INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
+# Set the path to instruments conf
+INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.conf"
 
 # -----------------------------------------------------------------------------
 # Function: Show help message
@@ -22,17 +22,16 @@ show_help() {
     echo "  $APERO_BIN_PATH"
     echo ""
     echo "Usage:"
-    echo "  ./this_script.sh"
+    echo "  ./apero_bin_update.sh"
     echo ""
     echo "Notes:"
     echo "  - Ensure APERO_PROJECT_ID is set correctly."
-    echo "  - The script expects each line of $INSTRUMENT_FILE to be in key=value format:"
-    echo "      instrument_name=script_name"
+    echo "  - The script expects $INSTRUMENT_FILE sections [instrument] and an install_script line."
     echo "  - Empty lines and lines starting with # are ignored."
     echo "  - Requires git to be installed and accessible in PATH."
     echo ""
     echo "Example:"
-    echo "  ./apero_update_instruments.sh"
+    echo "  ./apero_bin_update.sh"
     echo ""
 }
 
@@ -55,32 +54,72 @@ fi
 # Track the last valid git path
 LAST_VALID_GIT_PATH=""
 
+if [[ ! -f "$INSTRUMENT_FILE" ]]; then
+    echo "ERROR: Instruments config not found: $INSTRUMENT_FILE"
+    exit 1
+fi
+
 echo "Reading instruments from: $INSTRUMENT_FILE"
 echo
 
-# Loop through instruments in key=value format
-while IFS='=' read -r INSTRUMENT SCRIPT; do
-    # Skip empty or comment lines
-    [[ -z "$INSTRUMENT" || "$INSTRUMENT" =~ ^# ]] && continue
+CURRENT_INSTRUMENT=""
+INSTALL_SCRIPT=""
 
-    INSTRUMENT_BIN="${INSTRUMENT}_bin"
+process_instrument() {
+    local instrument="$1"
+    local install_script="$2"
+    if [[ -z "$instrument" ]]; then
+        return
+    fi
 
-    GIT_PATH="/project/$APERO_PROJECT_ID/apero/${INSTRUMENT_BIN}/scripts/apero-utils/alliance/apero_bin"
+    local INSTRUMENT_BIN="${instrument}_bin"
+    local GIT_PATH="/project/$APERO_PROJECT_ID/apero/${INSTRUMENT_BIN}/scripts/apero-utils/alliance/apero_bin"
 
+    echo "Instrument: $instrument"
+    echo "Install script: $install_script"
     echo "Checking: $GIT_PATH"
 
     if [[ -d "$GIT_PATH" ]]; then
         echo "→ Found. Entering directory..."
-        cd "$GIT_PATH" || continue
-        git pull
+        cd "$GIT_PATH" || return
+        git pull || { echo "✗ git pull failed"; echo; return; }
         LAST_VALID_GIT_PATH="$GIT_PATH"
-        echo "✓ Updated $INSTRUMENT"
+        echo "✓ Updated $instrument"
     else
-        echo "✗ Path does not exist. Skipping $INSTRUMENT"
+        echo "✗ Path does not exist. Skipping $instrument"
     fi
 
     echo
+}
+
+# Parse the INSTRUMENT_FILE
+while IFS= read -r line || [ -n "$line" ]; do
+    line="$(echo "$line" | sed 's/^\s\+//;s/\s\+$//')"
+    [[ -z "$line" || "$line" =~ ^# ]] && continue
+
+    if [[ "$line" =~ ^\[(.+)\]$ ]]; then
+        # new instrument section
+        if [[ -n "$CURRENT_INSTRUMENT" ]]; then
+            process_instrument "$CURRENT_INSTRUMENT" "$INSTALL_SCRIPT"
+        fi
+        CURRENT_INSTRUMENT="${BASH_REMATCH[1]}"
+        INSTALL_SCRIPT=""
+        echo "----------------------------"
+        echo "Section: $CURRENT_INSTRUMENT"
+        continue
+    fi
+
+    if [[ "$line" =~ ^install_script=(.+)$ ]]; then
+        INSTALL_SCRIPT="${BASH_REMATCH[1]}"
+        continue
+    fi
+
 done < "$INSTRUMENT_FILE"
+
+# process last instrument
+if [[ -n "$CURRENT_INSTRUMENT" ]]; then
+    process_instrument "$CURRENT_INSTRUMENT" "$INSTALL_SCRIPT"
+fi
 
 echo "Done looping over instruments."
 echo

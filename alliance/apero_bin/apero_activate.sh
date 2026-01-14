@@ -11,7 +11,7 @@ source $SCRIPT_DIR/apero_core.sh
 # Set the user configuration file
 APERO_USERS_CONF="$APERO_BIN_PATH/apero_users.conf"
 # Set the instrument file
-INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.ini"
+INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.conf"
 # Set the profile file
 PROFILE_FILE="$APERO_BIN_PATH/apero_profiles.conf"
 
@@ -24,7 +24,7 @@ show_help() {
     echo ""
     echo "Available instruments:"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
-        cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
+        grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | sed 's/^/  - /'
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
@@ -139,7 +139,7 @@ if [ -z "$INSTRUMENT" ]; then
     echo ""
     echo "Available instruments:"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
-        cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
+        grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | sed 's/^/  - /'
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
@@ -155,12 +155,12 @@ fi
 #  Validate instrument
 # -----------------------------------------------------------------------------
 # 1. Check if instrument actually exists in system instrument file
-if ! grep -q "^$INSTRUMENT=" "$INSTRUMENT_FILE"; then
+if ! grep -q "^\[$INSTRUMENT\]" "$INSTRUMENT_FILE"; then
     echo "ERROR: Unknown instrument '$INSTRUMENT'"
     echo ""
     echo "Available instruments:"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
-        cut -d= -f1 "$INSTRUMENT_FILE" | sed 's/^/  - /'
+        grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | sed 's/^/  - /'
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
