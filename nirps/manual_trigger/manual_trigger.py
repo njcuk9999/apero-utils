@@ -608,6 +608,9 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
         if '--batch' in arg:
             continue
         args.append(arg)
+    # Must add --force_yes to the args
+    if '--force_yes' not in args:
+        args.append('--force_yes')
     # we want to run the manual trigger
     command2 = f'{__file__} ' + ' '.join(args)
     # ---------------------------------------------------------------------
@@ -659,7 +662,7 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     else:
         # get user to confirm batch submission
         msg = f'About to submit batch job {job_name}.'
-        msg += '\n\n\tBatch script:\n'
+        msg += '\n\nBatch script:\n'
         msg += '-' * 50 + '\n'
         msg += bscript
         msg += '-' * 50 + '\n'
