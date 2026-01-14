@@ -560,6 +560,12 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
             if value is not None:
                 all_values[bparam] = value
     # ---------------------------------------------------------------------
+    # deal with run batch set to False
+    if not all_values['run batch']:
+        wmsg = 'Not running in batch mode as yaml "batch.run batch" is False'
+        print(wmsg)
+        return False
+    # ---------------------------------------------------------------------
     # construct out and error log paths
     script_path = os.path.join(all_values['log path'], 'scripts')
     log_path = os.path.join(all_values['log path'], 'logs')
