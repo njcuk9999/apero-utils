@@ -72,21 +72,22 @@ process_instrument() {
         return
     fi
 
+    echo "=================================================="
+    echo "Instrument: $instrument"
+    echo "=================================================="
+
     local INSTRUMENT_BIN="${instrument}_bin"
     local GIT_PATH="/project/$APERO_PROJECT_ID/apero/${INSTRUMENT_BIN}/scripts/apero-utils/alliance/apero_bin"
 
-    echo "Instrument: $instrument"
-    echo "Install script: $install_script"
-    echo "Checking: $GIT_PATH"
-
     if [[ -d "$GIT_PATH" ]]; then
-        echo "→ Found. Entering directory..."
+        echo "Git path: $GIT_PATH"
         cd "$GIT_PATH" || return
+        echo "Pulling..."
         git pull || { echo "✗ git pull failed"; echo; return; }
         LAST_VALID_GIT_PATH="$GIT_PATH"
         echo "✓ Updated $instrument"
     else
-        echo "✗ Path does not exist. Skipping $instrument"
+        echo "✗ Path does not exist: $GIT_PATH"
     fi
 
     echo
@@ -161,4 +162,3 @@ else
 fi
 
 echo "Sync complete."
-

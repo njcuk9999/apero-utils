@@ -11,8 +11,6 @@ source "$SCRIPT_DIR/apero_core.sh"
 # Instruments configuration (bash-friendly .conf)
 INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.conf"
 
-# DEBUG: set DEBUG=1 in environment to see parsing debug
-
 # -----------------------------------------------------------------------------
 # Function: Show help message
 # -----------------------------------------------------------------------------
@@ -26,7 +24,6 @@ show_help() {
     echo ""
     echo "Usage:"
     echo "  ./apero_scripts_update.sh"
-    echo "  DEBUG=1 ./apero_scripts_update.sh    # show parsing debug"
     echo ""
     echo "Notes:"
     echo "  - Ensure APERO_PROJECT_ID is set correctly (apero_core.sh)."
@@ -66,12 +63,6 @@ CURRENT_INSTRUMENT=""
 INSTALL_SCRIPT=""
 REPOS=()
 
-# Helper: debug print if DEBUG=1
-dbg() {
-    if [[ "${DEBUG:-0}" -eq 1 ]]; then
-        echo "DEBUG: $*"
-    fi
-}
 
 process_instrument() {
     local instrument="$1"
@@ -94,20 +85,17 @@ process_instrument() {
 
     # If scripts path doesn't exist, try the bin root as fallback
     if [[ ! -d "$SCRIPT_PATH" && -d "${BASE_PATH}/${INSTRUMENT_BIN}" ]]; then
-        dbg "note: scripts subdir not found; using ${BASE_PATH}/${INSTRUMENT_BIN} as script path"
         SCRIPT_PATH="${BASE_PATH}/${INSTRUMENT_BIN}"
     fi
 
     # If still not found, try to discover candidate directories under BASE_PATH
     if [[ ! -d "$SCRIPT_PATH" ]]; then
-        dbg "attempting to discover instrument directory under $BASE_PATH"
         # look for directories matching instrument name, prefer ones ending with _bin
         candidate=$(find "$BASE_PATH" -maxdepth 3 -type d -iname "*${instrument}*bin" -print -quit 2>/dev/null || true)
         if [[ -z "$candidate" ]]; then
             candidate=$(find "$BASE_PATH" -maxdepth 4 -type d -iname "*${instrument}*" -print -quit 2>/dev/null || true)
         fi
         if [[ -n "$candidate" ]]; then
-            dbg "Found candidate instrument dir: $candidate"
             if [[ -d "$candidate/scripts" ]]; then
                 SCRIPT_PATH="$candidate/scripts"
             else
@@ -173,7 +161,6 @@ process_instrument() {
 while IFS= read -r line || [ -n "$line" ]; do
     # trim whitespace (POSIX safe)
     line="$(printf '%s' "$line" | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')"
-    dbg "parsed line='${line}'"
     # skip comments and empty lines
     [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -205,7 +192,6 @@ while IFS= read -r line || [ -n "$line" ]; do
         if [[ -z "$branch_name" ]]; then
             branch_name="master"
         fi
-        dbg "Parsed repo: $repo_dir  branch: $branch_name"
         REPOS+=("${repo_dir}|${branch_name}")
         continue
     fi
