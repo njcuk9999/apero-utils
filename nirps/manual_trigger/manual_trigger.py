@@ -645,10 +645,12 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     # write the batch script to the log directory
     with open(log_script_file, 'w') as f:
         f.write(bscript)
+    # make the script executable
+    os.chmod(log_script_file, 0o755)
     # ---------------------------------------------------------------------
     if settings['TEST']:
         print('Not running sbatch command [TEST MODE ACTIVATED]')
-        print('Batch script would be:')
+        print('\n\nBatch script would be:\n')
         print('-' * 50)
         print(bscript)
         print('-' * 50)
@@ -657,18 +659,17 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     else:
         # get user to confirm batch submission
         msg = f'About to submit batch job {job_name}.'
-        msg += '\n\n\tBatch script would be:'
+        msg += '\n\n\tBatch script:\n'
         msg += '-' * 50 + '\n'
         msg += bscript
         msg += '-' * 50 + '\n'
         msg += 'Submit batch job? [Y]es/[N]o: '
         uinput = input(msg)
         if 'Y' in uinput.upper():
-            # run using a subprocess command; pass '-' so sbatch reads from stdin
+            # run using a subprocess command; pass the script file to sbatch
             try:
                 proc = subprocess.run(
-                    ["sbatch", "-"],
-                    input=bscript,
+                    ["sbatch", log_script_file],
                     text=True,
                     capture_output=True,
                     check=False
@@ -676,18 +677,18 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
             except FileNotFoundError:
                 print("ERROR: 'sbatch' command not found. "
                       "Is Slurm installed and in PATH?")
-                return True
+                return False
             # check return code and report useful information
             if proc.returncode == 0:
                 print("Submitted:", proc.stdout.strip())
-                print('\n Please check the queue with >> squeue -u $USER')
+                print('Please check the queue with >> squeue -u $USER')
             else:
                 print("sbatch returned non-zero exit code:", proc.returncode)
                 if proc.stdout:
                     print("stdout:", proc.stdout)
                 if proc.stderr:
                     print("stderr:", proc.stderr)
-                return True
+                return False
         else:
             print('Batch job not submitted by user. Exiting.')
             return True
