@@ -9,7 +9,7 @@ nirps_he_minidata_07295:
         # raw dir: /project/6102120/apero/nirps_data/internal/nirps_raw/raw-data/nirps_he
         raw dir: /project/6102120/apero/nirps_data/private/nirps_he_raw_minidata/
         # whether to link raw symlinks
-        raw sym links: False
+        raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /project/6102120/apero/nirps_bin/settings/nirps_he_minidata_07295

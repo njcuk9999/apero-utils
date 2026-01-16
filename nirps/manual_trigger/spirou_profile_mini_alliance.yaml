@@ -9,7 +9,7 @@ spirou_mini2_07295:
         # raw dir: /project/6102120/apero/spirou_data/internal/spirou_raw/raw-data
         raw dir: /project/6102120/apero/spirou_data/private/spirou_raw_minidata2/
       # whether to link raw symlinks
-        raw sym links: False
+        raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /project/6102120/apero/spirou_bin/settings/spirou_mini2_07295
