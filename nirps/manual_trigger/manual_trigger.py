@@ -868,6 +868,9 @@ def make_sym_links(settings: Dict[str, Any]):
     for profile in settings['PROFILES']:
         # get the profile dictionary
         pdict = settings['PROFILES'][profile]
+        # deal with skip
+        if not pdict['general'].get('raw sym links', True):
+            continue
         # print progress
         print(f'\tRunning profile: {profile}')
         # update the apero profile

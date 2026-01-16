@@ -7,6 +7,8 @@ nirps ha online:
         activate_profile: nirps_ha_online
         # directory where raw data is downloaded
         raw dir: /nirps_raw/nirps/raw-data/nirps_ha
+        # whether to link raw symlinks
+        raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /cosmos99/nirps/apero-settings/nirps_ha_online

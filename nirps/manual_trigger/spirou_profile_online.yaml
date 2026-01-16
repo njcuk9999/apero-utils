@@ -7,6 +7,8 @@ spirou V0.7.282 online:
         activate_profile: spirou_online
         # directory where raw data is downloaded
         raw dir: /titan02/spirou/cfht/raw
+        # whether to link raw symlinks
+        raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /cosmos99/spirou/apero-settings/spirou_07282_online

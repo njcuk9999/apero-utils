@@ -7,6 +7,8 @@ spirou V0.7.282 mini2:
         activate_profile: spirou_minidata2_07286_jupiter
         # directory where raw data is downloaded
         raw dir: /scratch2/spirou/drs-data/common/minidata2
+        # whether to link raw symlinks
+        raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
         apero profile: /scratch2/spirou/drs-settings/spirou_minidata2_07286_jupiter
