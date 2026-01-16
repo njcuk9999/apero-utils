@@ -605,8 +605,8 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
                     'not set in batch.apero bin path')
     else:
         # get full path to apero-activate
-        program1 = os.path.join(str(apero_bin_path), 'apero-activate')
-        command1 = f'{program1} {instrument} {activate_profile}'
+        program1 = os.path.join(str(apero_bin_path), 'apero_activate.sh')
+        command1 = f'source {program1} {instrument} {activate_profile}'
     # ---------------------------------------------------------------------
     # Command 2 = call to manual trigger
     # we need to reconstruct the command the user ran
