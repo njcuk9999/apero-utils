@@ -599,14 +599,16 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     # ---------------------------------------------------------------------
     # Construct the two commands we need to run
     # ---------------------------------------------------------------------
-    # Command 1 = apero-activate command
+    # Command 1a = apero-activate command (activate + source apero)
     if apero_bin_path is None:
-        command1 = ('echo "apero-activate" not used because APERO_BIN_PATH '
-                    'not set in batch.apero bin path')
+        command1a = ('echo "apero-activate" not used because APERO_BIN_PATH '
+                     'not set in batch.apero bin path')
     else:
         # get full path to apero-activate
         program1 = os.path.join(str(apero_bin_path), 'apero_activate.sh')
-        command1 = f'source {program1} {instrument} {activate_profile}'
+        command1a = f'source {program1} {instrument} {activate_profile}'
+    # Command 1b = apero-trigger command (change to manual trigger directory)
+    command1b = f'cd {os.path.dirname(__file__)}'
     # ---------------------------------------------------------------------
     # Command 2 = call to manual trigger
     # we need to reconstruct the command the user ran
@@ -648,9 +650,9 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
         bscript += f'#SBATCH --mail-type=BEGIN,END,FAIL\n'
     # add the activate command
     bscript += 'echo "RUNNING: apero-activate"\n'
-    bscript += command1 + '\n'
+    bscript += command1a + '\n'
     bscript += 'echo "RUNNING: apero-trigger"\n'
-    bscript += 'apero-trigger\n'
+    bscript += command1b + '\n'
     bscript += 'echo "DIR = $(pwd)"\n'
     # add the manual trigger command
     bscript += 'echo "RUNNING: manual trigger"\n'
