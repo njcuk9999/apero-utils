@@ -21,7 +21,7 @@ spirou_mini2_07295:
       # whether to run in batch mode
       run batch: True
       # wall time
-      time: '4:00:00'
+      time: '8:00:00'
       # nodes
       nodes: 1
       # cpus per task
