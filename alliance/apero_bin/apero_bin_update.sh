@@ -39,7 +39,9 @@ show_help() {
 # Detect if script is sourced, and exit if it is
 # -----------------------------------------------------------------------------
 if [ "${BASH_SOURCE[0]}" != "$0" ]; then
+    echo "*************************"
     echo "ERROR: This script should NOT be sourced."
+    echo "*************************"
     show_help
     return 1 2>/dev/null || exit 1
 fi
@@ -55,7 +57,9 @@ fi
 LAST_VALID_GIT_PATH=""
 
 if [[ ! -f "$INSTRUMENT_FILE" ]]; then
+    echo "*************************"
     echo "ERROR: Instruments config not found: $INSTRUMENT_FILE"
+    echo "*************************"
     exit 1
 fi
 
@@ -125,7 +129,9 @@ echo
 
 # After loop: ensure we have a valid git path
 if [[ -z "$LAST_VALID_GIT_PATH" ]]; then
+    echo "*************************"
     echo "ERROR: No valid GIT_PATH directories found. Nothing to copy."
+    echo "*************************"
     exit 1
 fi
 

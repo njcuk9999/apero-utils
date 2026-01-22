@@ -49,7 +49,9 @@ show_help() {
 # Detect if script is sourced, and exit if it is
 # -----------------------------------------------------------------------------
 if [ "${BASH_SOURCE[0]}" != "$0" ]; then
+    echo "*************************"
     echo "ERROR: This script should NOT be sourced."
+    echo "*************************"
     show_help
     return 1 2>/dev/null || exit 1
 fi
@@ -65,7 +67,9 @@ fi
 # Check if apero_instruments.conf exists
 # -----------------------------------------------------------------------------
 if [ ! -f "$INSTRUMENT_FILE" ]; then
-  echo "Error: $INSTRUMENT_FILE file not found."
+  echo "*************************"
+  echo "ERROR: $INSTRUMENT_FILE file not found."
+  echo "*************************"
   exit 1
 fi
 
@@ -111,7 +115,9 @@ while IFS= read -r line || [ -n "$line" ]; do
 done < "$INSTRUMENT_FILE"
 
 if [[ -z "$INSTALL_SCRIPT_REL" ]]; then
-    echo "Error: Instrument '$INSTRUMENT_NAME' not found or missing install_script in $INSTRUMENT_FILE."
+    echo "*************************"
+    echo "ERROR: Instrument '$INSTRUMENT_NAME' not found or missing install_script in $INSTRUMENT_FILE."
+    echo "*************************"
     echo "Available instruments:"
     grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | sed 's/^/  - /'
     exit 1
@@ -134,8 +140,10 @@ SETUP_SCRIPT="$APERO_BIN_PATH/$INSTALL_SCRIPT_REL"
 # -----------------------------------------------------------------------------
 if [ ! -f "$SETUP_SCRIPT" ]; then
   echo ""
-  echo "Error: Setup script for instrument '$INSTRUMENT_NAME' not found at:"
+  echo "*************************"
+  echo "ERROR: Setup script for instrument '$INSTRUMENT_NAME' not found at:"
   echo "  $SETUP_SCRIPT"
+  echo "*************************"
   echo ""
   echo "The instrument is defined in $INSTRUMENT_FILE but the script file is missing."
   echo ""

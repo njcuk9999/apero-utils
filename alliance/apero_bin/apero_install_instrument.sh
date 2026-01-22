@@ -82,8 +82,10 @@ gofunc() {
 
     # check directory
     if [[ ! -d "$path" ]]; then
-        echo "Error: directory does not exist:"
+        echo "*************************"
+        echo "ERROR: directory does not exist:"
         echo "  $path"
+        echo "*************************"
         return 1
     fi
 

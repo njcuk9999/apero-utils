@@ -58,7 +58,9 @@ fi
 # Test if conf file exists
 # -----------------------------------------------------------------------------
 if [[ ! -f "$CONF_FILE" ]]; then
-    echo "Error: $CONF_FILE not found!"
+    echo "*************************"
+    echo "ERROR: $CONF_FILE not found!"
+    echo "*************************"
     exit 1
 fi
 

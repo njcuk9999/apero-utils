@@ -49,7 +49,9 @@ fi
 
 # Validate
 if [[ ! -d "$START_PATH" ]]; then
-    echo "Error: '$START_PATH' is not a directory."
+    echo "*************************"
+    echo "ERROR: '$START_PATH' is not a directory."
+    echo "*************************"
     exit 1
 fi
 

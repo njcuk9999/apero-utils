@@ -114,7 +114,9 @@ process_instrument() {
     echo
 
     cd "$SCRIPT_PATH" || {
+        echo "*************************"
         echo "ERROR: Cannot cd to $SCRIPT_PATH"
+        echo "*************************"
         echo
         return
     }

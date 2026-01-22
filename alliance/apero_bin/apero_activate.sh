@@ -137,8 +137,10 @@ show_help() {
 if [ $? -ne 0 ]; then
     # If the script is executed rather than sourced, print a short, clear message
     # instead of the full help menu which can be noisy in automated contexts.
+    echo "*************************"
     echo "ERROR: This script must be sourced, not executed."
     echo "Run: source $0 <instrument> <profile>"
+    echo "*************************"
     exit 1
 fi
 
@@ -154,8 +156,10 @@ fi
 # Check APERO_SERVER is set
 # -----------------------------------------------------------------------------
 if [[ -z "$APERO_SERVER" ]]; then
+    echo "*************************"
     echo "ERROR: APERO_SERVER is not set."
     echo "Please run: $APERO_BIN_PATH/apero_install.sh"
+    echo "*************************"
     return 1
 fi
 
@@ -163,9 +167,11 @@ fi
 # Validate APERO_BIN_PATH and conf file
 # -----------------------------------------------------------------------------
 if [[ ! -f "$APERO_USERS_CONF" ]]; then
+    echo "*************************"
     echo "ERROR: Cannot find apero_users.conf at:"
     echo "  $APERO_USERS_CONF"
     echo "Please contact the APERO administrators to be added."
+    echo "*************************"
     return 1
 fi
 
@@ -179,8 +185,10 @@ LINE=$(awk -v key="$LOOKUP" 'index($0,key)==1 {print NR; exit}' "$APERO_USERS_CO
 
 # Check if header exists in the file
 if [[ -z "$LINE" ]]; then
+    echo "*************************"
     echo "ERROR: User entry '$LOOKUP' not found in apero_users.conf"
     echo "Please contact the APERO administrators to be added."
+    echo "*************************"
     return 1
 fi
 
@@ -214,7 +222,9 @@ PROFILE="$2"
 
 if [ -z "$INSTRUMENT" ]; then
     # Print a short message instead of the full help menu to avoid noisy output
+    echo "*************************"
     echo "ERROR: No instrument selected."
+    echo "*************************"
     echo ""
     echo "Available instruments (installed for this user):"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
@@ -235,7 +245,9 @@ fi
 # -----------------------------------------------------------------------------
 # 1. Check if instrument actually exists in system instrument file
 if ! grep -q "^\[$INSTRUMENT\]" "$INSTRUMENT_FILE"; then
+    echo "*************************"
     echo "ERROR: Unknown instrument '$INSTRUMENT'"
+    echo "*************************"
     echo ""
     echo "Available instruments (installed for this user):"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
@@ -252,8 +264,10 @@ fi
 
 # 2. Require instrument to be installed via apero_install (present in ~/.bashrc)
 if ! is_instrument_installed "$INSTRUMENT"; then
+    echo "*************************"
     echo "ERROR: Instrument '$INSTRUMENT' exists but has not been installed for this user."
     echo "Please run: $APERO_BIN_PATH/apero_install.sh $INSTRUMENT"
+    echo "*************************"
     echo ""
     echo "Available instruments (installed for this user):"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
@@ -266,9 +280,11 @@ fi
 
 # 3. Check if user is authorized to use the selected instrument
 if [[ ! " $USER_INSTR_LIST " =~ " $INSTRUMENT " ]]; then
+    echo "*************************"
     echo "ERROR: Instrument '$INSTRUMENT' exists but you are not authorized to use it."
     echo "Authorized instruments for $NAME: $USER_INSTR_LIST"
     echo "Please contact the APERO administrators to be added."
+    echo "*************************"
     return 1
 fi
 
@@ -285,7 +301,9 @@ PROFILE_LIST=$(awk -v inst="$INSTRUMENT" 'BEGIN{prefix="[" inst "."} index($0,pr
 # CASE 1 — No profile provided
 # -----------------------------------------------------------------------------
 if [ -z "$PROFILE" ]; then
+    echo "*************************"
     echo "ERROR: No profile selected for instrument '$INSTRUMENT'."
+    echo "*************************"
     echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
@@ -312,7 +330,9 @@ fi
 # CASE 2 — Profile does not exist
 # -----------------------------------------------------------------------------
 if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
+    echo "*************************"
     echo "ERROR: Profile '$PROFILE' not found for instrument '$INSTRUMENT'."
+    echo "*************************"
     echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
