@@ -527,13 +527,17 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
         # run ari
-        ari_rtn = apero_ri.main(profile=ari_profile)
-        # log that ARI ended successfully
-        if 'success' in ari_rtn:
-            if ari_rtn['success']:
-                settings['LOG'][profile].write(ARI_END)
+        if settings['TEST']:
+            print('Test mode: not running apero reduction interface '
+                  f'for profile: {profile}')
         else:
-            settings['LOG'][profile].write(ARI_END)
+            ari_rtn = apero_ri.main(profile=ari_profile,)
+            # log that ARI ended successfully
+            if 'success' in ari_rtn:
+                if ari_rtn['success']:
+                    settings['LOG'][profile].write(ARI_END)
+            else:
+                settings['LOG'][profile].write(ARI_END)
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
     # change back to original path
@@ -810,9 +814,11 @@ def run_push_to_datacenter(settings: Dict[str, Any]):
         pdict = settings['PROFILES'][profile]
         # get the comm directory out path
         comm_path = pdict['get-comm']['out path']
+        # get the test mode
+        test_mode = settings['TEST']
         # ---------------------------------------------------------------------
         # push comm_path to data center
-        # TODO: Implement this function
+        # TODO: Implement this function and deal with test mode
         print(f'Pushing {comm_path} to data center... [NOT IMPLEMENTED]')
 
 
