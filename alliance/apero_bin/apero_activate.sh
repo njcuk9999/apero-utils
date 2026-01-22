@@ -14,6 +14,83 @@ APERO_USERS_CONF="$APERO_BIN_PATH/apero_users.conf"
 INSTRUMENT_FILE="$APERO_BIN_PATH/apero_instruments.conf"
 # Set the profile file
 PROFILE_FILE="$APERO_BIN_PATH/apero_profiles.conf"
+# User bashrc (used to detect whether apero_install added the install snippet)
+USER_BASHRC="$HOME/.bashrc"
+
+# -----------------------------------------------------------------------------
+# Helper: get install_script for an instrument from INSTRUMENT_FILE
+# returns relative path (as defined in conf) or empty string if not found
+# -----------------------------------------------------------------------------
+get_install_script_for_instrument() {
+    local instr="$1"
+    local current_section=""
+    local line
+    local install_script=""
+
+    # guard: file exists
+    if [[ ! -f "$INSTRUMENT_FILE" ]]; then
+        echo ""
+        return
+    fi
+
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        # trim whitespace
+        line="$(echo "$line" | sed 's/^\s\+//;s/\s\+$//')"
+        # skip comments/empty
+        [[ -z "$line" || "$line" =~ ^# ]] && continue
+
+        if [[ "$line" =~ ^\[(.+)\]$ ]]; then
+            current_section="${BASH_REMATCH[1]}"
+            continue
+        fi
+
+        if [[ "$current_section" == "$instr" ]]; then
+            if [[ "$line" =~ ^install_script[[:space:]]*=[[:space:]]*(.+)$ ]]; then
+                install_script="${BASH_REMATCH[1]}"
+                # return immediately
+                echo "$install_script"
+                return
+            fi
+        fi
+    done < "$INSTRUMENT_FILE"
+
+    echo ""
+}
+
+# -----------------------------------------------------------------------------
+# Helper: is_instrument_installed
+# - checks whether the install snippet (full path to install script) is present in ~/.bashrc
+# - returns 0 if installed, 1 otherwise
+# -----------------------------------------------------------------------------
+is_instrument_installed() {
+    local instr="$1"
+    local rel_script
+    rel_script=$(get_install_script_for_instrument "$instr")
+    if [[ -z "$rel_script" ]]; then
+        return 1
+    fi
+    local fullpath="$APERO_BIN_PATH/$rel_script"
+    if [[ -f "$USER_BASHRC" ]] && grep -Fq "$fullpath" "$USER_BASHRC"; then
+        return 0
+    fi
+    return 1
+}
+
+# -----------------------------------------------------------------------------
+# Helper: list installed instruments (from INSTRUMENT_FILE that are present in ~/.bashrc)
+# -----------------------------------------------------------------------------
+list_installed_instruments() {
+    if [[ ! -f "$INSTRUMENT_FILE" ]]; then
+        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+        return
+    fi
+    # read section names
+    grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | while IFS= read -r instr; do
+        if is_instrument_installed "$instr"; then
+            echo "  - $instr"
+        fi
+    done
+}
 
 show_help() {
     echo "Usage: source activate.sh <instrument> <profile>"
@@ -22,9 +99,9 @@ show_help() {
     echo ""
     echo "This script runs the commands defined for INSTRUMENT.PROFILE in apero_profiles.conf"
     echo ""
-    echo "Available instruments:"
+    echo "Available instruments (installed for this user):"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
-        grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | sed 's/^/  - /'
+        list_installed_instruments
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
@@ -33,7 +110,8 @@ show_help() {
     if [[ -n "$1" ]]; then
         local instr="$1"
         if [[ -f "$PROFILE_FILE" ]]; then
-            local profiles=$(grep "^\[$instr\." "$PROFILE_FILE" | sed "s/^\[$instr\.//; s/\].*$//")
+            local profiles
+            profiles=$(grep "^\[$instr\." "$PROFILE_FILE" | sed "s/^\[$instr\.//; s/\].*$//")
             if [[ -n "$profiles" ]]; then
                 echo "Available profiles for '$instr':"
                 echo "$profiles" | sed 's/^/  - /'
@@ -91,7 +169,7 @@ fi
 # Build lookup key [server.username]
 # -----------------------------------------------------------------------------
 LOOKUP="[$APERO_SERVER.$USER]"
-ESCAPED_LOOKUP=$(printf '%s\n' "$LOOKUP" | sed 's/[][\.^$*+?{|}()]/\\&/g')
+ESCAPED_LOOKUP=$(printf '%s\n' "$LOOKUP" | sed 's/[][.\\^$*+?{|}()]/\\&/g')
 
 # Check if header exists in the file
 if ! grep -q "^$ESCAPED_LOOKUP" "$APERO_USERS_CONF"; then
@@ -137,9 +215,9 @@ if [ -z "$INSTRUMENT" ]; then
     # Print a short message instead of the full help menu to avoid noisy output
     echo "ERROR: No instrument selected."
     echo ""
-    echo "Available instruments:"
+    echo "Available instruments (installed for this user):"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
-        grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | sed 's/^/  - /'
+        list_installed_instruments
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
@@ -158,9 +236,9 @@ fi
 if ! grep -q "^\[$INSTRUMENT\]" "$INSTRUMENT_FILE"; then
     echo "ERROR: Unknown instrument '$INSTRUMENT'"
     echo ""
-    echo "Available instruments:"
+    echo "Available instruments (installed for this user):"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
-        grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | sed 's/^/  - /'
+        list_installed_instruments
     else
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
     fi
@@ -170,7 +248,22 @@ if ! grep -q "^\[$INSTRUMENT\]" "$INSTRUMENT_FILE"; then
     echo ""
     return 1
 fi
-# 2. Check if user is authorized to use the selected instrument
+
+# 2. Require instrument to be installed via apero_install (present in ~/.bashrc)
+if ! is_instrument_installed "$INSTRUMENT"; then
+    echo "ERROR: Instrument '$INSTRUMENT' exists but has not been installed for this user."
+    echo "Please run: $APERO_BIN_PATH/apero_install.sh $INSTRUMENT"
+    echo ""
+    echo "Available instruments (installed for this user):"
+    if [[ -f "$INSTRUMENT_FILE" ]]; then
+        list_installed_instruments
+    else
+        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+    fi
+    return 1
+fi
+
+# 3. Check if user is authorized to use the selected instrument
 if [[ ! " $USER_INSTR_LIST " =~ " $INSTRUMENT " ]]; then
     echo "ERROR: Instrument '$INSTRUMENT' exists but you are not authorized to use it."
     echo "Authorized instruments for $NAME: $USER_INSTR_LIST"
