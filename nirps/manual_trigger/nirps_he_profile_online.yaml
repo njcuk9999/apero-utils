@@ -15,7 +15,7 @@ nirps he online:
         # the install directory for apero (git hub repo)
         apero install: /cosmos99/nirps/git-bin/apero-drs-online
         # apero get output path
-        lbl path: /cosmos99/nirps/lbl-data/nirps_he_online/
+        lbl path: /cosmos99/nirps/lbl-data/nirps_he_online/lbl
         # start date if not using --obsdir argument
         start date: 2022-11-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)

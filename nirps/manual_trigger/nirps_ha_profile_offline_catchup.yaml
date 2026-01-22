@@ -15,7 +15,7 @@ nirps ha offline:
         # the install directory for apero (git hub repo)
         apero install: /cosmos99/nirps/git-bin/apero-drs-offline
         # directory where lbl files are processed
-        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/
+        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/lbl
         # start date if not using --obsdir argument
         start date: 2022-11-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)

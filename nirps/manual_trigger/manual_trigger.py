@@ -357,16 +357,19 @@ def run_processing(settings: Dict[str, Any]):
         # get the run file
         runfile = pdict['processing']['run file']
 
+        # get the cores (if given)
+        ncores = pdict['processing'].get('ncores', None)
+
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_processing
         # run apero processing
         if obs_dirs == '*':
-            apero_processing.main(runfile=runfile,
-                                       test=settings['TEST'])
+            apero_processing.main(runfile=runfile, cores=ncores,
+                                  test=settings['TEST'])
         else:
-            apero_processing.main(runfile=runfile,
-                                       include_obs_dirs=obsdir_str,
-                                       test=settings['TEST'])
+            apero_processing.main(runfile=runfile, cores=ncores,
+                                  include_obs_dirs=obsdir_str,
+                                  test=settings['TEST'])
         # ---------------------------------------------------------------------
         # push the errors into yaml format for html
         # ---------------------------------------------------------------------

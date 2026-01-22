@@ -15,7 +15,7 @@ spirou V0.7.282 online:
         # the install directory for apero (git hub repo)
         apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
-        lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/
+        lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/lbl
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)

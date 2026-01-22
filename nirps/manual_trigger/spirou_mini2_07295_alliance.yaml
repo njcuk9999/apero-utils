@@ -6,7 +6,6 @@ spirou_mini2_07295:
         # profile (is in apero-activate)
         activate_profile: spirou_mini2_07295
         # directory where raw data is downloaded
-        # raw dir: /project/6102120/apero/spirou_data/internal/spirou_raw/raw-data
         raw dir: /project/6102120/apero/spirou_data/private/spirou_raw_minidata2/
       # whether to link raw symlinks
         raw sym links: True
@@ -41,6 +40,8 @@ spirou_mini2_07295:
     processing:
         # apero processing run.ini file
         run file: mini_run2.ini
+      # number of cores to use for processing
+        cores: 70
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:

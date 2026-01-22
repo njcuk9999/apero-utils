@@ -15,7 +15,7 @@ spirou V0.7.282 mini2:
         # the install directory for apero (git hub repo)
         apero install: /scratch2/spirou/drs-bin/apero-drs-spirou-07XXX/
         # directory where lbl files are processed
-        lbl path: /scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupiter
+        lbl path: /scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupiter/lbl
         # start date if not using --obsdir argument
         start date: 2018-01-01
   # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
