@@ -116,7 +116,9 @@ show_help() {
             profiles=$(awk -v inst="$instr" 'index($0,"["inst".")==1 {s=$0; sub("^\["inst"\.","",s); sub("\].*$","",s); print s}' "$PROFILE_FILE")
             if [[ -n "$profiles" ]]; then
                 echo "Available profiles for '$instr':"
-                echo "$profiles" | sed 's/^/  - /'
+                while IFS= read -r _p; do
+                    printf '  - %s\n' "$_p"
+                done <<< "$profiles"
             else
                 echo "No profiles found for instrument '$instr'."
             fi
@@ -289,7 +291,9 @@ if [ -z "$PROFILE" ]; then
     if [[ -f "$PROFILE_FILE" ]]; then
         profiles=$(awk -v inst="$INSTRUMENT" 'index($0,"["inst".")==1 {s=$0; sub("^\["inst".",""); sub("\].*$",""); print s}' "$PROFILE_FILE")
         if [[ -n "$profiles" ]]; then
-            echo "$profiles" | sed 's/^/  - /'
+            while IFS= read -r _p; do
+                printf '  - %s\n' "$_p"
+            done <<< "$profiles"
         else
             echo "  (No profiles found)"
         fi
@@ -314,10 +318,12 @@ if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     if [[ -f "$PROFILE_FILE" ]]; then
         profiles=$(awk -v inst="$INSTRUMENT" 'BEGIN{pat="^\\["inst"\\."} $0 ~ pat {sub("^\\["inst"\\.",""); sub("\\].*$",""); print}' "$PROFILE_FILE")
         if [[ -n "$profiles" ]]; then
-            echo "$profiles" | sed 's/^/  - /'
+            while IFS= read -r _p; do
+                printf '  - %s\n' "$_p"
+            done <<< "$profiles"
         else
             echo "  (No profiles found)"
-        fi
+         fi
     else
         echo "  (Profile file not found: $PROFILE_FILE)"
     fi
