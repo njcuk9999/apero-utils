@@ -34,8 +34,9 @@ get_install_script_for_instrument() {
     fi
 
     while IFS= read -r line || [[ -n "$line" ]]; do
-        # trim whitespace
-        line="$(echo "$line" | sed 's/^\s\+//;s/\s\+$//')"
+        # trim whitespace (use bash parameter expansion)
+        line="${line#${line%%[![:space:]]*}}"
+        line="${line%${line##*[![:space:]]}}"
         # skip comments/empty
         [[ -z "$line" || "$line" =~ ^# ]] && continue
 
@@ -84,8 +85,8 @@ list_installed_instruments() {
         echo "  (Instrument file not found: $INSTRUMENT_FILE)"
         return
     fi
-    # read section names
-    grep -E '^\[[^]]+\]' "$INSTRUMENT_FILE" | sed 's/^\[//; s/\]$//' | while IFS= read -r instr; do
+    # read section names using awk to avoid sed issues
+    awk '/^\[.*\]/{s=$0; gsub(/^\[|\]$/,"",s); print s}' "$INSTRUMENT_FILE" | while IFS= read -r instr; do
         if is_instrument_installed "$instr"; then
             echo "  - $instr"
         fi
@@ -110,8 +111,9 @@ show_help() {
     if [[ -n "$1" ]]; then
         local instr="$1"
         if [[ -f "$PROFILE_FILE" ]]; then
+            # Use awk to safely extract profile names for this instrument (avoids sed delimiter issues)
             local profiles
-            profiles=$(grep "^\[$instr\." "$PROFILE_FILE" | sed "s/^\[$instr\.//; s/\].*$//")
+            profiles=$(awk -v inst="$instr" 'index($0,"["inst".")==1 {s=$0; sub("^\["inst"\.","",s); sub("\].*$","",s); print s}' "$PROFILE_FILE")
             if [[ -n "$profiles" ]]; then
                 echo "Available profiles for '$instr':"
                 echo "$profiles" | sed 's/^/  - /'
@@ -169,10 +171,12 @@ fi
 # Build lookup key [server.username]
 # -----------------------------------------------------------------------------
 LOOKUP="[$APERO_SERVER.$USER]"
-ESCAPED_LOOKUP=$(printf '%s\n' "$LOOKUP" | sed 's/[][.\\^$*+?{|}()]/\\&/g')
+
+# Find the line number where the header appears using awk (match at line start)
+LINE=$(awk -v key="$LOOKUP" 'index($0,key)==1 {print NR; exit}' "$APERO_USERS_CONF")
 
 # Check if header exists in the file
-if ! grep -q "^$ESCAPED_LOOKUP" "$APERO_USERS_CONF"; then
+if [[ -z "$LINE" ]]; then
     echo "ERROR: User entry '$LOOKUP' not found in apero_users.conf"
     echo "Please contact the APERO administrators to be added."
     return 1
@@ -181,19 +185,14 @@ fi
 # -----------------------------------------------------------------------------
 # Extract name and email (lines after the header)
 # -----------------------------------------------------------------------------
-# Get the line number where the header appears
-LINE=$(grep -n "^$ESCAPED_LOOKUP" "$APERO_USERS_CONF" | head -n 1 | cut -d: -f1)
-
-# ensure LINE is numeric
-if ! [[ "$LINE" =~ ^[0-9]+$ ]]; then
-    echo "ERROR: Could not locate user header '$LOOKUP' in $APERO_USERS_CONF"
-    echo "Please contact the APERO administrators to be added."
-    return 1
-fi
-
 # name is next line, email the line after that
 NAME=$(sed -n "$((LINE+1))p" "$APERO_USERS_CONF")
+# trim name
+NAME="${NAME#${NAME%%[![:space:]]*}}"
+NAME="${NAME%${NAME##*[![:space:]]}}"
 EMAIL=$(sed -n "$((LINE+2))p" "$APERO_USERS_CONF")
+EMAIL="${EMAIL#${EMAIL%%[![:space:]]*}}"
+EMAIL="${EMAIL%${EMAIL##*[![:space:]]}}"
 USER_INSTR=$(sed -n "$((LINE+3))p" "$APERO_USERS_CONF" | tr -d '[:space:]')
 # Convert comma list → space list
 USER_INSTR_LIST=$(echo "$USER_INSTR" | tr ',' ' ')
@@ -278,8 +277,7 @@ fi
 FULL_SECTION="[$INSTRUMENT.$PROFILE]"
 
 # Get list of profiles for this instrument
-PROFILE_LIST=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" \
-                | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
+PROFILE_LIST=$(awk -v inst="$INSTRUMENT" 'BEGIN{pat="^\\["inst"\\."} $0 ~ pat {sub("^\\["inst"\\.",""); sub("\\].*$",""); print}' "$PROFILE_FILE")
 
 # -----------------------------------------------------------------------------
 # CASE 1 — No profile provided
@@ -289,7 +287,7 @@ if [ -z "$PROFILE" ]; then
     echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
-        profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
+        profiles=$(awk -v inst="$INSTRUMENT" 'index($0,"["inst".")==1 {s=$0; sub("^\["inst".",""); sub("\].*$",""); print s}' "$PROFILE_FILE")
         if [[ -n "$profiles" ]]; then
             echo "$profiles" | sed 's/^/  - /'
         else
@@ -314,7 +312,7 @@ if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
-        profiles=$(grep "^\[$INSTRUMENT\." "$PROFILE_FILE" | sed "s/^\[$INSTRUMENT\.//; s/\].*$//")
+        profiles=$(awk -v inst="$INSTRUMENT" 'BEGIN{pat="^\\["inst"\\."} $0 ~ pat {sub("^\\["inst"\\.",""); sub("\\].*$",""); print}' "$PROFILE_FILE")
         if [[ -n "$profiles" ]]; then
             echo "$profiles" | sed 's/^/  - /'
         else
