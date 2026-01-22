@@ -111,9 +111,9 @@ show_help() {
     if [[ -n "$1" ]]; then
         local instr="$1"
         if [[ -f "$PROFILE_FILE" ]]; then
-            # Use awk to safely extract profile names for this instrument (avoids sed delimiter issues)
+            # Use awk to safely extract profile names for this instrument
             local profiles
-            profiles=$(awk -v inst="$instr" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=$0; sub("^" prefix, "", s); sub("\\].*$", "", s); print s}' "$PROFILE_FILE")
+            profiles=$(awk -v inst="$instr" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=substr($0,length(prefix)+1); gsub(/\].*$/,"",s); print s}' "$PROFILE_FILE")
             if [[ -n "$profiles" ]]; then
                 echo "Available profiles for '$instr':"
                 while IFS= read -r _p; do
@@ -279,7 +279,7 @@ fi
 FULL_SECTION="[$INSTRUMENT.$PROFILE]"
 
 # Get list of profiles for this instrument
-PROFILE_LIST=$(awk -v inst="$INSTRUMENT" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=$0; sub("^" prefix, "", s); sub("\\].*$", "", s); print s}' "$PROFILE_FILE")
+PROFILE_LIST=$(awk -v inst="$INSTRUMENT" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=substr($0,length(prefix)+1); gsub(/\].*$/,"",s); print s}' "$PROFILE_FILE")
 
 # -----------------------------------------------------------------------------
 # CASE 1 — No profile provided
@@ -289,7 +289,7 @@ if [ -z "$PROFILE" ]; then
     echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
-        profiles=$(awk -v inst="$INSTRUMENT" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=$0; sub("^" prefix, "", s); sub("\\].*$", "", s); print s}' "$PROFILE_FILE")
+        profiles=$(awk -v inst="$INSTRUMENT" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=substr($0,length(prefix)+1); gsub(/\].*$/,"",s); print s}' "$PROFILE_FILE")
         if [[ -n "$profiles" ]]; then
             while IFS= read -r _p; do
                 printf '  - %s\n' "$_p"
@@ -316,7 +316,7 @@ if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     echo ""
     echo "Available profiles for '$INSTRUMENT':"
     if [[ -f "$PROFILE_FILE" ]]; then
-        profiles=$(awk -v inst="$INSTRUMENT" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=$0; sub("^" prefix, "", s); sub("\\].*$", "", s); print s}' "$PROFILE_FILE")
+        profiles=$(awk -v inst="$INSTRUMENT" 'BEGIN{prefix="[" inst "."} index($0,prefix)==1 {s=substr($0,length(prefix)+1); gsub(/\].*$/,"",s); print s}' "$PROFILE_FILE")
         if [[ -n "$profiles" ]]; then
             while IFS= read -r _p; do
                 printf '  - %s\n' "$_p"
