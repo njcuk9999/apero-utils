@@ -283,6 +283,10 @@ def get_settings():
         for profile in settings['PROFILES']:
             settings['PROFILES'][profile]['processing']['run file'] = args.run
     # ----------------------------------------------------------------------
+    # add test mode to each profile
+    for profile in settings['PROFILES']:
+        settings['PROFILES'][profile]['TEST'] = settings['TEST']
+    # ----------------------------------------------------------------------
     # Splash screen
     print('*' * 50)
     print('* APERO MANUAL TRIGGER')
@@ -732,6 +736,10 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
                     if * or multiple given check is skipped
     :return:
     """
+    # deal with test mode (don't run checks)
+    if pdict.get('TEST', False):
+        print('Skipping {0} check: TEST mode activated'.format(mode))
+        return
     # get the current working directory
     cwd = os.getcwd()
     # we don't always want to do tests
@@ -784,11 +792,13 @@ def run_comm_visualization(settings: Dict[str, Any]):
         comm_path = pdict['get-comm']['out path']
         # get the run ids path (inside the comm path)
         runid_dir = os.path.join(comm_path, 'runids')
+        # get the test mode
+        test_mode = settings['TEST']
         # ---------------------------------------------------------------------
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_visu
         # run the visualization tool for the comm directory
-        apero_visu.main(mode='info', path=runid_dir)
+        apero_visu.main(mode='info', path=runid_dir, test=test_mode)
 
 
 def run_push_to_datacenter(settings: Dict[str, Any]):
