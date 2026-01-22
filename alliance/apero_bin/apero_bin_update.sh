@@ -130,7 +130,8 @@ if [[ -z "$LAST_VALID_GIT_PATH" ]]; then
 fi
 
 # Derive docs source relative to LAST_VALID_GIT_PATH (same instrument)
-DOCS_SRC="$(dirname "$LAST_VALID_GIT_PATH")/../docs"
+# LAST_VALID_GIT_PATH points to .../alliance/apero_bin — docs lives in .../alliance/docs
+DOCS_SRC="$(dirname "$LAST_VALID_GIT_PATH")/docs"
 DOCS_DEST_DIR="$APERO_PATH/docs"
 
 echo "=================================================="
