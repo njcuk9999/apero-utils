@@ -46,6 +46,9 @@ def get_args() -> Dict[str, Any]:
                         help='The profiles yaml to use')
     parser.add_argument('--profiles', type=str, default='None',
                         help='Only use these profiles (ignore any others)')
+    parser.add_argument('--gen', action='store_true', default=False,
+                        help='Generate mode: print email and command '
+                             'instead of sending emails')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -80,6 +83,8 @@ def load_params():
         # if for some reason we have no profiles set it back to None
         if len(params['filter profiles']) == 0:
             params['filter profiles'] = None
+    # push the gen argument into params
+    params['gen_mode'] = args.get('gen', False)
 
     # return parameters
     return params

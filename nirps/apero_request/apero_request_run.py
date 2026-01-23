@@ -105,19 +105,45 @@ def __main__(params):
         # print where we are up to
         msg = 'Emailing user for request {0} / {1}'
         misc.log_msg(params, msg.format(r_it +1, len(requests)))
-        # email a success
-        if request.valid and not request.exists:
-            # email user
-            misc.log_msg(params, '\tEmailing success')
-            request.email_success(params, r_it)
-        elif not request.exists:
-            # email user
-            misc.log_msg(params, '\tEmailing failure')
-            request.email_failure(params, r_it)
+        # check if we are in generate mode
+        if params.get('gen_mode', False):
+            # print email and command instead of sending
+            if request.valid and not request.exists:
+                print('=' * 80)
+                print(f'Email: {request.email}')
+                print('=' * 80)
+                print(f'Command: {request.cmd}')
+                print('=' * 80)
+            elif not request.exists:
+                print('=' * 80)
+                print(f'Email: {request.email}')
+                print('=' * 80)
+                print(f'Request failed: {request.reason}')
+                print('=' * 80)
+            else:
+                msg = 'Request {0} already exists:'
+                misc.log_msg(params, msg.format(r_it))
+                print(request)
         else:
-            msg = 'Request {0} already exists:'
-            misc.log_msg(params, msg.format(r_it))
-            print(request)
+            # email a success
+            if request.valid and not request.exists:
+                # email user
+                misc.log_msg(params, '\tEmailing success')
+                request.email_success(params, r_it)
+            elif not request.exists:
+                # email user
+                misc.log_msg(params, '\tEmailing failure')
+                request.email_failure(params, r_it)
+            else:
+                msg = 'Request {0} already exists:'
+                misc.log_msg(params, msg.format(r_it))
+                print(request)
+    # -------------------------------------------------------------------------
+    # Skip remaining steps if in generate mode
+    if params.get('gen_mode', False):
+        misc.log_msg(params, 'Generate mode: skipping post-processing steps')
+        misc.end_msg(params)
+        return
     # -------------------------------------------------------------------------
     # copy index.html file over
     general.copy_index(params)
