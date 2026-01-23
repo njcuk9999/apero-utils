@@ -101,24 +101,6 @@ def __main__(params):
         # deal with skips
         if request.skip:
             misc.log_msg(params, f'\tSkipping email {r_it + 1}')
-            if params.get('gen_mode', False):
-                # print email and command instead of sending
-                if request.valid and not request.exists:
-                    print('=' * 80)
-                    print(f'Email: {request.email}')
-                    print('=' * 80)
-                    print(f'Command: {request.cmd}')
-                    print('=' * 80)
-                elif not request.exists:
-                    print('=' * 80)
-                    print(f'Email: {request.email}')
-                    print('=' * 80)
-                    print(f'Request failed: {request.reason}')
-                    print('=' * 80)
-                else:
-                    msg = 'Request {0} already exists:'
-                    misc.log_msg(params, msg.format(r_it))
-                    print(request)
             continue
         # print where we are up to
         msg = 'Emailing user for request {0} / {1}'

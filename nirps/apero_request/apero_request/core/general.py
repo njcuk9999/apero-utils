@@ -779,15 +779,17 @@ def create_requests(params: Dict[str, Any],
         # ---------------------------------------------------------------------
         # skip profiles not in filter profiles list (if used)
         #    if this is not used then all profiles are valid
-        if params['filter profiles'] is not None:
-            if profile not in params['filter profiles']:
-                # create request
-                request = Request.from_pandas_row(valid_dataframe.iloc[it])
-                # set request as invalid
-                request.skip = True
-                # add to list of requests
-                requests.append(request)
-                continue
+        #    unless --noskip is used, in which case process all
+        if not params.get('noskip_mode', False):
+            if params['filter profiles'] is not None:
+                if profile not in params['filter profiles']:
+                    # create request
+                    request = Request.from_pandas_row(valid_dataframe.iloc[it])
+                    # set request as invalid
+                    request.skip = True
+                    # add to list of requests
+                    requests.append(request)
+                    continue
         # ---------------------------------------------------------------------
         # deal with passkey not in pass_dict
         if passkey not in pass_dict:

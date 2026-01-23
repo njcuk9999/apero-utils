@@ -49,6 +49,9 @@ def get_args() -> Dict[str, Any]:
     parser.add_argument('--gen', action='store_true', default=False,
                         help='Generate mode: print email and command '
                              'instead of sending emails')
+    parser.add_argument('--noskip', action='store_true', default=False,
+                        help='Do not skip requests (process all regardless '
+                             'of filter)')
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -85,6 +88,8 @@ def load_params():
             params['filter profiles'] = None
     # push the gen argument into params
     params['gen_mode'] = args.get('gen', False)
+    # push the noskip argument into params
+    params['noskip_mode'] = args.get('noskip', False)
 
     # return parameters
     return params
