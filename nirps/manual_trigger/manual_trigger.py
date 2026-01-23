@@ -998,7 +998,7 @@ def apero_reset(params: Any, pdict: Dict[str, Any]):
     print('\t\tResetting processing')
     # deal with all in reset dirs
     if 'all' in reset_dirs:
-        apero_reset.main(warn=False)
+        apero_reset.main(warn=False, test=pdict.get('TEST', False))
     # loop around directories to be reset
     for reset_dir in reset_dirs:
         if reset_dir in reset_funcs:
