@@ -254,10 +254,10 @@ fi
 export IN_SALLOC
 
 # Detect presence of --batch among the arguments passed when sourcing
-BATCH=1
+BATCH=0
 for _arg in "$@"; do
     if [[ "$_arg" == "--batch" ]]; then
-        BATCH=0
+        BATCH=1
         break
     fi
 done
