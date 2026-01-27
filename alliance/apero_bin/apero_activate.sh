@@ -254,10 +254,10 @@ fi
 export IN_SALLOC
 
 # Detect presence of --batch among the arguments passed when sourcing
-BATCH=0
+BATCH=1
 for _arg in "$@"; do
     if [[ "$_arg" == "--batch" ]]; then
-        BATCH=1
+        BATCH=0
         break
     fi
 done
@@ -265,7 +265,7 @@ done
 # If --batch present: proceed without warnings (caller intends batch behavior)
 # If not in salloc (IN_SALLOC==0): proceed
 # If in salloc and no --batch: warn user and require confirmation to continue
-if [[ $BATCH -eq 1 ]]; then
+if [[ $BATCH -eq 0 ]]; then
     # batch requested; continue
     :
 else
