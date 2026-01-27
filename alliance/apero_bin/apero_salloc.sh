@@ -22,7 +22,8 @@ Options:
   -m, --mem MEM         Memory per CPU, e.g., 4096M (default: 4096M)
   -a, --account ACCOUNT Select account by name from the conf file
       --x11            Request an interactive X11 session
-  -p, --prompt, --run   Prompt the user for confirmation before running salloc
+  -p, --prompt          (deprecated) retained for compatibility; confirmation
+                        is now always asked after showing the command
   -h, --help            Show this help message and exit
 
 If an option is not provided on the command line the script will prompt for it
@@ -38,7 +39,7 @@ Environment variables used:
 
 Example usage:
 
-    apero_salloc.sh --time 04:00:00 --cpus 20 --nodes 1 --mem 4096M --account myacct --prompt
+    apero_salloc.sh --time 04:00:00 --cpus 20 --nodes 1 --mem 4096M --account rrg-rdoyon --prompt
 
 Pressing Ctrl+C at any prompt will abort the script.
 
@@ -81,7 +82,7 @@ while [[ $# -gt 0 ]]; do
             ACCOUNT="$2"; shift 2;;
         --x11)
             WANT_X11="Y"; shift;;
-        -p|--prompt|--run)
+        -p|--prompt)
             PROMPT=1; shift;;
         -h|--help)
             show_help; exit 0;;
@@ -296,27 +297,17 @@ echo ">> $COMMAND"
 echo "=================================================="
 echo
 
-# Final action: if PROMPT=1 execute (we already asked); if PROMPT=0 do not run
-# (interactive mode already collected options and displayed the command).
-if [[ $PROMPT -eq 1 ]]; then
-    if [[ $RUN_CONFIRMED -eq 1 ]]; then
-        eval "$COMMAND"
-    else
-        # fallback - should not be reached, but ask just in case
-        if [[ -c /dev/tty ]]; then
-            read -p "Run salloc [Y]es or [N]o: " CONFIRM </dev/tty
-        else
-            read -p "Run salloc [Y]es or [N]o: " CONFIRM
-        fi
-        CONFIRM=${CONFIRM:-N}
-        if [[ ! "$CONFIRM" =~ ^[Yy] ]]; then
-            echo "Aborted by user."
-            exit 1
-        fi
-        eval "$COMMAND"
-    fi
+# Always ask confirmation after showing the command and abort on No.
+if [[ -c /dev/tty ]]; then
+    read -p "Run salloc [Y]es or [N]o: " CONFIRM </dev/tty
 else
-    echo "No --prompt flag provided; command shown but not executed."
-    echo "If you want to confirm and run the command add --prompt to the command line."
-    exit 0
+    read -p "Run salloc [Y]es or [N]o: " CONFIRM
 fi
+CONFIRM=${CONFIRM:-N}
+if [[ ! "$CONFIRM" =~ ^[Yy] ]]; then
+    echo "Aborted by user."
+    exit 1
+fi
+
+# Run the constructed command
+eval "$COMMAND"
