@@ -22,12 +22,12 @@ Options:
   -m, --mem MEM         Memory per CPU, e.g., 4096M (default: 4096M)
   -a, --account ACCOUNT Select account by name from the conf file
       --x11            Request an interactive X11 session
-      --prompt         Prompt the user for confirmation before running salloc
+  -p, --prompt, --run   Prompt the user for confirmation before running salloc
   -h, --help            Show this help message and exit
 
 If an option is not provided on the command line the script will prompt for it
 interactively (except the final confirmation which is only asked when
-`--prompt` is provided). Without `--prompt` the script will not run salloc and
+--prompt is provided). Without --prompt the script will not run salloc and
 will exit after showing the command to be run.
 
 Your accounts are read from the conf file:
@@ -81,7 +81,7 @@ while [[ $# -gt 0 ]]; do
             ACCOUNT="$2"; shift 2;;
         --x11)
             WANT_X11="Y"; shift;;
-        --prompt)
+        -p|--prompt|--run)
             PROMPT=1; shift;;
         -h|--help)
             show_help; exit 0;;
@@ -107,78 +107,33 @@ fi
 echo "=== SLURM salloc launcher ==="
 
 # -----------------------------------------------------------------------------
-# Set defaults for values not provided on the command line
+# Default values (used only if user accepts empty input at prompts)
+# Do NOT assign these defaults to the variables here — only prompt if not
+# supplied on the command line (unless --prompt was provided, see below).
 # -----------------------------------------------------------------------------
-TIME=${TIME:-4:00:00}
-NODES=${NODES:-1}
-CPUS=${CPUS:-1}
-MEM=${MEM:-4096M}
+DEFAULT_TIME="4:00:00"
+DEFAULT_NODES="1"
+DEFAULT_CPUS="1"
+DEFAULT_MEM="4096M"
 
 # -----------------------------------------------------------------------------
-# Ask about time allocation if not provided
-# -----------------------------------------------------------------------------
-if [[ -z "$TIME" ]]; then
-    read -p "Enter time (HH:MM:SS) [default 4:00:00]: " TIME
-    TIME=${TIME:-4:00:00}
-else
-    echo "Using time: $TIME"
-fi
-
-# -----------------------------------------------------------------------------
-# Ask about Nodes if not provided
-# -----------------------------------------------------------------------------
-if [[ -z "$NODES" ]]; then
-    read -p "Enter number of nodes [default 1]: " NODES
-    NODES=${NODES:-1}
-else
-    echo "Using nodes: $NODES"
-fi
-
-# -----------------------------------------------------------------------------
-# Ask about CPUS if not provided
-# -----------------------------------------------------------------------------
-if [[ -z "$CPUS" ]]; then
-    read -p "Enter number of CPUs per task [default 1]: " CPUS
-    CPUS=${CPUS:-1}
-else
-    echo "Using cpus: $CPUS"
-fi
-
-# -----------------------------------------------------------------------------
-# Ask about Memory if not provided
-# -----------------------------------------------------------------------------
-if [[ -z "$MEM" ]]; then
-    read -p "Enter mem per CPU (e.g., 4096M) [default 4096M]: " MEM
-    MEM=${MEM:-4096M}
-else
-    echo "Using mem: $MEM"
-fi
-
-# -----------------------------------------------------------------------------
-# Ask about user account - build ACCOUNT_LIST from conf file
+# Build account list from conf file (we need it both for interactive and
+# non-interactive/--prompt modes)
 # -----------------------------------------------------------------------------
 
 echo
 echo "Available $APERO_SERVER accounts:"
 echo
 
-# Parse groups and map them to env variables
 i=1
 declare -a ACCOUNT_LIST
-
 current_group=""
-
 while IFS= read -r line; do
-    # Detect group header
     if [[ "$line" =~ ^\[(.+)\]$ ]]; then
         current_group="${BASH_REMATCH[1]}"
         continue
     fi
-
-    # Skip blank lines
     [[ -z "$line" ]] && continue
-
-    # Treat every non-header line as an account entry
     ACCOUNT_LIST[$i]="$line"
     echo "  $i) $line   (group: $current_group)"
     ((i++))
@@ -190,48 +145,95 @@ if (( i == 1 )); then
     exit 1
 fi
 
-# If account provided via CLI, validate it exists in the ACCOUNT_LIST values
-if [[ -n "$ACCOUNT" ]]; then
-    found=0
-    for ((j=1;j<i;j++)); do
-        if [[ "${ACCOUNT_LIST[$j]}" == "$ACCOUNT" ]]; then
-            found=1
-            break
-        fi
-    done
-    if [[ $found -ne 1 ]]; then
-        echo "*************************"
-        echo "ERROR: Account '$ACCOUNT' not found in $CONF_FILE"
-        echo "*************************"
-        exit 1
-    fi
-else
-    # interactive selection
-    echo
-    read -p "Select account by number: " CHOICE
-    ACCOUNT="${ACCOUNT_LIST[$CHOICE]}"
+# -----------------------------------------------------------------------------
+# Two modes:
+#  - PROMPT=1: user requested confirmation of running the salloc command.
+#              In this mode we DO NOT interactively ask for missing options;
+#              instead we auto-fill them with defaults (and pick first
+#              account if none provided), then ask the single confirmation
+#              "Run salloc [Y]es or [N]o".
+#  - PROMPT=0: interactive mode for building the command: ask for any
+#              missing options (unless provided on CLI). After collecting
+#              values we display the command and exit (do not run it).
+# -----------------------------------------------------------------------------
 
+if [[ $PROMPT -eq 1 ]]; then
+    # Non-interactive option collection: fill missing values with defaults
+    TIME=${TIME:-$DEFAULT_TIME}
+    NODES=${NODES:-$DEFAULT_NODES}
+    CPUS=${CPUS:-$DEFAULT_CPUS}
+    MEM=${MEM:-$DEFAULT_MEM}
+
+    # If account not provided, pick the first account and inform the user
     if [[ -z "$ACCOUNT" ]]; then
-        echo "Invalid selection."
-        exit 1
+        ACCOUNT="${ACCOUNT_LIST[1]}"
+        echo "No account provided; defaulting to: $ACCOUNT"
+    else
+        echo "Using account: $ACCOUNT"
     fi
-fi
 
-# -----------------------------------------------------------------------------
-# Ask about interactive session
-# -----------------------------------------------------------------------------
-
-if [[ "$WANT_X11" == "Y" ]]; then
-    X11_FLAG="--x11"
-else
-    echo
-    read -p "Request an interactive X11 session? [Y/N]: " WANT_X11
-    WANT_X11=${WANT_X11:-N}
-
-    if [[ "$WANT_X11" =~ ^[Yy]$ ]]; then
+    # X11 flag handling when non-interactive: respect WANT_X11 if set, else none
+    if [[ "$WANT_X11" == "Y" ]]; then
         X11_FLAG="--x11"
     else
         X11_FLAG=""
+    fi
+
+else
+    # Interactive mode: prompt for any missing options
+    if [[ -z "${TIME+x}" || -z "$TIME" ]]; then
+        read -p "Enter time (HH:MM:SS) [${DEFAULT_TIME}]: " TIME
+        TIME=${TIME:-$DEFAULT_TIME}
+    else
+        echo "Using time: $TIME"
+    fi
+
+    if [[ -z "${NODES+x}" || -z "$NODES" ]]; then
+        read -p "Enter number of nodes [${DEFAULT_NODES}]: " NODES
+        NODES=${NODES:-$DEFAULT_NODES}
+    else
+        echo "Using nodes: $NODES"
+    fi
+
+    if [[ -z "${CPUS+x}" || -z "$CPUS" ]]; then
+        read -p "Enter number of CPUs per task [${DEFAULT_CPUS}]: " CPUS
+        CPUS=${CPUS:-$DEFAULT_CPUS}
+    else
+        echo "Using cpus: $CPUS"
+    fi
+
+    if [[ -z "${MEM+x}" || -z "$MEM" ]]; then
+        read -p "Enter mem per CPU (e.g., 4096M) [${DEFAULT_MEM}]: " MEM
+        MEM=${MEM:-$DEFAULT_MEM}
+    else
+        echo "Using mem: $MEM"
+    fi
+
+    # Interactive account selection if not provided
+    if [[ -n "$ACCOUNT" ]]; then
+        echo "Using account: $ACCOUNT"
+    else
+        echo
+        read -p "Select account by number: " CHOICE
+        ACCOUNT="${ACCOUNT_LIST[$CHOICE]}"
+        if [[ -z "$ACCOUNT" ]]; then
+            echo "Invalid selection."
+            exit 1
+        fi
+    fi
+
+    # X11 interactive prompt
+    if [[ "$WANT_X11" == "Y" ]]; then
+        X11_FLAG="--x11"
+    else
+        echo
+        read -p "Request an interactive X11 session? [Y/N]: " WANT_X11
+        WANT_X11=${WANT_X11:-N}
+        if [[ "$WANT_X11" =~ ^[Yy]$ ]]; then
+            X11_FLAG="--x11"
+        else
+            X11_FLAG=""
+        fi
     fi
 fi
 
@@ -249,20 +251,18 @@ echo ">> $COMMAND"
 echo "=================================================="
 echo
 
-# If --prompt was provided ask the user, otherwise do not run and inform the user
+# Final action: if PROMPT=1 ask to run; if PROMPT=0 do not run (interactive
+# mode already collected options and displayed the command).
 if [[ $PROMPT -eq 1 ]]; then
-    read -p "Run this command? [Y/n]: " CONFIRM
-    CONFIRM=${CONFIRM:-Y}
-
-    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    read -p "Run salloc [Y]es or [N]o: " CONFIRM
+    CONFIRM=${CONFIRM:-N}
+    if [[ ! "$CONFIRM" =~ ^[Yy] ]]; then
         echo "Aborted by user."
         exit 1
     fi
-
     eval "$COMMAND"
 else
-    echo "No --prompt flag provided; not running salloc."
-    echo "If you want to be prompted to run the command add --prompt to the command line."
+    echo "No --prompt flag provided; command shown but not executed."
+    echo "If you want to confirm and run the command add --prompt to the command line."
     exit 0
 fi
-
