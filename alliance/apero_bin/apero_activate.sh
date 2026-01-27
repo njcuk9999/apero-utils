@@ -215,19 +215,54 @@ export APERO_USER_NAME="$NAME"
 export APERO_USER_EMAIL="$EMAIL"
 
 # -----------------------------------------------------------------------------
+# Detect whether we are running inside a SLURM allocation (salloc/srun)
+# Sets IN_SALLOC=1 if inside an allocation, 0 otherwise. Use this variable in
+# the script to change behaviour when running on a compute node vs the login
+# node. Detection is best-effort: it checks SLURM env vars and (optionally)
+# queries scontrol if available.
+# Caveats: some clusters might not set the same env vars or may have custom
+# job managers; this is a heuristic but works on standard SLURM setups.
+# -----------------------------------------------------------------------------
+is_in_salloc() {
+    # Primary: SLURM_JOB_ID (set when allocation/job exists)
+    if [[ -n "${SLURM_JOB_ID:-}" ]]; then
+        # If scontrol exists, verify the job ID corresponds to an existing job
+        if command -v scontrol >/dev/null 2>&1; then
+            if scontrol show job "$SLURM_JOB_ID" >/dev/null 2>&1; then
+                return 0
+            else
+                return 1
+            fi
+        fi
+        # No scontrol available — assume presence of SLURM_JOB_ID implies allocation
+        return 0
+    fi
+
+    # Secondary checks: other SLURM variables sometimes set in allocations
+    if [[ -n "${SLURM_JOB_NODELIST:-}" || -n "${SLURM_NODELIST:-}" || -n "${SLURM_NNODES:-}" || -n "${SLURM_NPROCS:-}" ]]; then
+        return 0
+    fi
+
+    return 1
+}
+
+if is_in_salloc; then
+    IN_SALLOC=1
+else
+    IN_SALLOC=0
+fi
+export IN_SALLOC
+
+# -----------------------------------------------------------------------------
 #  Basic setup & arguments for apero-activate
 # -----------------------------------------------------------------------------
 INSTRUMENT="$1"
 PROFILE="$2"
 
-# Detect --batch in the arguments passed when sourcing
-BATCH=1
-for _arg in "$@"; do
-    if [[ "$_arg" == "--batch" ]]; then
-        BATCH=0
-        break
-    fi
-done
+# --batch handling removed: running salloc should be performed explicitly by the user
+# (for example: run `apero-salloc.sh` first, then `source apero_activate.sh ...` inside
+# the allocated environment). This avoids the activation script attempting to
+# start allocations and ensures commands in profiles run in the intended shell.
 
 if [ -z "$INSTRUMENT" ]; then
     # Print a short message instead of the full help menu to avoid noisy output
@@ -440,24 +475,3 @@ echo ""
 while IFS= read -r cmd; do
     eval "$cmd"
 done < <(get_profile_commands "$INSTRUMENT.$PROFILE")
-
-# If --batch was provided when sourcing, run the batch salloc command with
-# the requested fixed options. This runs after profile commands have been
-# executed.
-if [[ "$BATCH" -eq 1 ]]; then
-    SALLOC_SCRIPT="$APERO_BIN_PATH/apero_salloc.sh"
-    echo "================================================="
-    echo "Batch mode requested: launching salloc with preset options"
-    echo "  Command: $SALLOC_SCRIPT --prompt --time=8 --cpus=2 --nodes=1 --mem=4096 --account=rrg-rdoyon"
-    echo "================================================="
-    if [[ -f "$SALLOC_SCRIPT" && -x "$SALLOC_SCRIPT" ]] || [[ -f "$SALLOC_SCRIPT" ]]; then
-        # run the script (it will prompt/confirm as implemented in the salloc script)
-        "$SALLOC_SCRIPT" --prompt --time=8 --cpus=2 --nodes=1 --mem=4096 --account=rrg-rdoyon
-    else
-        echo "*************************"
-        echo "ERROR: salloc script not found at: $SALLOC_SCRIPT"
-        echo "Skipping batch salloc launch."
-        echo "*************************"
-    fi
-fi
-
