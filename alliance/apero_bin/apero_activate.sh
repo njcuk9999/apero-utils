@@ -270,7 +270,7 @@ if [[ $BATCH -eq 1 ]]; then
     echo "--batch mode activated - not checking salloc status."
     :
 else
-    if [[ "$IN_SALLOC" -eq 1 ]]; then
+    if [[ "$IN_SALLOC" -eq 0 ]]; then
         echo "*************************"
         echo "WARNING: Running on the head/login node is not recommended."
         echo "Please run 'apero-salloc' to get an allocation before activating this profile."
