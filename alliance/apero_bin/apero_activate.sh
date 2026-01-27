@@ -253,6 +253,43 @@ else
 fi
 export IN_SALLOC
 
+# Detect presence of --batch among the arguments passed when sourcing
+BATCH=0
+for _arg in "$@"; do
+    if [[ "$_arg" == "--batch" ]]; then
+        BATCH=1
+        break
+    fi
+done
+
+# If --batch present: proceed without warnings (caller intends batch behavior)
+# If not in salloc (IN_SALLOC==0): proceed
+# If in salloc and no --batch: warn user and require confirmation to continue
+if [[ $BATCH -eq 1 ]]; then
+    # batch requested; continue
+    :
+else
+    if [[ "$IN_SALLOC" -eq 1 ]]; then
+        echo "*************************"
+        echo "WARNING: Running on the head/login node is not recommended."
+        echo "Please run 'apero-salloc' to get an allocation before activating this profile."
+        echo "If you understand the risks and still want to continue, type 'skip' and press Enter."
+        echo "Otherwise the activation will be aborted now."
+        echo "*************************"
+        # Read from /dev/tty so prompt works even if stdin is redirected
+        if [[ -c /dev/tty ]]; then
+            read -p "Type 'skip' to continue: " RESP </dev/tty
+        else
+            read -p "Type 'skip' to continue: " RESP
+        fi
+        if [[ "$RESP" != "skip" ]]; then
+            echo "Aborting activation: run 'apero-salloc' first or re-run this command inside an allocation."
+            return 1
+        fi
+        echo "User acknowledged; continuing activation inside non-allocated shell."
+    fi
+fi
+
 # -----------------------------------------------------------------------------
 #  Basic setup & arguments for apero-activate
 # -----------------------------------------------------------------------------
