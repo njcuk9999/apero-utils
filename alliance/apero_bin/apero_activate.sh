@@ -82,7 +82,8 @@ is_instrument_installed() {
 # -----------------------------------------------------------------------------
 list_installed_instruments() {
     if [[ ! -f "$INSTRUMENT_FILE" ]]; then
-        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+        echo "  (Instrument file not found:"
+        echo "   $INSTRUMENT_FILE)"
         return
     fi
     # read section names using awk to avoid sed issues
@@ -98,13 +99,15 @@ show_help() {
     echo ""
     echo "This script must be sourced"
     echo ""
-    echo "This script runs the commands defined for INSTRUMENT.PROFILE in apero_profiles.conf"
+    echo "This script runs the commands defined for"
+    echo "INSTRUMENT.PROFILE in apero_profiles.conf"
     echo ""
     echo "Available instruments (installed for this user):"
     if [[ -f "$INSTRUMENT_FILE" ]]; then
         list_installed_instruments
     else
-        echo "  (Instrument file not found: $INSTRUMENT_FILE)"
+        echo "  (Instrument file not found:"
+        echo "   $INSTRUMENT_FILE)"
     fi
     echo ""
 
@@ -216,12 +219,12 @@ export APERO_USER_EMAIL="$EMAIL"
 
 # -----------------------------------------------------------------------------
 # Detect whether we are running inside a SLURM allocation (salloc/srun)
-# Sets IN_SALLOC=1 if inside an allocation, 0 otherwise. Use this variable in
-# the script to change behaviour when running on a compute node vs the login
-# node. Detection is best-effort: it checks SLURM env vars and (optionally)
-# queries scontrol if available.
-# Caveats: some clusters might not set the same env vars or may have custom
-# job managers; this is a heuristic but works on standard SLURM setups.
+# Sets IN_SALLOC=1 if inside an allocation, 0 otherwise.
+# Use this variable in the script to change behaviour when running on a
+# compute node vs the login node. Detection is best-effort: it checks
+# SLURM env vars and (optionally) queries scontrol if available.
+# Caveats: some clusters might not set the same env vars or may have
+# custom job managers; this is a heuristic but works on standard SLURM.
 # -----------------------------------------------------------------------------
 is_in_salloc() {
     # Primary: SLURM_JOB_ID (set when allocation/job exists)
@@ -271,12 +274,15 @@ if [[ $BATCH -eq 1 ]]; then
     :
 else
     if [[ "$IN_SALLOC" -eq 0 ]]; then
-        echo "*************************"
+        echo "**************************************************************"
         echo "WARNING: Running on the head/login node is not recommended."
-        echo "Please run 'apero-salloc' to get an allocation before activating this profile."
-        echo "If you understand the risks and still want to continue, type 'skip' and press Enter."
+        echo "**************************************************************"
+        echo "Please run 'apero-salloc' to get an allocation before"
+        echo "activating this profile."
+        echo "If you understand the risks and still want to continue,"
+        echo "type 'skip' and press Enter."
         echo "Otherwise the activation will be aborted now."
-        echo "*************************"
+        echo "**************************************************************"
         # Read from /dev/tty so prompt works even if stdin is redirected
         if [[ -c /dev/tty ]]; then
             read -p "Type 'skip' to continue: " RESP </dev/tty
@@ -284,10 +290,12 @@ else
             read -p "Type 'skip' to continue: " RESP
         fi
         if [[ "$RESP" != "skip" ]]; then
-            echo "Aborting activation: run 'apero-salloc' first or re-run this command inside an allocation."
+            echo "Aborting activation: run 'apero-salloc' first or re-run"
+            echo "this command inside an allocation."
             return 1
         fi
-        echo "User acknowledged; continuing activation inside non-allocated shell."
+        echo "User acknowledged; continuing activation inside"
+        echo "non-allocated shell."
     fi
 fi
 
@@ -347,7 +355,8 @@ fi
 # 2. Require instrument to be installed via apero_install (present in ~/.bashrc)
 if ! is_instrument_installed "$INSTRUMENT"; then
     echo "*************************"
-    echo "ERROR: Instrument '$INSTRUMENT' exists but has not been installed for this user."
+    echo "ERROR: Instrument '$INSTRUMENT' exists but has not been"
+    echo "installed for this user."
     echo "Please run: $APERO_BIN_PATH/apero_install.sh $INSTRUMENT"
     echo "*************************"
     echo ""
@@ -363,7 +372,8 @@ fi
 # 3. Check if user is authorized to use the selected instrument
 if [[ ! " $USER_INSTR_LIST " =~ " $INSTRUMENT " ]]; then
     echo "*************************"
-    echo "ERROR: Instrument '$INSTRUMENT' exists but you are not authorized to use it."
+    echo "ERROR: Instrument '$INSTRUMENT' exists but you are not"
+    echo "authorized to use it."
     echo "Authorized instruments for $NAME: $USER_INSTR_LIST"
     echo "Please contact the APERO administrators to be added."
     echo "*************************"
@@ -413,7 +423,8 @@ fi
 # -----------------------------------------------------------------------------
 if ! grep -q "^\[$INSTRUMENT\.$PROFILE\]" "$PROFILE_FILE"; then
     echo "*************************"
-    echo "ERROR: Profile '$PROFILE' not found for instrument '$INSTRUMENT'."
+    echo "ERROR: Profile '$PROFILE' not found for instrument"
+    echo "'$INSTRUMENT'."
     echo "*************************"
     echo ""
     echo "Available profiles for '$INSTRUMENT':"
@@ -504,7 +515,7 @@ echo "  godata         : cd to the $INSTRUMENT data directory"
 echo "  dfits          : run dfits for $INSTRUMENT"
 echo "  fitsort        : run fitsort for $INSTRUMENT"
 echo "  glow           : run glow markdown viewer"
-echo "  apero-trigger  : cd to manual trigger scripts for $INSTRUMENT"
+echo "  apero-trigger  : cd to manual trigger scripts"
 echo "  apero-checks   : cd to APERO checks for $INSTRUMENT"
 echo "  apero-activate : source the APERO profile activation script"
 echo "  apero-salloc   : run APERO salloc launcher"
