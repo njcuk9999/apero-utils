@@ -221,10 +221,10 @@ INSTRUMENT="$1"
 PROFILE="$2"
 
 # Detect --batch in the arguments passed when sourcing
-BATCH=0
+BATCH=1
 for _arg in "$@"; do
     if [[ "$_arg" == "--batch" ]]; then
-        BATCH=1
+        BATCH=0
         break
     fi
 done
