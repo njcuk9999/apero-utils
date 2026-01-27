@@ -617,7 +617,7 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     else:
         # get full path to apero-activate
         program1 = os.path.join(str(apero_bin_path), 'apero_activate.sh')
-        command1a = f'source {program1} {instrument} {activate_profile}'
+        command1a = f'source {program1} {instrument} {activate_profile} --batch'
     # Command 1b = apero-trigger command (change to manual trigger directory)
     command1b = f'cd {os.path.dirname(__file__)}'
     # ---------------------------------------------------------------------

@@ -106,6 +106,23 @@ fi
 
 echo "=== SLURM salloc launcher ==="
 
+# If --prompt was provided ask the user immediately whether to run; this
+# appears before any other interactive prompts per user request.
+RUN_CONFIRMED=0
+if [[ $PROMPT -eq 1 ]]; then
+    if [[ -c /dev/tty ]]; then
+        read -p "Run salloc [Y]es or [N]o: " FIRST_CONFIRM </dev/tty
+    else
+        read -p "Run salloc [Y]es or [N]o: " FIRST_CONFIRM
+    fi
+    FIRST_CONFIRM=${FIRST_CONFIRM:-N}
+    if [[ ! "$FIRST_CONFIRM" =~ ^[Yy] ]]; then
+        echo "Aborted by user."
+        exit 1
+    fi
+    RUN_CONFIRMED=1
+fi
+
 # -----------------------------------------------------------------------------
 # Default values (used only if user accepts empty input at prompts)
 # Do NOT assign these defaults to the variables here — only prompt if not
@@ -121,12 +138,9 @@ DEFAULT_MEM="4096M"
 # non-interactive/--prompt modes)
 # -----------------------------------------------------------------------------
 
-echo
-echo "Available $APERO_SERVER accounts:"
-echo
-
 i=1
 declare -a ACCOUNT_LIST
+declare -a ACCOUNT_GROUP
 current_group=""
 while IFS= read -r line; do
     if [[ "$line" =~ ^\[(.+)\]$ ]]; then
@@ -135,9 +149,8 @@ while IFS= read -r line; do
     fi
     [[ -z "$line" ]] && continue
     ACCOUNT_LIST[$i]="$line"
-    echo "  $i) $line   (group: $current_group)"
+    ACCOUNT_GROUP[$i]="$current_group"
     ((i++))
-
 done < "$CONF_FILE"
 
 if (( i == 1 )); then
@@ -225,6 +238,11 @@ if [[ -n "$ACCOUNT" ]]; then
 else
     if [[ $is_interactive -eq 1 ]]; then
         echo
+        echo "Available $APERO_SERVER accounts:"
+        echo
+        for ((k=1;k<i;k++)); do
+            echo "  $k) ${ACCOUNT_LIST[$k]}   (group: ${ACCOUNT_GROUP[$k]})"
+        done
         if [[ -c /dev/tty ]]; then
             read -p "Select account by number: " CHOICE </dev/tty
         else
@@ -278,20 +296,25 @@ echo ">> $COMMAND"
 echo "=================================================="
 echo
 
-# Final action: if PROMPT=1 ask to run; if PROMPT=0 do not run (interactive
-# mode already collected options and displayed the command).
+# Final action: if PROMPT=1 execute (we already asked); if PROMPT=0 do not run
+# (interactive mode already collected options and displayed the command).
 if [[ $PROMPT -eq 1 ]]; then
-    if [[ -c /dev/tty ]]; then
-        read -p "Run salloc [Y]es or [N]o: " CONFIRM </dev/tty
+    if [[ $RUN_CONFIRMED -eq 1 ]]; then
+        eval "$COMMAND"
     else
-        read -p "Run salloc [Y]es or [N]o: " CONFIRM
+        # fallback - should not be reached, but ask just in case
+        if [[ -c /dev/tty ]]; then
+            read -p "Run salloc [Y]es or [N]o: " CONFIRM </dev/tty
+        else
+            read -p "Run salloc [Y]es or [N]o: " CONFIRM
+        fi
+        CONFIRM=${CONFIRM:-N}
+        if [[ ! "$CONFIRM" =~ ^[Yy] ]]; then
+            echo "Aborted by user."
+            exit 1
+        fi
+        eval "$COMMAND"
     fi
-    CONFIRM=${CONFIRM:-N}
-    if [[ ! "$CONFIRM" =~ ^[Yy] ]]; then
-        echo "Aborted by user."
-        exit 1
-    fi
-    eval "$COMMAND"
 else
     echo "No --prompt flag provided; command shown but not executed."
     echo "If you want to confirm and run the command add --prompt to the command line."
