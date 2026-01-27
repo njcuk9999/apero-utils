@@ -265,7 +265,7 @@ done
 # If --batch present: proceed without warnings (caller intends batch behavior)
 # If not in salloc (IN_SALLOC==0): proceed
 # If in salloc and no --batch: warn user and require confirmation to continue
-if [[ $BATCH -eq 0 ]]; then
+if [[ $BATCH -eq 1 ]]; then
     # batch requested; continue
     :
 else
