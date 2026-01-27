@@ -267,6 +267,7 @@ done
 # If in salloc and no --batch: warn user and require confirmation to continue
 if [[ $BATCH -eq 1 ]]; then
     # batch requested; continue
+    echo "--batch mode activated - not checking salloc status."
     :
 else
     if [[ "$IN_SALLOC" -eq 1 ]]; then
