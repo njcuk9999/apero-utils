@@ -220,6 +220,15 @@ export APERO_USER_EMAIL="$EMAIL"
 INSTRUMENT="$1"
 PROFILE="$2"
 
+# Detect --batch in the arguments passed when sourcing
+BATCH=0
+for _arg in "$@"; do
+    if [[ "$_arg" == "--batch" ]]; then
+        BATCH=1
+        break
+    fi
+done
+
 if [ -z "$INSTRUMENT" ]; then
     # Print a short message instead of the full help menu to avoid noisy output
     echo "*************************"
@@ -431,3 +440,24 @@ echo ""
 while IFS= read -r cmd; do
     eval "$cmd"
 done < <(get_profile_commands "$INSTRUMENT.$PROFILE")
+
+# If --batch was provided when sourcing, run the batch salloc command with
+# the requested fixed options. This runs after profile commands have been
+# executed.
+if [[ "$BATCH" -eq 1 ]]; then
+    SALLOC_SCRIPT="$APERO_BIN_PATH/apero_salloc.sh"
+    echo "================================================="
+    echo "Batch mode requested: launching salloc with preset options"
+    echo "  Command: $SALLOC_SCRIPT --prompt --time=8 --cpus=2 --nodes=1 --mem=4096 --account=rrg-rdoyon"
+    echo "================================================="
+    if [[ -f "$SALLOC_SCRIPT" && -x "$SALLOC_SCRIPT" ]] || [[ -f "$SALLOC_SCRIPT" ]]; then
+        # run the script (it will prompt/confirm as implemented in the salloc script)
+        "$SALLOC_SCRIPT" --prompt --time=8 --cpus=2 --nodes=1 --mem=4096 --account=rrg-rdoyon
+    else
+        echo "*************************"
+        echo "ERROR: salloc script not found at: $SALLOC_SCRIPT"
+        echo "Skipping batch salloc launch."
+        echo "*************************"
+    fi
+fi
+
