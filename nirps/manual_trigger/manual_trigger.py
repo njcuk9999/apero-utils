@@ -647,6 +647,8 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     # add memory if greater than 0
     if all_values['mem'] > 0:
         bscript += f'#SBATCH --mem={all_values["mem"]}\n'
+    else:
+        bscript += f'#SBATCH --mem=0\n'
     # add account if not None
     if all_values['account'] is not None:
         bscript += f'#SBATCH --account={all_values["account"]}\n'
