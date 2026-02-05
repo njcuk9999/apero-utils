@@ -22,6 +22,7 @@ Options:
   -m, --mem MEM         Memory per CPU, e.g., 4096M (default: 4096M)
   -a, --account ACCOUNT Select account by name from the conf file
       --x11            Request an interactive X11 session
+  -d, --defaults       Use defaults for all options (no interactive prompts)
   -p, --prompt          (deprecated) retained for compatibility; confirmation
                         is now always asked after showing the command
   -h, --help            Show this help message and exit
@@ -66,6 +67,7 @@ fi
 # -----------------------------------------------------------------------------
 PROMPT=0
 WANT_X11="N"
+USE_DEFAULTS=0
 # Variables left empty will be prompted for later
 # TIME, NODES, CPUS, MEM, ACCOUNT may be set here
 while [[ $# -gt 0 ]]; do
@@ -82,6 +84,8 @@ while [[ $# -gt 0 ]]; do
             ACCOUNT="$2"; shift 2;;
         --x11)
             WANT_X11="Y"; shift;;
+        -d|--defaults)
+            USE_DEFAULTS=1; shift;;
         -p|--prompt)
             PROMPT=1; shift;;
         -h|--help)
@@ -131,7 +135,7 @@ fi
 # -----------------------------------------------------------------------------
 DEFAULT_TIME="4:00:00"
 DEFAULT_NODES="1"
-DEFAULT_CPUS="1"
+DEFAULT_CPUS="2"
 DEFAULT_MEM="4096M"
 
 # -----------------------------------------------------------------------------
@@ -166,6 +170,12 @@ if [ -t 0 ] || [ -t 1 ] || [ -t 2 ] || [ -c /dev/tty ]; then
     is_interactive=1
 fi
 
+# If user requested to just use defaults, force non-interactive behaviour so
+# prompt_default will auto-fill defaults (including selecting first account).
+if [[ $USE_DEFAULTS -eq 1 ]]; then
+    is_interactive=0
+fi
+
 prompt_default() {
     # args: varname prompt_text default
     local __varname="$1"; shift
@@ -186,7 +196,7 @@ prompt_default() {
             eval "${__varname}=\"$__input\""
         fi
     else
-        # Non-interactive: auto-fill default
+        # Non-interactive or --defaults: auto-fill default
         eval "${__varname}=\"${__default}\""
     fi
 }
@@ -255,7 +265,7 @@ else
             exit 1
         fi
     else
-        # non-interactive: default to first account
+        # non-interactive or --defaults: default to first account
         ACCOUNT="${ACCOUNT_LIST[1]}"
         echo "Non-interactive: defaulting account to: $ACCOUNT"
     fi
