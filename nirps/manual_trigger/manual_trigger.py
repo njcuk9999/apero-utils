@@ -350,6 +350,7 @@ def get_settings():
     print('*' * 50)
     print('Running with settings:')
     print(f'  Make Links: {settings["MAKELINKS"]}')
+    print(f'  APERO Precheck: {settings["APERO_PRECHECKS"]}')
     print(f'  APERO Processing: {settings["APERO_PROCESSING"]}')
     print(f'  APERO Get: {settings["APERO_GET"]}')
     print(f'  Reduction Interface: {settings["REDUCTION_INTERFACE"]}')
