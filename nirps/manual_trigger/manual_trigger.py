@@ -378,7 +378,7 @@ def run_prechecks(settings: Dict[str, Any]):
         # get the yaml dictionary for this profile
         pdict = settings['PROFILES'][profile]
         # update reduced checks
-        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
+        run_apero_checks(pdict, mode='raw', obsdirs=obs_dirs)
         # confirm checks for night
         confirm_checks(pdict, obsdirs=obs_dirs)
         # get the run file
@@ -396,7 +396,7 @@ def run_prechecks(settings: Dict[str, Any]):
                                 include_obs_dirs=obsdir_str,
                                 test=settings['TEST'])
         # update reduced checks
-        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
+        run_apero_checks(pdict, mode='raw', obsdirs=obs_dirs)
 
 
 def run_processing(settings: Dict[str, Any]):
