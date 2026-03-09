@@ -120,26 +120,58 @@ def get_args():
     parser.add_argument('--batch', action='store_true', default=False,
                         help='Run in batch mode (sbatch)')
     # link switch
-    parser.add_argument('--links', type=bool, default=True)
-    parser.add_argument('--only_links', type=bool, default=False)
+    parser.add_argument('--links', type=bool, default=True,
+                        help='Whether to make links to raw files '
+                             '(if False will skip this step)')
+    parser.add_argument('--only_links', type=bool, default=False,
+                        help='Whether to only make links to raw files '
+                             '(if True will skip all other steps)')
+    # apero precheck switch
+    parser.add_argument('--apero_precheck', type=bool, default=True,
+                        help='Whether to run the APERO prechecks '
+                             '(if False will skip this step)')
+    parser.add_argument('--only_apero_precheck', type=bool, default=False,
+                        help='Whether to only run the APERO prechecks '
+                             '(if True will skip all other steps)')
     # apero process switch
-    parser.add_argument('--apero_process', type=bool, default=True)
-    parser.add_argument('--only_apero_process', type=bool, default=False)
+    parser.add_argument('--apero_process', type=bool, default=True,
+                        help='Whether to run the APERO processing '
+                             '(if False will skip this step)')
+    parser.add_argument('--only_apero_process', type=bool, default=False,
+                        help='Whether to only run the APERO processing '
+                             '(if True will skip all other steps)')
     # apero get switch
-    parser.add_argument('--get', type=bool, default=True)
-    parser.add_argument('--only_aperoget', type=bool, default=False)
+    parser.add_argument('--get', type=bool, default=True,
+                        help='Whether to run the APERO get step '
+                             '(if False will skip this step)')
+    parser.add_argument('--only_aperoget', type=bool, default=False,
+                        help='Whether to only run the APERO get step '
+                             '(if True will skip all other steps)')
     # apero reduction interface switch
-    parser.add_argument('--ari', type=bool, default=True)
-    parser.add_argument('--only_ari', type=bool, default=False)
+    parser.add_argument('--ari', type=bool, default=True,
+                        help='Whether to run the reduction interface step '
+                             '(if False will skip this step)')
+    parser.add_argument('--only_ari', type=bool, default=False,
+                        help='Whether to only run the reduction interface step '
+                             '(if True will skip all other steps)')
     # apero comm visualization switch
-    parser.add_argument('--comm_visu', type=bool, default=True)
-    parser.add_argument('--only_commvisu', type=bool, default=False)
+    parser.add_argument('--comm_visu', type=bool, default=True,
+                        help='Whether to run the comm visualization step '
+                             '(if False will skip this step)')
+    parser.add_argument('--only_commvisu', type=bool, default=False,
+                        help='Whether to only run the comm visualization step '
+                             '(if True will skip all other steps)')
     # apero push to datacenter switch
-    parser.add_argument('--push_to_datacenter', type=bool, default=True)
-    parser.add_argument('--only_pushtodatacenter', type=bool, default=False)
+    parser.add_argument('--push_to_datacenter', type=bool, default=True,
+                        help='Whether to run the push to datacenter step '
+                             '(if False will skip this step)')
+    parser.add_argument('--only_pushtodatacenter', type=bool, default=False,
+                        help='Whether to only run the push to datacenter step '
+                             '(if True will skip all other steps)')
     # apero get --since parameter
     parser.add_argument('--since', type=str, default='None',
-                        help='APERO get - only copy files processed since this date')
+                        help='APERO get - only copy files processed since '
+                             'this date')
     # add a parameter to override the run.ini file provided by the yaml
     parser.add_argument('--run', type=str, default='None',
                         help='Override the run.ini file provided by the yaml')
@@ -187,6 +219,9 @@ def get_settings():
     # get link switches
     settings['MAKELINKS'] = args.links
     settings['ONLY_LINKS'] = args.only_links
+    # get apero precheck switches
+    settings['APERO_PRECHECKS'] = args.apero_precheck
+    settings['ONLY_PRECHECKS'] = args.only_apero_precheck
     # get apero processing switches
     settings['APERO_PROCESSING'] = args.apero_process
     settings['ONLY_APEROPROCESSING'] = args.only_apero_process
@@ -209,6 +244,16 @@ def get_settings():
     # only links
     if settings['ONLY_LINKS']:
         settings['MAKELINKS'] = True
+        settings['APERO_PRECHECK'] = False
+        settings['APERO_PROCESSING'] = False
+        settings['APERO_GET'] = False
+        settings['REDUCTION_INTERFACE'] = False
+        settings['COMM_VISUALIZATION'] = False
+        settings['PUSH_TO_DATACENTER'] = False
+    # only APERO prechecks
+    if settings['ONLY_PRECHECKS']:
+        settings['MAKELINKS'] = False
+        settings['APERO_PRECHECK'] = True
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = False
@@ -217,6 +262,7 @@ def get_settings():
     # only APERO processing
     if settings['ONLY_APEROPROCESSING']:
         settings['MAKELINKS'] = False
+        settings['APERO_PRECHECK'] = False
         settings['APERO_PROCESSING'] = True
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = False
@@ -225,6 +271,7 @@ def get_settings():
     # only apero get
     if settings['ONLY_APEROGET']:
         settings['MAKELINKS'] = False
+        settings['APERO_PRECHECK'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = True
         settings['REDUCTION_INTERFACE'] = False
@@ -233,6 +280,7 @@ def get_settings():
     # only ARI
     if settings['ONLY_REDUCTIONINTERFACE']:
         settings['MAKELINKS'] = False
+        settings['APERO_PRECHECK'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = True
@@ -241,6 +289,7 @@ def get_settings():
     # only COMM Visualization
     if settings['ONLY_COMMVISU']:
         settings['MAKELINKS'] = False
+        settings['APERO_PRECHECK'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = False
@@ -249,6 +298,7 @@ def get_settings():
     # only Push to datacenter
     if settings['ONLY_PUSHTODATACENTER']:
         settings['MAKELINKS'] = False
+        settings['APERO_PRECHECK'] = False
         settings['APERO_PROCESSING'] = False
         settings['APERO_GET'] = False
         settings['REDUCTION_INTERFACE'] = False
@@ -309,6 +359,44 @@ def get_settings():
     # ----------------------------------------------------------------------
     # return the settings
     return settings
+
+
+def run_prechecks(settings: Dict[str, Any]):
+    """
+    Run the processing on all profiles
+
+    :param settings: dict, settings dictionary
+    """
+    # loop around profiles
+    for profile in settings['PROFILES']:
+        # get the obs dirs
+        obs_dirs = settings['OBS_DIRS']
+        # get the obsdirs as a string
+        obsdir_str = ','.join(obs_dirs)
+        # print progress
+        print(f'\tRunning precheck for profile: {profile}')
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
+        # update reduced checks
+        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
+        # confirm checks for night
+        confirm_checks(pdict, obsdirs=obs_dirs)
+        # get the run file
+        runfile = pdict['processing']['run file']
+        # get the cores (if given)
+        ncores = pdict['processing'].get('ncores', None)
+        # need to import apero_processing
+        from apero.tools.recipes.bin import apero_precheck
+        # run apero processing
+        if obs_dirs == '*':
+            apero_precheck.main(runfile=runfile, cores=ncores,
+                                test=settings['TEST'])
+        else:
+            apero_precheck.main(runfile=runfile, cores=ncores,
+                                include_obs_dirs=obsdir_str,
+                                test=settings['TEST'])
+        # update reduced checks
+        run_apero_checks(pdict, mode='red', obsdirs=obs_dirs)
 
 
 def run_processing(settings: Dict[str, Any]):
@@ -501,7 +589,6 @@ def run_apero_get(settings: Dict[str, Any]):
                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
                        group_server=comm_gserver, out_prefix=comm_prefix,
                        out_suffix=comm_suffix)
-
 
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):
@@ -1200,6 +1287,15 @@ if __name__ == "__main__":
         # deal with only creating links
         if trigger_settings['ONLY_LINKS']:
             print_process('Only making symbolic links')
+            sys.exit(0)
+    # ----------------------------------------------------------------------
+    # run apero processing on all profiles
+    if trigger_settings['APERO_PRECHECK']:
+        print_process('Running apero precheck')
+        run_prechecks(trigger_settings)
+        # deal with only running processing
+        if trigger_settings['ONLY_APEROPRECHECK']:
+            print_process('Only running apero precheck')
             sys.exit(0)
     # ----------------------------------------------------------------------
     # run apero processing on all profiles
