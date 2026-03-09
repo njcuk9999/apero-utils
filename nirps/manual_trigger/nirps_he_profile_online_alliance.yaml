@@ -133,10 +133,12 @@ nirps he online alliance:
         profile: nirps_he_profile_online_alliance.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
+        raw page id: 1741354113
         # define the red sheet name for the google sheet
         red sheet name: RED-ONLINE-NIRPS-HE
+        red page id: 541545005
         # define the comm sheet name for the google sheet
-        comments sheet id: 68390787
+        comments page id: 68390787
         # define the google sheet id
         raw sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
         red sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8

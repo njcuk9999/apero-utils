@@ -1184,8 +1184,8 @@ def confirm_checks(pdict: Dict[str, Any], obsdirs: Union[List[str], str]):
     instrument = base.IPARAMS['INSTRUMENT']
     # get cchecks, raw sheet and comm sheet ids from pdict
     checks_id = pdict['check'].get('raw sheet id', None)
-    raw_sheet_id = pdict['check'].get('raw checks sheet id', None)
-    comm_sheet_id = pdict['check'].get('comments sheet id', None)
+    raw_sheet_id = pdict['check'].get('raw page id', None)
+    comm_sheet_id = pdict['check'].get('comments page id', None)
     # Deal with instruments not covered by apero checks
     if checks_id is None or raw_sheet_id is None or comm_sheet_id is None:
         print(f'\t {instrument} not valid for checks: skipping confirmation')
