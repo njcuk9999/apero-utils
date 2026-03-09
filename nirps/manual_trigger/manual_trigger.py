@@ -221,7 +221,7 @@ def get_settings():
     settings['ONLY_LINKS'] = args.only_links
     # get apero precheck switches
     settings['APERO_PRECHECKS'] = args.apero_precheck
-    settings['ONLY_PRECHECKS'] = args.only_apero_precheck
+    settings['ONLY_APEROPRECHECK'] = args.only_apero_precheck
     # get apero processing switches
     settings['APERO_PROCESSING'] = args.apero_process
     settings['ONLY_APEROPROCESSING'] = args.only_apero_process
@@ -251,7 +251,7 @@ def get_settings():
         settings['COMM_VISUALIZATION'] = False
         settings['PUSH_TO_DATACENTER'] = False
     # only APERO prechecks
-    if settings['ONLY_PRECHECKS']:
+    if settings['ONLY_APEROPRECHECK']:
         settings['MAKELINKS'] = False
         settings['APERO_PRECHECK'] = True
         settings['APERO_PROCESSING'] = False
@@ -361,7 +361,7 @@ def get_settings():
     return settings
 
 
-def run_prechecks(settings: Dict[str, Any]):
+def run_prechecks(settings: Dict[str, Any], ncores: int = None):
     """
     Run the processing on all profiles
 
@@ -384,7 +384,8 @@ def run_prechecks(settings: Dict[str, Any]):
         # get the run file
         runfile = pdict['processing']['run file']
         # get the cores (if given)
-        ncores = pdict['processing'].get('ncores', None)
+        if ncores is None:
+            ncores = pdict['processing'].get('ncores', None)
         # need to import apero_processing
         from apero.tools.recipes.bin import apero_precheck
         # run apero processing
@@ -664,6 +665,26 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
         wargs = [profile]
         print(wmsg.format(*wargs))
         return False
+    # ----------------------------------------------------------------------
+    # These steps must be run in non-batch mode
+    # ----------------------------------------------------------------------
+    # make symbolic links
+    if trigger_settings['MAKELINKS']:
+        print_process('Making symbolic links')
+        make_sym_links(trigger_settings)
+        # deal with only creating links
+        if trigger_settings['ONLY_LINKS']:
+            print_process('Only making symbolic links')
+            sys.exit(0)
+    # ----------------------------------------------------------------------
+    # run apero processing on all profiles
+    if trigger_settings['APERO_PRECHECK']:
+        print_process('Running apero precheck')
+        run_prechecks(trigger_settings, ncores=1)
+        # deal with only running processing
+        if trigger_settings['ONLY_APEROPRECHECK']:
+            print_process('Only running apero precheck')
+            sys.exit(0)
     # ---------------------------------------------------------------------
     # deal with first profile setting the sbatch parameters
     bparams = ['time', 'nodes', 'cpus per task', 'mem', 'account', 'log path',
@@ -715,7 +736,20 @@ def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
     for arg in sys.argv[1:]:
         if '--batch' in arg:
             continue
+        # avoid links arguments as these have already been run in the
+        #    batch script
+        if 'links' in arg:
+            continue
+        # avoid precheck arguments as these have already been run in the
+        #     batch script
+        if 'precheck' in arg:
+            continue
+
         args.append(arg)
+    # Must force links to False
+    args.append('--links=False')
+    # Must force apero precheck to False
+    args.append('--apero_precheck=False')
     # Must add --force_yes to the args
     if '--force_yes' not in args:
         args.append('--force_yes')
