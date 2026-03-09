@@ -379,8 +379,6 @@ def run_prechecks(settings: Dict[str, Any], ncores: int = None):
         pdict = settings['PROFILES'][profile]
         # update reduced checks
         run_apero_checks(pdict, mode='raw', obsdirs=obs_dirs)
-        # confirm checks for night
-        confirm_checks(pdict, obsdirs=obs_dirs)
         # get the run file
         runfile = pdict['processing']['run file']
         # get the cores (if given)
@@ -398,6 +396,8 @@ def run_prechecks(settings: Dict[str, Any], ncores: int = None):
                                 test=settings['TEST'])
         # update reduced checks
         run_apero_checks(pdict, mode='raw', obsdirs=obs_dirs)
+        # confirm checks for night
+        confirm_checks(pdict, obsdirs=obs_dirs)
 
 
 def run_processing(settings: Dict[str, Any]):
