@@ -220,7 +220,7 @@ def get_settings():
     settings['MAKELINKS'] = args.links
     settings['ONLY_LINKS'] = args.only_links
     # get apero precheck switches
-    settings['APERO_PRECHECKS'] = args.apero_precheck
+    settings['APERO_PRECHECK'] = args.apero_precheck
     settings['ONLY_APEROPRECHECK'] = args.only_apero_precheck
     # get apero processing switches
     settings['APERO_PROCESSING'] = args.apero_process
@@ -350,7 +350,7 @@ def get_settings():
     print('*' * 50)
     print('Running with settings:')
     print(f'  Make Links: {settings["MAKELINKS"]}')
-    print(f'  APERO Precheck: {settings["APERO_PRECHECKS"]}')
+    print(f'  APERO Precheck: {settings["APERO_PRECHECK"]}')
     print(f'  APERO Processing: {settings["APERO_PROCESSING"]}')
     print(f'  APERO Get: {settings["APERO_GET"]}')
     print(f'  Reduction Interface: {settings["REDUCTION_INTERFACE"]}')
