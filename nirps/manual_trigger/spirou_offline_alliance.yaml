@@ -23,7 +23,7 @@ spirou offline:
       # whether to run in batch mode
       run batch: True
       # wall time
-      time: '72:00:00'
+      time: '120:00:00'
       # nodes
       nodes: 1
       # cpus per task

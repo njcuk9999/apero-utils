@@ -222,7 +222,10 @@ def plot_log(log_table, title=None, mask=None):
 # =============================================================================
 if __name__ == '__main__':
 
-    for case in [1,2,3]:
+    cases = [1,2,3,4]
+    cases = [5]
+
+    for case in cases:
         if case == 1:
             FILE_PATH = '/home/cook//alliance_timing/neil_alliance_pp_time.txt'
             # define the start date of the log (the messages are in HH:MM:SS.SS
@@ -247,6 +250,22 @@ if __name__ == '__main__':
             TITLE = f'SCTITAN  pp times [{START_DATE}]'
             # cut down the data (to avoid big jumps)
             MASK = ['2024-12-10 00:00:00', '2024-12-11 00:00:00']
+        elif case == 4:
+            FILE_PATH = '/home/cook//alliance_timing/lison_alliance_pp_time2.txt'
+            # define the start date of the log (the messages are in HH:MM:SS.SS
+            START_DATE = '2025-03-23'
+            # define title
+            TITLE = f'Lison Alliance pp times [{START_DATE}]'
+            # cut down the data (to avoid big jumps)
+            MASK = None
+        elif case == 5:
+            FILE_PATH = '/home/cook//alliance_timing/lison_alliance_pp_time3.txt'
+            # define the start date of the log (the messages are in HH:MM:SS.SS
+            START_DATE = '2025-03-23'
+            # define title
+            TITLE = f'Lison Alliance pp times [canfar vm] [{START_DATE}]'
+            # cut down the data (to avoid big jumps)
+            MASK = None
         else:
             raise ValueError('Invalid case number')
 
