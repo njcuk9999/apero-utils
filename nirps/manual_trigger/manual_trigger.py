@@ -100,6 +100,17 @@ class ManualTriggerException(Exception):
 # =============================================================================
 # Define main functionality
 # =============================================================================
+def str2bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif value.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def get_args():
     """
     Define the command line arguments
@@ -120,52 +131,55 @@ def get_args():
     parser.add_argument('--batch', action='store_true', default=False,
                         help='Run in batch mode (sbatch)')
     # link switch
-    parser.add_argument('--links', type=bool, default=True,
+    parser.add_argument('--links', type=str2bool, default=True,
                         help='Whether to make links to raw files '
                              '(if False will skip this step)')
-    parser.add_argument('--only_links', type=bool, default=False,
+    parser.add_argument('--only_links', action='store_true', default=False,
                         help='Whether to only make links to raw files '
                              '(if True will skip all other steps)')
     # apero precheck switch
-    parser.add_argument('--apero_precheck', type=bool, default=True,
+    parser.add_argument('--apero_precheck', type=str2bool, default=True,
                         help='Whether to run the APERO prechecks '
                              '(if False will skip this step)')
-    parser.add_argument('--only_apero_precheck', type=bool, default=False,
+    parser.add_argument('--only_apero_precheck', action='store_true',
+                        default=False,
                         help='Whether to only run the APERO prechecks '
                              '(if True will skip all other steps)')
     # apero process switch
-    parser.add_argument('--apero_process', type=bool, default=True,
+    parser.add_argument('--apero_process', type=str2bool, default=True,
                         help='Whether to run the APERO processing '
                              '(if False will skip this step)')
-    parser.add_argument('--only_apero_process', type=bool, default=False,
+    parser.add_argument('--only_apero_process', action='store_true',
+                        default=False,
                         help='Whether to only run the APERO processing '
                              '(if True will skip all other steps)')
     # apero get switch
-    parser.add_argument('--get', type=bool, default=True,
+    parser.add_argument('--get', type=str2bool, default=True,
                         help='Whether to run the APERO get step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_aperoget', type=bool, default=False,
+    parser.add_argument('--only_aperoget', action='store_true', default=False,
                         help='Whether to only run the APERO get step '
                              '(if True will skip all other steps)')
     # apero reduction interface switch
-    parser.add_argument('--ari', type=bool, default=True,
+    parser.add_argument('--ari', type=str2bool, default=True,
                         help='Whether to run the reduction interface step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_ari', type=bool, default=False,
+    parser.add_argument('--only_ari', action='store_true', default=False,
                         help='Whether to only run the reduction interface step '
                              '(if True will skip all other steps)')
     # apero comm visualization switch
-    parser.add_argument('--comm_visu', type=bool, default=True,
+    parser.add_argument('--comm_visu', type=str2bool, default=True,
                         help='Whether to run the comm visualization step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_commvisu', type=bool, default=False,
+    parser.add_argument('--only_commvisu', action='store_true', default=False,
                         help='Whether to only run the comm visualization step '
                              '(if True will skip all other steps)')
     # apero push to datacenter switch
-    parser.add_argument('--push_to_datacenter', type=bool, default=True,
+    parser.add_argument('--push_to_datacenter', type=str2bool, default=True,
                         help='Whether to run the push to datacenter step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_pushtodatacenter', type=bool, default=False,
+    parser.add_argument('--only_pushtodatacenter',
+                        action='store_true', default=False,
                         help='Whether to only run the push to datacenter step '
                              '(if True will skip all other steps)')
     # apero get --since parameter
