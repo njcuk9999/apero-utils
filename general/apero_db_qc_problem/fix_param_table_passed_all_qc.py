@@ -19,11 +19,14 @@ from tqdm import tqdm
 FILE_PATHS = ['/cosmos99/spirou/apero-data/spirou_offline/red/',
               '/cosmos99/spirou/apero-data/spirou_offline/calib/']
 
-FILE_SUFFICES = ['pclean_AB.fits', 'pclean_A.fits', 'pclean_B.fits']
+FILE_SUFFICES = ['blaze_AB.fits', 'blaze_A.fits', 'blaze_B.fits',
+                 'blaze_C.fits']
 
 KW_QCC_PASS = 'QCC_ALL'
 
 PARAM_TABLE_QCC_KEY = 'PASSED_ALL_QC'
+
+PRECLEAN_QCC_KEY_PREFIX = 'TQCCP'
 
 N_WORKERS = int(os.getenv('NWORKERS', '20'))
 CHUNKSIZE = int(os.getenv('CHUNKSIZE', '25'))
@@ -48,19 +51,37 @@ def find_files(file_path):
     return matched_files
 
 
+def get_qcc_pass_from_header(header) -> int:
+    """Read all preclean QCC PASS keys from a FITS header."""
+    pass_values = []
+    for key in header:
+        if key.startswith(PRECLEAN_QCC_KEY_PREFIX):
+            pass_values.append(int(header[key]))
+
+    if len(pass_values) == 0:
+        return 0
+
+    return min(pass_values)
+
+
 def process_file(filename: str):
     """Process one FITS file and return a status tuple."""
     try:
         with fits.open(filename, mode='update') as hdul:
             header = hdul[0].header
 
-            header[KW_QCC_PASS] = 1
+            qcc_value = get_qcc_pass_from_header(header)
+            header[KW_QCC_PASS] = qcc_value
 
             table = hdul['PARAM_TABLE'].data
             for row in range(len(table)):
+                # this fixes a mistake I introduced
+                if str(table['NAME'][row]) == '0':
+                    table['NAME'][row] = PARAM_TABLE_QCC_KEY
+                    table['VALUE'][row] = qcc_value == 1
                 # this is the original fix for those files I didn't get to yet
-                if PARAM_TABLE_QCC_KEY in table['NAME'][row]:
-                    table['VALUE'][row] = 1
+                elif PARAM_TABLE_QCC_KEY in table['NAME'][row]:
+                    table['VALUE'][row] = qcc_value == 1
 
             hdul.flush()
 

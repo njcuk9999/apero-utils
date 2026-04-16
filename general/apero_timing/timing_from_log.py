@@ -223,7 +223,7 @@ def plot_log(log_table, title=None, mask=None):
 if __name__ == '__main__':
 
     cases = [1,2,3,4]
-    cases = [5]
+    cases = [6]
 
     for case in cases:
         if case == 1:
@@ -264,6 +264,14 @@ if __name__ == '__main__':
             START_DATE = '2025-03-23'
             # define title
             TITLE = f'Lison Alliance pp times [canfar vm] [{START_DATE}]'
+            # cut down the data (to avoid big jumps)
+            MASK = None
+        if case == 6:
+            FILE_PATH = '/home/cook//alliance_timing/neil_alliance_pp_time2.txt'
+            # define the start date of the log (the messages are in HH:MM:SS.SS
+            START_DATE = '2026-03-17'
+            # define title
+            TITLE = f'Neil Alliance pp times [{START_DATE}]'
             # cut down the data (to avoid big jumps)
             MASK = None
         else:
