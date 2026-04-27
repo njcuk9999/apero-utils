@@ -1,0 +1,187 @@
+APERO_NAME: SVS_20_S
+ORIGINAL_NAME: SVS 20
+SIMBAD_NAME: IRAS 18274+0112
+APERO_CLASS: STAR
+RA:
+  value: 277.49057
+  source: 2003yCat.2246....0C
+  units: deg
+DEC:
+  value: 1.234915
+  source: 2003yCat.2246....0C
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 5900.0
+  source: via spdrs@apikipiha
+  units: K
+SPT:
+  value: 'M4:'
+  source: 2009ApJ...691..672O
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 22.184036
+  source: Gaia VizieR
+GRP_MAG:
+  value: 18.224627
+  source: Gaia VizieR
+J_MAG:
+  value: 12.222
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 9.242
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.051
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 5.052
+  source: AllWISE
+W2_MAG:
+  value: 3.707
+  source: AllWISE
+W3_MAG:
+  value: 1.5
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- 2MASS J18295773+0114056
+- AKARI-IRC-V1 J1829578+011406
+- CK  1
+- GCNM  98
+- GCNM  99
+- GEL 10
+- IRAS 18274+0112
+- SSTc2d J182957.7+011406
+- SSTc2d J182957.7+011405
+- STGM NIRS  5
+- STGM 182725.4+011201
+- TIC 404750826
+- WISEA J182957.74+011405.7
+- WISE J182957.72+011405.6
+- 2XMM J182957.7+011405
+- XMMU J182957.7+011404
+- '[ACA2003] Ser B  6'
+- '[B96] Serpens  7'
+- '[CED93]  6'
+- '[EC92]  90'
+- '[EDJ2009] 677'
+- '[EES2009] Ser-emb 30'
+- '[ETC2005] 16'
+- '[GFM2007] 48'
+- '[GMM2009] Serpens 15'
+- '[GSL2010] 5'
+- '[HL2013] 277.49055+01.23494'
+- '[HL85] GGD 29 16'
+- '[HMH2007] 182'
+- '[K99d] 1-21'
+- '[K99d] 4-32'
+- '[KOB2004] 314'
+- '[LFS2014] S12'
+- '[OMP2009] 146'
+- '[P2003] J182957.7+011404'
+- '[SVS76] Ser 20'
+- '[WMW2007] 35'
+- IRAS_18274P0112
+- SVS_20
+- 2MASSJ18295773+0114056
+- AKARI-IRC-V1J1829578+011406
+- CK1
+- GCNM98
+- GCNM99
+- GEL10
+- IRAS18274+0112
+- SSTc2dJ182957.7+011406
+- SSTc2dJ182957.7+011405
+- STGMNIRS5
+- STGM182725.4+011201
+- TIC404750826
+- WISEAJ182957.74+011405.7
+- WISEJ182957.72+011405.6
+- 2XMMJ182957.7+011405
+- XMMUJ182957.7+011404
+- '[ACA2003]SerB6'
+- '[B96]Serpens7'
+- '[CED93]6'
+- '[EC92]90'
+- '[EDJ2009]677'
+- '[EES2009]Ser-emb30'
+- '[ETC2005]16'
+- '[GFM2007]48'
+- '[GMM2009]Serpens15'
+- '[GSL2010]5'
+- '[HL2013]277.49055+01.23494'
+- '[HL85]GGD2916'
+- '[HMH2007]182'
+- '[K99d]1-21'
+- '[K99d]4-32'
+- '[KOB2004]314'
+- '[LFS2014]S12'
+- '[OMP2009]146'
+- '[P2003]J182957.7+011404'
+- '[SVS76]Ser20'
+- '[WMW2007]35'
+- IRAS18274P0112
+- SVS20
+- SVS 20
+NOTES: Added on 2024-09-25 18:21:23.025 by spdrs@apikipiha using drs_astrometrics.py
+W4_MAG:
+  value: -0.182
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '18:29:57.737'
+DEC_DMS: '+01:14:05.69'
+RA_J2000_DEG: 277.49057
+DEC_J2000_DEG: 1.234915
+GALACTIC_LON: 31.580917472656566
+GALACTIC_LAT: 5.340957352996584
+ECLIPTIC_LON: 278.2321225487933
+ECLIPTIC_LAT: 24.460406145332545
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 4922.6
+TEFF_GAIA: 2874.2
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

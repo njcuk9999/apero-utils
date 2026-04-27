@@ -1,0 +1,114 @@
+APERO_NAME: ALS15108AB
+ORIGINAL_NAME: ALS15108AB
+SIMBAD_NAME: NAME RLP 841B
+APERO_CLASS: STAR
+RA:
+  value: 308.34770171745
+  source: SIMBAD
+  units: deg
+DEC:
+  value: 41.15365764946
+  source: SIMBAD
+  units: deg
+EPOCH: null
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 10.8943
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 12.0022
+  source: Gaia VizieR
+GRP_MAG:
+  value: 9.1825
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 5.805
+  source: AllWISE
+W2_MAG:
+  value: 5.606
+  source: AllWISE
+W3_MAG:
+  value: 5.818
+  source: AllWISE
+KEYWORDS:
+- NO_PM
+ALIASES:
+- ALS15108AB
+- NAME RLP 841B
+- WDS J20334+4109B
+- Gaia DR2 2067778542573330304
+- '** WSI 67B'
+NOTES: Added on 2024-07-24 20:52:32.439 by cook@jupiter.astro.umontreal.ca using drs_astrometrics.py
+W4_MAG:
+  value: 5.465
+  source: AllWISE
+GAIA_SOURCE_ID: '2067778542573330304'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '20:33:23.448'
+DEC_DMS: '+41:09:13.17'
+RA_J2000_DEG: 308.34770171745
+DEC_J2000_DEG: 41.15365764946
+GALACTIC_LON: 80.110741551113
+GALACTIC_LAT: 0.6707675266821124
+ECLIPTIC_LON: 329.06167387780744
+ECLIPTIC_LAT: 56.99965175259688
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 3350.0
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,132 @@
+APERO_NAME: STHA_182A
+ORIGINAL_NAME: EM* StHA 182A
+SIMBAD_NAME: EM* StHA  182A
+APERO_CLASS: STAR
+RA:
+  value: 310.9218152
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -24.56495231
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 55.1385528
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -71.41245456
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 22.81197014
+  source: Gaia DR2
+  units: mas
+RV:
+  value: -5.83
+  source: 2022yCat.1355....0G
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 12.214055
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 13.497248
+  source: Gaia VizieR
+GRP_MAG:
+  value: 10.69513
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 7.584
+  source: AllWISE
+W2_MAG:
+  value: 7.442
+  source: AllWISE
+W3_MAG:
+  value: 7.387
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- '** SHK    1A'
+- EM* StHA  182A
+- WDS J20437-2434A
+- Gaia DR2 6806301370519190912
+- Gaia DR3 6806301370519190912
+- EM_STHA_182A
+- EM_STHA_182A
+- STHA 182A
+- STHA182A
+- STHA_182_A
+- STHA 182 A
+- EM_STHA_182_A
+- '**SHK1A'
+- EM*StHA182A
+- WDSJ20437-2434A
+- GaiaDR26806301370519190912
+- GaiaDR36806301370519190912
+- EMSTHA182A
+- EMSTHA182A
+- STHA182A
+- STHA182A
+- STHA182A
+- STHA182A
+- EMSTHA182A
+NOTES: Added on 2023-03-30 00:05:41.294 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 7.074
+  source: AllWISE
+GAIA_SOURCE_ID: '6806301370519190912'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '20:43:41.173'
+DEC_DMS: '-24:33:52.72'
+RA_J2000_DEG: 310.92155419092467
+DEC_J2000_DEG: -24.564644860499207
+GALACTIC_LON: 20.638485441310028
+GALACTIC_LAT: -34.77418277748463
+ECLIPTIC_LON: 306.8161514323373
+ECLIPTIC_LAT: -6.2032194642874225
+TELLURIC_VSYS_PLUS_VBARY_MIN: -35.44557638903883
+TELLURIC_VSYS_PLUS_VBARY_MAX: 23.78557638903883
+TELLURIC_LIMIT_WINDOWS: Jan 28 to Feb 16; Jul 06 to Jul 25
+V_SKY: 18.748683384369176
+V3D: 19.634205577189032
+U: -8.831604382694692
+V: -14.900784234884611
+W: -9.24507554724511
+AMAG_G: 9.004868972192527
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 3358.8
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

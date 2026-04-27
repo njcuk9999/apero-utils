@@ -1,0 +1,128 @@
+APERO_NAME: WR_102KA
+ORIGINAL_NAME: WR_102KA
+SIMBAD_NAME: WR 102ka
+APERO_CLASS: STAR
+RA:
+  value: 266.5755
+  source: 2003yCat.2246....0C
+  units: deg
+DEC:
+  value: -29.02683
+  source: 2003yCat.2246....0C
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: 60.0
+  source: 2013MNRAS.436.3357O
+  units: km/s
+TEFF:
+  value: 25100.0
+  source: null
+  units: K
+SPT:
+  value: WN10
+  source: 2003A&A...408..153H
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: 12.978
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 10.267
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 8.84
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 8.202
+  source: AllWISE
+W2_MAG:
+  value: 7.379
+  source: AllWISE
+W3_MAG:
+  value: 0.803
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- NAME Peony Star
+- ISOGAL-P J174618.2-290136
+- 2MASS J17461811-2901366
+- MSX6C G000.0003-00.1743
+- SSTGC 630166
+- SSTGLMC G000.0002-00.1744
+- TIC 322756954
+- WR 102ka
+- '[MKN2009] 1249'
+- '[OSH2014] 21'
+- NAMEPeonyStar
+- ISOGAL-PJ174618.2-290136
+- 2MASSJ17461811-2901366
+- MSX6CG000.0003-00.1743
+- SSTGC630166
+- SSTGLMCG000.0002-00.1744
+- TIC322756954
+- WR102ka
+- '[MKN2009]1249'
+- '[OSH2014]21'
+NOTES: Added on 2024-10-09 03:48:12.839 by spdrs@32dcd4761891 using drs_astrometrics.py
+W4_MAG:
+  value: -3.719
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '17:46:18.120'
+DEC_DMS: '-29:01:36.59'
+RA_J2000_DEG: 266.5755
+DEC_J2000_DEG: -29.02683
+GALACTIC_LON: 0.0002093708925005739
+GALACTIC_LAT: -0.17454324338355695
+ECLIPTIC_LON: 266.9915719095941
+ECLIPTIC_LAT: -5.623294201072557
+TELLURIC_VSYS_PLUS_VBARY_MIN: 30.353360073961518
+TELLURIC_VSYS_PLUS_VBARY_MAX: 89.64663992603849
+TELLURIC_LIMIT_WINDOWS: always > 5 km/s
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

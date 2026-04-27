@@ -1,0 +1,124 @@
+APERO_NAME: G_076_3829M00_621
+ORIGINAL_NAME: NAME SH 2-106 IR
+SIMBAD_NAME: NAME SH 2-106 IR
+APERO_CLASS: STAR
+RA:
+  value: 306.86042499999996
+  source: SIMBAD
+  units: deg
+DEC:
+  value: 37.378341666666664
+  source: SIMBAD
+  units: deg
+EPOCH: null
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: 4.525
+  source: AllWISE
+W3_MAG:
+  value: 0.844
+  source: AllWISE
+KEYWORDS:
+- NO_PM
+ALIASES:
+- AKARI-IRC-V1 J2027263+372250
+- IRAS 20255+3712
+- MSX6C G076.3829-00.6210
+- NAME SH 2-106 IR
+- RAFGL 2584
+- WISE J202726.50+372242.0
+- '[BE83] IR 076.36-00.60'
+- '[BNM96] 076.383-0.621'
+- '[GGC82] IRS 4'
+- '[GSL2002]  99'
+- '[PSS76]  3'
+- '[SB86] S106 1'
+- NAME SH 2-106 IR
+- NAME_SH_2M106_IR
+- G076.3829-00.6210
+NOTES: Added on 2024-07-24 20:57:21.301 by cook@jupiter.astro.umontreal.ca using drs_astrometrics.py
+W4_MAG:
+  value: -6.208
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '20:27:26.502'
+DEC_DMS: '+37:22:42.03'
+RA_J2000_DEG: 306.86042499999996
+DEC_J2000_DEG: 37.378341666666664
+GALACTIC_LON: 76.38140769366034
+GALACTIC_LAT: -0.621552514131928
+ECLIPTIC_LON: 324.3540469640537
+ECLIPTIC_LAT: 54.084723310465264
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

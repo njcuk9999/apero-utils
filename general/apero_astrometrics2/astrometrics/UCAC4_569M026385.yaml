@@ -1,0 +1,114 @@
+APERO_NAME: UCAC4_569M026385
+ORIGINAL_NAME: UCAC4 569-026385
+SIMBAD_NAME: UCAC4 569-026385
+APERO_CLASS: STAR
+RA:
+  value: 94.27873778
+  source: UCAC4
+  units: deg
+DEC:
+  value: 23.73023944
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: 5.599999905
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -7.0
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: -9.2
+  source: 2022yCat.1355....0G
+  units: km/s
+TEFF:
+  value: 4900.0
+  source: HEADER[OBS_DIR=24BQ13-Nov07]
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 12.242894
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 13.018379
+  source: Gaia VizieR
+GRP_MAG:
+  value: 11.380236
+  source: Gaia VizieR
+J_MAG:
+  value: 10.148
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 9.48
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.337
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.228
+  source: AllWISE
+W2_MAG:
+  value: 9.312
+  source: AllWISE
+W3_MAG:
+  value: 9.205
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 569-026385
+- 2MASS J06170689+2343487
+- Gaia DR3 3425577610762832384
+- UCAC4569-026385
+- 2MASSJ06170689+2343487
+- GaiaDR33425577610762832384
+NOTES: Added on 2025-03-12 22:14:11.541 by spdrs@apikipiha using drs_astrometrics.py
+W4_MAG:
+  value: 8.346
+  source: AllWISE
+GAIA_SOURCE_ID: '3425577610762832384'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '06:17:06.897'
+DEC_DMS: '+23:43:48.86'
+RA_J2000_DEG: 94.27873778
+DEC_J2000_DEG: 23.73023944
+GALACTIC_LON: 188.01841934409737
+GALACTIC_LAT: 3.5511946711648172
+ECLIPTIC_LON: 93.91645401686597
+ECLIPTIC_LAT: 0.3490994875902837
+TELLURIC_VSYS_PLUS_VBARY_MIN: -38.98944704177562
+TELLURIC_VSYS_PLUS_VBARY_MAX: 20.589447041775625
+TELLURIC_LIMIT_WINDOWS: Jul 03 to Jul 23; Nov 25 to Dec 15
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 4352.7
+TEFF_GAIA: 4359.1
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

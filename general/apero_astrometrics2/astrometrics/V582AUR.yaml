@@ -1,0 +1,124 @@
+APERO_NAME: V582AUR
+ORIGINAL_NAME: V582Aur
+SIMBAD_NAME: V* V582 Aur
+APERO_CLASS: STAR
+RA:
+  value: 81.46655709
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 34.8750219
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -0.2347299354
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -1.100897392
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 0.3883261048
+  source: Gaia DR2
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 2024.0
+  source: HEADER[CFHT]
+  units: K
+SPT:
+  value: K3
+  source: SIMBAD
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 15.208186
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 15.6972
+  source: Gaia VizieR
+GRP_MAG:
+  value: 13.4959
+  source: Gaia VizieR
+J_MAG:
+  value: 9.621
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 8.499
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.745
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 6.913
+  source: AllWISE
+W2_MAG:
+  value: 5.989
+  source: AllWISE
+W3_MAG:
+  value: 3.471
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- 2MASS J05255197+3452300
+- AKARI-IRC-V1 J0525519+345228
+- Gaia DR2 182899365533415680
+- TIC 127765900
+- USNO-A2.0 1200-03303169
+- V* V582 Aur
+- V582AUR
+- V582Aur
+- 2MASSJ05255197+3452300
+- AKARI-IRC-V1J0525519+345228
+- GaiaDR2182899365533415680
+- TIC127765900
+- USNO-A2.01200-03303169
+- V*V582Aur
+- V582AUR
+- V582Aur
+NOTES: Added on 2022-01-31 18:39:35.226 by cook@cook using drs_astrometrics.py
+W4_MAG:
+  value: 1.313
+  source: AllWISE
+GAIA_SOURCE_ID: '182899365533415680'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '05:25:51.974'
+DEC_DMS: '+34:52:30.10'
+RA_J2000_DEG: 81.4665583218069
+DEC_J2000_DEG: 34.875026639660916
+GALACTIC_LON: 172.7401075351068
+GALACTIC_LAT: -0.32106414217870716
+ECLIPTIC_LON: 82.85990725064174
+ECLIPTIC_LAT: 11.647001944416777
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 13.741231945381847
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: 3.154168932507707
+AMAG_KS: -4.309017067492292
+TEFF_GAIA_JH: 4019.6
+TEFF_GAIA: 3732.1
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,111 @@
+APERO_NAME: GAIA_DR3_3088195736252682496
+ORIGINAL_NAME: Gaia DR3 3088195736252682496
+SIMBAD_NAME: Gaia DR3 3088195736252682496
+APERO_CLASS: STAR
+RA:
+  value: 118.8697598
+  source: Gaia DR3
+  units: deg
+DEC:
+  value: 2.800131358
+  source: Gaia DR3
+  units: deg
+EPOCH: 2457388.5
+PMRA:
+  value: 26.57006359
+  source: Gaia DR3
+  units: mas/yr
+PMDE:
+  value: -88.23311012
+  source: Gaia DR3
+  units: mas/yr
+PLX:
+  value: 29.14360055
+  source: Gaia DR3
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 2700.0
+  source: HEADER[OBS_DIR=2024-12-18]
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 16.150612
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 18.546686
+  source: Gaia VizieR
+GRP_MAG:
+  value: 14.743535
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 11.278
+  source: AllWISE
+W2_MAG:
+  value: 11.098
+  source: AllWISE
+W3_MAG:
+  value: 11.185
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- Gaia DR3 3088195736252682496
+- GaiaDR33088195736252682496
+NOTES: Added on 2025-05-07 15:35:41.070 by spirou-client@titan.astro.umontreal.ca
+  using drs_astrometrics.py
+W4_MAG:
+  value: 8.456
+  source: AllWISE
+GAIA_SOURCE_ID: '3088195736252682496'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '07:55:28.714'
+DEC_DMS: '+02:48:01.88'
+RA_J2000_DEG: 118.86964157974043
+DEC_J2000_DEG: 2.800523471598868
+GALACTIC_LON: 217.82144992974267
+GALACTIC_LAT: 15.512665733663525
+ECLIPTIC_LON: 120.40085395959444
+ECLIPTIC_LAT: -17.643796318542037
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 14.988524975398889
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: 13.473328028590434
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 2923.6
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

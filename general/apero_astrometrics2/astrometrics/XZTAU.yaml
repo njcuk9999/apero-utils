@@ -1,0 +1,154 @@
+APERO_NAME: XZTAU
+ORIGINAL_NAME: XZTau
+SIMBAD_NAME: V* XZ Tau
+APERO_CLASS: STAR
+RA:
+  value: 67.9170287366759
+  source: SIMBAD
+  units: deg
+DEC:
+  value: 18.2324006775156
+  source: SIMBAD
+  units: deg
+EPOCH: null
+PMRA:
+  value: 9.1
+  source: SIMBAD
+  units: mas/yr
+PMDE:
+  value: -17.8
+  source: SIMBAD
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: 19.7206
+  source: SIMBAD
+  units: km/s
+TEFF:
+  value: 3606.0
+  source: SIMBAD mes_teff
+  units: K
+SPT:
+  value: M2e+M2e
+  source: SIMBAD
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 12.9076
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 14.408
+  source: Gaia VizieR
+GRP_MAG:
+  value: 11.6347
+  source: Gaia VizieR
+J_MAG:
+  value: 9.385
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 8.15
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.291
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 6.293
+  source: AllWISE
+W2_MAG:
+  value: 4.862
+  source: AllWISE
+W3_MAG:
+  value: 2.674
+  source: AllWISE
+KEYWORDS:
+- NO_PM
+ALIASES:
+- XZTau
+- '[GBA2007] 1324'
+- Gaia DR2 3314312604605602688
+- AN 381.1928
+- 2E 0428.7+1807
+- '[CFK96] RX 19'
+- GCRV 2653
+- RX J043140.0+181354
+- '[FGM2003] 31'
+- WDS J04317+1814A
+- GSC 01269-00171
+- 2XMM J043140.0+181356
+- WDS J04317+1814Aa,Ab
+- '[CFK96] ASCA 2'
+- SV* SVS 169
+- XEST 22-OM-002
+- '** GHE 9'
+- 2MASS J04314007+1813571
+- CSI+18-04288
+- '[GMM2009] Tau L1551 7'
+- XEST 22-047
+- '** HER 10A'
+- Haro 6-15
+- HBC 50
+- AKARI-IRC-V1 J0431400+181357
+- '[FGM2003] S18'
+- V* XZ Tau
+- UCAC2 38202584
+- GBS-VLA J043140.09+181356.7
+- '[ABG2007] 1373'
+- '[FK83] LDN 1551 10'
+- XZTAU
+- AAVSO 0425+18
+- WISE J043140.09+181357.0
+- '[BFR2003] 37'
+- SDSS J043140.08+181356.8
+- SSV LDN 1551 2
+- '[LC2009] 4'
+- 2E 1073
+- EPIC 210690892
+- 1AXG J043141+1813
+- 1RXS J043141.0+181335
+- HH 152
+- WEB 4064
+- xz tau
+NOTES: Added on 2024-07-24 20:52:32.439 by cook@jupiter.astro.umontreal.ca using drs_astrometrics.py
+W4_MAG:
+  value: 4.077
+  source: AllWISE
+GAIA_SOURCE_ID: '3314312604605602688'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '04:31:40.087'
+DEC_DMS: '+18:13:56.64'
+RA_J2000_DEG: 67.9170287366759
+DEC_J2000_DEG: 18.2324006775156
+GALACTIC_LON: 178.86357134302278
+GALACTIC_LAT: -19.967529684579635
+ECLIPTIC_LON: 69.03570970911977
+ECLIPTIC_LAT: -3.6141266310763855
+TELLURIC_VSYS_PLUS_VBARY_MIN: -10.010154145492724
+TELLURIC_VSYS_PLUS_VBARY_MAX: 49.45135414549273
+TELLURIC_LIMIT_WINDOWS: Dec 29 to Jan 24; Apr 03 to Apr 29
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3759.5
+TEFF_GAIA: 3373.5
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

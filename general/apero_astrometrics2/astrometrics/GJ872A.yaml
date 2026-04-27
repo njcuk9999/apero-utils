@@ -1,0 +1,340 @@
+APERO_NAME: GJ872A
+ORIGINAL_NAME: GJ 872 A
+SIMBAD_NAME: '* ksi Peg'
+APERO_CLASS: STAR
+RA:
+  value: 341.6742772
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 12.17076258
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 236.5564656
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -494.8929558
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 62.39938245
+  source: Gaia DR2
+  units: mas
+RV:
+  value: -5.853
+  source: 2018A&A...616A...7S
+  units: km/s
+TEFF:
+  value: 6167.0
+  source: 2013MNRAS.435..952S
+  units: K
+SPT:
+  value: F6V
+  source: 2001AJ....121.2148G
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 4.069358
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 4.328151
+  source: Gaia VizieR
+GRP_MAG:
+  value: 3.625858
+  source: Gaia VizieR
+J_MAG:
+  value: 3.22
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 3.078
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 2.87
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 1.361
+  source: AllWISE
+W2_MAG:
+  value: 1.538
+  source: AllWISE
+W3_MAG:
+  value: 2.91
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- LHS  3851
+- '* ksi Peg'
+- '* ksi Peg A'
+- '*  46 Peg'
+- '** HJ  301A'
+- ADS 16261 A
+- AG+11 2850
+- AKARI-IRC-V1 J2246417+121018
+- ASCC  996971
+- BD+11  4875
+- BD+11  4875A
+- CCDM J22467+1211A
+- Ci 20 1381
+- CSI+11  4875  1
+- GC 31778
+- GCRV 14308
+- GEN# +1.00215648
+- GJ   872 A
+- HD 215648
+- HIC 112447
+- HIP 112447
+- HR  8665
+- IDS 22417+1139 A
+- IRAS 22442+1154
+- IRC +10522
+- JP11  3532
+- LFT 1735
+- LSPM J2246+1210W
+- LTT 16693
+- 2MASS J22464156+1210228
+- NLTT 54819
+- PLX 5516
+- PM 22442+1155
+- PPM 141833
+- ROT  3316
+- SAO 108165
+- SKY# 43286
+- SPOCS  984
+- TD1 29336
+- TIC 60716322
+- TYC 1155-2186-1
+- UBV   19514
+- UBV M  26609
+- USNO-B1.0 1021-00758035
+- uvby98 100215648
+- WDS J22467+1210A
+- WEB 20055
+- WISEA J224641.79+121017.4
+- WISE J224641.75+121017.0
+- YZ  11  9091
+- Gaia DR2 2719475542666622976
+- Gaia DR3 2719475542667772416
+- GJ_872_A
+- LHS 3851
+- LHS_3851
+- LHS3851
+- '* ksi Peg'
+- '* ksi_Peg'
+- '* ksiPeg'
+- '*_ksi Peg'
+- '*_ksi_Peg'
+- '*_ksiPeg'
+- '*ksi Peg'
+- '*ksi_Peg'
+- '*ksiPeg'
+- '* ksi Peg A'
+- '* ksi Peg_A'
+- '* ksi PegA'
+- '* ksi_Peg A'
+- '* ksi_Peg_A'
+- '* ksi_PegA'
+- '* ksiPeg A'
+- '* ksiPeg_A'
+- '* ksiPegA'
+- '*_ksi Peg A'
+- '*_ksi Peg_A'
+- '*_ksi PegA'
+- '*_ksi_Peg A'
+- '*_ksi_Peg_A'
+- '*_ksi_PegA'
+- '*_ksiPeg A'
+- '*_ksiPeg_A'
+- '*_ksiPegA'
+- '*ksi Peg A'
+- '*ksi Peg_A'
+- '*ksi PegA'
+- '*ksi_Peg A'
+- '*ksi_Peg_A'
+- '*ksi_PegA'
+- '*ksiPeg A'
+- '*ksiPeg_A'
+- '*ksiPegA'
+- GJ 872 A
+- GJ 872_A
+- GJ 872A
+- GJ_872 A
+- GJ_872_A
+- GJ_872A
+- GJ872 A
+- GJ872_A
+- GJ872A
+- GL 872 A
+- GL 872_A
+- GL 872A
+- GL_872 A
+- GL_872_A
+- GL_872A
+- GL872 A
+- GL872_A
+- GL872A
+- HD 215648
+- HD_215648
+- HD215648
+- HR 8665
+- HR_8665
+- HR8665
+- LHS3851
+- '*ksiPeg'
+- '*ksiPegA'
+- '*46Peg'
+- '**HJ301A'
+- ADS16261A
+- AG+112850
+- AKARI-IRC-V1J2246417+121018
+- ASCC996971
+- BD+114875
+- BD+114875A
+- CCDMJ22467+1211A
+- Ci201381
+- CSI+1148751
+- GC31778
+- GCRV14308
+- GEN#+1.00215648
+- GJ872A
+- HD215648
+- HIC112447
+- HIP112447
+- HR8665
+- IDS22417+1139A
+- IRAS22442+1154
+- IRC+10522
+- JP113532
+- LFT1735
+- LSPMJ2246+1210W
+- LTT16693
+- 2MASSJ22464156+1210228
+- NLTT54819
+- PLX5516
+- PM22442+1155
+- PPM141833
+- ROT3316
+- SAO108165
+- SKY#43286
+- SPOCS984
+- TD129336
+- TIC60716322
+- TYC1155-2186-1
+- UBV19514
+- UBVM26609
+- USNO-B1.01021-00758035
+- uvby98100215648
+- WDSJ22467+1210A
+- WEB20055
+- WISEAJ224641.79+121017.4
+- WISEJ224641.75+121017.0
+- YZ119091
+- GaiaDR22719475542666622976
+- GaiaDR32719475542667772416
+- GJ872A
+- LHS3851
+- LHS3851
+- LHS3851
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPeg'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- '*ksiPegA'
+- GJ872A
+- GJ872A
+- GJ872A
+- GJ872A
+- GJ872A
+- GJ872A
+- GJ872A
+- GJ872A
+- GJ872A
+- GL872A
+- GL872A
+- GL872A
+- GL872A
+- GL872A
+- GL872A
+- GL872A
+- GL872A
+- GL872A
+- HD215648
+- HD215648
+- HD215648
+- HR8665
+- HR8665
+- HR8665
+NOTES: Added on 2023-03-29 15:02:53.038 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 2.884
+  source: AllWISE
+GAIA_SOURCE_ID: '2719475542667772416'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '22:46:41.576'
+DEC_DMS: '+12:10:22.42'
+RA_J2000_DEG: 341.67323534095067
+DEC_J2000_DEG: 12.172893213687178
+GALACTIC_LON: 81.27498246307341
+GALACTIC_LAT: -40.39894835515824
+ECLIPTIC_LON: 347.94755134574154
+ECLIPTIC_LAT: 18.40462506543403
+TELLURIC_VSYS_PLUS_VBARY_MIN: -34.1192572450807
+TELLURIC_VSYS_PLUS_VBARY_MAX: 22.4132572450807
+TELLURIC_LIMIT_WINDOWS: Mar 11 to Mar 31; Aug 16 to Sep 05
+V_SKY: 41.67123071220102
+V3D: 42.08026946289063
+U: 3.6592643905803866
+V: -31.827720387393143
+W: -27.28287149797325
+AMAG_G: 3.045259458036764
+AMAG_KS: 1.8459014580367636
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

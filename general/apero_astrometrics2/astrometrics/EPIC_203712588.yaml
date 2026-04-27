@@ -1,0 +1,126 @@
+APERO_NAME: EPIC_203712588
+ORIGINAL_NAME: EPIC_203712588
+SIMBAD_NAME: 2MASS J16251521-2511540
+APERO_CLASS: STAR
+RA:
+  value: 246.3133887
+  source: 2020yCat.1350....0G
+  units: deg
+DEC:
+  value: -25.19851868
+  source: 2020yCat.1350....0G
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: -3.94102
+  source: 2020AJ....160..120J
+  units: km/s
+TEFF:
+  value: 3050.0
+  source: null
+  units: K
+SPT:
+  value: M5
+  source: 2018AJ....156...75E
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 14.804676
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 16.8596
+  source: Gaia VizieR
+GRP_MAG:
+  value: 13.2674
+  source: Gaia VizieR
+J_MAG:
+  value: 10.861
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 10.079
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.642
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.298
+  source: AllWISE
+W2_MAG:
+  value: 8.862
+  source: AllWISE
+W3_MAG:
+  value: 7.622
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- 2MASS J16251521-2511540
+- AP J16251521-2511540
+- EPIC 203712588
+- SSTc2d J162515.2-251154
+- TIC 392395838
+- WISEA J162515.21-251154.4
+- WSB 21
+- Gaia DR3 6048957589512689792
+- Gaia DR2 6048957589512689792
+- 2MASSJ16251521-2511540
+- APJ16251521-2511540
+- EPIC203712588
+- SSTc2dJ162515.2-251154
+- TIC392395838
+- WISEAJ162515.21-251154.4
+- WSB21
+- GaiaDR36048957589512689792
+- GaiaDR26048957589512689792
+NOTES: Added on 2025-01-11 00:23:47.590 by spdrs@apikipiha using drs_astrometrics.py
+W4_MAG:
+  value: 6.147
+  source: AllWISE
+GAIA_SOURCE_ID: '6048957589512689792'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '16:25:15.213'
+DEC_DMS: '-25:11:54.67'
+RA_J2000_DEG: 246.3133887
+DEC_J2000_DEG: -25.19851868
+GALACTIC_LON: 352.26150283247904
+GALACTIC_LAT: 16.58220318362473
+ECLIPTIC_LON: 248.64270764756043
+ECLIPTIC_LAT: -3.4984043054493528
+TELLURIC_VSYS_PLUS_VBARY_MIN: -33.67550628269344
+TELLURIC_VSYS_PLUS_VBARY_MAX: 25.793466282693444
+TELLURIC_LIMIT_WINDOWS: May 12 to May 31; Nov 27 to Dec 15
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3118.8
+TEFF_GAIA: 3002.6
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,130 @@
+APERO_NAME: LP_780M32
+ORIGINAL_NAME: LP 780-32
+SIMBAD_NAME: LP  780-32
+APERO_CLASS: STAR
+RA:
+  value: 99.9058875
+  source: UCAC4
+  units: deg
+DEC:
+  value: -21.02589472
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: -161.3999939
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: 112.0
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: -28.122
+  source: 2018A&A...612A..49R
+  units: km/s
+TEFF:
+  value: 3438.0
+  source: 2021A&A...656A.162M
+  units: K
+SPT:
+  value: dM4.0
+  source: 2019A&A...625A..68S
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 13.024365
+  source: Gaia VizieR
+GRP_MAG:
+  value: 10.212264
+  source: Gaia VizieR
+J_MAG:
+  value: 8.507
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 7.912
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.65
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 7.432
+  source: AllWISE
+W2_MAG:
+  value: 7.29
+  source: AllWISE
+W3_MAG:
+  value: 7.173
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 345-015655
+- '** TSN  137'
+- LP  780-32
+- 2MASS J06393742-2101333
+- NLTT 16823
+- PM J06396-2101
+- 1RXS J063937.7-210201
+- TIC 48523939
+- WDS J06396-2102AB
+- WISEA J063937.28-210132.5
+- WISE J063937.28-210132.5
+- UCAC4345-015655
+- '**TSN137'
+- LP780-32
+- 2MASSJ06393742-2101333
+- NLTT16823
+- PMJ06396-2101
+- 1RXSJ063937.7-210201
+- TIC48523939
+- WDSJ06396-2102AB
+- WISEAJ063937.28-210132.5
+- WISEJ063937.28-210132.5
+NOTES: Added on 2023-07-08 12:56:05.035 by spirou-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 7.005
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '06:39:37.413'
+DEC_DMS: '-21:01:33.22'
+RA_J2000_DEG: 99.9058875
+DEC_J2000_DEG: -21.02589472
+GALACTIC_LON: 230.62586518606565
+GALACTIC_LAT: -11.911905552409728
+ECLIPTIC_LON: 102.90362916217781
+ECLIPTIC_LAT: -44.022467347640266
+TELLURIC_VSYS_PLUS_VBARY_MIN: -49.54301633315628
+TELLURIC_VSYS_PLUS_VBARY_MAX: -6.700983666843719
+TELLURIC_LIMIT_WINDOWS: always > 5 km/s
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3365.7
+TEFF_GAIA: 3353.8
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

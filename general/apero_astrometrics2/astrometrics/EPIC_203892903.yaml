@@ -1,0 +1,136 @@
+APERO_NAME: EPIC_203892903
+ORIGINAL_NAME: EPIC_203892903
+SIMBAD_NAME: RX J1622.7-2431
+APERO_CLASS: STAR
+RA:
+  value: 245.6892118
+  source: 2012yCat.1322....0Z
+  units: deg
+DEC:
+  value: -24.5233595
+  source: 2012yCat.1322....0Z
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: 4.6
+  source: 2012yCat.1322....0Z
+  units: mas/yr
+PMDE:
+  value: -30.8
+  source: 2012yCat.1322....0Z
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3400.0
+  source: null
+  units: K
+SPT:
+  value: M3
+  source: 2010ApJ...712..925C
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 14.3046
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 16.0963
+  source: Gaia VizieR
+GRP_MAG:
+  value: 12.7181
+  source: Gaia VizieR
+J_MAG:
+  value: 10.377
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 9.438
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.063
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 8.814
+  source: AllWISE
+W2_MAG:
+  value: 8.567
+  source: AllWISE
+W3_MAG:
+  value: 6.121
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 328-084320
+- '** USD 1423'
+- EPIC 203892903
+- 2MASS J16224539-2431237
+- RX J1622.7-2431
+- 1RXS J162247.7-243117
+- SSTc2d J162245.4-243124
+- SSTc2d J162245.3-243123
+- TIC 392094087
+- WDS J16228-2431AB
+- WISEA J162245.39-243124.1
+- '[EDJ2009] 749'
+- '[HL2013] 245.68912-24.52328'
+- Gaia DR2 6049241877688177792
+- UCAC4328-084320
+- '**USD1423'
+- EPIC203892903
+- 2MASSJ16224539-2431237
+- RXJ1622.7-2431
+- 1RXSJ162247.7-243117
+- SSTc2dJ162245.4-243124
+- SSTc2dJ162245.3-243123
+- TIC392094087
+- WDSJ16228-2431AB
+- WISEAJ162245.39-243124.1
+- '[EDJ2009]749'
+- '[HL2013]245.68912-24.52328'
+- GaiaDR26049241877688177792
+NOTES: Added on 2025-01-11 00:18:51.942 by spdrs@apikipiha using drs_astrometrics.py
+W4_MAG:
+  value: 3.387
+  source: AllWISE
+GAIA_SOURCE_ID: '6049241877688177792'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '16:22:45.411'
+DEC_DMS: '-24:31:24.09'
+RA_J2000_DEG: 245.6892118
+DEC_J2000_DEG: -24.5233595
+GALACTIC_LON: 352.39205504645554
+GALACTIC_LAT: 17.454547742043303
+ECLIPTIC_LON: 247.9734070633549
+ECLIPTIC_LAT: -2.9239352665301257
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3297.8
+TEFF_GAIA: 3091.7
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

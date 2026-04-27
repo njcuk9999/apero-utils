@@ -1,0 +1,172 @@
+APERO_NAME: ALPHACENB
+ORIGINAL_NAME: Alf Cen B
+SIMBAD_NAME: '* alf Cen B'
+APERO_CLASS: STAR
+RA:
+  value: 219.9141246
+  source: HIP
+  units: deg
+DEC:
+  value: -60.83948046
+  source: HIP
+  units: deg
+EPOCH: 2448348.75
+PMRA:
+  value: -3614.39
+  source: HIP
+  units: mas/yr
+PMDE:
+  value: 802.98
+  source: HIP
+  units: mas/yr
+PLX:
+  value: 796.92
+  source: HIP
+  units: mas
+RV:
+  value: -22.586
+  source: 2018A&A...616A...7S
+  units: km/s
+TEFF:
+  value: 5231.0
+  source: 2021A&A...647A.162P
+  units: K
+SPT:
+  value: K1V
+  source: 2006A&A...460..695T
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: -0.01
+  source: SIMBAD/2MASS
+H_MAG:
+  value: -0.49
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: -0.6
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 0.443
+  source: AllWISE
+W2_MAG:
+  value: 0.095
+  source: AllWISE
+W3_MAG:
+  value: -1.484
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- LHS    51
+- '* alf Cen B'
+- '* alf02 Cen'
+- '** RHD    1B'
+- CCDM J14396-6050B
+- CD-60  5293B
+- CPD-60  5483B
+- CSI-60  5483 42
+- GCRV  8518
+- GEN# +1.00128621
+- GJ   559 B
+- HD 128621
+- HIC  71681
+- HIP  71681
+- HR  5460
+- IDS 14328-6025 B
+- LFT 1128
+- LTT  5807
+- NAME Toliman
+- NLTT 37985
+- PM 14362-6038B
+- PMSC 14328-6025B
+- RAVE J143935.1-605014
+- SKY# 26644
+- SPOCS  609
+- TIC 471011144
+- TYC 9007-5848-1
+- WDS J14396-6050B
+- Zkh 210
+- '[AOP94]  7'
+- ALF_CEN_B
+- AlphaCenB
+- LHS51
+- '*alfCenB'
+- '*alf02Cen'
+- '**RHD1B'
+- CCDMJ14396-6050B
+- CD-605293B
+- CPD-605483B
+- CSI-60548342
+- GCRV8518
+- GEN#+1.00128621
+- GJ559B
+- HD128621
+- HIC71681
+- HIP71681
+- HR5460
+- IDS14328-6025B
+- LFT1128
+- LTT5807
+- NAMEToliman
+- NLTT37985
+- PM14362-6038B
+- PMSC14328-6025B
+- RAVEJ143935.1-605014
+- SKY#26644
+- SPOCS609
+- TIC471011144
+- TYC9007-5848-1
+- WDSJ14396-6050B
+- Zkh210
+- '[AOP94]7'
+- ALFCENB
+- AlphaCenB
+NOTES: Added on 2023-03-06 14:00:56.243 by spirou@rali using drs_astrometrics.py
+W4_MAG:
+  value: -1.794
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '14:39:39.390'
+DEC_DMS: '-60:50:22.13'
+RA_J2000_DEG: 219.9141246
+DEC_J2000_DEG: -60.83948046
+GALACTIC_LON: 315.7373209385597
+GALACTIC_LAT: -0.6870515262488597
+ECLIPTIC_LON: 239.48968279126416
+ECLIPTIC_LAT: -42.596895825830615
+TELLURIC_VSYS_PLUS_VBARY_MIN: -44.51542464683313
+TELLURIC_VSYS_PLUS_VBARY_MAX: -0.6565753531668648
+TELLURIC_LIMIT_WINDOWS: Jan 12 to Mar 27
+V_SKY: 22.02435004669568
+V3D: 31.546780992351405
+U: -28.433251869885193
+V: 2.9590020883545876
+W: 13.341434917258956
+AMAG_G: null
+AMAG_KS: 3.9070736314323447
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

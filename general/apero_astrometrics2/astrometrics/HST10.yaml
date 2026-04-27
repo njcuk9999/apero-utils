@@ -1,0 +1,149 @@
+APERO_NAME: HST10
+ORIGINAL_NAME: GMR O
+SIMBAD_NAME: GMR O
+APERO_CLASS: STAR
+RA:
+  value: 83.82596258
+  source: 2020yCat.1350....0G
+  units: deg
+DEC:
+  value: -5.403551932
+  source: 2020yCat.1350....0G
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 18.626492
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 12.980165
+  source: Gaia VizieR
+GRP_MAG:
+  value: 12.439462
+  source: Gaia VizieR
+J_MAG:
+  value: 15.15
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 14.96
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 14.07
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS:
+- NO_PM
+ALIASES:
+- GMR O
+- MLLA  227
+- VISION J05351822-0524129
+- '[BOM2000] d182-413'
+- '[BSD98] 40'
+- '[DRS2009] 1608'
+- '[FRM2016] 390'
+- '[H97b] 3083'
+- '[HC2000] 774'
+- '[LML2004] 356'
+- '[OW94] 182-413'
+- '[OWH93] 10'
+- '[PMD2009] 11'
+- '[RRS2008] 182-413'
+- '[SEM2016] 605'
+- Gaia DR3 3017361005306556672
+- GMR_O
+- HST10
+- HST 10
+- HST_10
+- GMRO
+- MLLA227
+- VISIONJ05351822-0524129
+- '[BOM2000]d182-413'
+- '[BSD98]40'
+- '[DRS2009]1608'
+- '[FRM2016]390'
+- '[H97b]3083'
+- '[HC2000]774'
+- '[LML2004]356'
+- '[OW94]182-413'
+- '[OWH93]10'
+- '[PMD2009]11'
+- '[RRS2008]182-413'
+- '[SEM2016]605'
+- GaiaDR33017361005306556672
+- GMRO
+- HST10
+- HST10
+- HST10
+NOTES: Added on 2024-07-24 20:52:32.439 by cook@jupiter.astro.umontreal.ca using drs_astrometrics.py
+W4_MAG:
+  value: null
+  source: null
+GAIA_SOURCE_ID: '3017361005306556672'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '05:35:18.231'
+DEC_DMS: '-05:24:12.79'
+RA_J2000_DEG: 83.82596258
+DEC_J2000_DEG: -5.403551932
+GALACTIC_LON: 209.02735437834633
+GALACTIC_LAT: -19.383785957320804
+ECLIPTIC_LON: 82.98905918801195
+ECLIPTIC_LAT: -28.692708357824955
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

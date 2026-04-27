@@ -1,0 +1,117 @@
+APERO_NAME: GAIA_DR3_6013525277553837312
+ORIGINAL_NAME: Gaia_DR3_6013525277553837312
+SIMBAD_NAME: EBLM J1525-36
+APERO_CLASS: STAR
+RA:
+  value: 231.3726577
+  source: Gaia DR3
+  units: deg
+DEC:
+  value: -36.40484319
+  source: Gaia DR3
+  units: deg
+EPOCH: 2457388.5
+PMRA:
+  value: -18.82488304
+  source: Gaia DR3
+  units: mas/yr
+PMDE:
+  value: -23.72386184
+  source: Gaia DR3
+  units: mas/yr
+PLX:
+  value: 1.927591632
+  source: Gaia DR3
+  units: mas
+RV:
+  value: 14.06
+  source: 2018yCat.1345....0G
+  units: km/s
+TEFF:
+  value: 6370.0
+  source: Etienne (assuming equal binaries)
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 11.443317
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 11.7748
+  source: Gaia VizieR
+GRP_MAG:
+  value: 10.9714
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 10.039
+  source: AllWISE
+W2_MAG:
+  value: 10.037
+  source: AllWISE
+W3_MAG:
+  value: 9.969
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- EBLM J1525-36
+- Gaia DR2 6013525277553837312
+- Gaia DR3 6013525277553837312
+- J1525-36
+- EBLMJ1525-36
+- GaiaDR26013525277553837312
+- GaiaDR36013525277553837312
+- J1525-36
+NOTES: Added on 2026-03-02 16:43:40.289 by nirps-client@rali.astro.umontreal.ca using
+  drs_astrometrics.py
+W4_MAG:
+  value: 8.924
+  source: AllWISE
+GAIA_SOURCE_ID: '6013525277553837312'
+GAIA_TEFF_GSPPHOT: 6386.47
+GAIA_LOGG_GSPPHOT: 3.9239
+GAIA_MH_GSPPHOT: -0.5254
+GAIA_RADIUS_FLAME: 2.2015133
+GAIA_LUM_FLAME: 7.2638683
+GAIA_MASS_FLAME: 1.499621
+RA_HMS: '15:25:29.463'
+DEC_DMS: '-36:24:17.06'
+RA_J2000_DEG: 231.3727616443051
+DEC_J2000_DEG: -36.40473775954342
+GALACTIC_LON: 334.5096454290187
+GALACTIC_LAT: 16.84962522282678
+ECLIPTIC_LON: 238.282950977067
+ECLIPTIC_LAT: -17.12182308718855
+TELLURIC_VSYS_PLUS_VBARY_MIN: -14.409735500584612
+TELLURIC_VSYS_PLUS_VBARY_MAX: 42.529735500584614
+TELLURIC_LIMIT_WINDOWS: Jun 07 to Jun 30; Oct 06 to Oct 29
+V_SKY: 74.47969377160737
+V3D: 75.79517388536298
+U: -13.204678585844677
+V: -72.94611003115374
+W: -15.792716026736311
+AMAG_G: 2.868392161438777
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: -0.5254
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: 3.9285388864389352
+L_STAR: 7.2638683

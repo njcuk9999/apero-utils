@@ -1,0 +1,128 @@
+APERO_NAME: SCRAS
+ORIGINAL_NAME: V* S CrA B
+SIMBAD_NAME: V* S CrA B
+APERO_CLASS: STAR
+RA:
+  value: 285.2860464
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -36.95592054
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 3.531864881
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -27.99186046
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 5.928885823
+  source: Gaia DR2
+  units: mas
+RV:
+  value: 6.0
+  source: 2000A&AS..144....1M
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 12.149582
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 12.0878
+  source: Gaia VizieR
+GRP_MAG:
+  value: 10.4346
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 5.136
+  source: AllWISE
+W2_MAG:
+  value: 4.037
+  source: AllWISE
+W3_MAG:
+  value: 2.08
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- '** JOY    7B'
+- CCDM J19011-3657B
+- V* S CrA S
+- V* S CrA B
+- WDS J19011-3657B
+- Gaia DR2 6731210258265107584
+- Gaia DR3 6731210258265107584
+- V_S_CRA_B
+- SCrAS
+- S CrA S
+- '**JOY7B'
+- CCDMJ19011-3657B
+- V*SCrAS
+- V*SCrAB
+- WDSJ19011-3657B
+- GaiaDR26731210258265107584
+- GaiaDR36731210258265107584
+- VSCRAB
+- SCrAS
+- SCrAS
+NOTES: Added on 2025-01-09 15:13:29.148 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 0.003
+  source: AllWISE
+GAIA_SOURCE_ID: '6731210258265107584'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '19:01:08.647'
+DEC_DMS: '-36:57:20.88'
+RA_J2000_DEG: 285.28602737152966
+DEC_J2000_DEG: -36.9558000274033
+GALACTIC_LON: 359.8735787161124
+GALACTIC_LAT: -17.71290418703063
+ECLIPTIC_LON: 282.5501289278975
+ECLIPTIC_LAT: -14.180119159452389
+TELLURIC_VSYS_PLUS_VBARY_MIN: -22.88231090771971
+TELLURIC_VSYS_PLUS_VBARY_MAX: 34.88231090771971
+TELLURIC_LIMIT_WINDOWS: Jul 05 to Jul 25; Dec 10 to Dec 30
+V_SKY: 22.55848073486704
+V3D: 23.342773037181495
+U: 2.4269844347966014
+V: -19.883769523209708
+W: -11.984594660865671
+AMAG_G: 6.014447434455027
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 4336.4
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

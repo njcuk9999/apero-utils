@@ -1,0 +1,112 @@
+APERO_NAME: GAIA_DR2_2132774072206249344
+ORIGINAL_NAME: Gaia DR2 2132774072206249344
+SIMBAD_NAME: RX J1912.9+4930A
+APERO_CLASS: STAR
+RA:
+  value: 288.219611
+  source: Gaia EDR3
+  units: deg
+DEC:
+  value: 49.52089706
+  source: Gaia EDR3
+  units: deg
+EPOCH: 2457388.5
+PMRA:
+  value: 21.63305001
+  source: Gaia EDR3
+  units: mas/yr
+PMDE:
+  value: -2.401985375
+  source: Gaia EDR3
+  units: mas/yr
+PLX:
+  value: 30.64136348
+  source: Gaia EDR3
+  units: mas
+RV:
+  value: 11.49
+  source: SIMBAD
+  units: km/s
+TEFF:
+  value: 3200.0
+  source: Header
+  units: K
+SPT:
+  value: M3.7
+  source: SIMBAD
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 12.952546
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 14.49
+  source: Gaia VizieR
+GRP_MAG:
+  value: 11.5832
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 8.725
+  source: AllWISE
+W2_MAG:
+  value: 8.542
+  source: AllWISE
+W3_MAG:
+  value: 8.393
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- Gaia DR2 2132774072206249344
+- Gaia EDR3 2132774072206249344
+- GaiaDR22132774072206249344
+- GaiaEDR32132774072206249344
+NOTES: Added on 2022-03-05 00:53:51.731 by spdrs@apikitest using drs_astrometrics.py
+W4_MAG:
+  value: 8.231
+  source: AllWISE
+GAIA_SOURCE_ID: '2132774072206249344'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '19:12:52.671'
+DEC_DMS: '+49:31:15.27'
+RA_J2000_DEG: 288.21946290452627
+DEC_J2000_DEG: 49.520907734544174
+GALACTIC_LON: 80.40223772324448
+GALACTIC_LAT: 17.029923575029173
+ECLIPTIC_LON: 307.6403378593955
+ECLIPTIC_LAT: 70.5884254339211
+TELLURIC_VSYS_PLUS_VBARY_MIN: 1.589243763868403
+TELLURIC_VSYS_PLUS_VBARY_MAX: 21.390756236131597
+TELLURIC_LIMIT_WINDOWS: Sep 08 to Dec 16
+V_SKY: 3.3673772333163408
+V3D: 11.973275634990504
+U: 1.0896865908492988
+V: 11.920619124861012
+W: 0.26599296174850817
+AMAG_G: 10.38408643317509
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 3306.9
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,116 @@
+APERO_NAME: TOI7464
+ORIGINAL_NAME: Gaia DR3 1022973218913663488
+SIMBAD_NAME: TIC 251090642
+APERO_CLASS: STAR
+RA:
+  value: 139.793957
+  source: 2020yCat.1350....0G
+  units: deg
+DEC:
+  value: 53.59464459
+  source: 2020yCat.1350....0G
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: -29.47
+  source: 2020yCat.1350....0G
+  units: mas/yr
+PMDE:
+  value: -20.298
+  source: 2020yCat.1350....0G
+  units: mas/yr
+PLX:
+  value: 8.7216
+  source: 2020yCat.1350....0G
+  units: mas
+RV:
+  value: -2.83
+  source: 2022yCat.1355....0G
+  units: km/s
+TEFF:
+  value: 3560.0
+  source: Entered by PI in Kealahou
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 14.194309
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 15.392303
+  source: Gaia VizieR
+GRP_MAG:
+  value: 13.109674
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 10.656
+  source: AllWISE
+W2_MAG:
+  value: 10.636
+  source: AllWISE
+W3_MAG:
+  value: 10.43
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- TIC 251090642
+- TOI-7464
+- Gaia DR3 1022973218913663488
+- GAIA_DR3_1022973218913663488
+- TIC251090642
+- TOI-7464
+- GaiaDR31022973218913663488
+- GAIADR31022973218913663488
+NOTES: Added on 2026-02-06 00:52:56.765 by spdrs@apikipiha using drs_astrometrics.py
+W4_MAG:
+  value: 8.919
+  source: AllWISE
+GAIA_SOURCE_ID: '1022973218913663488'
+GAIA_TEFF_GSPPHOT: 3751.127
+GAIA_LOGG_GSPPHOT: 4.6911
+GAIA_MH_GSPPHOT: 0.1168
+GAIA_RADIUS_FLAME: 0.5827872
+GAIA_LUM_FLAME: 0.060617317
+GAIA_MASS_FLAME: 0.5645006
+RA_HMS: '09:19:10.550'
+DEC_DMS: '+53:35:40.72'
+RA_J2000_DEG: 139.793957
+DEC_J2000_DEG: 53.59464459
+GALACTIC_LON: 163.5220065935878
+GALACTIC_LAT: 43.18772479993381
+ECLIPTIC_LON: 124.01354632685194
+ECLIPTIC_LAT: 35.875582516183144
+TELLURIC_VSYS_PLUS_VBARY_MIN: -26.968582549933828
+TELLURIC_VSYS_PLUS_VBARY_MAX: 21.30858254993383
+TELLURIC_LIMIT_WINDOWS: Jan 05 to Jan 28; Jul 20 to Aug 12
+V_SKY: 19.44971684927633
+V3D: 19.654525827834757
+U: -10.740186047216339
+V: -11.709513196050056
+W: -11.56875489839
+AMAG_G: 8.89728982341811
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 3669.9
+FE_H: 0.1168
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

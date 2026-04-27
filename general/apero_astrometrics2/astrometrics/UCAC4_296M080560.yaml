@@ -1,0 +1,118 @@
+APERO_NAME: UCAC4_296M080560
+ORIGINAL_NAME: UCAC4 296-080560
+SIMBAD_NAME: UCAC4 296-080560
+APERO_CLASS: STAR
+RA:
+  value: 224.2839817
+  source: UCAC4
+  units: deg
+DEC:
+  value: -30.87990528
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: -22.89999962
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -26.39999962
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: -2.73
+  source: 2022yCat.1355....0G
+  units: km/s
+TEFF:
+  value: 4000.0
+  source: PI data in Kealahou
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 12.60482
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 13.514533
+  source: Gaia VizieR
+GRP_MAG:
+  value: 11.659015
+  source: Gaia VizieR
+J_MAG:
+  value: 10.435
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 9.764
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.546
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.446
+  source: AllWISE
+W2_MAG:
+  value: 9.453
+  source: AllWISE
+W3_MAG:
+  value: 9.34
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 296-080560
+- 2MASS J14570814-3052476
+- TIC 88785435
+- WISEA J145708.13-305247.9
+- Gaia DR3 6205812887538362624
+- UCAC4296-080560
+- 2MASSJ14570814-3052476
+- TIC88785435
+- WISEAJ145708.13-305247.9
+- GaiaDR36205812887538362624
+NOTES: Added on 2026-02-06 01:18:21.404 by spdrs@apikipiha using drs_astrometrics.py
+W4_MAG:
+  value: 8.329
+  source: AllWISE
+GAIA_SOURCE_ID: '6205812887538362624'
+GAIA_TEFF_GSPPHOT: 4193.1646
+GAIA_LOGG_GSPPHOT: 4.4197
+GAIA_MH_GSPPHOT: 0.3102
+GAIA_RADIUS_FLAME: 0.9459152
+GAIA_LUM_FLAME: 0.24638581
+GAIA_MASS_FLAME: null
+RA_HMS: '14:57:08.156'
+DEC_DMS: '-30:52:47.66'
+RA_J2000_DEG: 224.2839817
+DEC_J2000_DEG: -30.87990528
+GALACTIC_LON: 332.43724375760956
+GALACTIC_LAT: 24.69364714269007
+ECLIPTIC_LON: 230.82268202437916
+ECLIPTIC_LAT: -13.445769276577773
+TELLURIC_VSYS_PLUS_VBARY_MIN: -31.703469265242024
+TELLURIC_VSYS_PLUS_VBARY_MAX: 26.243469265242023
+TELLURIC_LIMIT_WINDOWS: Apr 26 to May 16; Nov 06 to Nov 25
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 4074.4
+TEFF_GAIA: 4067.2
+FE_H: 0.3102
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: 0.24638581
