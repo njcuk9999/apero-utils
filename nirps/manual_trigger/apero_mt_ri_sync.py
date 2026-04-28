@@ -195,6 +195,13 @@ def main(settings):
         rparams['APERO_PROFILES'] = dict()
         rparams['APERO_PROFILES'][profile] = aprofiles
         # ---------------------------------------------------------------------
+        # setup task config
+        rparams['TASK_CONFIG'] = dict()
+        rparams['TASK_CONFIG']['ncores'] = pdict['ari']['cores']
+        rparams['TASK_CONFIG']['mp_backend'] = pdict['ari']['mp_backend']
+        rparams['TASK_CONFIG']['mp_start_method'] = pdict['ari']['mp_start_method']
+
+        # ---------------------------------------------------------------------
         # run the sync code(s)
         for local_task in LOCAL_TASKS:
             apero_sync.run(local_task, rparams, verbose=True,
@@ -219,6 +226,9 @@ if __name__ == "__main__":
     _pp['ari'] = dict()
     _pp['ari']['ari path'] = '/scratch2/spirou/drs-data/spirou_mini2_07/other/ari-local'
     _pp['ari']['ari profile'] = 'spirou_v7.yaml'
+    _pp['ari']['cores'] = 5
+    _pp['ari']['mp_backend'] = 'process'
+    _pp['ari']['mp_start_method'] = 'fork'
 
     trigger_settings['PROFILES']['spirou_mini2_07'] = _pp
     # ----------------------------------------------------------------------

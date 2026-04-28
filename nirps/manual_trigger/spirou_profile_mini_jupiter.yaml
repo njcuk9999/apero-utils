@@ -116,6 +116,13 @@ spirou V0.7.282 mini2:
         ari path: /scratch2/spirou/drs-data/spirou_minidata2_07/other/ari-local
         # apero aprofile (from apero_ri)
         ari profile: spirou_v7.yaml
+        # cores to use for ari
+        cores: 5
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork",
+        #    "spawn", "forkserver
+        mp_start_method: fork
 
     # check settings
     check:
