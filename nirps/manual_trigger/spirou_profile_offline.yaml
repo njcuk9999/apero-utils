@@ -16,6 +16,8 @@ spirou offline:
         apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
         lbl path: /cosmos99/spirou/lbl-data/spirou_offline/lbl
+        # apero version
+        apero version: 0.7.296
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
