@@ -1473,7 +1473,7 @@ def get_earliest_raw_file(apero_params, obsdirs):
     indexdbm = drs_database.FileIndexDatabase(apero_params)
     # -------------------------------------------------------------------------
     # create condition
-    condition = 'BLOCK_KIND="raw"'
+    condition = 'BLOCK_KIND="raw" AND KW_MID_OBS_TIME IS NOT NULL'
     # -------------------------------------------------------------------------
     if obsdirs != '*':
          sub_conditions = []
