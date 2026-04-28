@@ -112,6 +112,8 @@ spirou V0.7.282 mini2:
     ari:
         # ari profile
         profile: spirou_minidata.yaml
+        # mode (options are "old", "new" or "both")
+        mode: new
         # local ari directory
         ari path: /scratch2/spirou/drs-data/spirou_minidata2_07/other/ari-local
         # apero aprofile (from apero_ri)

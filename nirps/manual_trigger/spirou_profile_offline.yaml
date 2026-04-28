@@ -110,6 +110,8 @@ spirou offline:
     ari:
         # ari profile
         profile: spirou_offline_udem.yaml
+        # mode (options are "old", "new" or "both")
+        mode: new
         # local ari directory
         ari path: /cosmos99/spirou/apero-data/spirou_offline/other/ari-local
         # apero aprofile (from apero_ri)
