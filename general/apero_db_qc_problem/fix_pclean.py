@@ -17,17 +17,19 @@ from tqdm import tqdm
 # Define variables
 # =============================================================================
 FILE_PATHS = ['/cosmos99/spirou/apero-data/spirou_offline/red/',
-              '/cosmos99/spirou/apero-data/spirou_offline/tellu/']
+              '/cosmos99/spirou/apero-data/spirou_offline/tellu/',
+              '/cosmos99/spirou/apero-data/spirou_offline/calib/']
 
-FILE_SUFFIX = 'pclean_AB.fits'
+FILE_SUFFICES = ['.fits']
 
 KW_QCC_PASS = 'QCC_ALL'
 
 PARAM_TABLE_QCC_KEY = 'PASSED_ALL_QC'
 
-PRECLEAN_QCC_KEY_PREFIX = 'TQCCP'
+QCC_KEY_PREFIX = 'QCC'
+QCC_KEY_SUFFIX = 'P'
 
-N_WORKERS = int(os.getenv('PCLEAN_NWORKERS', '20'))
+N_WORKERS = int(os.getenv('PCLEAN_NWORKERS', '35'))
 CHUNKSIZE = int(os.getenv('PCLEAN_CHUNKSIZE', '25'))
 
 
@@ -40,8 +42,10 @@ def find_files(file_path):
     progress = tqdm(os.walk(file_path), desc='Scanning', unit='dir')
     for root, dirs, dir_files in progress:
         for file in dir_files:
-            if file.endswith(FILE_SUFFIX):
-                matched_files.append(os.path.join(root, file))
+            for file_suffix in FILE_SUFFICES:
+                if file.endswith(file_suffix):
+                    matched_files.append(os.path.join(root, file))
+                    break
         progress.set_postfix(found=len(matched_files))
 
     print('Found {0} total files'.format(len(matched_files)))
@@ -53,7 +57,7 @@ def get_qcc_pass_from_header(header) -> int:
     """Read all preclean QCC PASS keys from a FITS header."""
     pass_values = []
     for key in header:
-        if key.startswith(PRECLEAN_QCC_KEY_PREFIX):
+        if key.startswith(QCC_KEY_PREFIX) and key.endswith(QCC_KEY_SUFFIX):
             pass_values.append(int(header[key]))
 
     if len(pass_values) == 0:
