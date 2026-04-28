@@ -28,6 +28,8 @@ spirou offline:
     processing:
         # apero processing run.ini file
         run file: offline_run.ini
+        # multiprocess settings for apero processing
+        ncores: 20
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:

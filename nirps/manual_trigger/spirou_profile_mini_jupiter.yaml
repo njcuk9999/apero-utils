@@ -28,6 +28,8 @@ spirou V0.7.282 mini2:
     processing:
         # apero processing run.ini file
         run file: mini_run2.ini
+        # multiprocess settings for apero processing
+        ncores: 20
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
