@@ -1,0 +1,201 @@
+APERO_NAME: 16_SGR
+ORIGINAL_NAME: '* 16 Sgr'
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: 273.8040485
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -20.38797834
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 2.107182839
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -2.086838205
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 0.4805203893
+  source: Gaia DR2
+  units: mas
+RV:
+  value: -11.0
+  source: 2004A&A...424..727P
+  units: km/s
+TEFF:
+  value: 31000.0
+  source: HEADER[CFHT]
+  units: K
+SPT:
+  value: O9.5III
+  source: 2014ApJS..211...10S
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- '*  16 Sgr'
+- '** BU  286A'
+- '** CHR  255'
+- 2MASS J18151297-2023167
+- ADS 11191 A
+- ALS  4819
+- ASCC 1595683
+- BD-20  5055
+- CCDM J18152-2023A
+- CGO 482
+- CPD-20  6919
+- CSI-20  5055  1
+- GC 24895
+- GCRV 10699
+- GEN# +1.00167263J
+- GOS G010.76-01.58 01
+- GSC 06272-00089
+- Gaia DR2 4094031138050641408
+- HD 167263
+- HIC  89440
+- HIP  89440
+- HR  6823
+- Hbg 1595
+- Hilt  721
+- IDS 18093-2025 A
+- LS 4819
+- MCW  632
+- PPM 268129
+- ROT  2574
+- SAO 186544
+- SBC9 1950
+- SKY# 33235
+- TD1 21964
+- TIC 243891646
+- TYC 6272-89-1
+- UBV   15500
+- UBV M  22757
+- UCAC4 349-128160
+- WDS J18152-2023A
+- WDS J18152-2023Aa,Ab
+- WEB 15214
+- YZ 110  7574
+- '[B10]  4613'
+- '[HJ56] 126'
+- '[SC95] M 459'
+- '[SC96] Mis 1184'
+- uvby98 100167263
+- '* 16 Sgr'
+- '** BU 286A'
+- '** CHR 255'
+- 16_SGR
+- ALS 4819
+- BD-20 5055
+- CPD-20 6919
+- CSI-20 5055 1
+- HIC 89440
+- HIP 89440
+- HR 6823
+- Hilt 721
+- MCW 632
+- ROT 2574
+- UBV 15500
+- UBV M 22757
+- YZ 110 7574
+- '[B10] 4613'
+- '*16Sgr'
+- '**BU286A'
+- '**CHR255'
+- 2MASSJ18151297-2023167
+- ADS11191A
+- ALS4819
+- ASCC1595683
+- BD-205055
+- CCDMJ18152-2023A
+- CGO482
+- CPD-206919
+- CSI-2050551
+- GC24895
+- GCRV10699
+- GEN#+1.00167263J
+- GOSG010.76-01.5801
+- GSC06272-00089
+- GaiaDR24094031138050641408
+- HD167263
+- HIC89440
+- HIP89440
+- HR6823
+- Hbg1595
+- Hilt721
+- IDS18093-2025A
+- LS4819
+- MCW632
+- PPM268129
+- ROT2574
+- SAO186544
+- SBC91950
+- SKY#33235
+- TD121964
+- TIC243891646
+- TYC6272-89-1
+- UBV15500
+- UBVM22757
+- UCAC4349-128160
+- WDSJ18152-2023A
+- WDSJ18152-2023Aa,Ab
+- WEB15214
+- YZ1107574
+- '[B10]4613'
+- '[HJ56]126'
+- '[SC95]M459'
+- '[SC96]Mis1184'
+- uvby98100167263
+- '*16Sgr'
+- '**BU286A'
+- '**CHR255'
+- 16SGR
+- ALS4819
+- BD-205055
+- CPD-206919
+- CSI-2050551
+- HIC89440
+- HIP89440
+- HR6823
+- Hilt721
+- MCW632
+- ROT2574
+- UBV15500
+- UBVM22757
+- YZ1107574
+- '[B10]4613'
+NOTES: Added on 2022-01-31 18:24:23.604 by cook@cook using drs_astrometrics.py

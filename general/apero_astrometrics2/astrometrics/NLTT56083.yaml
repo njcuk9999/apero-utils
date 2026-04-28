@@ -1,0 +1,134 @@
+APERO_NAME: NLTT56083
+ORIGINAL_NAME: NLTT 56083
+SIMBAD_NAME: G  28-46
+APERO_CLASS: STAR
+RA:
+  value: 347.8490817
+  source: UCAC4
+  units: deg
+DEC:
+  value: 8.517043056
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: -326.0
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -323.0
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: -10.0
+  source: 2014AJ....147...20N
+  units: km/s
+TEFF:
+  value: 3472.0
+  source: 2021A&A...656A.162M
+  units: K
+SPT:
+  value: M3V
+  source: 2014AJ....147...20N
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 12.829235
+  source: Gaia VizieR
+GRP_MAG:
+  value: 10.122608
+  source: Gaia VizieR
+J_MAG:
+  value: 8.466
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 7.843
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.556
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 7.342
+  source: AllWISE
+W2_MAG:
+  value: 7.27
+  source: AllWISE
+W3_MAG:
+  value: 7.17
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 493-150934
+- G  28-46
+- G  29-12
+- Karmn J23113+085
+- LHS  6419
+- LSPM J2311+0831
+- 2MASS J23112378+0831013
+- NLTT 56083
+- PM J23113+0831
+- TIC 402934167
+- USNO-B1.0 0985-00631266
+- WISEA J231123.57+083058.1
+- NLTT_56083
+- UCAC4493-150934
+- G28-46
+- G29-12
+- KarmnJ23113+085
+- LHS6419
+- LSPMJ2311+0831
+- 2MASSJ23112378+0831013
+- NLTT56083
+- PMJ23113+0831
+- TIC402934167
+- USNO-B1.00985-00631266
+- WISEAJ231123.57+083058.1
+- NLTT56083
+NOTES: Added on 2023-07-12 16:57:47.440 by spirou@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 7.1
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '23:11:23.780'
+DEC_DMS: '+08:31:01.36'
+RA_J2000_DEG: 347.8490817
+DEC_J2000_DEG: 8.517043056
+GALACTIC_LON: 85.20605795548741
+GALACTIC_LAT: -46.895401727235225
+ECLIPTIC_LON: 352.22098753221553
+ECLIPTIC_LAT: 12.631874650491966
+TELLURIC_VSYS_PLUS_VBARY_MIN: -39.06894061674443
+TELLURIC_VSYS_PLUS_VBARY_MAX: 19.068940616744428
+TELLURIC_LIMIT_WINDOWS: Mar 24 to Apr 13; Aug 12 to Sep 01
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3431.0
+TEFF_GAIA: 3408.3
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

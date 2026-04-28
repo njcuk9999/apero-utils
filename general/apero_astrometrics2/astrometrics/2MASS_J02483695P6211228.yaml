@@ -1,0 +1,118 @@
+APERO_NAME: 2MASS_J02483695P6211228
+ORIGINAL_NAME: 2MASS J02483695+6211228
+SIMBAD_NAME: TOI-1632
+APERO_CLASS: STAR
+RA:
+  value: 42.15373944
+  source: UCAC4
+  units: deg
+DEC:
+  value: 62.18953028
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: 35.59999847
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: 21.5
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 2990.0
+  source: from exofop
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 16.010334
+  source: Gaia VizieR
+GRP_MAG:
+  value: 14.597552
+  source: Gaia VizieR
+J_MAG:
+  value: 12.505
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 11.975
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 11.72
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 11.465
+  source: AllWISE
+W2_MAG:
+  value: 11.316
+  source: AllWISE
+W3_MAG:
+  value: 10.313
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 761-021332
+- 2MASS J02483695+6211228
+- TIC 51024887
+- TOI-1632
+- WISE J024837.07+621121.9
+- UCAC4761-021332
+- 2MASSJ02483695+6211228
+- TIC51024887
+- TOI-1632
+- WISEJ024837.07+621121.9
+NOTES: Added on 2023-07-08 12:24:03.637 by spirou-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 8.31
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '02:48:36.897'
+DEC_DMS: '+62:11:22.31'
+RA_J2000_DEG: 42.15373944
+DEC_J2000_DEG: 62.18953028
+GALACTIC_LON: 136.1391484693243
+GALACTIC_LAT: 2.3608328595384136
+ECLIPTIC_LON: 61.57844600514577
+ECLIPTIC_LAT: 43.38999295782166
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

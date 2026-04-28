@@ -1,0 +1,144 @@
+APERO_NAME: LUHMAN_16
+ORIGINAL_NAME: Luhman 16
+SIMBAD_NAME: NAME Luhman 16
+APERO_CLASS: STAR
+RA:
+  value: 162.3283775
+  source: UCAC4
+  units: deg
+DEC:
+  value: -53.31842861
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: 1.799999952
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -1.0
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 1550.0
+  source: Table 3 Pecaut & Mamajek 2013 (via nirps-client@maestria)
+  units: K
+SPT:
+  value: L7.5+T0.5
+  source: 2013ApJ...772..129B
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 16.919827
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 20.619625
+  source: Gaia VizieR
+GRP_MAG:
+  value: 14.517294
+  source: Gaia VizieR
+J_MAG:
+  value: 10.733
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 9.563
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 8.841
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 7.872
+  source: AllWISE
+W2_MAG:
+  value: 7.284
+  source: AllWISE
+W3_MAG:
+  value: 6.204
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 184-061368
+- '** LUH   16'
+- DENIS J104919.0-531910
+- 2MASS J10491891-5319100
+- NAME WISE J1049-5319AB
+- NAME Luhman 16
+- TIC 119862115
+- WDS J10493-5319AB
+- WISEA J104915.52-531906.1
+- WISE J104915.57-531906.1
+- Gaia DR3 5353626573555863424
+- Luhman 16
+- LUHMAN 16
+- Luhman16
+- LUHMAN16
+- Luhman-16
+- LUHMAN-16
+- Luhman_16
+- UCAC4184-061368
+- '**LUH16'
+- DENISJ104919.0-531910
+- 2MASSJ10491891-5319100
+- NAMEWISEJ1049-5319AB
+- NAMELuhman16
+- TIC119862115
+- WDSJ10493-5319AB
+- WISEAJ104915.52-531906.1
+- WISEJ104915.57-531906.1
+- GaiaDR35353626573555863424
+- Luhman16
+- LUHMAN16
+- Luhman16
+- LUHMAN16
+- Luhman-16
+- LUHMAN-16
+- Luhman16
+NOTES: Added on 2023-12-12 20:32:16.428 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 5.925
+  source: AllWISE
+GAIA_SOURCE_ID: '5353626573555863424'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '10:49:18.811'
+DEC_DMS: '-53:19:06.34'
+RA_J2000_DEG: 162.3283775
+DEC_J2000_DEG: -53.31842861
+GALACTIC_LON: 285.1878443003572
+GALACTIC_LAT: 5.293293859293903
+ECLIPTIC_LON: 195.01123360787997
+ECLIPTIC_LAT: -53.89349740556019
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

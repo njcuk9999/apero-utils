@@ -1,0 +1,181 @@
+APERO_NAME: GRP0XXX
+ORIGINAL_NAME: grp0-002
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: null
+  source: null
+  units: deg
+DEC:
+  value: null
+  source: null
+  units: deg
+EPOCH: null
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS:
+- NO_PM
+ALIASES:
+- grp0-002
+- grp0-005
+- grp0-007
+- grp0-010
+- grp0-011
+- grp0-012
+- grp0-013
+- grp0-014
+- grp0-015
+- grp0-034
+- grp0-035
+- grp0-036
+- grp0-037
+- grp0-039
+- grp0-041
+- grp0-043
+- grp0-045
+- grp0-046
+- grp0-052
+- grp0-061
+- grp0-062
+- grp0-066
+- grp0-074
+- grp0-081
+- grp0-091
+- grp0-092
+- grp0-101
+- grp0-102
+- grp0-107
+- grp0-110
+- grp0-127
+- grp0-130
+- grp0-138
+- grp0-142
+- grp0-144
+- grp0-148
+- grp0-150
+- grp0-155
+- grp0-159
+- grp0-160
+- grp0-169
+- grp0-171
+- grp0-172
+- grp0-181
+- grp0-195
+- grp0-197
+- grp0-200
+- grp0-201
+- grp0-213
+- grp0-225
+- grp0-226
+- grp0-238
+- grp0-243
+- grp0-245
+- grp0-249
+- grp0-252
+- grp0-254
+- grp0-255
+- grp0-265
+- grp0-269
+- grp0-284
+- grp0-303
+- grp0-305
+- grp0-308
+- grp0-309
+- grp0-025
+- grp0-057
+- grp0-058
+- grp0-069
+- grp0-116
+- grp0-210
+- grp0-261
+NOTES: Added on 2024-07-24 20:52:32.439 by cook@jupiter.astro.umontreal.ca using drs_astrometrics.py
+W4_MAG:
+  value: null
+  source: null
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: null
+DEC_DMS: null
+RA_J2000_DEG: null
+DEC_J2000_DEG: null
+GALACTIC_LON: null
+GALACTIC_LAT: null
+ECLIPTIC_LON: null
+ECLIPTIC_LAT: null
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,140 @@
+APERO_NAME: V4647_SGR
+ORIGINAL_NAME: V* V4647 Sgr
+SIMBAD_NAME: '[FMM95] 3'
+APERO_CLASS: STAR
+RA:
+  value: 266.5635
+  source: 2003yCat.2246....0C
+  units: deg
+DEC:
+  value: -28.834328
+  source: 2003yCat.2246....0C
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 12000.0
+  source: null
+  units: K
+SPT:
+  value: LBV
+  source: 2018A&A...618A...2C
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: 11.79
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 8.92
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.74
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.462
+  source: AllWISE
+W2_MAG:
+  value: 5.247
+  source: AllWISE
+W3_MAG:
+  value: -2.166
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- 2MASS J17461524-2850035
+- NAME Pistol Star
+- qF 134
+- SSTGC 622017
+- TIC 322752144
+- V* V4647 Sgr
+- '[CEC96] Source A'
+- '[DWC2011] 68'
+- '[FMG99] 5'
+- '[FMM95] 3'
+- '[GMC2001] 13-4'
+- '[GMC99] D4'
+- '[GSL2002]  64'
+- '[MKN2009] 1207'
+- '[NHS93] 25'
+- V_V4647_SGR
+- 2MASSJ17461524-2850035
+- NAMEPistolStar
+- qF134
+- SSTGC622017
+- TIC322752144
+- V*V4647Sgr
+- '[CEC96]SourceA'
+- '[DWC2011]68'
+- '[FMG99]5'
+- '[FMM95]3'
+- '[GMC2001]13-4'
+- '[GMC99]D4'
+- '[GSL2002]64'
+- '[MKN2009]1207'
+- '[NHS93]25'
+- VV4647SGR
+NOTES: Added on 2024-10-09 03:26:48.592 by spdrs@32dcd4761891 using drs_astrometrics.py
+W4_MAG:
+  value: -4.662
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '17:46:15.240'
+DEC_DMS: '-28:50:03.58'
+RA_J2000_DEG: 266.5635
+DEC_J2000_DEG: -28.834328
+GALACTIC_LON: 0.15919703278934236
+GALACTIC_LAT: -0.06550029882326974
+ECLIPTIC_LON: 266.97639853184796
+ECLIPTIC_LAT: -5.431098398380226
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

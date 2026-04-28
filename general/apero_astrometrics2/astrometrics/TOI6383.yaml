@@ -1,0 +1,122 @@
+APERO_NAME: TOI6383
+ORIGINAL_NAME: TOI6383
+SIMBAD_NAME: TOI-6383
+APERO_CLASS: STAR
+RA:
+  value: 60.42430944
+  source: UCAC4
+  units: deg
+DEC:
+  value: 60.89160722
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: 38.09999847
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -50.40000153
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3425.0
+  source: exofop.ipac.caltech.edu/tess
+  units: K
+SPT:
+  value: M3
+  source: 2024AJ....168..273B
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 15.638797
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 17.00041
+  source: Gaia VizieR
+GRP_MAG:
+  value: 14.489408
+  source: Gaia VizieR
+J_MAG:
+  value: 12.985
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 12.318
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 12.087
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 11.967
+  source: AllWISE
+W2_MAG:
+  value: 11.86
+  source: AllWISE
+W3_MAG:
+  value: 11.614
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 755-031652
+- '** TOI 6383A'
+- 2MASS J04014183+6053297
+- TIC 328513434
+- TOI-6383
+- WISE J040141.89+605329.2
+- Gaia DR3 473934011733049856
+- UCAC4755-031652
+- '**TOI6383A'
+- 2MASSJ04014183+6053297
+- TIC328513434
+- TOI-6383
+- WISEJ040141.89+605329.2
+- GaiaDR3473934011733049856
+NOTES: Added on 2025-01-18 03:31:23.766 by spdrs@apikipiha using drs_astrometrics.py
+W4_MAG:
+  value: 9.184
+  source: AllWISE
+GAIA_SOURCE_ID: '473934011733049856'
+GAIA_TEFF_GSPPHOT: 3484.4924
+GAIA_LOGG_GSPPHOT: 4.5854
+GAIA_MH_GSPPHOT: -0.3771
+GAIA_RADIUS_FLAME: 0.52194166
+GAIA_LUM_FLAME: 0.03615741
+GAIA_MASS_FLAME: null
+RA_HMS: '04:01:41.834'
+DEC_DMS: '+60:53:29.79'
+RA_J2000_DEG: 60.42430944
+DEC_J2000_DEG: 60.89160722
+GALACTIC_LON: 144.09810885865514
+GALACTIC_LAT: 6.099785284982352
+ECLIPTIC_LON: 71.92537923702595
+ECLIPTIC_LAT: 39.2950248050216
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3556.4
+TEFF_GAIA: 3518.6
+FE_H: -0.3771
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

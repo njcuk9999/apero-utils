@@ -614,7 +614,11 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     :param settings: dict, settings dictionary
     """
     # import ari from apero
-    from apero.tools.recipes.bin import apero_ri
+    try:
+        from apero.tools.recipes.bin import apero_ari as ari
+    # fall back (old method - deprecated)
+    except ImportError:
+        from apero.tools.recipes.bin import apero_ri as ari
     # get the current working directory
     cwd = os.getcwd()
     # loop around profiles
@@ -634,7 +638,7 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
             print('Test mode: not running apero reduction interface '
                   f'for profile: {profile}')
         else:
-            ari_rtn = apero_ri.main(profile=ari_profile,)
+            ari_rtn = ari.main(profile=ari_profile,)
             # log that ARI ended successfully
             if 'success' in ari_rtn:
                 if ari_rtn['success']:
@@ -1003,19 +1007,35 @@ def update_apero_profile(profile: dict):
     :param profile: dict, the profile to update
     :return:
     """
-    from apero.base import base
-    from apero.core import constants
-    from apero.core.constants import param_functions
-    # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
-    # reload DPARAMS and IPARAMS
-    base.DPARAMS = base.load_database_yaml()
-    base.IPARAMS = base.load_install_yaml()
-    # ------------------------------------------------------------------
-    # invalidate cache
-    param_functions.CONFIG_CACHE = dict()
-    # make sure parameters is reloaded (and not cached)
-    return constants.load(cache=False)
+    # ---------------------------------------------------------------------
+    if profile['general']['apero version'].startswith('0.7'):
+        from apero.base import base
+        from apero.core import constants
+        from apero.core.constants import param_functions
+        # use os to add DRS_UCONFIG to the path
+        os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
+        # reload DPARAMS and IPARAMS
+        base.DPARAMS = base.load_database_yaml()
+        base.IPARAMS = base.load_install_yaml()
+        # ------------------------------------------------------------------
+        # invalidate cache
+        param_functions.CONFIG_CACHE = dict()
+        # make sure parameters is reloaded (and not cached)
+        return constants.load(cache=False)
+    else:
+        from aperocore import base as ac_base
+        from aperocore.constants import load_functions
+        from apero.instruments import select
+        # use os to add DRS_UCONFIG to the path
+        os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
+        # reload DPARAMS and IPARAMS
+        ac_base.DPARAMS = ac_base.load_database_yaml()
+        ac_base.IPARAMS = ac_base.load_install_yaml()
+        # ------------------------------------------------------------------
+        # invalidate cache
+        load_functions.CONFIG_CACHE = dict()
+        # make sure parameters is reloaded (and not cached)
+        return load_functions.load_config(select.INSTRUMENTS, cache=False)
 
 
 def make_sym_links(settings: Dict[str, Any]):

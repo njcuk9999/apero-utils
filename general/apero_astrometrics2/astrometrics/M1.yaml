@@ -1,0 +1,233 @@
+APERO_NAME: M1
+ORIGINAL_NAME: M1
+SIMBAD_NAME: M   1
+APERO_CLASS: STAR
+RA:
+  value: 83.6287
+  source: 1995AuJPh..48..143S
+  units: deg
+DEC:
+  value: 22.0147
+  source: 1995AuJPh..48..143S
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: null
+  source: null
+  units: mas/yr
+PMDE:
+  value: null
+  source: null
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 9.963
+  source: AllWISE
+W2_MAG:
+  value: 9.14
+  source: AllWISE
+W3_MAG:
+  value: 6.995
+  source: AllWISE
+KEYWORDS:
+- NO_PM
+ALIASES:
+- M   1
+- 3A 0531+219
+- 2AGL J0534+2205
+- AJG   1
+- ARGO J0535+2203
+- 2C  481
+- 3C 144
+- 3C 144.0
+- 4C 21.19
+- 3CR 144
+- CTA  36
+- CTB 18
+- Cul 0531+21
+- Cul 0531+219
+- DA 179
+- DB  38
+- 2E  1309
+- 2E 0531.5+2159
+- eHWC J0534+220
+- 1ES 0532+21.5
+- 3FGL J0534.5+2201i
+- 4FGL J0534.5+2201i
+- 3FHL J0534.5+2201
+- GRS G184.60 -05.80
+- 1H 0531+219
+- H 0534+21
+- H 0531+219
+- 2HWC J0534+220
+- 3HWC J0534+220
+- IRAS 05314+2200
+- LBN   833
+- LBN 184.62-05.65
+- 1M 0531+219
+- Mills 05+2A
+- NAME CRAB NEB
+- NAME Crab
+- NAME Crab Nebula
+- NAME Tau A
+- NAME Taurus A
+- NGC  1952
+- NRAO 214
+- NRL  2
+- NVSS J053428+220202
+- PBC J0534.5+2201
+- PKS 0531+219
+- 1RXS J053431.2+220218
+- SH  2-244
+- SIM 0531+21.0
+- SNR G184.6-05.8
+- SWIFT J0534.6+2204
+- SWIFT J0534.5+2200
+- TeV J0534+220
+- 2U 0531+22
+- 3U 0531+21
+- 4U 0531+21
+- VRO 21.05.01
+- W 9
+- X Tau X-1
+- X Tau XR-1
+- '[BM83] X0531+219'
+- '[DGW65]  25'
+- '[PT56]  5'
+- M1
+- 3A0531+219
+- 2AGLJ0534+2205
+- AJG1
+- ARGOJ0535+2203
+- 2C481
+- 3C144
+- 3C144.0
+- 4C21.19
+- 3CR144
+- CTA36
+- CTB18
+- Cul0531+21
+- Cul0531+219
+- DA179
+- DB38
+- 2E1309
+- 2E0531.5+2159
+- eHWCJ0534+220
+- 1ES0532+21.5
+- 3FGLJ0534.5+2201i
+- 4FGLJ0534.5+2201i
+- 3FHLJ0534.5+2201
+- GRSG184.60-05.80
+- 1H0531+219
+- H0534+21
+- H0531+219
+- 2HWCJ0534+220
+- 3HWCJ0534+220
+- IRAS05314+2200
+- LBN833
+- LBN184.62-05.65
+- 1M0531+219
+- Mills05+2A
+- NAMECRABNEB
+- NAMECrab
+- NAMECrabNebula
+- NAMETauA
+- NAMETaurusA
+- NGC1952
+- NRAO214
+- NRL2
+- NVSSJ053428+220202
+- PBCJ0534.5+2201
+- PKS0531+219
+- 1RXSJ053431.2+220218
+- SH2-244
+- SIM0531+21.0
+- SNRG184.6-05.8
+- SWIFTJ0534.6+2204
+- SWIFTJ0534.5+2200
+- TeVJ0534+220
+- 2U0531+22
+- 3U0531+21
+- 4U0531+21
+- VRO21.05.01
+- W9
+- XTauX-1
+- XTauXR-1
+- '[BM83]X0531+219'
+- '[DGW65]25'
+- '[PT56]5'
+NOTES: Added on 2024-07-24 18:55:26.388 by cook@jupiter.astro.umontreal.ca using drs_astrometrics.py
+W4_MAG:
+  value: 4.678
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '05:34:30.888'
+DEC_DMS: '+22:00:52.92'
+RA_J2000_DEG: 83.6287
+DEC_J2000_DEG: 22.0147
+GALACTIC_LON: 184.5550954023432
+GALACTIC_LAT: -5.787684828461031
+ECLIPTIC_LON: 84.09345188247237
+ECLIPTIC_LAT: -1.2940525133645915
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

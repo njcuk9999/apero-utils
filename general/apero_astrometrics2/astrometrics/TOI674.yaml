@@ -1,0 +1,127 @@
+APERO_NAME: TOI674
+ORIGINAL_NAME: TOI-674
+SIMBAD_NAME: TOI-674
+APERO_CLASS: STAR
+RA:
+  value: 164.5874517
+  source: UCAC4
+  units: deg
+DEC:
+  value: -36.85809528
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: -161.6999969
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -1.299999952
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: 13.82
+  source: 2022yCat.1355....0G
+  units: km/s
+TEFF:
+  value: 3411.0
+  source: TICv8
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 13.073343
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 14.4766
+  source: Gaia VizieR
+GRP_MAG:
+  value: 11.9371
+  source: Gaia VizieR
+J_MAG:
+  value: 10.359
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 9.737
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.469
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.345
+  source: AllWISE
+W2_MAG:
+  value: 9.237
+  source: AllWISE
+W3_MAG:
+  value: 9.163
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 266-058707
+- 2MASS J10582099-3651292
+- TIC 158588995
+- TOI-674
+- WISEA J105820.84-365129.1
+- WISE J105820.85-365129.1
+- Gaia DR3 5400949450924312576
+- Gaia DR2 5400949450924312576
+- TOIM674
+- UCAC4266-058707
+- 2MASSJ10582099-3651292
+- TIC158588995
+- TOI-674
+- WISEAJ105820.84-365129.1
+- WISEJ105820.85-365129.1
+- GaiaDR35400949450924312576
+- GaiaDR25400949450924312576
+- TOIM674
+NOTES: Added on 2025-06-07 17:06:26.327 by nirps-client@rali.astro.umontreal.ca using
+  drs_astrometrics.py
+W4_MAG:
+  value: 8.332
+  source: AllWISE
+GAIA_SOURCE_ID: '5400949450924312576'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '10:58:20.988'
+DEC_DMS: '-36:51:29.14'
+RA_J2000_DEG: 164.5874517
+DEC_J2000_DEG: -36.85809528
+GALACTIC_LON: 279.0303874545564
+GALACTIC_LAT: 20.70999021218806
+ECLIPTIC_LON: 183.22785283375882
+ECLIPTIC_LAT: -39.41434871131477
+TELLURIC_VSYS_PLUS_VBARY_MIN: -9.194997103819421
+TELLURIC_VSYS_PLUS_VBARY_MAX: 36.83499710381942
+TELLURIC_LIMIT_WINDOWS: Apr 17 to May 18; Jul 30 to Aug 30
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3517.9
+TEFF_GAIA: 3501.6
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

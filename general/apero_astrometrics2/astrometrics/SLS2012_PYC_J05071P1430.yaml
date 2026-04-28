@@ -1,0 +1,112 @@
+APERO_NAME: SLS2012_PYC_J05071P1430
+ORIGINAL_NAME: '[SLS2012] PYC J05071+1430'
+SIMBAD_NAME: RX J0507.2+1430
+APERO_CLASS: STAR
+RA:
+  value: 76.79740149999999
+  source: SIMBAD
+  units: deg
+DEC:
+  value: 14.500352799999998
+  source: SIMBAD
+  units: deg
+EPOCH: null
+PMRA:
+  value: 22.2
+  source: SIMBAD
+  units: mas/yr
+PMDE:
+  value: -71.6
+  source: SIMBAD
+  units: mas/yr
+PLX:
+  value: null
+  source: null
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: M5.5
+  source: SIMBAD
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 16.072823
+  source: Gaia VizieR
+GRP_MAG:
+  value: 12.645471
+  source: Gaia VizieR
+J_MAG:
+  value: 10.571
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 10.014
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.664
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.457
+  source: AllWISE
+W2_MAG:
+  value: 9.223
+  source: AllWISE
+W3_MAG:
+  value: 9.063
+  source: AllWISE
+KEYWORDS:
+- NO_PM
+ALIASES:
+- 2MASS J05071137+1430013
+- TIC 293614667
+- '[SLS2012] PYC J05071+1430'
+NOTES: Added on 2024-07-24 20:57:21.301 by cook@jupiter.astro.umontreal.ca using drs_astrometrics.py
+W4_MAG:
+  value: 8.207
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '05:07:11.376'
+DEC_DMS: '+14:30:01.27'
+RA_J2000_DEG: 76.79740149999999
+DEC_J2000_DEG: 14.500352799999998
+GALACTIC_LON: 187.3265077945819
+GALACTIC_LAT: -15.330375541730907
+ECLIPTIC_LON: 77.08599924488087
+ECLIPTIC_LAT: -8.349025799054035
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3072.3
+TEFF_GAIA: 3070.7
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

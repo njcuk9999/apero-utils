@@ -1,0 +1,126 @@
+APERO_NAME: TOI3153
+ORIGINAL_NAME: Gaia DR2 5338100606072217856
+SIMBAD_NAME: TOI-3153
+APERO_CLASS: STAR
+RA:
+  value: 165.7320788
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -60.19687054
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -8.194705162
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: 3.590789911
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 0.1453120312
+  source: Gaia DR2
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3294.0
+  source: ExoFOP (via nirps-client@maestria)
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 12.884622
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 16.497118
+  source: Gaia VizieR
+GRP_MAG:
+  value: 11.32105
+  source: Gaia VizieR
+J_MAG:
+  value: 7.913
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 6.815
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 6.283
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 6.152
+  source: AllWISE
+W2_MAG:
+  value: 6.157
+  source: AllWISE
+W3_MAG:
+  value: 5.584
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- 2MASS J11025571-6011487
+- UCAC4 150-067932
+- WISE J110255.71-601148.7
+- Gaia DR2 5338100606072217856
+- Gaia DR3 5338100606072217856
+- GAIA_DR2_5338100606072217856
+- TOI_3153
+- TOI-3153
+- TIC_466318137
+- 2MASSJ11025571-6011487
+- UCAC4150-067932
+- WISEJ110255.71-601148.7
+- GaiaDR25338100606072217856
+- GaiaDR35338100606072217856
+- GAIADR25338100606072217856
+- TOI3153
+- TOI-3153
+- TIC466318137
+NOTES: Added on 2023-04-03 20:58:23.133 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 4.836
+  source: AllWISE
+GAIA_SOURCE_ID: '5338100606072217856'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '11:02:55.716'
+DEC_DMS: '-60:11:48.79'
+RA_J2000_DEG: 165.73214978374625
+DEC_J2000_DEG: -60.196885999302424
+GALACTIC_LON: 289.83335481116285
+GALACTIC_LAT: -0.11410581934659089
+ECLIPTIC_LON: 205.79256454394965
+ECLIPTIC_LAT: -57.65689149809098
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 291.8718855745234
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: -1.3038701326579414
+AMAG_KS: -7.90549213265794
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,127 @@
+APERO_NAME: TOI3463
+ORIGINAL_NAME: Gaia DR2 5878095853397405568
+SIMBAD_NAME: TOI-3463
+APERO_CLASS: STAR
+RA:
+  value: 221.8420168
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -60.54482211
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -5.093903302
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -3.064698751
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 0.4749503985
+  source: Gaia DR2
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3000.0
+  source: via nirps-client@maestria
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 15.464607
+  source: Gaia VizieR
+GRP_MAG:
+  value: 13.187382
+  source: Gaia VizieR
+J_MAG:
+  value: 11.456
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 11.017
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 10.864
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 8.781
+  source: AllWISE
+W2_MAG:
+  value: 8.885
+  source: AllWISE
+W3_MAG:
+  value: 9.055
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- Gaia DR2 5878095853397405568
+- GAIA_DR2_5878095853397405568
+- GAIA_DR2_5878095853397405568
+- TIC_292889298
+- 2MASS_J14472210-6032410
+- APASS_31133673
+- TOI_3463
+- TOI-3463
+- UCAC4_148-162478
+- GaiaDR25878095853397405568
+- GAIADR25878095853397405568
+- GAIADR25878095853397405568
+- TIC292889298
+- 2MASSJ14472210-6032410
+- APASS31133673
+- TOI3463
+- TOI-3463
+- UCAC4148-162478
+NOTES: Not in SIMBAD. Found in Gaia DR2.  Added on 2023-04-03 21:13:28.144 by nirps-client@maestria
+  using drs_astrometrics.py
+W4_MAG:
+  value: 8.656
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '14:47:22.095'
+DEC_DMS: '-60:32:41.31'
+RA_J2000_DEG: 221.84206139777297
+DEC_J2000_DEG: -60.54480891563587
+GALACTIC_LON: 316.7178453804767
+GALACTIC_LAT: -0.8139697764103188
+ECLIPTIC_LON: 240.49305760076948
+ECLIPTIC_LAT: -41.9441099341673
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 59.334573846776806
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: -0.7527587180078541
+TEFF_GAIA_JH: 3592.9
+TEFF_GAIA: 3673.9
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,113 @@
+APERO_NAME: BETAPIC_B
+ORIGINAL_NAME: betaPic-b
+SIMBAD_NAME: '* bet Pic'
+APERO_CLASS: STAR
+RA:
+  value: 86.82123366
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -51.06614803
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 2.492664299
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: 82.57699766
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 50.62309049
+  source: Gaia DR2
+  units: mas
+RV:
+  value: 20.0
+  source: 2006AstL...32..759G
+  units: km/s
+TEFF:
+  value: 8084.0
+  source: 2021A&A...647A..49S
+  units: K
+SPT:
+  value: A6V
+  source: 2006AJ....132..161G
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 3.823242
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 3.921584
+  source: Gaia VizieR
+GRP_MAG:
+  value: 3.660152
+  source: Gaia VizieR
+J_MAG:
+  value: 3.57
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 3.51
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 3.48
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 3.484
+  source: AllWISE
+W2_MAG:
+  value: 3.182
+  source: AllWISE
+W3_MAG:
+  value: 2.597
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- betaPic-b
+- betapic-B
+- betapic B
+- beta pic B
+- beta picB
+NOTES: Added manually by Neil Cook (all props copied from BetaPic star
+W4_MAG:
+  value: 0.014
+  source: AllWISE
+GAIA_SOURCE_ID: '4792774797545800832'
+GAIA_TEFF_GSPPHOT: 7938.053
+GAIA_LOGG_GSPPHOT: 4.2095
+GAIA_MH_GSPPHOT: -0.3739
+GAIA_RADIUS_FLAME: 1.5682815
+GAIA_LUM_FLAME: 8.798869
+GAIA_MASS_FLAME: 1.6754763
+RA_HMS: '05:47:17.092'
+DEC_DMS: '-51:03:59.41'
+RA_J2000_DEG: 86.82121658256561
+DEC_J2000_DEG: -51.06650355200484
+GALACTIC_LON: 258.36381692753804
+GALACTIC_LAT: -30.611720507301847
+ECLIPTIC_LON: 82.54359678019175
+ECLIPTIC_LAT: -74.42351686747905
+TELLURIC_VSYS_PLUS_VBARY_MIN: 12.000656008538323
+TELLURIC_VSYS_PLUS_VBARY_MAX: 27.99934399146168
+TELLURIC_LIMIT_WINDOWS: always > 5 km/s
+V_SKY: 7.736234202108057
+V3D: 21.444097547573936
+U: -11.085427520247482
+V: -15.85681479564482
+W: -9.247920894695401
+AMAG_G: 2.344985274417684
+AMAG_KS: 2.001743274417684
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: -0.3739
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: 4.271290250225053
+L_STAR: 8.798869

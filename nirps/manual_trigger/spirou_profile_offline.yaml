@@ -110,6 +110,17 @@ spirou offline:
     ari:
         # ari profile
         profile: spirou_offline_udem.yaml
+        # local ari directory
+        ari path: /cosmos99/spirou/apero-data/spirou_offline/other/ari-local
+        # apero aprofile (from apero_ri)
+        ari profile: spirou_v7.yaml
+        # cores to use for ari
+        cores: 20
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork",
+        #    "spawn", "forkserver
+        mp_start_method: fork
     # check settings
     check:
         # whether to run check

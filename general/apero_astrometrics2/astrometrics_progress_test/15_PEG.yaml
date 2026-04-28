@@ -1,0 +1,149 @@
+APERO_NAME: 15_PEG
+ORIGINAL_NAME: PLX 5288
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: 328.1243627
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 28.79327671
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -59.0848435
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -61.64685766
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 36.86280491
+  source: Gaia DR2
+  units: mas
+RV:
+  value: 18.921
+  source: 2018A&A...616A...7S
+  units: km/s
+TEFF:
+  value: 6452.0
+  source: 2017AJ....153...21L
+  units: K
+SPT:
+  value: F2V
+  source: 1995ApJS...99..135A
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- '*  15 Peg'
+- 2MASS J21522991+2847367
+- AG+28 2571
+- BD+28  4215
+- GC 30625
+- GCRV 13741
+- GEN# +1.00207978
+- GJ  4234
+- GSC 02214-02037
+- Gaia DR2 1896396703077703936
+- HD 207978
+- HIC 107975
+- HIP 107975
+- HR  8354
+- PLX 5288
+- PLX 5288.00
+- PPM 113698
+- ROT  3183
+- SAO  90065
+- SKY# 41690
+- TD1 28543
+- TIC 326202925
+- TYC 2214-2037-1
+- UBV M  25978
+- WEB 19470
+- YPAC 212
+- YZ  28 12966
+- uvby98 100207978
+- (F) 15 Peg
+- '* 15 Peg'
+- 15 Peg
+- 15_PEG
+- BD+28 4215
+- GJ 4234
+- HR 8354
+- ROT 3183
+- SAO 90065
+- UBV M 25978
+- YZ 28 12966
+- '*15Peg'
+- 2MASSJ21522991+2847367
+- AG+282571
+- BD+284215
+- GC30625
+- GCRV13741
+- GEN#+1.00207978
+- GJ4234
+- GSC02214-02037
+- GaiaDR21896396703077703936
+- HD207978
+- HIC107975
+- HIP107975
+- HR8354
+- PLX5288
+- PLX5288.00
+- PPM113698
+- ROT3183
+- SAO90065
+- SKY#41690
+- TD128543
+- TIC326202925
+- TYC2214-2037-1
+- UBVM25978
+- WEB19470
+- YPAC212
+- YZ2812966
+- uvby98100207978
+- (F)15Peg
+- '*15Peg'
+- 15Peg
+- 15PEG
+- BD+284215
+- GJ4234
+- HR8354
+- ROT3183
+- SAO90065
+- UBVM25978
+- YZ2812966
+NOTES: Added on 2022-01-31 18:24:19.330 by cook@cook using drs_astrometrics.py

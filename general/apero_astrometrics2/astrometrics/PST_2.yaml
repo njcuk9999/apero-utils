@@ -1,0 +1,128 @@
+APERO_NAME: PST_2
+ORIGINAL_NAME: '** PST 2'
+SIMBAD_NAME: '** PST    2'
+APERO_CLASS: STAR
+RA:
+  value: 240.3656561
+  source: UCAC4
+  units: deg
+DEC:
+  value: 21.270325
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: -60.79999924
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -82.80000305
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 2500.0
+  source: spdrs@apikitest
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 16.204432
+  source: Gaia VizieR
+GRP_MAG:
+  value: 12.920572
+  source: Gaia VizieR
+J_MAG:
+  value: 10.772
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 10.156
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.832
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.636
+  source: AllWISE
+W2_MAG:
+  value: 9.436
+  source: AllWISE
+W3_MAG:
+  value: 9.232
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 557-055494
+- '** PST    2'
+- 2MASS J16012775+2116133
+- TIC 229571973
+- WDS J16015+2116AB
+- WISEA J160127.71+211612.3
+- WISE J160127.71+211612.4
+- '[SLS2012] PYC J16014+2116'
+- PST 2
+- PST2
+- UCAC4557-055494
+- '**PST2'
+- 2MASSJ16012775+2116133
+- TIC229571973
+- WDSJ16015+2116AB
+- WISEAJ160127.71+211612.3
+- WISEJ160127.71+211612.4
+- '[SLS2012]PYCJ16014+2116'
+- PST2
+- PST2
+NOTES: Added on 2022-03-05 03:54:29.184 by spdrs@apikitest using drs_astrometrics.py
+W4_MAG:
+  value: 8.801
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '16:01:27.757'
+DEC_DMS: '+21:16:13.17'
+RA_J2000_DEG: 240.3656561
+DEC_J2000_DEG: 21.270325
+GALACTIC_LON: 35.916121302387914
+GALACTIC_LAT: 46.52370914439544
+ECLIPTIC_LON: 232.42377417864793
+ECLIPTIC_LAT: 40.92181295702158
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3162.8
+TEFF_GAIA: 3132.9
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

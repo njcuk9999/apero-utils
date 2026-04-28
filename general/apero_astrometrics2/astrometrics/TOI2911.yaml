@@ -1,0 +1,131 @@
+APERO_NAME: TOI2911
+ORIGINAL_NAME: TOI2911
+SIMBAD_NAME: TOI-2911
+APERO_CLASS: STAR
+RA:
+  value: 129.0806292
+  source: UCAC4
+  units: deg
+DEC:
+  value: -46.36575528
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: -42.0
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: 30.80000114
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3536.0
+  source: exofop
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 16.680424
+  source: Gaia VizieR
+GRP_MAG:
+  value: 14.136647
+  source: Gaia VizieR
+J_MAG:
+  value: 12.308
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 11.608
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 11.366
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 11.045
+  source: AllWISE
+W2_MAG:
+  value: 11.026
+  source: AllWISE
+W3_MAG:
+  value: 10.839
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- UCAC4 219-027485
+- 2MASS J08361935-4621566
+- TIC 141141249
+- TOI-2911
+- TOI2911
+- TOI 2911
+- TOI 2911A
+- TOI2911A
+- UCAC4219-027485
+- 2MASSJ08361935-4621566
+- TIC141141249
+- TOI-2911
+- TOI2911
+- TOI2911
+- TOI2911A
+- TOI2911A
+- TOI 2911
+- TOI 2911 A
+- TOI2911 A
+- TOI2911 A
+- TOI-2911A
+- TOI-2911
+NOTES: Added on 2025-05-22 23:09:44.116 by nirps-client@rali.astro.umontreal.ca using
+  drs_astrometrics.py
+W4_MAG:
+  value: 8.62
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '08:36:19.351'
+DEC_DMS: '-46:21:56.72'
+RA_J2000_DEG: 129.0806292
+DEC_J2000_DEG: -46.36575528
+GALACTIC_LON: 264.6076816594984
+GALACTIC_LAT: -3.3636808419572457
+ECLIPTIC_LON: 154.9231493449923
+ECLIPTIC_LAT: -61.29563687230495
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3555.2
+TEFF_GAIA: 3499.1
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

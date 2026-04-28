@@ -1,0 +1,111 @@
+APERO_NAME: GAIA_DR3_2184640135936370688
+ORIGINAL_NAME: Gaia DR3 2184640135936370688
+SIMBAD_NAME: Gaia DR3 2184640135936370688
+APERO_CLASS: STAR
+RA:
+  value: 303.3061742
+  source: Gaia DR3
+  units: deg
+DEC:
+  value: 53.07087336
+  source: Gaia DR3
+  units: deg
+EPOCH: 2457388.5
+PMRA:
+  value: 83.25520719
+  source: Gaia DR3
+  units: mas/yr
+PMDE:
+  value: 103.2531569
+  source: Gaia DR3
+  units: mas/yr
+PLX:
+  value: 25.07512876
+  source: Gaia DR3
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 2700.0
+  source: HEADER[OBS_DIR=2024-08-17]
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 16.323784
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 18.6677
+  source: Gaia VizieR
+GRP_MAG:
+  value: 14.917183
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 7.075
+  source: AllWISE
+W2_MAG:
+  value: 7.339
+  source: AllWISE
+W3_MAG:
+  value: 7.198
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- Gaia DR3 2184640135936370688
+- GaiaDR32184640135936370688
+NOTES: Added on 2025-05-07 15:35:02.474 by spirou-client@titan.astro.umontreal.ca
+  using drs_astrometrics.py
+W4_MAG:
+  value: 7.05
+  source: AllWISE
+GAIA_SOURCE_ID: '2184640135936370688'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '20:13:13.334'
+DEC_DMS: '+53:04:13.49'
+RA_J2000_DEG: 303.3055584025337
+DEC_J2000_DEG: 53.07041449475382
+GALACTIC_LON: 88.03604031855033
+GALACTIC_LAT: 10.2361328942358
+ECLIPTIC_LON: 336.6043201739838
+ECLIPTIC_LAT: 68.9320976500055
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 25.07516428979342
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: 13.319999858933647
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 2942.2
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

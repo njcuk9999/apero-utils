@@ -1,0 +1,193 @@
+APERO_NAME: 10_LAC
+ORIGINAL_NAME: '* 10 Lac'
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: 339.8153184
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 39.05024586
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -1.436831092
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -4.802891782
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 2.787612618
+  source: Gaia DR2
+  units: mas
+RV:
+  value: -10.1
+  source: 2006AstL...32..759G
+  units: km/s
+TEFF:
+  value: 35200.0
+  source: 2018A&A...613A..65H
+  units: K
+SPT:
+  value: O9V
+  source: 2011ApJS..193...24S
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- '*  10 Lac'
+- '** S  813A'
+- '** TRN   36'
+- 1RXS J223916.4+390252
+- 2MASS J22391567+3903011
+- ADS 16148 A
+- AG+38 2350
+- ALS 14844
+- BD+38  4826
+- CCDM J22393+3903A
+- CEL   5504
+- CGO 641
+- CSI+38  4826  2
+- FK5  852
+- GC 31626
+- GCRV 14234
+- GEN# +1.00214680A
+- GOS G096.65-16.98 01
+- GSC 03201-00094
+- Gaia DR2 1908095850396090880
+- HD 214680
+- HGAM   1078
+- HIC 111841
+- HIP 111841
+- HR  8622
+- IDS 22348+3832 A
+- JP11  3513
+- MCW 1066
+- N30 4987
+- NSV 25932
+- PMC 90-93   599
+- PPM  88031
+- ROT  3301
+- SAO  72575
+- SKY# 43075
+- TD1 29256
+- TIC 128692445
+- TYC 3201-94-1
+- UBV   19389
+- UBV M  26533
+- WDS J22393+3903AC
+- WEB 19979
+- '[HFE83] 1514'
+- '[HJ56] 245'
+- '* 10 Lac'
+- '** S 813A'
+- '** TRN 36'
+- 10_LAC
+- BD+38 4826
+- CEL 5504
+- CSI+38 4826 2
+- FK5 852
+- HGAM 1078
+- HR 8622
+- JP11 3513
+- PMC 90-93 599
+- PPM 88031
+- ROT 3301
+- SAO 72575
+- UBV 19389
+- UBV M 26533
+- '*10Lac'
+- '**S813A'
+- '**TRN36'
+- 1RXSJ223916.4+390252
+- 2MASSJ22391567+3903011
+- ADS16148A
+- AG+382350
+- ALS14844
+- BD+384826
+- CCDMJ22393+3903A
+- CEL5504
+- CGO641
+- CSI+3848262
+- FK5852
+- GC31626
+- GCRV14234
+- GEN#+1.00214680A
+- GOSG096.65-16.9801
+- GSC03201-00094
+- GaiaDR21908095850396090880
+- HD214680
+- HGAM1078
+- HIC111841
+- HIP111841
+- HR8622
+- IDS22348+3832A
+- JP113513
+- MCW1066
+- N304987
+- NSV25932
+- PMC90-93599
+- PPM88031
+- ROT3301
+- SAO72575
+- SKY#43075
+- TD129256
+- TIC128692445
+- TYC3201-94-1
+- UBV19389
+- UBVM26533
+- WDSJ22393+3903AC
+- WEB19979
+- '[HFE83]1514'
+- '[HJ56]245'
+- '*10Lac'
+- '**S813A'
+- '**TRN36'
+- 10LAC
+- BD+384826
+- CEL5504
+- CSI+3848262
+- FK5852
+- HGAM1078
+- HR8622
+- JP113513
+- PMC90-93599
+- PPM88031
+- ROT3301
+- SAO72575
+- UBV19389
+- UBVM26533
+NOTES: Added on 2022-01-31 18:24:17.089 by cook@cook using drs_astrometrics.py

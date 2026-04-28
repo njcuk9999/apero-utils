@@ -1,0 +1,113 @@
+APERO_NAME: GAIA_DR2_3025932282556079360
+ORIGINAL_NAME: Gaia DR2 3025932282556079360
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: 89.51847354
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -1.937795903
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 30.55699809
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -66.12579423
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 23.70461204
+  source: Gaia DR2
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 2800.0
+  source: Header
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- Gaia DR2 3025932282556079360
+- GAIA_DR2_3025932282556079360
+- GaiaDR23025932282556079360
+- GAIADR23025932282556079360
+NOTES: Not in SIMBAD. Found in Gaia DR2.  Added on 2022-03-09 00:33:35.761 by spdrs@apikitest
+  using drs_astrometrics.py
+W4_MAG:
+  value: null
+  source: null
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: null
+DEC_DMS: null
+RA_J2000_DEG: null
+DEC_J2000_DEG: null
+GALACTIC_LON: null
+GALACTIC_LAT: null
+ECLIPTIC_LON: null
+ECLIPTIC_LAT: null
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

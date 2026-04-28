@@ -1,0 +1,135 @@
+APERO_NAME: ROSS_614B
+ORIGINAL_NAME: ROSS_614B
+SIMBAD_NAME: Ross  614B
+APERO_CLASS: STAR
+RA:
+  value: 97.348
+  source: 2002ApJS..141..187B
+  units: deg
+DEC:
+  value: -2.81419
+  source: 2002ApJS..141..187B
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: 750.14
+  source: 2002ApJS..141..187B
+  units: mas/yr
+PMDE:
+  value: -802.947
+  source: 2018yCat.1345....0G
+  units: mas/yr
+PLX:
+  value: 242.9659
+  source: 2018yCat.1345....0G
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3400.0
+  source: Derived from spectral type
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 11.338324
+  source: Gaia VizieR
+GRP_MAG:
+  value: 8.25791
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 5.366
+  source: AllWISE
+W2_MAG:
+  value: 4.92
+  source: AllWISE
+W3_MAG:
+  value: 4.963
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- LHS  1850
+- '** B 2601B'
+- CCDM J06294-0249B
+- CSI-02-06268  2
+- GJ 234 B
+- IDS 06243-0244 B
+- NLTT 16581
+- 8pc 242.89B
+- Ross  614B
+- WDS J06293-0248B
+- Zkh  89
+- '[RHG95]  1049'
+- ROSS_614B
+- LHS1850
+- '**B2601B'
+- CCDMJ06294-0249B
+- CSI-02-062682
+- GJ234B
+- IDS06243-0244B
+- NLTT16581
+- 8pc242.89B
+- Ross614B
+- WDSJ06293-0248B
+- Zkh89
+- '[RHG95]1049'
+- ROSS614B
+NOTES: Added on 2025-11-19 19:58:07.280 by nirps-client@rali.astro.umontreal.ca using
+  drs_astrometrics.py
+W4_MAG:
+  value: 4.846
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '06:29:23.520'
+DEC_DMS: '-02:48:51.08'
+RA_J2000_DEG: 97.348
+DEC_J2000_DEG: -2.81419
+GALACTIC_LON: 212.92924776700028
+GALACTIC_LAT: -6.186406358723847
+ECLIPTIC_LON: 98.17401239743464
+ECLIPTIC_LAT: -26.045223847139447
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 21.439159764900783
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 3224.8
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

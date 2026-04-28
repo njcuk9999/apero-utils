@@ -1,0 +1,294 @@
+APERO_NAME: GL559A
+ORIGINAL_NAME: Gl559A
+SIMBAD_NAME: '* alf Cen A'
+APERO_CLASS: STAR
+RA:
+  value: 219.9204081
+  source: HIP
+  units: deg
+DEC:
+  value: -60.83514522
+  source: HIP
+  units: deg
+EPOCH: 2448348.75
+PMRA:
+  value: -3679.25
+  source: HIP
+  units: mas/yr
+PMDE:
+  value: 473.67
+  source: HIP
+  units: mas/yr
+PLX:
+  value: 754.81
+  source: HIP
+  units: mas
+RV:
+  value: -21.4
+  source: 2005ApJS..159..141V
+  units: km/s
+TEFF:
+  value: 5271.0
+  source: 2021MNRAS.506..150B
+  units: K
+SPT:
+  value: G2V
+  source: 2006A&A...460..695T
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: -1.454
+  source: SIMBAD/2MASS
+H_MAG:
+  value: -1.886
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: -2.008
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 0.443
+  source: AllWISE
+W2_MAG:
+  value: 0.095
+  source: AllWISE
+W3_MAG:
+  value: -1.484
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- HD 128620
+- '* alf Cen A'
+- '* alf01 Cen'
+- '** RHD    1A'
+- CCDM J14396-6050A
+- CD-60  5293A
+- CPD-60  5483A
+- CSI-60  5483 41
+- GCRV  8517
+- GEN# +1.00128620A
+- GJ   559 A
+- HIC  71683
+- HIP  71683
+- HR  5459
+- IDS 14328-6025 A
+- LFT 1127
+- LHS    50
+- LTT  5806
+- 2MASS J14393592-6050069
+- NAME Rigel Kentaurus
+- NAME Rigil Kentaurus
+- NLTT 37984
+- PLX 3309
+- PM 14362-6038A
+- PMSC 14328-6025A
+- PPM 360911
+- SBC9 815
+- SKY# 26645
+- SPOCS  610
+- TD1 17606
+- TIC 471011145
+- TYC 9007-5849-1
+- WDS J14396-6050A
+- WEB 12354
+- Zkh 209
+- GL559A
+- GL559A
+- GL559 A
+- GL559_A
+- GL 559A
+- GL 559 A
+- GL 559_A
+- GL_559A
+- GL_559 A
+- GL_559_A
+- GJ559A
+- GJ559 A
+- GJ559_A
+- GJ 559A
+- GJ 559 A
+- GJ 559_A
+- GJ_559A
+- GJ_559 A
+- GJ_559_A
+- HD 128620
+- HD_128620
+- HD128620
+- alf Cen A
+- alf Cen_A
+- alf CenA
+- alf_Cen A
+- alf_Cen_A
+- alf_CenA
+- alfCen A
+- alfCen_A
+- alfCenA
+- '* alf Cen A'
+- '*alf Cen A'
+- '*_alf Cen A'
+- '* alf Cen_A'
+- '*alf Cen_A'
+- '*_alf Cen_A'
+- '* alf CenA'
+- '*alf CenA'
+- '*_alf CenA'
+- '* alf_Cen A'
+- '*alf_Cen A'
+- '*_alf_Cen A'
+- '* alf_Cen_A'
+- '*alf_Cen_A'
+- '*_alf_Cen_A'
+- '* alf_CenA'
+- '*alf_CenA'
+- '*_alf_CenA'
+- '* alfCen A'
+- '*alfCen A'
+- '*_alfCen A'
+- '* alfCen_A'
+- '*alfCen_A'
+- '*_alfCen_A'
+- '* alfCenA'
+- '*alfCenA'
+- '*_alfCenA'
+- HD128620
+- '*alfCenA'
+- '*alf01Cen'
+- '**RHD1A'
+- CCDMJ14396-6050A
+- CD-605293A
+- CPD-605483A
+- CSI-60548341
+- GCRV8517
+- GEN#+1.00128620A
+- GJ559A
+- HIC71683
+- HIP71683
+- HR5459
+- IDS14328-6025A
+- LFT1127
+- LHS50
+- LTT5806
+- 2MASSJ14393592-6050069
+- NAMERigelKentaurus
+- NAMERigilKentaurus
+- NLTT37984
+- PLX3309
+- PM14362-6038A
+- PMSC14328-6025A
+- PPM360911
+- SBC9815
+- SKY#26645
+- SPOCS610
+- TD117606
+- TIC471011145
+- TYC9007-5849-1
+- WDSJ14396-6050A
+- WEB12354
+- Zkh209
+- GL559A
+- GL559A
+- GL559A
+- GL559A
+- GL559A
+- GL559A
+- GL559A
+- GL559A
+- GL559A
+- GL559A
+- GJ559A
+- GJ559A
+- GJ559A
+- GJ559A
+- GJ559A
+- GJ559A
+- GJ559A
+- GJ559A
+- GJ559A
+- HD128620
+- HD128620
+- HD128620
+- alfCenA
+- alfCenA
+- alfCenA
+- alfCenA
+- alfCenA
+- alfCenA
+- alfCenA
+- alfCenA
+- alfCenA
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+- '*alfCenA'
+NOTES: Added on 2023-03-29 13:32:31.745 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: -1.794
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '14:39:40.898'
+DEC_DMS: '-60:50:06.52'
+RA_J2000_DEG: 219.9204081
+DEC_J2000_DEG: -60.83514522
+GALACTIC_LON: 315.74187620398163
+GALACTIC_LAT: -0.6843271866275211
+ECLIPTIC_LON: 239.4910275389874
+ECLIPTIC_LAT: -42.591681472031084
+TELLURIC_VSYS_PLUS_VBARY_MIN: -43.33125953828876
+TELLURIC_VSYS_PLUS_VBARY_MAX: 0.5312595382887686
+TELLURIC_LIMIT_WINDOWS: Jan 07 to Apr 01
+V_SKY: 23.29767605606343
+V3D: 31.634501886599562
+U: -29.12671328211765
+V: 0.5639830947649225
+W: 12.331188344718171
+AMAG_G: null
+AMAG_KS: 2.3811882261187507
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

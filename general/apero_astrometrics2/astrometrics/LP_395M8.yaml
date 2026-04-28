@@ -1,0 +1,134 @@
+APERO_NAME: LP_395M8
+ORIGINAL_NAME: LP 395-8
+SIMBAD_NAME: LP  395-8
+APERO_CLASS: STAR
+RA:
+  value: 304.955275
+  source: UCAC4
+  units: deg
+DEC:
+  value: 22.9434775
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: 77.0
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: 105.4000015
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3503.0
+  source: 2014MNRAS.443.2561G
+  units: K
+SPT:
+  value: M3.0Ve
+  source: 2013AJ....145..102L
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: 12.26463
+  source: Gaia VizieR
+GRP_MAG:
+  value: 9.847702
+  source: Gaia VizieR
+J_MAG:
+  value: 8.166
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 7.52
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.283
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 7.026
+  source: AllWISE
+W2_MAG:
+  value: 6.982
+  source: AllWISE
+W3_MAG:
+  value: 6.893
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- GSC 02155-01614
+- Karmn J20198+229
+- LP  395-8
+- 2MASS J20194925+2256367
+- NLTT 49079
+- PM J20198+2256
+- RX J2019.8+2256
+- 1RXS J201949.3+225628
+- SBC9 3813
+- TIC 314051148
+- UCAC4 565-110196
+- '[FS2003] 1069'
+- LP_395M8
+- GSC02155-01614
+- KarmnJ20198+229
+- LP395-8
+- 2MASSJ20194925+2256367
+- NLTT49079
+- PMJ20198+2256
+- RXJ2019.8+2256
+- 1RXSJ201949.3+225628
+- SBC93813
+- TIC314051148
+- UCAC4565-110196
+- '[FS2003]1069'
+- LP395M8
+NOTES: Added on 2023-07-12 16:39:00.504 by spirou@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 6.857
+  source: AllWISE
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '20:19:49.266'
+DEC_DMS: '+22:56:36.52'
+RA_J2000_DEG: 304.955275
+DEC_J2000_DEG: 22.9434775
+GALACTIC_LON: 63.545621648060745
+GALACTIC_LAT: -7.500661049523005
+ECLIPTIC_LON: 314.47251869283866
+ECLIPTIC_LAT: 41.138550665378
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: 3600.6
+TEFF_GAIA: 3577.3
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

@@ -1,0 +1,140 @@
+APERO_NAME: GJ527B
+ORIGINAL_NAME: GJ527B
+SIMBAD_NAME: '* tau Boo B'
+APERO_CLASS: STAR
+RA:
+  value: -468.9226
+  source: Gaia DR3 (manual)
+  units: deg
+DEC:
+  value: 63.4686
+  source: Gaia DR3 (manual)
+  units: deg
+EPOCH: 2457388.5
+PMRA:
+  value: -468.9225601
+  source: Gaia EDR3
+  units: mas/yr
+PMDE:
+  value: 63.46858141
+  source: Gaia EDR3
+  units: mas/yr
+PLX:
+  value: 64.04697623
+  source: Gaia EDR3
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3500.0
+  source: Added spt from main sequence (M3)
+  units: K
+SPT:
+  value: M3V
+  source: 1974ApJS...28....1J
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 9.4691
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 2.407
+  source: AllWISE
+W2_MAG:
+  value: 2.744
+  source: AllWISE
+W3_MAG:
+  value: 3.34
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- BD+18  2782B
+- '* tau Boo B'
+- '** STT  270B'
+- ADS  9025 B
+- CCDM J13473+1727B
+- CSI+18  2782  2
+- GJ   527 B
+- HD 120136B
+- IDS 13425+1757 B
+- SDSS J134715.56+172725.4
+- WDS J13473+1727B
+- '[RHG95]  2181'
+- Gaia DR2 1244571953470337280
+- BD+182782B
+- '*tauBooB'
+- '**STT270B'
+- ADS9025B
+- CCDMJ13473+1727B
+- CSI+1827822
+- GJ527B
+- HD120136B
+- IDS13425+1757B
+- SDSSJ134715.56+172725.4
+- WDSJ13473+1727B
+- '[RHG95]2181'
+- GaiaDR21244571953470337280
+- GJ 527B
+- TAU BOO B
+- TAUBOOB
+- TAU BOOB
+- TAUBOO B
+NOTES: Added on 2024-03-05 13:56:28.147 by nirps-client@rali using drs_astrometrics.py.
+  PM taken from primary TAU BOO
+W4_MAG:
+  value: 3.29
+  source: AllWISE
+GAIA_SOURCE_ID: '1244571953470337280'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '16:44:19.696'
+DEC_DMS: '+63:28:05.94'
+RA_J2000_DEG: 251.0820652259984
+DEC_J2000_DEG: 63.468317865644906
+GALACTIC_LON: 94.07100901962775
+GALACTIC_LAT: 38.120808840304555
+ECLIPTIC_LON: 192.3875784256432
+ECLIPTIC_LAT: 81.4729783070958
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 35.024016161035725
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: 8.501593153805207
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

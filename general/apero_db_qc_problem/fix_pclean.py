@@ -20,7 +20,7 @@ FILE_PATHS = ['/cosmos99/spirou/apero-data/spirou_offline/red/',
               '/cosmos99/spirou/apero-data/spirou_offline/tellu/',
               '/cosmos99/spirou/apero-data/spirou_offline/calib/']
 
-FILE_SUFFICES = ['.fits']
+FILE_SUFFICES = ['pclean_AB.fits', 'pclean_A.fits', 'pclean_B.fits']
 
 KW_QCC_PASS = 'QCC_ALL'
 
@@ -29,8 +29,8 @@ PARAM_TABLE_QCC_KEY = 'PASSED_ALL_QC'
 QCC_KEY_PREFIX = 'QCC'
 QCC_KEY_SUFFIX = 'P'
 
-N_WORKERS = int(os.getenv('PCLEAN_NWORKERS', '35'))
-CHUNKSIZE = int(os.getenv('PCLEAN_CHUNKSIZE', '25'))
+N_WORKERS = int(os.getenv('NWORKERS', '20'))
+CHUNKSIZE = int(os.getenv('CHUNKSIZE', '25'))
 
 
 # =============================================================================
@@ -72,18 +72,13 @@ def process_file(filename: str):
         with fits.open(filename, mode='update') as hdul:
             header = hdul[0].header
 
-            qcc_value = get_qcc_pass_from_header(header)
-            header[KW_QCC_PASS] = qcc_value
+            header[KW_QCC_PASS] = 1
 
             table = hdul['PARAM_TABLE'].data
             for row in range(len(table)):
-                # this fixes a mistake I introduced
-                if str(table['NAME'][row]) == '0':
-                    table['NAME'][row] = PARAM_TABLE_QCC_KEY
-                    table['VALUE'][row] = qcc_value == 1
                 # this is the original fix for those files I didn't get to yet
-                elif PARAM_TABLE_QCC_KEY in table['NAME'][row]:
-                    table['VALUE'][row] = qcc_value == 1
+                if PARAM_TABLE_QCC_KEY in table['NAME'][row]:
+                    table['VALUE'][row] = 1
 
             hdul.flush()
 
