@@ -15,7 +15,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 import getpass
 
 import numpy as np
@@ -1125,7 +1125,8 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     os.chdir(cwd)
 
 
-def run_comm_visualization(settings: Dict[str, Any]):
+def run_comm_visualization(settings: Dict[str, Any],
+                           ncores: Optional[int] = None):
     # loop around profiles
     for profile in settings['PROFILES']:
         # print progress
@@ -1138,11 +1139,15 @@ def run_comm_visualization(settings: Dict[str, Any]):
         runid_dir = os.path.join(comm_path, 'runids')
         # get the test mode
         test_mode = settings['TEST']
+        # get the cores (if given)
+        if ncores is None:
+            ncores = pdict['processing'].get('ncores', None)
         # ---------------------------------------------------------------------
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_visu
         # run the visualization tool for the comm directory
-        apero_visu.main(mode='info', path=runid_dir, test=test_mode)
+        apero_visu.main(mode='info', path=runid_dir, test=test_mode,
+                        cores=ncores)
 
 
 def run_push_to_datacenter(settings: Dict[str, Any]):
