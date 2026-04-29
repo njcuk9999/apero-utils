@@ -1146,7 +1146,6 @@ def run_comm_visualization(settings: Dict[str, Any],
         from apero.tools.recipes.bin import apero_visu
         # get run file
         runfile = pdict['processing'].get('run file')
-        runfile = runfile.strip('.ini').strip('.yaml')
         # run the visualization tool for the comm directory
         apero_visu.main(mode='info', path=runid_dir, test=test_mode,
                         cores=ncores, crunfile=runfile)
