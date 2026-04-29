@@ -521,12 +521,15 @@ def run_apero_get(settings: Dict[str, Any]):
         # update the apero profile
         pparams = update_apero_profile(pdict)
         # get the earliest raw file (we do not get files older than this)
+        print('Getting earliest raw file...')
         settings['SINCE'] = get_earliest_raw_file(pparams,
                                                   obsdirs=settings['OBS_DIRS'])
         # if there are no files skip this profile
         if len(settings['SINCE']) == 0:
             print(f'\tNo files found - skipping profile: {profile}')
             continue
+        else:
+            print(f'\tKeeping files since {settings["SINCE"]}')
 
         # ---------------------------------------------------------------------
         # deal with get objects directory
@@ -569,6 +572,7 @@ def run_apero_get(settings: Dict[str, Any]):
         # ----------------------------------------------------------
         # check directories exist - try to make them if they don't
         # ----------------------------------------------------------
+        print('Making directories and scanning for broken links')
         directories = [obj_path, comm_path]
         for directory in directories:
             if not os.path.exists(directory):
@@ -584,36 +588,58 @@ def run_apero_get(settings: Dict[str, Any]):
         # Copy to reduced 'objects' directory
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
-        apero_get.main(objnames='*', dprtypes=obj_dprtypes,
+        gkwargs1 = dict(objnames='*', dprtypes=obj_dprtypes,
                        block_kind='red', cores=ncores,
                        outtypes=obj_outtypes, outpath=obj_path,
                        fibers=obj_scifibers, symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
+        progress_apero_get(**gkwargs1)
+        apero_get.main(**gkwargs1)
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=obj_template_outtypes,
-                       block_kind='red', cores=ncores,
-                       outpath=obj_path, fibers=obj_scifibers,
-                       symlinks=obj_symlinks,
-                       test=settings['TEST'], since=settings['SINCE'])
+        gkwargs2 = dict(objnames='*', outtypes=obj_template_outtypes,
+                        block_kind='red', cores=ncores,
+                        outpath=obj_path, fibers=obj_scifibers,
+                        symlinks=obj_symlinks,
+                        test=settings['TEST'], since=settings['SINCE'])
+        progress_apero_get(**gkwargs2)
+        apero_get.main(**gkwargs2)
         # --------------------------------------------------------------
         # Copy to reduced 'comm' directory
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
-        apero_get.main(objnames='*', dprtypes=comm_dprtypes,
-                       block_kind='out', cores=ncores,
-                       outtypes=comm_outtypes, outpath=comm_path,
-                       test=settings['TEST'], since=settings['SINCE'],
-                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
-                       group_server=comm_gserver, out_prefix=comm_prefix,
-                       out_suffix=comm_suffix, failedqc=True)
+        gkwargs3 = dict(objnames='*', dprtypes=comm_dprtypes,
+                        block_kind='out', cores=ncores,
+                        outtypes=comm_outtypes, outpath=comm_path,
+                        test=settings['TEST'], since=settings['SINCE'],
+                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                        group_server=comm_gserver, out_prefix=comm_prefix,
+                        out_suffix=comm_suffix, failedqc=True)
+        progress_apero_get(**gkwargs3)
+        apero_get.main(**gkwargs3)
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=comm_template_outtypes,
-                       block_kind='red', cores=ncores, outpath=comm_path,
-                       test=settings['TEST'], since=settings['SINCE'],
-                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
-                       group_server=comm_gserver, out_prefix=comm_prefix,
-                       out_suffix=comm_suffix)
+        gkwargs4 = dict(objnames='*', outtypes=comm_template_outtypes,
+                        block_kind='red', cores=ncores, outpath=comm_path,
+                        test=settings['TEST'], since=settings['SINCE'],
+                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                        group_server=comm_gserver, out_prefix=comm_prefix,
+                        out_suffix=comm_suffix)
+        progress_apero_get(**gkwargs4)
+        apero_get.main(**gkwargs4)
 
+
+def progress_apero_get(**gkwargs):
+    msg = '\tAPERO GET:'
+    # keys to add to the status
+    keys =  ['objanmes', 'outtypes', 'block_kind', 'cores', 'outpath',
+             'fibers', 'symlinks', 'test', 'since',
+             'permission_yaml', 'group_yaml', 'group_server',
+             'out_prefix', 'out_suffix']
+    # loop around keys
+    for key in keys:
+        if key in gkwargs and gkwargs[key] is not None:
+            msg += f'\n\t\t- {key}: {gkwargs[key]}'
+    # print the message
+    print(msg)
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):
     """
@@ -1523,12 +1549,12 @@ def remove_broken_symlinks(path: str):
             except Exception as e:
                 emsg = 'Failed to remove path {0}\n\tError {1}: {2}'
                 eargs = [path, type(e), str(e)]
-                print_process(emsg.format(*eargs))
+                print(emsg.format(*eargs))
                 return
     # print how many broken symlinks we removed (as a warning)
-    wmsg = 'Remove {0} broken symlinks'
-    wargs = [count]
-    print_process(wmsg.format(*wargs))
+    wmsg = '\tRemove {0} broken symlinks in {1}'
+    wargs = [count, path]
+    print(wmsg.format(*wargs))
 
 
 # =============================================================================
