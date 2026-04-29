@@ -564,7 +564,8 @@ def run_apero_get(settings: Dict[str, Any]):
         comm_prefix = pdict['get-comm'].get('out prefix', None)
         # get the suffix for files in the comm directory
         comm_suffix = pdict['get-comm'].get('out suffix', None)
-
+        # get the number of cores to use
+        ncores = pdict['processing'].get('ncores', None)
         # ----------------------------------------------------------
         # check directories exist - try to make them if they don't
         # ----------------------------------------------------------
@@ -584,13 +585,13 @@ def run_apero_get(settings: Dict[str, Any]):
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
         apero_get.main(objnames='*', dprtypes=obj_dprtypes,
-                       block_kind='red',
+                       block_kind='red', cores=ncores,
                        outtypes=obj_outtypes, outpath=obj_path,
                        fibers=obj_scifibers, symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=obj_template_outtypes,
-                       block_kind='red',
+                       block_kind='red', cores=ncores,
                        outpath=obj_path, fibers=obj_scifibers,
                        symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
@@ -599,16 +600,15 @@ def run_apero_get(settings: Dict[str, Any]):
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
         apero_get.main(objnames='*', dprtypes=comm_dprtypes,
-                       block_kind='out',
+                       block_kind='out', cores=ncores,
                        outtypes=comm_outtypes, outpath=comm_path,
                        test=settings['TEST'], since=settings['SINCE'],
                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
                        group_server=comm_gserver, out_prefix=comm_prefix,
-                       out_suffix=comm_suffix)
+                       out_suffix=comm_suffix, failedqc=True)
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=comm_template_outtypes,
-                       block_kind='out',
-                       outpath=comm_path,
+                       block_kind='red', cores=ncores, outpath=comm_path,
                        test=settings['TEST'], since=settings['SINCE'],
                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
                        group_server=comm_gserver, out_prefix=comm_prefix,
