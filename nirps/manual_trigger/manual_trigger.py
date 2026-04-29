@@ -830,23 +830,22 @@ def run_ari_sync(pdict):
     # set instrument at global level
     rparams['INSTRUMENT'] = aprofiles['general']['instrument']
     # ---------------------------------------------------------------------
+    # get path safe profile name
+    pname = profile.strip().replace(' ', '_')
     # push into rparams
     rparams['APERO_PROFILES'] = dict()
-    rparams['APERO_PROFILES'][profile] = aprofiles
+    rparams['APERO_PROFILES'][pname] = aprofiles
     # ---------------------------------------------------------------------
     # setup task config
     rparams['TASK_CONFIG'] = dict()
     rparams['TASK_CONFIG']['ncores'] = pdict['ari']['cores']
     rparams['TASK_CONFIG']['mp_backend'] = pdict['ari']['mp_backend']
     rparams['TASK_CONFIG']['mp_start_method'] = pdict['ari']['mp_start_method']
-
     # ---------------------------------------------------------------------
     # run the sync code(s)
     for local_task in LOCAL_TASKS:
         apero_sync.run(local_task, rparams, verbose=True,
                        log_file=logpath)
-
-
 
 
 def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
