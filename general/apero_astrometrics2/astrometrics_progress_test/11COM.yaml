@@ -1,0 +1,145 @@
+APERO_NAME: 11COM
+ORIGINAL_NAME: 11Com
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: 185.1787793
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 17.79325164
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -109.2413803
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: 88.17010164
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 10.71044534
+  source: Gaia DR2
+  units: mas
+RV:
+  value: 43.37
+  source: 2018yCat.1345....0G
+  units: km/s
+TEFF:
+  value: 4741.0
+  source: 2016A&A...585A...5B
+  units: K
+SPT:
+  value: G8+IIIFe-1
+  source: 1989ApJS...71..245K
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- '*  11 Com'
+- '** HO   52A'
+- ADS  8521 A
+- AG+18 1179
+- BD+18  2592
+- CCDM J12207+1748A
+- CSI+18  2592  1
+- FK5 2987
+- GC 16835
+- GCRV  7404
+- GEN# +1.00107383
+- GSC 01445-02560
+- HD 107383
+- HIC  60202
+- HIP  60202
+- HR  4697
+- IDS 12157+1821 A
+- IRAS 12181+1804
+- IRC +20241
+- JP11  2212
+- 2MASS J12204305+1747341
+- PMC 90-93  1313
+- PPM 128975
+- ROT  1809
+- SAO 100053
+- SKY# 23129
+- TD1 16214
+- TIC 72437047
+- TYC 1445-2560-1
+- UBV   11083
+- UBV M  18084
+- WDS J12207+1748A
+- WEB 10703
+- YPAC 260
+- YZ  18  4649
+- Gaia DR3 3946945413106333696
+- Gaia DR2 3946945413106333696
+- '*11Com'
+- '**HO52A'
+- ADS8521A
+- AG+181179
+- BD+182592
+- CCDMJ12207+1748A
+- CSI+1825921
+- FK52987
+- GC16835
+- GCRV7404
+- GEN#+1.00107383
+- GSC01445-02560
+- HD107383
+- HIC60202
+- HIP60202
+- HR4697
+- IDS12157+1821A
+- IRAS12181+1804
+- IRC+20241
+- JP112212
+- 2MASSJ12204305+1747341
+- PMC90-931313
+- PPM128975
+- ROT1809
+- SAO100053
+- SKY#23129
+- TD116214
+- TIC72437047
+- TYC1445-2560-1
+- UBV11083
+- UBVM18084
+- WDSJ12207+1748A
+- WEB10703
+- YPAC260
+- YZ184649
+- GaiaDR33946945413106333696
+- GaiaDR23946945413106333696
+NOTES: Added on 2023-08-18 15:47:26.028 by nirps-client@maestria using drs_astrometrics.py

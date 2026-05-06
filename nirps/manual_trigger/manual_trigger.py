@@ -15,7 +15,7 @@ import os
 import shutil
 import sys
 from pathlib import Path
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Union
 import getpass
 
 import numpy as np
@@ -49,6 +49,14 @@ MESSAGES = [MANUAL_START, MANUAL_END, APERO_START, APERO_ERR, APERO_END,
             ARI_START, ARI_END]
 # do not check these columns for True's and False's
 EXCLUDE_SHEET_COLS = ['obsdir', 'date']
+# Path the the apero_ri (ARI2) profile files (relative to the apero install path)
+ARI_PROFILE_REL_PATH = ['apero-ri', 'apero_ri', 'resources',
+                        'aprofile_instruments']
+
+# list of local tasks to run
+LOCAL_TASKS = ['APERO_OBJECT_QUERY', 'APERO_QC_STATS']
+
+
 
 
 # =============================================================================
@@ -100,6 +108,17 @@ class ManualTriggerException(Exception):
 # =============================================================================
 # Define main functionality
 # =============================================================================
+def str2bool(value):
+    if isinstance(value, bool):
+        return value
+    if value.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif value.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
+
 def get_args():
     """
     Define the command line arguments
@@ -120,52 +139,55 @@ def get_args():
     parser.add_argument('--batch', action='store_true', default=False,
                         help='Run in batch mode (sbatch)')
     # link switch
-    parser.add_argument('--links', type=bool, default=True,
+    parser.add_argument('--links', type=str2bool, default=True,
                         help='Whether to make links to raw files '
                              '(if False will skip this step)')
-    parser.add_argument('--only_links', type=bool, default=False,
+    parser.add_argument('--only_links', action='store_true', default=False,
                         help='Whether to only make links to raw files '
                              '(if True will skip all other steps)')
     # apero precheck switch
-    parser.add_argument('--apero_precheck', type=bool, default=True,
+    parser.add_argument('--apero_precheck', type=str2bool, default=True,
                         help='Whether to run the APERO prechecks '
                              '(if False will skip this step)')
-    parser.add_argument('--only_apero_precheck', type=bool, default=False,
+    parser.add_argument('--only_apero_precheck', action='store_true',
+                        default=False,
                         help='Whether to only run the APERO prechecks '
                              '(if True will skip all other steps)')
     # apero process switch
-    parser.add_argument('--apero_process', type=bool, default=True,
+    parser.add_argument('--apero_process', type=str2bool, default=True,
                         help='Whether to run the APERO processing '
                              '(if False will skip this step)')
-    parser.add_argument('--only_apero_process', type=bool, default=False,
+    parser.add_argument('--only_apero_process', action='store_true',
+                        default=False,
                         help='Whether to only run the APERO processing '
                              '(if True will skip all other steps)')
     # apero get switch
-    parser.add_argument('--get', type=bool, default=True,
+    parser.add_argument('--get', type=str2bool, default=True,
                         help='Whether to run the APERO get step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_aperoget', type=bool, default=False,
+    parser.add_argument('--only_aperoget', action='store_true', default=False,
                         help='Whether to only run the APERO get step '
                              '(if True will skip all other steps)')
     # apero reduction interface switch
-    parser.add_argument('--ari', type=bool, default=True,
+    parser.add_argument('--ari', type=str2bool, default=True,
                         help='Whether to run the reduction interface step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_ari', type=bool, default=False,
+    parser.add_argument('--only_ari', action='store_true', default=False,
                         help='Whether to only run the reduction interface step '
                              '(if True will skip all other steps)')
     # apero comm visualization switch
-    parser.add_argument('--comm_visu', type=bool, default=True,
+    parser.add_argument('--comm_visu', type=str2bool, default=True,
                         help='Whether to run the comm visualization step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_commvisu', type=bool, default=False,
+    parser.add_argument('--only_commvisu', action='store_true', default=False,
                         help='Whether to only run the comm visualization step '
                              '(if True will skip all other steps)')
     # apero push to datacenter switch
-    parser.add_argument('--push_to_datacenter', type=bool, default=True,
+    parser.add_argument('--push_to_datacenter', type=str2bool, default=True,
                         help='Whether to run the push to datacenter step '
                              '(if False will skip this step)')
-    parser.add_argument('--only_pushtodatacenter', type=bool, default=False,
+    parser.add_argument('--only_pushtodatacenter',
+                        action='store_true', default=False,
                         help='Whether to only run the push to datacenter step '
                              '(if True will skip all other steps)')
     # apero get --since parameter
@@ -499,12 +521,15 @@ def run_apero_get(settings: Dict[str, Any]):
         # update the apero profile
         pparams = update_apero_profile(pdict)
         # get the earliest raw file (we do not get files older than this)
+        print('Getting earliest raw file...')
         settings['SINCE'] = get_earliest_raw_file(pparams,
                                                   obsdirs=settings['OBS_DIRS'])
         # if there are no files skip this profile
         if len(settings['SINCE']) == 0:
             print(f'\tNo files found - skipping profile: {profile}')
             continue
+        else:
+            print(f'\tKeeping files since {settings["SINCE"]}')
 
         # ---------------------------------------------------------------------
         # deal with get objects directory
@@ -542,10 +567,12 @@ def run_apero_get(settings: Dict[str, Any]):
         comm_prefix = pdict['get-comm'].get('out prefix', None)
         # get the suffix for files in the comm directory
         comm_suffix = pdict['get-comm'].get('out suffix', None)
-
+        # get the number of cores to use
+        ncores = pdict['processing'].get('ncores', None)
         # ----------------------------------------------------------
         # check directories exist - try to make them if they don't
         # ----------------------------------------------------------
+        print('Making directories and scanning for broken links')
         directories = [obj_path, comm_path]
         for directory in directories:
             if not os.path.exists(directory):
@@ -560,43 +587,70 @@ def run_apero_get(settings: Dict[str, Any]):
         # --------------------------------------------------------------
         # Copy to reduced 'objects' directory
         # --------------------------------------------------------------
-        # run apero get to make the objects dir in apero dir (red directory)
-        apero_get.main(objnames='*', dprtypes=obj_dprtypes,
-                       block_kind='red',
+        # run apero get to make the objects dir in apero dir
+        gkwargs1a = dict(objnames='*', dprtypes=obj_dprtypes,
+                       block_kind='red', cores=ncores,
                        outtypes=obj_outtypes, outpath=obj_path,
                        fibers=obj_scifibers, symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
+        progress_apero_get(**gkwargs1a)
+        apero_get.main(**gkwargs1a)
+
         # run apero get to make the objects dir in apero dir (out directory)
-        apero_get.main(objnames='*', dprtypes=obj_dprtypes,
-                       block_kind='out',
-                       outtypes=obj_outtypes, outpath=obj_path,
-                       fibers=obj_scifibers, symlinks=obj_symlinks,
-                       test=settings['TEST'], since=settings['SINCE'])
+        gkwargs1b = dict(objnames='*', dprtypes=obj_dprtypes,
+                         block_kind='out', cores=ncores,
+                         outtypes=obj_outtypes, outpath=obj_path,
+                         fibers=obj_scifibers, symlinks=obj_symlinks,
+                         test=settings['TEST'], since=settings['SINCE'])
+        progress_apero_get(**gkwargs1b)
+        apero_get.main(**gkwargs1b)
+
+
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=obj_template_outtypes,
-                       block_kind='red',
-                       outpath=obj_path, fibers=obj_scifibers,
-                       symlinks=obj_symlinks,
-                       test=settings['TEST'], since=settings['SINCE'])
+        gkwargs2 = dict(objnames='*', outtypes=obj_template_outtypes,
+                        block_kind='red', cores=ncores,
+                        outpath=obj_path, fibers=obj_scifibers,
+                        symlinks=obj_symlinks,
+                        test=settings['TEST'], since=settings['SINCE'])
+        progress_apero_get(**gkwargs2)
+        apero_get.main(**gkwargs2)
         # --------------------------------------------------------------
         # Copy to reduced 'comm' directory
         # --------------------------------------------------------------
         # run apero get to make the objects dir in apero dir
-        apero_get.main(objnames='*', dprtypes=comm_dprtypes,
-                       block_kind='out',
-                       outtypes=comm_outtypes, outpath=comm_path,
-                       test=settings['TEST'], since=settings['SINCE'],
-                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
-                       group_server=comm_gserver, out_prefix=comm_prefix,
-                       out_suffix=comm_suffix)
+        gkwargs3 = dict(objnames='*', dprtypes=comm_dprtypes,
+                        block_kind='out', cores=ncores,
+                        outtypes=comm_outtypes, outpath=comm_path,
+                        test=settings['TEST'], since=settings['SINCE'],
+                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                        group_server=comm_gserver, out_prefix=comm_prefix,
+                        out_suffix=comm_suffix, failedqc=True)
+        progress_apero_get(**gkwargs3)
+        apero_get.main(**gkwargs3)
         # run apero get for templates (no DPRTYPE as they could be different)
-        apero_get.main(objnames='*', outtypes=comm_template_outtypes,
-                       block_kind='out', outpath=comm_path,
-                       test=settings['TEST'], since=settings['SINCE'],
-                       permission_yaml=comm_pfile, group_yaml=comm_gfile,
-                       group_server=comm_gserver, out_prefix=comm_prefix,
-                       out_suffix=comm_suffix)
+        gkwargs4 = dict(objnames='*', outtypes=comm_template_outtypes,
+                        block_kind='red', cores=ncores, outpath=comm_path,
+                        test=settings['TEST'], since=settings['SINCE'],
+                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
+                        group_server=comm_gserver, out_prefix=comm_prefix,
+                        out_suffix=comm_suffix)
+        progress_apero_get(**gkwargs4)
+        apero_get.main(**gkwargs4)
 
+
+def progress_apero_get(**gkwargs):
+    msg = '\tAPERO GET:'
+    # keys to add to the status
+    keys =  ['objanmes', 'outtypes', 'block_kind', 'cores', 'outpath',
+             'fibers', 'symlinks', 'test', 'since',
+             'permission_yaml', 'group_yaml', 'group_server',
+             'out_prefix', 'out_suffix']
+    # loop around keys
+    for key in keys:
+        if key in gkwargs and gkwargs[key] is not None:
+            msg += f'\n\t\t- {key}: {gkwargs[key]}'
+    # print the message
+    print(msg)
 
 def run_apero_reduction_interface(settings: Dict[str, Any]):
     """
@@ -605,7 +659,11 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
     :param settings: dict, settings dictionary
     """
     # import ari from apero
-    from apero.tools.recipes.bin import apero_ri
+    try:
+        from apero.tools.recipes.bin import apero_ari as ari
+    # fall back (old method - deprecated)
+    except ImportError:
+        from apero.tools.recipes.bin import apero_ri as ari
     # get the current working directory
     cwd = os.getcwd()
     # loop around profiles
@@ -625,17 +683,206 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
             print('Test mode: not running apero reduction interface '
                   f'for profile: {profile}')
         else:
-            ari_rtn = apero_ri.main(profile=ari_profile,)
-            # log that ARI ended successfully
-            if 'success' in ari_rtn:
-                if ari_rtn['success']:
+            # Run the old ari reduction interface
+            if pdict['ari']['mode'] in ['old', 'both']:
+                ari_rtn = ari.main(profile=ari_profile)
+                # log that ARI ended successfully
+                if 'success' in ari_rtn:
+                    if ari_rtn['success']:
+                        settings['LOG'][profile].write(ARI_END)
+                else:
                     settings['LOG'][profile].write(ARI_END)
-            else:
-                settings['LOG'][profile].write(ARI_END)
+            # Run the new ari reduction interface
+            if pdict['ari']['mode'] in ['new', 'both']:
+                run_ari_sync(pdict)
+
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
     # change back to original path
     os.chdir(cwd)
+
+
+def v08_settings(params):
+
+    from aperocore import base as ac_base
+    # load DPARAMS and IPARAMS
+    dparams = ac_base.load_database_yaml()
+
+
+    database_dict = dict()
+    database_dict['DATABASE_MODE'] = dparams['TYPE']
+    database_dict['DATABASE_HOST'] = dparams['HOST']
+    database_dict['DATABASE_USER'] = dparams['USER']
+    database_dict['DATABASE_PASSWORD'] = dparams['PASSWD']
+    database_dict['DATABASE_NAME'] = dparams['DATABASE']
+    database_dict['FINDEX_TABLENAME'] = dparams['FINDEX']['TABLE']
+    database_dict['ASTROM_TABLENAME'] = dparams['ASTROM']['TABLE']
+    database_dict['CALIB_TABLENAME'] = dparams['CALIB']['TABLE']
+    database_dict['LOG_TABLENAME'] = dparams['LOG']['TABLE']
+    database_dict['TELLU_TABLENAME'] = dparams['TELLU']['TABLE']
+    database_dict['REJECT_TABLENAME'] = dparams['REJECT']['TABLE']
+
+    path_dict = dict()
+    path_dict['PATH_RAW'] = params['PATH.RAW']
+    path_dict['PATH_PP'] = params['PATH.PP']
+    path_dict['PATH_RED'] = params['PATH.RED']
+    path_dict['PATH_LOG'] = params['PATH.LOG']
+    path_dict['PATH_OUT'] = params['PATH.OUT']
+    path_dict['PATH_LBL'] = params['PATH.LBL']
+    path_dict['PATH_CALIB'] = params['PATH.CALIB']
+    path_dict['PATH_TELLU'] = params['PATH.TELLU']
+
+    return database_dict, path_dict
+
+
+def v07_settings(params):
+
+    from apero.base import base
+    # reload DPARAMS and IPARAMS
+    dparams = base.load_database_yaml()
+
+    if dparams['USE_MYSQL']:
+        dparams = dparams['MYSQL']
+        db_mode = 'mysql+pymysql'
+    else:
+        dparams = dparams['SQLITE3']
+        db_mode = 'sqlite'
+
+    # get table names
+    tparams = get_db_tablenames(dparams)
+
+    database_dict = dict()
+    database_dict['DATABASE_MODE'] = db_mode
+    database_dict['DATABASE_HOST'] = dparams['HOST']
+    database_dict['DATABASE_USER'] = dparams['USER']
+    database_dict['DATABASE_PASSWORD'] = dparams['PASSWD']
+    database_dict['DATABASE_NAME'] = dparams['DATABASE']
+    database_dict['FINDEX_TABLENAME'] = tparams['findex']
+    database_dict['ASTROM_TABLENAME'] = tparams['astrom']
+    database_dict['CALIB_TABLENAME'] = tparams['calib']
+    database_dict['LOG_TABLENAME'] = tparams['log']
+    database_dict['TELLU_TABLENAME'] = tparams['tellu']
+    database_dict['REJECT_TABLENAME'] = tparams['reject']
+
+    path_dict = dict()
+    path_dict['PATH_RAW'] = params['DRS_DATA_RAW']
+    path_dict['PATH_PP'] = params['DRS_DATA_WORKING']
+    path_dict['PATH_RED'] = params['DRS_DATA_REDUC']
+    path_dict['PATH_LOD'] = params['DRS_DATA_MSG']
+    path_dict['PATH_OUT'] = params['DRS_DATA_OUT']
+    path_dict['PATH_LBL'] = params['LBL_PATH']
+    path_dict['PATH_CALIB'] = params['DRS_CALIB_DB']
+    path_dict['PATH_TELLU'] = params['DRS_TELLU_DB']
+
+    return database_dict, path_dict
+
+
+def get_db_tablenames(dparams) -> Dict[str, str]:
+    from apero.base import base
+    # storag for return
+    tablenames = dict()
+    # loop around database names
+    for dbname in base.DATABASE_NAMES:
+        # get yaml key
+        ydbname = dbname.upper()
+        # construct table name
+        tablename = '{0}_{1}_db'.format(dbname, dparams[ydbname]['PROFILE'])
+        # push into storage
+        tablenames[dbname] = tablename
+    # return table names dict
+    return tablenames
+
+
+def load_apero_ri_resource_profiles(pdict: Dict[str, Any],
+                                    aprofiles: Dict[str, Any]):
+    # get apero install path
+    apero_install_path = pdict['general']['apero install']
+    # get ari profile name
+    aprofile_name = str(pdict['ari']['ari profile'])
+    # construct absolute path to the yaml
+    yamldir = str(os.path.join(apero_install_path, *ARI_PROFILE_REL_PATH))
+    # add the file name to the yaml directory
+    abspath = os.path.join(yamldir, aprofile_name)
+    # deal with no file found
+    if not os.path.exists(abspath):
+        raise FileNotFoundError(f'ARI profile yaml not found at {abspath}')
+    # read the contents of the yaml
+    with open(abspath, 'r', encoding='utf-8') as yamlfile:
+        raw_yaml = yaml.safe_load(yamlfile)
+    # push into aprofiles
+    for key in raw_yaml:
+        aprofiles[key] = raw_yaml[key]
+    # push these up a level
+    # TODO: THESE ARE BAD HACKS from bad ARI coding
+    aprofiles['SCIENCE_TYPES'] = aprofiles['general']['science_types']
+    aprofiles['SCIENCE_FIBER'] = aprofiles['general']['science_fiber']
+
+    aprofiles['general']['SCIENCE_TYPES'] = aprofiles['general']['science_types']
+    aprofiles['general']['SCIENCE_FIBER'] = aprofiles['general']['science_fiber']
+    # return profiles
+    return aprofiles
+
+
+def run_ari_sync(pdict):
+
+    # import apero_ri
+    from apero_ri.tasks import apero_sync
+    # update the apero profile
+    aparams = update_apero_profile(pdict)
+    # construct the apero sync dictionary
+    rparams = dict()
+    # ---------------------------------------------------------------------
+    # Set up local ARI directory
+    # ---------------------------------------------------------------------
+    local_ari_dir = pdict['ari'].get('ari path', None)
+    # deal with no local ARI directory ste
+    if local_ari_dir is None:
+        local_ari_dir = os.path.expanduser('~/.ari')
+    # deal with local ARI directory not existing
+    if not os.path.exists(local_ari_dir):
+        os.makedirs(local_ari_dir)
+    # make log file
+    logfile = f'{Time.now().fits}_apero_sync.log'
+    logpath = os.path.join(local_ari_dir, 'logs', logfile)
+    # set the local ARI directory in the apero sync dictionary
+    rparams['LOCAL_DATA_DIR'] = os.path.join(local_ari_dir, 'sync')
+    # clean out directory
+    if os.path.exists(rparams['LOCAL_DATA_DIR']):
+        shutil.rmtree(rparams['LOCAL_DATA_DIR'])
+    # remake the sync directory
+    os.makedirs(rparams['LOCAL_DATA_DIR'])
+
+    # ---------------------------------------------------------------------
+    # set up database/general/path settings
+    # ---------------------------------------------------------------------
+    if pdict['general']['apero version'].startswith('0.7'):
+        database_dict,path_dict = v07_settings(aparams)
+    else:
+        database_dict, path_dict = v08_settings(aparams)
+
+    aprofiles = dict(database=database_dict,
+                     paths=path_dict)
+    # Load aprofiles (from apero-ri)
+    aprofiles = load_apero_ri_resource_profiles(pdict, aprofiles)
+    # set instrument at global level
+    rparams['INSTRUMENT'] = aprofiles['general']['instrument']
+    # ---------------------------------------------------------------------
+    # get path safe profile name
+    pname = profile.strip().replace(' ', '_')
+    # push into rparams
+    rparams['APERO_PROFILES'] = dict()
+    rparams['APERO_PROFILES'][pname] = aprofiles
+    # ---------------------------------------------------------------------
+    # setup task config
+    rparams['TASK_CONFIG'] = dict()
+    rparams['TASK_CONFIG']['ncores'] = pdict['ari']['cores']
+    rparams['TASK_CONFIG']['mp_backend'] = pdict['ari']['mp_backend']
+    rparams['TASK_CONFIG']['mp_start_method'] = pdict['ari']['mp_start_method']
+    # ---------------------------------------------------------------------
+    # run the sync code(s)
+    for local_task in LOCAL_TASKS:
+        apero_sync.run(local_task, rparams, verbose=True,
+                       log_file=logpath)
 
 
 def run_in_batch_mode(settings: Dict[str, Any]) -> bool:
@@ -914,7 +1161,8 @@ def run_apero_checks(pdict: Dict[str, Any], mode: str,
     os.chdir(cwd)
 
 
-def run_comm_visualization(settings: Dict[str, Any]):
+def run_comm_visualization(settings: Dict[str, Any],
+                           ncores: Optional[int] = None):
     # loop around profiles
     for profile in settings['PROFILES']:
         # print progress
@@ -927,11 +1175,17 @@ def run_comm_visualization(settings: Dict[str, Any]):
         runid_dir = os.path.join(comm_path, 'runids')
         # get the test mode
         test_mode = settings['TEST']
+        # get the cores (if given)
+        if ncores is None:
+            ncores = pdict['processing'].get('ncores', None)
         # ---------------------------------------------------------------------
         # need to import apero_get (for this profile)
         from apero.tools.recipes.bin import apero_visu
+        # get run file
+        runfile = pdict['processing'].get('run file')
         # run the visualization tool for the comm directory
-        apero_visu.main(mode='info', path=runid_dir, test=test_mode)
+        apero_visu.main(mode='info', path=runid_dir, test=test_mode,
+                        cores=ncores, crunfile=runfile)
 
 
 def run_push_to_datacenter(settings: Dict[str, Any]):
@@ -994,19 +1248,35 @@ def update_apero_profile(profile: dict):
     :param profile: dict, the profile to update
     :return:
     """
-    from apero.base import base
-    from apero.core import constants
-    from apero.core.constants import param_functions
-    # use os to add DRS_UCONFIG to the path
-    os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
-    # reload DPARAMS and IPARAMS
-    base.DPARAMS = base.load_database_yaml()
-    base.IPARAMS = base.load_install_yaml()
-    # ------------------------------------------------------------------
-    # invalidate cache
-    param_functions.CONFIG_CACHE = dict()
-    # make sure parameters is reloaded (and not cached)
-    return constants.load(cache=False)
+    # ---------------------------------------------------------------------
+    if profile['general']['apero version'].startswith('0.7'):
+        from apero.base import base
+        from apero.core import constants
+        from apero.core.constants import param_functions
+        # use os to add DRS_UCONFIG to the path
+        os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
+        # reload DPARAMS and IPARAMS
+        base.DPARAMS = base.load_database_yaml()
+        base.IPARAMS = base.load_install_yaml()
+        # ------------------------------------------------------------------
+        # invalidate cache
+        param_functions.CONFIG_CACHE = dict()
+        # make sure parameters is reloaded (and not cached)
+        return constants.load(cache=False)
+    else:
+        from aperocore import base as ac_base
+        from aperocore.constants import load_functions
+        from apero.instruments import select
+        # use os to add DRS_UCONFIG to the path
+        os.environ['DRS_UCONFIG'] = profile['general']['apero profile']
+        # reload DPARAMS and IPARAMS
+        ac_base.DPARAMS = ac_base.load_database_yaml()
+        ac_base.IPARAMS = ac_base.load_install_yaml()
+        # ------------------------------------------------------------------
+        # invalidate cache
+        load_functions.CONFIG_CACHE = dict()
+        # make sure parameters is reloaded (and not cached)
+        return load_functions.load_config(select.INSTRUMENTS, cache=False)
 
 
 def make_sym_links(settings: Dict[str, Any]):
@@ -1241,7 +1511,7 @@ def get_earliest_raw_file(apero_params, obsdirs):
     indexdbm = drs_database.FileIndexDatabase(apero_params)
     # -------------------------------------------------------------------------
     # create condition
-    condition = 'BLOCK_KIND="raw"'
+    condition = 'BLOCK_KIND="raw" AND KW_MID_OBS_TIME IS NOT NULL'
     # -------------------------------------------------------------------------
     if obsdirs != '*':
          sub_conditions = []
@@ -1290,12 +1560,12 @@ def remove_broken_symlinks(path: str):
             except Exception as e:
                 emsg = 'Failed to remove path {0}\n\tError {1}: {2}'
                 eargs = [path, type(e), str(e)]
-                print_process(emsg.format(*eargs))
+                print(emsg.format(*eargs))
                 return
     # print how many broken symlinks we removed (as a warning)
-    wmsg = 'Remove {0} broken symlinks'
-    wargs = [count]
-    print_process(wmsg.format(*wargs))
+    wmsg = '\tRemove {0} broken symlinks in {1}'
+    wargs = [count, path]
+    print(wmsg.format(*wargs))
 
 
 # =============================================================================

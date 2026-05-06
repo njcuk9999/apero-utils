@@ -1,0 +1,152 @@
+APERO_NAME: XIBOOA
+ORIGINAL_NAME: 8pc 149.26A
+SIMBAD_NAME: '* ksi Boo A'
+APERO_CLASS: STAR
+RA:
+  value: 222.8480329
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 19.10027501
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 128.2109701
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -42.05697662
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 148.5194874
+  source: Gaia DR2
+  units: mas
+RV:
+  value: 1.49
+  source: 2018yCat.1345....0G
+  units: km/s
+TEFF:
+  value: 5591.0
+  source: 2015A&A...573A..67P
+  units: K
+SPT:
+  value: G7Ve
+  source: 1978PASP...90..429L
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 4.480483
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 4.8766
+  source: Gaia VizieR
+GRP_MAG:
+  value: 3.9638
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- '* ksi Boo A'
+- '** STF 1888A'
+- 8pc 149.26A
+- ADS  9413 A
+- BD+19  2870A
+- CCDM J14513+1906A
+- CSI+19  2870  4
+- GCRV  8634
+- GJ   566 A
+- Gaia DR2 1237090738916392704
+- HD 131156A
+- IDS 14468+1931 A
+- TYC 1481-722-1
+- WDS J14514+1906A
+- Zkh 212
+- ADS 9413 A
+- BD+19 2870A
+- CSI+19 2870 4
+- GCRV 8634
+- GJ 566 A
+- XIBOOA
+- xiBooA
+- '*ksiBooA'
+- '**STF1888A'
+- 8pc149.26A
+- ADS9413A
+- BD+192870A
+- CCDMJ14513+1906A
+- CSI+1928704
+- GCRV8634
+- GJ566A
+- GaiaDR21237090738916392704
+- HD131156A
+- IDS14468+1931A
+- TYC1481-722-1
+- WDSJ14514+1906A
+- Zkh212
+- ADS9413A
+- BD+192870A
+- CSI+1928704
+- GCRV8634
+- GJ566A
+- XIBOOA
+- xiBooA
+NOTES: Added on 2022-01-31 18:40:06.935 by cook@cook using drs_astrometrics.py
+W4_MAG:
+  value: null
+  source: null
+GAIA_SOURCE_ID: '1237090738916392704'
+GAIA_TEFF_GSPPHOT: 5386.0786
+GAIA_LOGG_GSPPHOT: 4.4925
+GAIA_MH_GSPPHOT: -0.0427
+GAIA_RADIUS_FLAME: 0.85529965
+GAIA_LUM_FLAME: 0.5541511
+GAIA_MASS_FLAME: 0.9037054
+RA_HMS: '14:51:23.388'
+DEC_DMS: '+19:06:01.64'
+RA_J2000_DEG: 222.84744875588345
+DEC_J2000_DEG: 19.100456076369376
+GALACTIC_LON: 23.085856971540704
+GALACTIC_LAT: 61.35626176825559
+ECLIPTIC_LON: 213.5496199438983
+ECLIPTIC_LAT: 33.76851118920578
+TELLURIC_VSYS_PLUS_VBARY_MIN: -23.274131322722386
+TELLURIC_VSYS_PLUS_VBARY_MAX: 26.254131322722383
+TELLURIC_LIMIT_WINDOWS: Apr 16 to May 09; Oct 09 to Oct 31
+V_SKY: 4.3068056506226915
+V3D: 4.557266166490119
+U: 4.017236774372013
+V: 2.015984766459913
+W: -0.7525217817207785
+AMAG_G: 5.339400208165988
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: -0.0427
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: 4.529790288750925
+L_STAR: 0.5541511

@@ -16,6 +16,8 @@ spirou offline:
         apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
         lbl path: /cosmos99/spirou/lbl-data/spirou_offline/lbl
+        # apero version
+        apero version: 0.7.296
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
@@ -26,6 +28,8 @@ spirou offline:
     processing:
         # apero processing run.ini file
         run file: offline_run.ini
+        # multiprocess settings for apero processing
+        ncores: 20
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -110,6 +114,19 @@ spirou offline:
     ari:
         # ari profile
         profile: spirou_offline_udem.yaml
+        # mode (options are "old", "new" or "both")
+        mode: new
+        # local ari directory
+        ari path: /cosmos99/spirou/apero-data/spirou_offline/other/ari-local
+        # apero aprofile (from apero_ri)
+        ari profile: spirou_v7.yaml
+        # cores to use for ari
+        cores: 20
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork",
+        #    "spawn", "forkserver
+        mp_start_method: fork
     # check settings
     check:
         # whether to run check

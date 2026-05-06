@@ -4,18 +4,20 @@ spirou V0.7.282 mini2:
         # instrument
         activate_instrument: spirou
         # profile (is in apero-activate)
-        activate_profile: spirou_minidata2_07286_jupiter
+        activate_profile: spirou_mini2_07
         # directory where raw data is downloaded
         raw dir: /scratch2/spirou/drs-data/common/minidata2
         # whether to link raw symlinks
         raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /scratch2/spirou/drs-settings/spirou_minidata2_07286_jupiter
+        apero profile: /scratch2/spirou/drs-settings/spirou_mini2_07
         # the install directory for apero (git hub repo)
         apero install: /scratch2/spirou/drs-bin/apero-drs-spirou-07XXX/
         # directory where lbl files are processed
-        lbl path: /scratch3/lbl/data/minidata_comp/spirou_minidata2_07286_jupiter/lbl
+        lbl path: /scratch3/lbl/data/minidata_comp/spirou_mini2_07/lbl
+        # apero version
+        apero version: 0.7.296
         # start date if not using --obsdir argument
         start date: 2018-01-01
   # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
@@ -26,6 +28,8 @@ spirou V0.7.282 mini2:
     processing:
         # apero processing run.ini file
         run file: mini_run2.ini
+        # multiprocess settings for apero processing
+        ncores: 20
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -33,7 +37,7 @@ spirou V0.7.282 mini2:
     # apero_get settings
     get-obj:
         # path to copy everything to
-        out path: /scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/objects
+        out path: /scratch2/spirou/drs-data/spirou_minidata2_07/objects
         # science fiber(s) to get
         science fibers:
             - AB
@@ -77,7 +81,7 @@ spirou V0.7.282 mini2:
     # apero_get settings for comm directory
     get-comm:
         # path to copy everything to
-        out path: /scratch2/spirou/drs-data/spirou_minidata2_07286_jupiter/comm
+        out path: /scratch2/spirou/drs-data/spirou_mini2_07/comm
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - DRS_POST_E
@@ -110,6 +114,20 @@ spirou V0.7.282 mini2:
     ari:
         # ari profile
         profile: spirou_minidata.yaml
+        # mode (options are "old", "new" or "both")
+        mode: new
+        # local ari directory
+        ari path: /scratch2/spirou/drs-data/spirou_minidata2_07/other/ari-local
+        # apero aprofile (from apero_ri)
+        ari profile: spirou_v7.yaml
+        # cores to use for ari
+        cores: 5
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork",
+        #    "spawn", "forkserver
+        mp_start_method: fork
+
     # check settings
     check:
         # whether to run check

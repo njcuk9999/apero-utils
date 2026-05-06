@@ -1,0 +1,252 @@
+APERO_NAME: GJ872B
+ORIGINAL_NAME: GJ 872 B
+SIMBAD_NAME: '* ksi Peg B'
+APERO_CLASS: STAR
+RA:
+  value: 341.677408
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 12.17053445
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 223.1218628
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -464.2192047
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 61.17188529
+  source: Gaia DR2
+  units: mas
+RV:
+  value: -4.5
+  source: 2015ApJ...802L..10T
+  units: km/s
+TEFF:
+  value: 3694.0
+  source: 2019ApJ...878..134K
+  units: K
+SPT:
+  value: M3.5
+  source: 1985ApJS...59..197B
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 10.748917
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 11.9353
+  source: Gaia VizieR
+GRP_MAG:
+  value: 9.6783
+  source: Gaia VizieR
+J_MAG:
+  value: 7.944
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 7.473
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 7.3
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 1.361
+  source: AllWISE
+W2_MAG:
+  value: 1.538
+  source: AllWISE
+W3_MAG:
+  value: 2.91
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- LHS  3852
+- '* ksi Peg B'
+- '** HJ  301B'
+- ADS 16261 B
+- BD+11  4875B
+- CCDM J22467+1211B
+- CSI+11  4875  2
+- GJ   872 B
+- HD 215648B
+- LFT 1736
+- LSPM J2246+1210E
+- LTT 16694
+- 2MASS J22464232+1210214
+- NLTT 54820
+- PM J22467+1210
+- TIC 60716321
+- WDS J22467+1210B
+- '[RHG95]  3583'
+- Gaia DR3 2719475542667351552
+- Gaia DR2 2719475542667351552
+- GJ_872_B
+- LHS 3852
+- LHS_3852
+- LHS3852
+- '* ksi Peg B'
+- '* ksi Peg_B'
+- '* ksi PegB'
+- '* ksi_Peg B'
+- '* ksi_Peg_B'
+- '* ksi_PegB'
+- '* ksiPeg B'
+- '* ksiPeg_B'
+- '* ksiPegB'
+- '*_ksi Peg B'
+- '*_ksi Peg_B'
+- '*_ksi PegB'
+- '*_ksi_Peg B'
+- '*_ksi_Peg_B'
+- '*_ksi_PegB'
+- '*_ksiPeg B'
+- '*_ksiPeg_B'
+- '*_ksiPegB'
+- '*ksi Peg B'
+- '*ksi Peg_B'
+- '*ksi PegB'
+- '*ksi_Peg B'
+- '*ksi_Peg_B'
+- '*ksi_PegB'
+- '*ksiPeg B'
+- '*ksiPeg_B'
+- '*ksiPegB'
+- GJ 872 B
+- GJ 872_B
+- GJ 872B
+- GJ_872 B
+- GJ_872_B
+- GJ_872B
+- GJ872 B
+- GJ872_B
+- GJ872B
+- GL 872 B
+- GL 872_B
+- GL 872B
+- GL_872 B
+- GL_872_B
+- GL_872B
+- GL872 B
+- GL872_B
+- GL872B
+- HD 215648B
+- HD_215648B
+- HD215648B
+- LHS3852
+- '*ksiPegB'
+- '**HJ301B'
+- ADS16261B
+- BD+114875B
+- CCDMJ22467+1211B
+- CSI+1148752
+- GJ872B
+- HD215648B
+- LFT1736
+- LSPMJ2246+1210E
+- LTT16694
+- 2MASSJ22464232+1210214
+- NLTT54820
+- PMJ22467+1210
+- TIC60716321
+- WDSJ22467+1210B
+- '[RHG95]3583'
+- GaiaDR32719475542667351552
+- GaiaDR22719475542667351552
+- GJ872B
+- LHS3852
+- LHS3852
+- LHS3852
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- '*ksiPegB'
+- GJ872B
+- GJ872B
+- GJ872B
+- GJ872B
+- GJ872B
+- GJ872B
+- GJ872B
+- GJ872B
+- GJ872B
+- GL872B
+- GL872B
+- GL872B
+- GL872B
+- GL872B
+- GL872B
+- GL872B
+- GL872B
+- GL872B
+- HD215648B
+- HD215648B
+- HD215648B
+NOTES: Added on 2023-03-29 15:09:12.161 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 2.884
+  source: AllWISE
+GAIA_SOURCE_ID: '2719475542667351552'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '22:46:42.342'
+DEC_DMS: '+12:10:21.12'
+RA_J2000_DEG: 341.67642531052877
+DEC_J2000_DEG: 12.172533028725459
+GALACTIC_LON: 81.27795611072771
+GALACTIC_LAT: -40.40112206989001
+ECLIPTIC_LON: 347.95041516876245
+ECLIPTIC_LAT: 18.403053697337413
+TELLURIC_VSYS_PLUS_VBARY_MIN: -32.76651518451614
+TELLURIC_VSYS_PLUS_VBARY_MAX: 23.766515184516138
+TELLURIC_LIMIT_WINDOWS: Mar 08 to Mar 28; Aug 19 to Sep 08
+V_SKY: 39.913895193817964
+V3D: 40.16676523623834
+U: 3.547552915608772
+V: -29.651963392627522
+W: -26.861589023227587
+AMAG_G: 9.68167632732362
+AMAG_KS: 6.2327593273236195
+TEFF_GAIA_JH: 3621.2
+TEFF_GAIA: 3689.0
+FE_H: 1.0617507785658813
+R_STAR_MKS: 0.4102031691653908
+R_STAR_MKS_FEH: 0.4573733139267331
+MASS_STAR_MANN15: 0.4265287873962889
+MASS_STAR_DELFOSSE00: 0.4078219418161134
+LOG_G: 4.841950325340568
+L_STAR: 0.025959595403707052

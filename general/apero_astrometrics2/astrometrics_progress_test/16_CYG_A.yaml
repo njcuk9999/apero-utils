@@ -1,0 +1,195 @@
+APERO_NAME: 16_CYG_A
+ORIGINAL_NAME: '* 16 Cyg A'
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: 295.4529704
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 50.52437636
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -148.299286
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -158.9610583
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 47.2771232
+  source: Gaia DR2
+  units: mas
+RV:
+  value: -27.61
+  source: 2002ApJS..141..503N
+  units: km/s
+TEFF:
+  value: 5760.0
+  source: 2021AJ....161..134H
+  units: K
+SPT:
+  value: G1.5Vb
+  source: 1989ApJS...71..245K
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- '*  16 Cyg A'
+- '*  16 Cyg C'
+- '** STF 4046A'
+- '** TRN    4'
+- 2MASS J19414896+5031305
+- ADS 12815 A
+- AG+50 1407
+- AKARI-IRC-V1 J1941488+503129
+- ASCC  271116
+- BD+50  2847
+- CCDM J19418+5031A
+- GC 27284
+- GCRV 12083
+- GEN# +1.00186408
+- GJ   765.1 A
+- Gaia DR1 2135550751385079552
+- Gaia DR2 2135550755683405952
+- HD 186408
+- HIC  96895
+- HIP  96895
+- HR  7503
+- IDS 19392+5017 A
+- JP11  3128
+- KIC 12069424
+- LSPM J1941+5031W
+- LTT 15750
+- NLTT 48136
+- PLX 4634
+- PPM  37671
+- ROT  2839
+- SAO  31898
+- SKY# 36804
+- SPOCS  854
+- TIC 27533341
+- TYC 3565-1524-1
+- UBV   16779
+- UBV M  24079
+- USNO 889
+- USNO-B1.0 1405-00322518
+- WDS J19418+5032A
+- WDS J19418+5032Aa,Ab
+- WEB 17003
+- YZ  50  6149
+- uvby98 100186408
+- '* 16 Cyg A'
+- '* 16 Cyg C'
+- '** TRN 4'
+- 16_CYG_A
+- ASCC 271116
+- BD+50 2847
+- GJ 765.1 A
+- HIC 96895
+- HIP 96895
+- HR 7503
+- JP11 3128
+- PPM 37671
+- ROT 2839
+- SAO 31898
+- SPOCS 854
+- UBV 16779
+- UBV M 24079
+- YZ 50 6149
+- '*16CygA'
+- '*16CygC'
+- '**STF4046A'
+- '**TRN4'
+- 2MASSJ19414896+5031305
+- ADS12815A
+- AG+501407
+- AKARI-IRC-V1J1941488+503129
+- ASCC271116
+- BD+502847
+- CCDMJ19418+5031A
+- GC27284
+- GCRV12083
+- GEN#+1.00186408
+- GJ765.1A
+- GaiaDR12135550751385079552
+- GaiaDR22135550755683405952
+- HD186408
+- HIC96895
+- HIP96895
+- HR7503
+- IDS19392+5017A
+- JP113128
+- KIC12069424
+- LSPMJ1941+5031W
+- LTT15750
+- NLTT48136
+- PLX4634
+- PPM37671
+- ROT2839
+- SAO31898
+- SKY#36804
+- SPOCS854
+- TIC27533341
+- TYC3565-1524-1
+- UBV16779
+- UBVM24079
+- USNO889
+- USNO-B1.01405-00322518
+- WDSJ19418+5032A
+- WDSJ19418+5032Aa,Ab
+- WEB17003
+- YZ506149
+- uvby98100186408
+- '*16CygA'
+- '*16CygC'
+- '**TRN4'
+- 16CYGA
+- ASCC271116
+- BD+502847
+- GJ765.1A
+- HIC96895
+- HIP96895
+- HR7503
+- JP113128
+- PPM37671
+- ROT2839
+- SAO31898
+- SPOCS854
+- UBV16779
+- UBVM24079
+- YZ506149
+NOTES: Added on 2022-01-31 18:24:21.499 by cook@cook using drs_astrometrics.py

@@ -1,0 +1,112 @@
+APERO_NAME: GAIA_DR2_3413757452741929600
+ORIGINAL_NAME: Gaia DR2 3413757452741929600
+SIMBAD_NAME: Gaia DR3 3413757452741929600
+APERO_CLASS: STAR
+RA:
+  value: 78.81221558
+  source: Gaia EDR3
+  units: deg
+DEC:
+  value: 19.90850211
+  source: Gaia EDR3
+  units: deg
+EPOCH: 2457388.5
+PMRA:
+  value: 20.17705931
+  source: Gaia EDR3
+  units: mas/yr
+PMDE:
+  value: -72.36591431
+  source: Gaia EDR3
+  units: mas/yr
+PLX:
+  value: 22.55950132
+  source: Gaia EDR3
+  units: mas
+RV:
+  value: 38.21
+  source: SIMBAD
+  units: km/s
+TEFF:
+  value: 2880.0
+  source: Header
+  units: K
+SPT:
+  value: M4.0
+  source: SIMBAD
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 14.698927
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 16.2417
+  source: Gaia VizieR
+GRP_MAG:
+  value: 13.0739
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 9.95
+  source: AllWISE
+W2_MAG:
+  value: 9.759
+  source: AllWISE
+W3_MAG:
+  value: 9.623
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- Gaia DR2 3413757452741929600
+- Gaia EDR3 3413757452741929600
+- GaiaDR23413757452741929600
+- GaiaEDR33413757452741929600
+NOTES: Added on 2022-03-05 01:17:06.212 by spdrs@apikitest using drs_astrometrics.py
+W4_MAG:
+  value: 8.947
+  source: AllWISE
+GAIA_SOURCE_ID: '3413757452741929600'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '05:15:14.909'
+DEC_DMS: '+19:54:31.77'
+RA_J2000_DEG: 78.81212021092217
+DEC_J2000_DEG: 19.90882371327837
+GALACTIC_LON: 183.8390955206727
+GALACTIC_LAT: -10.702811353527265
+ECLIPTIC_LON: 79.47280406089537
+ECLIPTIC_LAT: -3.1225497732791387
+TELLURIC_VSYS_PLUS_VBARY_MIN: 8.464228935553304
+TELLURIC_VSYS_PLUS_VBARY_MAX: 67.9557710644467
+TELLURIC_LIMIT_WINDOWS: always > 5 km/s
+V_SKY: 15.786398930133801
+V3D: 41.342647365418316
+U: -35.5256148684365
+V: -17.378135137309766
+W: -12.047638709327526
+AMAG_G: 11.465574476475425
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 3184.8
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

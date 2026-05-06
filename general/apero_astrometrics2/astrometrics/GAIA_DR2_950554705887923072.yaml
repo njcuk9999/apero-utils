@@ -1,0 +1,113 @@
+APERO_NAME: GAIA_DR2_950554705887923072
+ORIGINAL_NAME: Gaia DR2 950554705887923072
+SIMBAD_NAME: LAMOST J065347.39+394926.1
+APERO_CLASS: STAR
+RA:
+  value: 103.4474932
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 39.82379153
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 1.603210871
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -89.62627128
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 19.19802803
+  source: Gaia DR2
+  units: mas
+RV:
+  value: -24.83
+  source: SIMBAD
+  units: km/s
+TEFF:
+  value: 3160.0
+  source: Header
+  units: K
+SPT:
+  value: M3
+  source: SIMBAD
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 13.423668
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 14.816984
+  source: Gaia VizieR
+GRP_MAG:
+  value: 12.263622
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 9.69
+  source: AllWISE
+W2_MAG:
+  value: 9.574
+  source: AllWISE
+W3_MAG:
+  value: 9.471
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- Gaia DR2 950554705887923072
+- GAIA_DR2_950554705887923072
+- GaiaDR2950554705887923072
+- GAIADR2950554705887923072
+NOTES: Not in SIMBAD. Found in Gaia DR2.  Added on 2022-03-09 00:44:14.460 by spdrs@apikitest
+  using drs_astrometrics.py
+W4_MAG:
+  value: 8.713
+  source: AllWISE
+GAIA_SOURCE_ID: '950554705887923072'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '06:53:47.396'
+DEC_DMS: '+39:49:27.04'
+RA_J2000_DEG: 103.44748421291125
+DEC_J2000_DEG: 39.82417739241343
+GALACTIC_LON: 176.522925396232
+GALACTIC_LAT: 17.400075162803166
+ECLIPTIC_LON: 100.75745817745393
+ECLIPTIC_LAT: 16.88574253426934
+TELLURIC_VSYS_PLUS_VBARY_MIN: -53.33563074310971
+TELLURIC_VSYS_PLUS_VBARY_MAX: 3.675630743109714
+TELLURIC_LIMIT_WINDOWS: Aug 15 to Nov 15
+V_SKY: 22.134493045900197
+V3D: 33.26356388601504
+U: 20.116075165285803
+V: -22.04318010472204
+W: -14.693754223014782
+AMAG_G: 9.839951107144744
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 3493.5
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

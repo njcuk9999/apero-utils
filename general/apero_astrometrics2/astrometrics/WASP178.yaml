@@ -1,0 +1,148 @@
+APERO_NAME: WASP178
+ORIGINAL_NAME: HD 134004
+SIMBAD_NAME: HD 134004
+APERO_CLASS: STAR
+RA:
+  value: 227.270329
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -42.70496576
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -10.01139551
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -5.652962187
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 2.31186674
+  source: Gaia DR2
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 8640.0
+  source: arXiv:1907.11667 (via nirps-client@maestria)
+  units: K
+SPT:
+  value: A1V
+  source: 1978MSS...C02....0H
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 9.91579
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 9.9606
+  source: Gaia VizieR
+GRP_MAG:
+  value: 9.8397
+  source: Gaia VizieR
+J_MAG:
+  value: 9.775
+  source: SIMBAD/2MASS
+H_MAG:
+  value: 9.735
+  source: SIMBAD/2MASS
+KS_MAG:
+  value: 9.703
+  source: SIMBAD/2MASS
+W1_MAG:
+  value: 9.67
+  source: AllWISE
+W2_MAG:
+  value: 9.683
+  source: AllWISE
+W3_MAG:
+  value: 9.645
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- HD 134004
+- CD-42 10057
+- CF 12777
+- CPD-42  6923
+- GSC 07829-02324
+- KELT-26
+- 2MASS J15090488-4242178
+- PPM 320287
+- 1SWASP J150904.89-424217.7
+- TIC 160708862
+- TOI-1337
+- TYC 7829-2324-1
+- WASP-178
+- Gaia DR3 6003809889735481856
+- Gaia DR2 6003809889735481856
+- HD_134004
+- WASP 178
+- WASP_178
+- HD_134004
+- HD-134004
+- HD134004
+- CD-4210057
+- CF12777
+- CPD-426923
+- GSC07829-02324
+- KELT-26
+- 2MASSJ15090488-4242178
+- PPM320287
+- 1SWASPJ150904.89-424217.7
+- TIC160708862
+- TOI-1337
+- TYC7829-2324-1
+- WASP-178
+- GaiaDR36003809889735481856
+- GaiaDR26003809889735481856
+- HD134004
+- WASP178
+- WASP178
+- HD134004
+- HD-134004
+NOTES: Added on 2023-03-30 04:46:58.407 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 8.36
+  source: AllWISE
+GAIA_SOURCE_ID: '6003809889735481856'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '15:09:04.893'
+DEC_DMS: '-42:42:17.79'
+RA_J2000_DEG: 227.27038765333918
+DEC_J2000_DEG: -42.70494142245447
+GALACTIC_LON: 328.1938368682548
+GALACTIC_LAT: 13.31509044083846
+ECLIPTIC_LON: 236.90487625617453
+ECLIPTIC_LAT: -24.050258954959695
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 23.57480373472241
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: 1.735603984921939
+AMAG_KS: 1.5228139849219389
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

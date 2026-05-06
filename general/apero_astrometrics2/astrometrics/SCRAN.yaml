@@ -1,0 +1,128 @@
+APERO_NAME: SCRAN
+ORIGINAL_NAME: V* S CrA A
+SIMBAD_NAME: V* S CrA A
+APERO_CLASS: STAR
+RA:
+  value: 285.2858392
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: -36.95559657
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: 6.808686332
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -26.16279159
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 6.537887356
+  source: Gaia DR2
+  units: mas
+RV:
+  value: 0.0
+  source: 2000A&AS..144....1M
+  units: km/s
+TEFF:
+  value: 4300.0
+  source: 2023A&A...678A..86N
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 11.454374
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 11.7068
+  source: Gaia VizieR
+GRP_MAG:
+  value: 10.1398
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 5.136
+  source: AllWISE
+W2_MAG:
+  value: 4.037
+  source: AllWISE
+W3_MAG:
+  value: 2.08
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- '** JOY    7A'
+- CCDM J19011-3657A
+- V* S CrA N
+- V* S CrA A
+- WDS J19011-3657A
+- Gaia DR2 6731210253964165632
+- Gaia DR3 6731210253964165632
+- V_S_CRA_A
+- SCrAN
+- S CrA N
+- '**JOY7A'
+- CCDMJ19011-3657A
+- V*SCrAN
+- V*SCrAA
+- WDSJ19011-3657A
+- GaiaDR26731210253964165632
+- GaiaDR36731210253964165632
+- VSCRAA
+- SCrAN
+- SCrAN
+NOTES: Added on 2025-01-09 15:16:53.068 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 0.003
+  source: AllWISE
+GAIA_SOURCE_ID: '6731210253964165632'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '19:01:08.593'
+DEC_DMS: '-36:57:19.74'
+RA_J2000_DEG: 285.28580251731836
+DEC_J2000_DEG: -36.95548393210312
+GALACTIC_LON: 359.87382079113553
+GALACTIC_LAT: -17.712623072055123
+ECLIPTIC_LON: 282.54997995179974
+ECLIPTIC_LAT: -14.179785483620822
+TELLURIC_VSYS_PLUS_VBARY_MIN: -28.882353407067892
+TELLURIC_VSYS_PLUS_VBARY_MAX: 28.882353407067892
+TELLURIC_LIMIT_WINDOWS: Dec 23 to Jan 11; Jun 23 to Jul 13
+V_SKY: 19.60189492478898
+V3D: 19.60189492478898
+U: -3.5075315515245338
+V: -15.928711141811842
+W: -10.872335003807311
+AMAG_G: 5.531561168336269
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 4472.5
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

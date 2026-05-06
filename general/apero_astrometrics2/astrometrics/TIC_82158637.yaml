@@ -1,0 +1,119 @@
+APERO_NAME: TIC_82158637
+ORIGINAL_NAME: UCAC4 525-051497
+SIMBAD_NAME: null
+APERO_CLASS: STAR
+RA:
+  value: 148.8022689
+  source: UCAC4
+  units: deg
+DEC:
+  value: 14.91477667
+  source: UCAC4
+  units: deg
+EPOCH: 2451544.5
+PMRA:
+  value: -36.09999847
+  source: UCAC4
+  units: mas/yr
+PMDE:
+  value: -30.5
+  source: UCAC4
+  units: mas/yr
+PLX:
+  value: 0.0
+  source: UCAC4
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 3937.0
+  source: PI
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: null
+  source: null
+W2_MAG:
+  value: null
+  source: null
+W3_MAG:
+  value: null
+  source: null
+KEYWORDS: null
+ALIASES:
+- UCAC4 525-051497
+- UCAC4_525M051497
+- UCAC4_525M051497
+- 2MASS 09551255+1454533
+- Gaia DR2 616503179080947712
+- UCAC4525-051497
+- UCAC4525M051497
+- UCAC4525M051497
+- 2MASS09551255+1454533
+- GaiaDR2616503179080947712
+NOTES: Not in SIMBAD. Found in UCAC4.  Added on 2024-10-09 02:54:33.291 by spdrs@32dcd4761891
+  using drs_astrometrics.py
+W4_MAG:
+  value: null
+  source: null
+GAIA_SOURCE_ID: null
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: null
+DEC_DMS: null
+RA_J2000_DEG: null
+DEC_J2000_DEG: null
+GALACTIC_LON: null
+GALACTIC_LAT: null
+ECLIPTIC_LON: null
+ECLIPTIC_LAT: null
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: null
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

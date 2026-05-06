@@ -1,0 +1,112 @@
+APERO_NAME: GAIA_DR2_3241254244532020608
+ORIGINAL_NAME: Gaia DR2 3241254244532020608
+SIMBAD_NAME: Gaia DR2 3241254244532020608
+APERO_CLASS: STAR
+RA:
+  value: 79.78539806
+  source: Gaia EDR3
+  units: deg
+DEC:
+  value: 7.424716846
+  source: Gaia EDR3
+  units: deg
+EPOCH: 2457388.5
+PMRA:
+  value: 9.664609071
+  source: Gaia EDR3
+  units: mas/yr
+PMDE:
+  value: -32.64978612
+  source: Gaia EDR3
+  units: mas/yr
+PLX:
+  value: 9.994842972
+  source: Gaia EDR3
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: 2800.0
+  source: Header
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 18.020302
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 20.307
+  source: Gaia VizieR
+GRP_MAG:
+  value: 16.4709
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 12.316
+  source: AllWISE
+W2_MAG:
+  value: 11.689
+  source: AllWISE
+W3_MAG:
+  value: 10.183
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- Gaia DR2 3241254244532020608
+- Gaia EDR3 3241254244532020608
+- GaiaDR23241254244532020608
+- GaiaEDR33241254244532020608
+NOTES: Added on 2022-03-05 01:11:56.193 by spdrs@apikitest using drs_astrometrics.py
+W4_MAG:
+  value: 8.252
+  source: AllWISE
+GAIA_SOURCE_ID: '3241254244532020608'
+GAIA_TEFF_GSPPHOT: 2777.8018
+GAIA_LOGG_GSPPHOT: 4.7168
+GAIA_MH_GSPPHOT: 0.797
+GAIA_RADIUS_FLAME: 0.3113257
+GAIA_LUM_FLAME: 0.005149879
+GAIA_MASS_FLAME: null
+RA_HMS: '05:19:08.485'
+DEC_DMS: '+07:25:29.50'
+RA_J2000_DEG: 79.78535474668266
+DEC_J2000_DEG: 7.424861943743123
+GALACTIC_LON: 195.17073257783576
+GALACTIC_LAT: -16.675806566994883
+ECLIPTIC_LON: 79.47803315255838
+ECLIPTIC_LAT: -15.64211088406212
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 16.149703295346505
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: 13.01918187674811
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 2912.4
+FE_H: 0.797
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

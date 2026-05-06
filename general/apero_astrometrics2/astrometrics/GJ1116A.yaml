@@ -1,0 +1,170 @@
+APERO_NAME: GJ1116A
+ORIGINAL_NAME: GJ1116A
+SIMBAD_NAME: G   9-38A
+APERO_CLASS: STAR
+RA:
+  value: 134.5593029
+  source: Gaia DR2
+  units: deg
+DEC:
+  value: 19.76297371
+  source: Gaia DR2
+  units: deg
+EPOCH: 2457206.0
+PMRA:
+  value: -766.0290317
+  source: Gaia DR2
+  units: mas/yr
+PMDE:
+  value: -99.26975859
+  source: Gaia DR2
+  units: mas/yr
+PLX:
+  value: 194.7224955
+  source: Gaia DR2
+  units: mas
+RV:
+  value: 14.0
+  source: 2014AJ....147...20N
+  units: km/s
+TEFF:
+  value: 2821.0
+  source: 2015ApJ...800...85N (via nirps-client@maestria)
+  units: K
+SPT:
+  value: M8Ve
+  source: 1982ApJ...253..237C
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: 11.96628
+  source: SIMBAD/Gaia
+GBP_MAG:
+  value: 14.3382
+  source: Gaia VizieR
+GRP_MAG:
+  value: 10.5511
+  source: Gaia VizieR
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 6.642
+  source: AllWISE
+W2_MAG:
+  value: 6.333
+  source: AllWISE
+W3_MAG:
+  value: 6.286
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- LHS  2076
+- '** LDS 3836A'
+- G   9-38A
+- GJ  1116 A
+- LSPM J0858+1945A
+- NLTT 20638
+- 8pc 191.20A
+- WDS J08582+1945A
+- Zkh 123
+- '[GKL99] 192'
+- Gaia DR3 660597997696173440
+- Gaia DR2 660597997696173440
+- GJ1116A
+- GL1116 A
+- GL1116_A
+- GL1116A
+- GL 1116A
+- GL 1116 A
+- GL 1116_A
+- GL_1116A
+- GL_1116 A
+- GL_1116_A
+- GJ1116 A
+- GJ1116_A
+- GJ1116A
+- GJ 1116A
+- GJ 1116 A
+- GJ 1116_A
+- GJ_1116A
+- GJ_1116 A
+- GJ_1116_A
+- LHS2076
+- '**LDS3836A'
+- G9-38A
+- GJ1116A
+- LSPMJ0858+1945A
+- NLTT20638
+- 8pc191.20A
+- WDSJ08582+1945A
+- Zkh123
+- '[GKL99]192'
+- GaiaDR3660597997696173440
+- GaiaDR2660597997696173440
+- GJ1116A
+- GL1116A
+- GL1116A
+- GL1116A
+- GL1116A
+- GL1116A
+- GL1116A
+- GL1116A
+- GL1116A
+- GL1116A
+- GJ1116A
+- GJ1116A
+- GJ1116A
+- GJ1116A
+- GJ1116A
+- GJ1116A
+- GJ1116A
+- GJ1116A
+- GJ1116A
+NOTES: Added on 2023-03-28 19:58:18.644 by nirps-client@maestria using drs_astrometrics.py
+W4_MAG:
+  value: 6.173
+  source: AllWISE
+GAIA_SOURCE_ID: '660597997696173440'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '08:58:15.074'
+DEC_DMS: '+19:45:48.24'
+RA_J2000_DEG: 134.56280743222237
+DEC_J2000_DEG: 19.76340107751157
+GALACTIC_LON: 207.55048550950173
+GALACTIC_LAT: 36.465810404390226
+ECLIPTIC_LON: 131.3750537470102
+ECLIPTIC_LAT: 2.4942541943694687
+TELLURIC_VSYS_PLUS_VBARY_MIN: -15.76177668145646
+TELLURIC_VSYS_PLUS_VBARY_MAX: 43.76177668145646
+TELLURIC_LIMIT_WINDOWS: Feb 18 to Mar 11; Jun 22 to Jul 14
+V_SKY: 18.804721432444047
+V3D: 23.44392348033538
+U: -21.51754095528566
+V: -6.704524948539863
+W: -6.454635896923139
+AMAG_G: 13.41336063349052
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: 2929.1
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null

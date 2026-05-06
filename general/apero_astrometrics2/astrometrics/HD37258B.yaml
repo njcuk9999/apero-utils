@@ -1,0 +1,112 @@
+APERO_NAME: HD37258B
+ORIGINAL_NAME: HD37258B
+SIMBAD_NAME: HD  37258B
+APERO_CLASS: STAR
+RA:
+  value: 84.24700874
+  source: 2020yCat.1350....0G
+  units: deg
+DEC:
+  value: -6.154294324
+  source: 2020yCat.1350....0G
+  units: deg
+EPOCH: 2451545.0
+PMRA:
+  value: 2.829
+  source: 2020yCat.1350....0G
+  units: mas/yr
+PMDE:
+  value: -1.935
+  source: 2020yCat.1350....0G
+  units: mas/yr
+PLX:
+  value: 2.736
+  source: 2020yCat.1350....0G
+  units: mas
+RV:
+  value: null
+  source: null
+  units: km/s
+TEFF:
+  value: null
+  source: null
+  units: K
+SPT:
+  value: null
+  source: null
+VSINI:
+  value: null
+  err: null
+  source: null
+  units: km/s
+G_MAG:
+  value: null
+  source: null
+GBP_MAG:
+  value: null
+  source: null
+GRP_MAG:
+  value: null
+  source: null
+J_MAG:
+  value: null
+  source: null
+H_MAG:
+  value: null
+  source: null
+KS_MAG:
+  value: null
+  source: null
+W1_MAG:
+  value: 6.692
+  source: AllWISE
+W2_MAG:
+  value: 6.036
+  source: AllWISE
+W3_MAG:
+  value: 3.56
+  source: AllWISE
+KEYWORDS: null
+ALIASES:
+- HD  37258B
+- Gaia DR3 3016986243634948736
+- HD37258B
+- GaiaDR33016986243634948736
+NOTES: Added on 2024-02-02 16:56:55.538 by nirps-client@rali using drs_astrometrics.py
+W4_MAG:
+  value: 1.946
+  source: AllWISE
+GAIA_SOURCE_ID: '3016986243634948736'
+GAIA_TEFF_GSPPHOT: null
+GAIA_LOGG_GSPPHOT: null
+GAIA_MH_GSPPHOT: null
+GAIA_RADIUS_FLAME: null
+GAIA_LUM_FLAME: null
+GAIA_MASS_FLAME: null
+RA_HMS: '05:36:59.282'
+DEC_DMS: '-06:09:15.46'
+RA_J2000_DEG: 84.24700874
+DEC_J2000_DEG: -6.154294324
+GALACTIC_LON: 209.93781883964562
+GALACTIC_LAT: -19.347750396541695
+ECLIPTIC_LON: 83.42722607242611
+ECLIPTIC_LAT: -29.46241889080503
+TELLURIC_VSYS_PLUS_VBARY_MIN: null
+TELLURIC_VSYS_PLUS_VBARY_MAX: null
+TELLURIC_LIMIT_WINDOWS: null
+V_SKY: 5.938508847159772
+V3D: null
+U: null
+V: null
+W: null
+AMAG_G: null
+AMAG_KS: null
+TEFF_GAIA_JH: null
+TEFF_GAIA: null
+FE_H: null
+R_STAR_MKS: null
+R_STAR_MKS_FEH: null
+MASS_STAR_MANN15: null
+MASS_STAR_DELFOSSE00: null
+LOG_G: null
+L_STAR: null
