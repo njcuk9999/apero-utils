@@ -560,9 +560,15 @@ def run_apero_get(settings: Dict[str, Any]):
         # --------------------------------------------------------------
         # Copy to reduced 'objects' directory
         # --------------------------------------------------------------
-        # run apero get to make the objects dir in apero dir
+        # run apero get to make the objects dir in apero dir (red directory)
         apero_get.main(objnames='*', dprtypes=obj_dprtypes,
                        block_kind='red',
+                       outtypes=obj_outtypes, outpath=obj_path,
+                       fibers=obj_scifibers, symlinks=obj_symlinks,
+                       test=settings['TEST'], since=settings['SINCE'])
+        # run apero get to make the objects dir in apero dir (out directory)
+        apero_get.main(objnames='*', dprtypes=obj_dprtypes,
+                       block_kind='out',
                        outtypes=obj_outtypes, outpath=obj_path,
                        fibers=obj_scifibers, symlinks=obj_symlinks,
                        test=settings['TEST'], since=settings['SINCE'])
@@ -585,8 +591,7 @@ def run_apero_get(settings: Dict[str, Any]):
                        out_suffix=comm_suffix)
         # run apero get for templates (no DPRTYPE as they could be different)
         apero_get.main(objnames='*', outtypes=comm_template_outtypes,
-                       block_kind='out',
-                       outpath=comm_path,
+                       block_kind='out', outpath=comm_path,
                        test=settings['TEST'], since=settings['SINCE'],
                        permission_yaml=comm_pfile, group_yaml=comm_gfile,
                        group_server=comm_gserver, out_prefix=comm_prefix,
