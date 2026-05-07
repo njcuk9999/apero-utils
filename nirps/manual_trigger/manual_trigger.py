@@ -568,7 +568,7 @@ def run_apero_get(settings: Dict[str, Any]):
         # get the suffix for files in the comm directory
         comm_suffix = pdict['get-comm'].get('out suffix', None)
         # get the number of cores to use
-        ncores = pdict['processing'].get('ncores', None)
+        ncores = pdict['processing'].get('cores', None)
         # ----------------------------------------------------------
         # check directories exist - try to make them if they don't
         # ----------------------------------------------------------
@@ -1536,7 +1536,7 @@ def get_earliest_raw_file(apero_params, obsdirs):
     return earliest_time.iso
 
 
-def remove_broken_symlinks(path: str):
+def remove_broken_symlinks(inpath: str):
     """
     Removes broken symlinks recursively from the given directory.
 
@@ -1544,10 +1544,14 @@ def remove_broken_symlinks(path: str):
     :return: None
     """
     # if we don't have this directory just return - it will be created later
-    if not os.path.exists(path):
+    if not os.path.exists(inpath):
         return
+    # print how many broken symlinks we removed (as a warning)
+    wmsg = '\tRemoving broken symlinks in {1}'
+    wargs = [inpath]
+    print(wmsg.format(*wargs))
     # convert to Path
-    rootpath = Path(path)
+    rootpath = Path(inpath)
     # save a counter
     count = 0
     # loop around all sub-directories
