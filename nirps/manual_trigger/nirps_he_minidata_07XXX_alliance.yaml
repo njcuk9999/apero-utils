@@ -150,7 +150,7 @@ nirps_he_minidata_07295_alliance:
         # check path
         path: /project/6102120/apero/nirps_bin/scripts/apero-utils/nirps/apero_check
         # profile
-        profile: nirps_he_minidata_07295_alliance.yaml
+        profile: nirps_he_minidata_07XXX_alliance.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
         raw page id: 1741354113
