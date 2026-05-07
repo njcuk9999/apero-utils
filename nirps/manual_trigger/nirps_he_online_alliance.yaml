@@ -1,39 +1,58 @@
-nirps he offline:
+# NOTE: This profile is a placeholder/template for NIRPS HE online processing on Alliance clusters
+# It should be customized based on the specific alliance setup being used
+# See nirps_he_minidata_07295_alliance.yaml for a working example
+
+nirps_he_online_alliance:
     # general settings
     general:
         # instrument
         activate_instrument: nirps
         # profile (is in apero-activate)
-        activate_profile: nirps_he_offline
+        activate_profile: nirps_he_online_alliance
         # directory where raw data is downloaded
-        raw dir: /nirps_raw/nirps/raw-data/nirps_he
+        raw dir: /project/6102120/apero/nirps_data/internal/nirps_raw/raw-data/nirps_he
         # whether to link raw symlinks
         raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/nirps/apero-settings/nirps_he_offline
+        apero profile: /project/6102120/apero/nirps_bin/settings/nirps_he_online_alliance
         # the install directory for apero (git hub repo)
-        apero install: /cosmos99/nirps/git-bin/apero-drs-offline
-        # directory where lbl files are processed
-        lbl path: /cosmos99/nirps/lbl-data/nirps_he_offline/lbl
+        apero install: /project/6102120/apero/nirps_bin/scripts/apero_drs_07
+        # apero get output path
+        lbl path: /project/6102120/apero/nirps_data/private/nirps_he_online_alliance/lbl
+        # apero version
+        apero version: 0.7.XXX
         # start date if not using --obsdir argument
         start date: 2022-11-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
     batch:
       # whether to run in batch mode
-      run batch: False
+      run batch: True
+      # wall time
+      time: '4:00:00'
+      # nodes
+      nodes: 1
+      # cpus per task
+      cpus per task: 192
+      # memory
+      mem: 0
+      # account
+      account: rrg-rdoyon
+      # log path
+      log path: /project/6102120/apero/nirps_data/private/nirps_he_online_alliance/batch
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: offline_run.ini
+        run file: online_run.ini
+        cores: 5
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
-            - all
+            - None
     # apero_get settings
     get-obj:
         # path to copy everything to
-        out path: /cosmos99/nirps/apero-data/nirps_he_offline/objects
+        out path: /project/6102120/apero/nirps_data/private/nirps_he_online_alliance/objects
         # science fiber(s) to get
         science fibers:
             - A
@@ -75,7 +94,7 @@ nirps he offline:
     # apero_get settings for comm directory
     get-comm:
         # path to copy everything to
-        out path: /cosmos99/nirps/apero-data/nirps_he_offline/comm
+        out path: /project/6102120/apero/nirps_data/comm/nirps_he_online_alliance
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - DRS_POST_E
@@ -94,11 +113,11 @@ nirps he offline:
             - TELLU_TEMP_S1DV
             - TELLU_TEMP_S1DW
         # permissions file
-        permissions file: /cosmos99/nirps/git-bin/apero-drs-offline/apero/tools/resources/get/nirps_permissions.yaml
+        permissions file: /project/6102120/apero/nirps_bin/scripts/apero_drs_07/apero/tools/resources/get/nirps_permissions.yaml
         # group permissions file
-        group file: /cosmos99/nirps/git-bin/apero-drs-offline/apero/tools/resources/get/apero_groups.yaml
+        group file: /project/6102120/apero/nirps_bin/scripts/apero_drs_07/apero/tools/resources/get/apero_groups.yaml
         # group server
-        group server: udem_astro
+        group server: alliance
         # out suffix
         out suffix:
         # out prefix
@@ -106,33 +125,45 @@ nirps he offline:
     # ari-settings
     ari:
         # ari profile
-        profile: nirps_he_offline_udem.yaml
+        profile: nirps_he_online_alliance.yaml
+        # mode (options are "old", "new" or "both")
+        mode: both
+        # local ari directory
+        ari path: ~/.ari
+        # cores to use for ari
+        cores: 5
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork", "spawn", "forkserver")
+        mp_start_method: fork
     # check settings
     check:
         # whether to run check
-        run_check: False
+        run_check: True
         # check path
-        path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
+        path: /project/6102120/apero/nirps_bin/scripts/apero-utils/nirps/apero_check
         # profile
-        profile: nirps_he_profile_offline.yaml
+        profile: nirps_he_online_alliance.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
         raw page id: 1741354113
         # define the red sheet name for the google sheet
-        red sheet name: RED-OFFLINE-NIRPS-HE
+        red sheet name: RED-ONLINE-NIRPS-HE
         red page id: 541545005
         # define the comm sheet name for the google sheet
         comments page id: 68390787
         # define the google sheet id
-        raw sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
-        red sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
-        over sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
+        raw sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
+        red sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
+        over sheet id: 16Aorq8WeGKmEQ_wRoeyzCVrIWpqocC3TS1CciqEfTP8
         # disable dependencies check
         disable dependencies check: False
         # critical check files (from nirpsdl)
-        critical csv file: /nirps_raw/nirps/critical-checks-output/check_status.csv
-        critical desc file: /cosmos99/nirps/git-bin/nirpsdl/assets/critical_checks_description.csv
+        critical csv file: 'None'
+        critical desc file: /project/6102120/apero/nirps_bin/scripts/nirpsdl/assets/critical_checks_description.csv
         # system disk path
-        system disk path: /cosmos99
+        system disk path: /project/6102120/apero
         # system email server
-        system email server: localhost
+        system email server: 'None'
+
+

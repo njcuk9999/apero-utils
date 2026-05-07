@@ -1,4 +1,4 @@
-nirps_he_minidata_07295:
+nirps_he_minidata_07295_alliance:
     # general settings
     general:
         # instrument
@@ -17,6 +17,8 @@ nirps_he_minidata_07295:
         apero install: /project/6102120/apero/nirps_bin/scripts/apero_drs_07
         # directory where lbl files are processed
         lbl path: /project/6102120/apero/nirps_data/private/nirps_he_minidata_07295/lbl
+        # apero version
+        apero version: 0.7.XXX
         # start date if not using --obsdir argument
         start date: 2022-11-01
   # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
@@ -41,6 +43,7 @@ nirps_he_minidata_07295:
     processing:
         # apero processing run.ini file
         run file: mini_run.ini
+        cores: 5
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -129,7 +132,17 @@ nirps_he_minidata_07295:
     # ari-settings
     ari:
         # ari profile
-        profile: nirps_he_online_alliance.yaml
+        profile: nirps_he_minidata_07295_alliance.yaml
+        # mode (options are "old", "new" or "both")
+        mode: both
+        # local ari directory
+        ari path: ~/.ari
+        # cores to use for ari
+        cores: 5
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork", "spawn", "forkserver")
+        mp_start_method: fork
     # check settings
     check:
         # whether to run check
@@ -137,7 +150,7 @@ nirps_he_minidata_07295:
         # check path
         path: /project/6102120/apero/nirps_bin/scripts/apero-utils/nirps/apero_check
         # profile
-        profile: nirps_he_profile_mini_alliance.yaml
+        profile: nirps_he_minidata_07295_alliance.yaml
         # define the raw sheet name for the google sheet
         raw sheet name: RAW-NIRPS-HE
         raw page id: 1741354113

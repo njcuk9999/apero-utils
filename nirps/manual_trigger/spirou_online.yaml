@@ -1,47 +1,34 @@
-spirou_mini2_07295:
+spirou_online:
     # general settings
     general:
         # instrument
         activate_instrument: spirou
         # profile (is in apero-activate)
-        activate_profile: spirou_mini2_07295
+        activate_profile: spirou_online
         # directory where raw data is downloaded
-        raw dir: /project/6102120/apero/spirou_data/private/spirou_raw_minidata2/
-      # whether to link raw symlinks
+        raw dir: /titan02/spirou/cfht/raw
+        # whether to link raw symlinks
         raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /project/6102120/apero/spirou_bin/settings/spirou_mini2_07295
+        apero profile: /cosmos99/spirou/apero-settings/spirou_07282_online
         # the install directory for apero (git hub repo)
-        apero install: /project/6102120/apero/spirou_bin/scripts/apero_drs_07
+        apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
-        lbl path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/lbl
+        lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/lbl
+        # apero version
+        apero version: 0.7.XXX
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
     batch:
       # whether to run in batch mode
-      run batch: True
-      # wall time
-      time: '8:00:00'
-      # nodes
-      nodes: 1
-      # cpus per task
-      cpus per task: 192
-      # memory
-      mem: 0
-      # account
-      account: rrg-rdoyon
-      # log path
-      log path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/batch
-      # apero bin path
-      apero bin path: /project/6102120/apero/apero_bin
+      run batch: False
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: mini_run2.ini
-      # number of cores to use for processing
-        cores: 70
+        run file: online_run.ini
+        cores: 5
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -49,7 +36,7 @@ spirou_mini2_07295:
     # apero_get settings
     get-obj:
         # path to copy everything to
-        out path: /project/6102120/apero/spirou_data/private/spirou_mini2_07295/objects
+        out path: /cosmos99/spirou/apero-data/spirou_online/objects
         # science fiber(s) to get
         science fibers:
             - AB
@@ -93,7 +80,7 @@ spirou_mini2_07295:
     # apero_get settings for comm directory
     get-comm:
         # path to copy everything to
-        out path: /project/6102120/apero/spirou_data/comm/spirou_mini2_07295
+        out path: /cosmos99/spirou/apero-data/spirou_online/comm
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - DRS_POST_E
@@ -101,12 +88,6 @@ spirou_mini2_07295:
             - DRS_POST_T
             - DRS_POST_V
             - DRS_POST_P
-            - LBL_FITS
-            - LBL_RDB_FITS
-            - LBL_RDB
-            - LBL_RDB2
-            - LBL_RDB_DRIFT
-            - LBL_RDB2_DRIFT
         # input dpr types
         science dpr types:
             - POLAR_FP
@@ -119,11 +100,11 @@ spirou_mini2_07295:
             - TELLU_TEMP_S1DV
             - TELLU_TEMP_S1DW
         # permissions file
-        permissions file: /project/6102120/apero/spirou_bin/scripts/apero_drs_07/apero/tools/resources/get/spirou_permissions.yaml
+        permissions file: /cosmos99/spirou/apero-bin/apero-drs/apero/tools/resources/get/spirou_permissions.yaml
         # group permissions file
-        group file: /project/6102120/apero/spirou_bin/scripts/apero_drs_07/apero/tools/resources/get/apero_groups.yaml
+        group file: /cosmos99/spirou/apero-bin/apero-drs/apero/tools/resources/get/apero_groups.yaml
         # group server
-        group server: alliance
+        group server: udem_astro
         # out suffix
         out suffix:
         # out prefix
@@ -131,7 +112,17 @@ spirou_mini2_07295:
     # ari-settings
     ari:
         # ari profile
-        profile: spirou_mini_alliance.yaml
+        profile: spirou_online.yaml
+        # mode (options are "old", "new" or "both")
+        mode: both
+        # local ari directory
+        ari path: ~/.ari
+        # cores to use for ari
+        cores: 5
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork", "spawn", "forkserver")
+        mp_start_method: fork
     # check settings
     check:
         # whether to run check

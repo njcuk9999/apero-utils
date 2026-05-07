@@ -1,4 +1,4 @@
-spirou offline:
+spirou_offline_catchup:
     # general settings
     general:
         # instrument
@@ -16,6 +16,8 @@ spirou offline:
         apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
         lbl path: /cosmos99/spirou/lbl-data/spirou_offline/lbl
+        # apero version
+        apero version: 0.7.XXX
         # start date if not using --obsdir argument
         start date: 2018-01-01
     # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
@@ -26,6 +28,7 @@ spirou offline:
     processing:
         # apero processing run.ini file
         run file: offline_catchup_run.ini
+        cores: 5
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -109,7 +112,17 @@ spirou offline:
     # ari-settings
     ari:
         # ari profile
-        profile: spirou_offline_udem.yaml
+        profile: spirou_offline_catchup.yaml
+        # mode (options are "old", "new" or "both")
+        mode: both
+        # local ari directory
+        ari path: ~/.ari
+        # cores to use for ari
+        cores: 5
+        # multiprocessing backend for ari (options are "threads", "processes")
+        mp_backend: processes
+        # multiprocessing start method for ari (options are "default", "fork", "spawn", "forkserver")
+        mp_start_method: fork
     # check settings
     check:
         # whether to run check
