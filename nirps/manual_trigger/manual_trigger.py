@@ -1547,7 +1547,7 @@ def remove_broken_symlinks(inpath: str):
     if not os.path.exists(inpath):
         return
     # print how many broken symlinks we removed (as a warning)
-    wmsg = '\tRemoving broken symlinks in {1}'
+    wmsg = '\tRemoving broken symlinks in {0}'
     wargs = [inpath]
     print(wmsg.format(*wargs))
     # convert to Path
