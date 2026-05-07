@@ -1,21 +1,21 @@
-nirps_he_offline_catchup:
+nirps_ha_offline_catchup_udem:
     # general settings
     general:
         # instrument
         activate_instrument: nirps
         # profile (is in apero-activate)
-        activate_profile: nirps_he_offline
+        activate_profile: nirps_ha_offline
         # directory where raw data is downloaded
-        raw dir: /nirps_raw/nirps/raw-data/nirps_he
+        raw dir: /nirps_raw/nirps/raw-data/nirps_ha
         # whether to link raw symlinks
         raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/nirps/apero-settings/nirps_he_offline
+        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_offline
         # the install directory for apero (git hub repo)
         apero install: /cosmos99/nirps/git-bin/apero-drs-offline
         # directory where lbl files are processed
-        lbl path: /cosmos99/nirps/lbl-data/nirps_he_offline/lbl
+        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/lbl
         # apero version
         apero version: 0.7.XXX
         # start date if not using --obsdir argument
@@ -36,7 +36,7 @@ nirps_he_offline_catchup:
     # apero_get settings
     get-obj:
         # path to copy everything to
-        out path: /cosmos99/nirps/apero-data/nirps_he_offline/objects
+        out path: /cosmos99/nirps/apero-data/nirps_ha_offline/objects
         # science fiber(s) to get
         science fibers:
             - A
@@ -78,7 +78,7 @@ nirps_he_offline_catchup:
     # apero_get settings for comm directory
     get-comm:
         # path to copy everything to
-        out path: /cosmos99/nirps/apero-data/nirps_he_offline/comm
+        out path: /cosmos99/nirps/apero-data/nirps_ha_offline/comm
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - DRS_POST_E
@@ -91,15 +91,16 @@ nirps_he_offline_catchup:
             - OBJ_FP
             - OBJ_DARK
             - OBJ_SKY
+            - TELLU_SKY
         # apero template types
         template out types:
             - TELLU_TEMP
             - TELLU_TEMP_S1DV
             - TELLU_TEMP_S1DW
         # permissions file
-        permissions file: /cosmos99/nirps/git-bin/apero-drs-online/apero/tools/resources/get/nirps_permissions.yaml
+        permissions file: /cosmos99/nirps/git-bin/apero-drs-offline/apero/tools/resources/get/nirps_permissions.yaml
         # group permissions file
-        group file: /cosmos99/nirps/git-bin/apero-drs-online/apero/tools/resources/get/apero_groups.yaml
+        group file: /cosmos99/nirps/git-bin/apero-drs-offline/apero/tools/resources/get/apero_groups.yaml
         # group server
         group server: udem_astro
         # out suffix
@@ -109,7 +110,7 @@ nirps_he_offline_catchup:
     # ari-settings
     ari:
         # ari profile
-        profile: nirps_he_offline_catchup.yaml
+        profile: nirps_ha_offline_catchup_udem.yaml
         # mode (options are "old", "new" or "both")
         mode: both
         # local ari directory
@@ -127,15 +128,15 @@ nirps_he_offline_catchup:
         # check path
         path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
         # profile
-        profile: nirps_he_offline_catchup.yaml
+        profile: nirps_ha_offline_catchup_udem.yaml
         # define the raw sheet name for the google sheet
-        raw sheet name: RAW-NIRPS-HE
-        raw page id: 1741354113
+        raw sheet name: RAW-NIRPS-HA
+        raw page id: 1017212188
         # define the red sheet name for the google sheet
-        red sheet name: RED-OFFLINE-NIRPS-HE
-        red page id: 541545005
+        red sheet name: RED-OFFLINE-NIRPS-HA
+        red page id: 279548254
         # define the comm sheet name for the google sheet
-        comments page id: 68390787
+        comments page id: 346030560
         # define the google sheet id
         raw sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
         red sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M

@@ -1,36 +1,34 @@
-spirou_minidata:
+nirps_ha_offline_udem:
     # general settings
     general:
         # instrument
-        activate_instrument: spirou
+        activate_instrument: nirps
         # profile (is in apero-activate)
-        activate_profile: spirou_mini2_07
+        activate_profile: nirps_ha_offline
         # directory where raw data is downloaded
-        raw dir: /scratch2/spirou/drs-data/common/minidata2
-        # whether to link raw symlinks
+        raw dir: /nirps_raw/nirps/raw-data/nirps_ha
+      # whether to link raw symlinks
         raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /scratch2/spirou/drs-settings/spirou_mini2_07
+        apero profile: /cosmos99/nirps/apero-settings/nirps_ha_offline
         # the install directory for apero (git hub repo)
-        apero install: /scratch2/spirou/drs-bin/apero-drs-spirou-07XXX/
+        apero install: /cosmos99/nirps/git-bin/apero-drs-offline
         # directory where lbl files are processed
-        lbl path: /scratch3/lbl/data/minidata_comp/spirou_mini2_07/lbl
+        lbl path: /cosmos99/nirps/lbl-data/nirps_ha_offline/lbl
         # apero version
         apero version: 0.7.XXX
         # start date if not using --obsdir argument
-        start date: 2018-01-01
-  # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
+        start date: 2022-11-01
+    # batch mode settings (cannot run multiple profiles in a single yaml in batch mode)
     batch:
       # whether to run in batch mode
       run batch: False
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: mini_run2.ini
-        cores: 20
-        # multiprocess settings for apero processing
-        ncores: 20
+        run file: offline_run.ini
+        cores: 5
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
         reset:
@@ -38,14 +36,12 @@ spirou_minidata:
     # apero_get settings
     get-obj:
         # path to copy everything to
-        out path: /scratch2/spirou/drs-data/spirou_minidata2_07/objects
+        out path: /cosmos99/nirps/apero-data/nirps_ha_offline/objects
         # science fiber(s) to get
         science fibers:
-            - AB
             - A
-            - B
         calib fibers:
-            - C
+            - B
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - EXT_E2DS_FF
@@ -66,10 +62,10 @@ spirou_minidata:
             - RC1D_W_FILE
         # input dpr types
         science dpr types:
-            - POLAR_FP
-            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
+            - OBJ_SKY
+            - TELLU_SKY
         # apero template types
         template out types:
             - TELLU_TEMP
@@ -82,7 +78,7 @@ spirou_minidata:
     # apero_get settings for comm directory
     get-comm:
         # path to copy everything to
-        out path: /scratch2/spirou/drs-data/spirou_mini2_07/comm
+        out path: /cosmos99/nirps/apero-data/nirps_ha_offline/comm
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - DRS_POST_E
@@ -92,19 +88,19 @@ spirou_minidata:
             - DRS_POST_P
         # input dpr types
         science dpr types:
-            - POLAR_FP
-            - POLAR_DARK
             - OBJ_FP
             - OBJ_DARK
+            - OBJ_SKY
+            - TELLU_SKY
         # apero template types
         template out types:
             - TELLU_TEMP
             - TELLU_TEMP_S1DV
             - TELLU_TEMP_S1DW
         # permissions file
-        permissions file: /scratch2/spirou/drs-bin/apero-drs-spirou-07XXX/apero/tools/resources/get/spirou_permissions.yaml
+        permissions file: /cosmos99/nirps/git-bin/apero-drs-offline/apero/tools/resources/get/nirps_permissions.yaml
         # group permissions file
-        group file: /scratch2/spirou/drs-bin/apero-drs-spirou-07XXX/apero/tools/resources/get/apero_groups.yaml
+        group file: /cosmos99/nirps/git-bin/apero-drs-offline/apero/tools/resources/get/apero_groups.yaml
         # group server
         group server: udem_astro
         # out suffix
@@ -114,22 +110,45 @@ spirou_minidata:
     # ari-settings
     ari:
         # ari profile
-        profile: spirou_minidata.yaml
+        profile: nirps_ha_offline_udem.yaml
         # mode (options are "old", "new" or "both")
         mode: both
         # local ari directory
-        ari path: /scratch2/spirou/drs-data/spirou_minidata2_07/other/ari-local
-        # apero aprofile (from apero_ri)
-        ari profile: spirou_v7.yaml
+        ari path: ~/.ari
         # cores to use for ari
-        cores: 20
+        cores: 5
         # multiprocessing backend for ari (options are "threads", "processes")
         mp_backend: processes
-        # multiprocessing start method for ari (options are "default", "fork",
-        #    "spawn", "forkserver
+        # multiprocessing start method for ari (options are "default", "fork", "spawn", "forkserver")
         mp_start_method: fork
-
     # check settings
     check:
         # whether to run check
         run_check: False
+        # check path
+        path: /cosmos99/nirps/git-bin/apero-utils/nirps/apero_check
+        # profile
+        profile: nirps_ha_offline_udem.yaml
+        # define the raw sheet name for the google sheet
+        raw sheet name: RAW-NIRPS-HA
+        raw page id: 1017212188
+        raw page id: 1017212188
+        # define the red sheet name for the google sheet
+        red sheet name: RED-OFFLINE-NIRPS-HA
+        red page id: 279548254
+        red page id: 422155191
+        # define the comm sheet name for the google sheet
+        comments page id: 346030560
+        # define the google sheet id
+        raw sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
+        red sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
+        over sheet id: 1zvU_XFA1ZOJE111qZKiav7v6ptYveWpDkMHjdhiN06M
+        # disable dependencies check
+        disable dependencies check: False
+        # critical check files (from nirpsdl)
+        critical csv file: /nirps_raw/nirps/critical-checks-output/check_status.csv
+        critical desc file: /cosmos99/nirps/git-bin/nirpsdl/assets/critical_checks_description.csv
+        # system disk path
+        system disk path: /cosmos99
+        # system email server
+        system email server: localhost

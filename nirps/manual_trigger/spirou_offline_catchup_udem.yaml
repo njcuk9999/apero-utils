@@ -1,21 +1,21 @@
-spirou_online:
+spirou_offline_catchup_udem:
     # general settings
     general:
         # instrument
         activate_instrument: spirou
         # profile (is in apero-activate)
-        activate_profile: spirou_online
+        activate_profile: spirou_offline
         # directory where raw data is downloaded
         raw dir: /titan02/spirou/cfht/raw
         # whether to link raw symlinks
         raw sym links: True
         # the apero profile to use (controlled sym link raw data directory and all
         #    apero reduced data directories)
-        apero profile: /cosmos99/spirou/apero-settings/spirou_07282_online
+        apero profile: /cosmos99/spirou/apero-settings/spirou_offline
         # the install directory for apero (git hub repo)
         apero install: /cosmos99/spirou/apero-bin/apero-drs
         # directory where lbl files are processed
-        lbl path: /cosmos99/spirou/lbl-data/spirou_07282_online/lbl
+        lbl path: /cosmos99/spirou/lbl-data/spirou_offline/lbl
         # apero version
         apero version: 0.7.XXX
         # start date if not using --obsdir argument
@@ -27,7 +27,7 @@ spirou_online:
     # apero_processing settings
     processing:
         # apero processing run.ini file
-        run file: online_run.ini
+        run file: offline_catchup_run.ini
         cores: 5
         # reset data
         #  options are "None", "all" or a list "tmp", "red", "out"
@@ -36,7 +36,7 @@ spirou_online:
     # apero_get settings
     get-obj:
         # path to copy everything to
-        out path: /cosmos99/spirou/apero-data/spirou_online/objects
+        out path: /cosmos99/spirou/apero-data/spirou_offline/objects
         # science fiber(s) to get
         science fibers:
             - AB
@@ -80,7 +80,7 @@ spirou_online:
     # apero_get settings for comm directory
     get-comm:
         # path to copy everything to
-        out path: /cosmos99/spirou/apero-data/spirou_online/comm
+        out path: /cosmos99/spirou/apero-data/spirou_offline/comm
         # apero get valid header key: DRSOUTID (for apero red dir)
         science out types:
             - DRS_POST_E
@@ -112,7 +112,7 @@ spirou_online:
     # ari-settings
     ari:
         # ari profile
-        profile: spirou_online.yaml
+        profile: spirou_offline_catchup_udem.yaml
         # mode (options are "old", "new" or "both")
         mode: both
         # local ari directory
