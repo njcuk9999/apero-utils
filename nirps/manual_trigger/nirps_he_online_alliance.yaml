@@ -131,7 +131,7 @@ nirps_he_online_alliance:
         # local ari directory
         ari path:  /project/6102120/apero/nirps_data/private/nirps_he_online_alliance/other/ari-local
         # apero aprofile (from apero_ri)
-        ari profile: nirps_v7.yaml
+        ari profile: nirps_he_v7.yaml
         # cores to use for ari
         cores: 5
         # multiprocessing backend for ari (options are "threads", "processes")

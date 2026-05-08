@@ -115,7 +115,7 @@ nirps_he_offline_catchup_udem:
         # local ari directory
         ari path: /cosmos99/nirps/apero-data/nirps_he_offline/other/ari-local
         # apero aprofile (from apero_ri)
-        ari profile: nirps_v7.yaml
+        ari profile: nirps_he_v7.yaml
         # cores to use for ari
         cores: 5
         # multiprocessing backend for ari (options are "threads", "processes")
