@@ -116,7 +116,9 @@ spirou_offline_catchup_udem:
         # mode (options are "old", "new" or "both")
         mode: both
         # local ari directory
-        ari path: ~/.ari
+        ari path: /cosmos99/spirou/apero-data/spirou_offline/other/ari-local
+        # apero aprofile (from apero_ri)
+        ari profile: spirou_v7.yaml
         # cores to use for ari
         cores: 5
         # multiprocessing backend for ari (options are "threads", "processes")

@@ -137,7 +137,9 @@ spirou_offline_alliance:
         # mode (options are "old", "new" or "both")
         mode: both
         # local ari directory
-        ari path: ~/.ari
+        ari path: /project/6102120/apero/spirou_data/internal/spirou_offline_07/other/ari-local
+        # apero aprofile (from apero_ri)
+        ari profile: spirou_v7.yaml
         # cores to use for ari
         cores: 70
         # multiprocessing backend for ari (options are "threads", "processes")

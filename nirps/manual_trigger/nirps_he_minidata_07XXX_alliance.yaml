@@ -136,7 +136,9 @@ nirps_he_minidata_07295_alliance:
         # mode (options are "old", "new" or "both")
         mode: both
         # local ari directory
-        ari path: ~/.ari
+        ari path: /project/6102120/apero/nirps_data/private/nirps_he_minidata_07295/other/ari-local
+        # apero aprofile (from apero_ri)
+        ari profile: nirps_v7.yaml
         # cores to use for ari
         cores: 5
         # multiprocessing backend for ari (options are "threads", "processes")
