@@ -25,7 +25,7 @@ spirou_offline_alliance:
       # whether to run in batch mode
       run batch: True
       # wall time
-      time: '120:00:00'
+      time: '168:00:00'
       # nodes
       nodes: 1
       # cpus per task
