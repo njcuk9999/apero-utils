@@ -1,26 +1,26 @@
 nirps_ha_online_udem:
-  yaml: ../manual_trigger/nirps_ha_profile_online.yaml
+  yaml: ../manual_trigger/nirps_ha_online_udem.yaml
   profile: nirps ha online
 nirps_ha_offline_udem:
   yaml: ../manual_trigger/nirps_ha_profile_offline.yaml
   profile: nirps ha offline
 
 nirps_he_online_udem:
-  yaml: ../manual_trigger/nirps_he_profile_online.yaml
+  yaml: ../manual_trigger/nirps_he_online_udem.yaml
   profile: nirps he online
 nirps_he_offline_udem:
   yaml: ../manual_trigger/nirps_he_profile_offline.yaml
   profile: nirps he offline
 
 spirou_online_udem:
-  yaml: ../manual_trigger/spirou_profile_online.yaml
+  yaml: ../manual_trigger/spirou_online_udem.yaml
   profile: spirou online
 spirou_offline_udem:
   yaml: ../manual_trigger/spirou_profile_offline.yaml
   profile: spirou offline
 
 spirou_online:
-  yaml: ../manual_trigger/spirou_profile_online.yaml
+  yaml: ../manual_trigger/spirou_online_udem.yaml
   profile: spirou online
 spirou_offline:
   yaml: ../manual_trigger/spirou_profile_offline.yaml
