@@ -394,15 +394,15 @@ def run_prechecks(settings: Dict[str, Any], ncores: int = None):
     for profile in settings['PROFILES']:
         # get the obs dirs
         obs_dirs = settings['OBS_DIRS']
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
         # deal with no precheck from profile yaml
-        if not settings['processing'].get('run_precheck', True):
+        if not pdict['processing'].get('run_precheck', True):
             continue
         # get the obsdirs as a string
         obsdir_str = ','.join(obs_dirs)
         # print progress
         print(f'\tRunning precheck for profile: {profile}')
-        # get the yaml dictionary for this profile
-        pdict = settings['PROFILES'][profile]
         # update reduced checks
         run_apero_checks(pdict, mode='raw', obsdirs=obs_dirs)
         # get the run file
