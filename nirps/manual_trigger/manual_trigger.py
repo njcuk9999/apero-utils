@@ -731,6 +731,9 @@ def v08_settings(params):
     path_dict['PATH_LBL'] = params['PATH.LBL']
     path_dict['PATH_CALIB'] = params['PATH.CALIB']
     path_dict['PATH_TELLU'] = params['PATH.TELLU']
+    path_dict['PATH_CHECK'] = os.path.join(params['PATH.OTHER'],
+                                           params['APERO_CHECK.PATH'])
+    path_dict['PATH_OTHER'] = params['PATH.OTHER']
 
     return database_dict, path_dict
 
@@ -773,6 +776,9 @@ def v07_settings(params):
     path_dict['PATH_LBL'] = params['LBL_PATH']
     path_dict['PATH_CALIB'] = params['DRS_CALIB_DB']
     path_dict['PATH_TELLU'] = params['DRS_TELLU_DB']
+    path_dict['PATH_CHECK'] = os.path.join(params['PATH.DRS_DATA_OTHER'],
+                                           params['APERO_CHECK_PATH'])
+    path_dict['PATH_OTHER'] = params['DRS_DATA_OTHER']
 
     return database_dict, path_dict
 
