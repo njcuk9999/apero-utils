@@ -40,6 +40,9 @@ spirou_offline_alliance:
       apero bin path: /project/6102120/apero/apero_bin
     # apero_processing settings
     processing:
+        # whether to run apero precheck (for daily runs this is True for a
+        # large run this is not a good idea)
+        run_precheck: False
         # apero processing run.ini file
         run file: offline_run.ini
         # number of cores to use for processing

@@ -394,6 +394,9 @@ def run_prechecks(settings: Dict[str, Any], ncores: int = None):
     for profile in settings['PROFILES']:
         # get the obs dirs
         obs_dirs = settings['OBS_DIRS']
+        # deal with no precheck from profile yaml
+        if not settings['processing'].get('run_precheck', True):
+            continue
         # get the obsdirs as a string
         obsdir_str = ','.join(obs_dirs)
         # print progress
