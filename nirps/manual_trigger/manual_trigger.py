@@ -394,12 +394,15 @@ def run_prechecks(settings: Dict[str, Any], ncores: int = None):
     for profile in settings['PROFILES']:
         # get the obs dirs
         obs_dirs = settings['OBS_DIRS']
+        # get the yaml dictionary for this profile
+        pdict = settings['PROFILES'][profile]
+        # deal with no precheck from profile yaml
+        if not pdict['processing'].get('run_precheck', True):
+            continue
         # get the obsdirs as a string
         obsdir_str = ','.join(obs_dirs)
         # print progress
         print(f'\tRunning precheck for profile: {profile}')
-        # get the yaml dictionary for this profile
-        pdict = settings['PROFILES'][profile]
         # update reduced checks
         run_apero_checks(pdict, mode='raw', obsdirs=obs_dirs)
         # get the run file
@@ -731,6 +734,9 @@ def v08_settings(params):
     path_dict['PATH_LBL'] = params['PATH.LBL']
     path_dict['PATH_CALIB'] = params['PATH.CALIB']
     path_dict['PATH_TELLU'] = params['PATH.TELLU']
+    path_dict['PATH_CHECK'] = os.path.join(params['PATH.OTHER'],
+                                           params['APERO_CHECK.PATH'])
+    path_dict['PATH_OTHER'] = params['PATH.OTHER']
 
     return database_dict, path_dict
 
@@ -773,6 +779,9 @@ def v07_settings(params):
     path_dict['PATH_LBL'] = params['LBL_PATH']
     path_dict['PATH_CALIB'] = params['DRS_CALIB_DB']
     path_dict['PATH_TELLU'] = params['DRS_TELLU_DB']
+    path_dict['PATH_CHECK'] = os.path.join(params['PATH.DRS_DATA_OTHER'],
+                                           params['APERO_CHECK_PATH'])
+    path_dict['PATH_OTHER'] = params['DRS_DATA_OTHER']
 
     return database_dict, path_dict
 
@@ -1568,7 +1577,7 @@ def remove_broken_symlinks(inpath: str):
                 return
     # print how many broken symlinks we removed (as a warning)
     wmsg = '\tRemove {0} broken symlinks in {1}'
-    wargs = [count, path]
+    wargs = [count, inpath]
     print(wmsg.format(*wargs))
 
 
