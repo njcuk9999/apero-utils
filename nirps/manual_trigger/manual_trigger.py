@@ -779,7 +779,7 @@ def v07_settings(params):
     path_dict['PATH_LBL'] = params['LBL_PATH']
     path_dict['PATH_CALIB'] = params['DRS_CALIB_DB']
     path_dict['PATH_TELLU'] = params['DRS_TELLU_DB']
-    path_dict['PATH_CHECK'] = os.path.join(params['PATH.DRS_DATA_OTHER'],
+    path_dict['PATH_CHECK'] = os.path.join(params['DRS_DATA_OTHER'],
                                            params['APERO_CHECK_PATH'])
     path_dict['PATH_OTHER'] = params['DRS_DATA_OTHER']
 
