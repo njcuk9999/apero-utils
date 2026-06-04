@@ -697,7 +697,7 @@ def run_apero_reduction_interface(settings: Dict[str, Any]):
                     settings['LOG'][profile].write(ARI_END)
             # Run the new ari reduction interface
             if pdict['ari']['mode'] in ['new', 'both']:
-                run_ari_sync(pdict)
+                run_ari_sync(pdict, profile)
 
         # update reduced checks
         run_apero_checks(pdict, mode='red', obsdirs=settings['OBS_DIRS'])
@@ -779,7 +779,7 @@ def v07_settings(params):
     path_dict['PATH_LBL'] = params['LBL_PATH']
     path_dict['PATH_CALIB'] = params['DRS_CALIB_DB']
     path_dict['PATH_TELLU'] = params['DRS_TELLU_DB']
-    path_dict['PATH_CHECK'] = os.path.join(params['PATH.DRS_DATA_OTHER'],
+    path_dict['PATH_CHECK'] = os.path.join(params['DRS_DATA_OTHER'],
                                            params['APERO_CHECK_PATH'])
     path_dict['PATH_OTHER'] = params['DRS_DATA_OTHER']
 
@@ -832,7 +832,7 @@ def load_apero_ri_resource_profiles(pdict: Dict[str, Any],
     return aprofiles
 
 
-def run_ari_sync(pdict):
+def run_ari_sync(pdict: Dict[str, Any], profile: str):
 
     # import apero_ri
     from apero_ri.tasks import apero_sync
