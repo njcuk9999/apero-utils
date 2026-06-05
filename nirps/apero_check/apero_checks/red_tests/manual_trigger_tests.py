@@ -39,9 +39,11 @@ COLUMNS = ['TIMESTAMP', 'PROFILE', 'STATUS', 'OBSDIRS', 'COMMENT']
 # =============================================================================
 def get_manual_log(params, obs_dir, test) -> Tuple[bool, str]:
     # construct log path
-    homedir = os.path.expanduser('~')
+    homedir = os.path.realpath(os.path.dirname(__file__))
+    mt_path = os.path.dirname(os.path.dirname(os.path.dirname(homedir)))
+    mt_path = os.path.join(mt_path, 'manual_trigger')
     # construct log path
-    logpath = os.path.join(homedir, '.apero', 'manual_trigger')
+    logpath = os.path.join(mt_path, '.apero', 'manual_trigger')
     # get profile name
     profile_name = os.path.basename(params['YAML']).replace('.yaml', '.log')
     # construct log file name

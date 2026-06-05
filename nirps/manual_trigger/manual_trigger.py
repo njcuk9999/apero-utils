@@ -331,12 +331,15 @@ def get_settings():
     settings = read_yaml(args.profile, settings)
     # ----------------------------------------------------------------------
     # construct log path
-    homedir = os.path.expanduser('~')
+    homedir = os.path.realpath(os.path.dirname(__file__))
     # construct log path
     logpath = os.path.join(homedir, '.apero', 'manual_trigger')
     # make sure logpath exists
     if not os.path.exists(logpath):
         os.makedirs(logpath)
+        # make a git ignore to ignore full directory
+        with open(os.path.join(logpath, '.gitignore'), 'w') as gfile:
+            gfile.write('*')
     # construct log filename
     logfile = os.path.join(logpath, args.profile.replace('.yaml', '.log'))
     # make a log for each profile
