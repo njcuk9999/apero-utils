@@ -209,7 +209,7 @@ def run_test(params: Dict[str, Any], obsdir: str, test_name: str, it: int,
         #   this test)
         # only override if dependencies passed
         if deps_passed:
-            override_value = get_override(params, obsdir, test_name)
+            override_value = get_override(params, obsdir, test_name, test_type)
 
             if override_value is not None:
 

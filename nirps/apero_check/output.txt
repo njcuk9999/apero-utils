@@ -1,0 +1,93 @@
+[1;96;1m2026-07-02 23:07:09.433161 | **************************************************[0;0m
+[1;95;1m2026-07-02 23:07:09.434534 | *  APERO Reduction checks[0;0m
+[1;96;1m2026-07-02 23:07:09.435430 | **************************************************
+2026-07-02 23:07:09.435430 | Version=0.5.00   Date=2025-06-02
+2026-07-02 23:07:09.435430 | **************************************************[0;0m
+[92;1m2026-07-02 23:07:09.447475 | Parameters used:[0;0m
+[92;1m2026-07-02 23:07:09.448159 | 	 - yaml=nirps_he_online_udem.yaml   [CMD][0;0m
+[92;1m2026-07-02 23:07:09.448838 | 	 - obsdir=2026-06-23   [CMD][0;0m
+[92;1m2026-07-02 23:07:09.449497 | 	 - today=False   [CMD][0;0m
+[92;1m2026-07-02 23:07:09.450240 | **************************************************
+2026-07-02 23:07:09.450240 | Checking for observation directory
+2026-07-02 23:07:09.450240 | **************************************************[0;0m
+[92;1m2026-07-02 23:07:09.450920 | 	Found 1 observation directories[0;0m
+[92;1m2026-07-02 23:07:09.451689 | **************************************************
+2026-07-02 23:07:09.451689 | Processing single test on observatory directory 2026-06-23
+2026-07-02 23:07:09.451689 | **************************************************[0;0m
+[1;95;1m2026-07-02 23:07:09.452611 | 	Running red test LOW_SNR [1/1][0;0m
+[92;1m2026-07-02 23:07:11.134609 | Analysing observation directory: 2026-06-23[0;0m
+SNR[EXTSN015] = -0.15110990236593544 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_50_24_644_pp_e2dsff_A.fits
+SNR[EXTSN060] = -0.02397100318493755 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_50_24_644_pp_e2dsff_A.fits
+SNR[EXTSN015] = 0.07720109759619698 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_51_42_672_pp_e2dsff_A.fits
+SNR[EXTSN060] = 0.35862647822902094 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_51_42_672_pp_e2dsff_A.fits
+SNR[EXTSN015] = 0.33773236662849915 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_49_06_616_pp_e2dsff_A.fits
+SNR[EXTSN060] = -0.02931861629002339 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_49_06_616_pp_e2dsff_A.fits
+SNR[EXTSN015] = 0.3909376187394523 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_47_48_588_pp_e2dsff_A.fits
+SNR[EXTSN060] = 0.4888527516038581 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_47_48_588_pp_e2dsff_A.fits
+SNR[EXTSN015] = -0.17450639302345333 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_49_45_630_pp_e2dsff_A.fits
+SNR[EXTSN060] = 0.5971563173185652 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_49_45_630_pp_e2dsff_A.fits
+SNR[EXTSN015] = -0.22212415337131988 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_48_27_602_pp_e2dsff_A.fits
+SNR[EXTSN060] = 0.504154086228434 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_48_27_602_pp_e2dsff_A.fits
+SNR[EXTSN015] = 0.0748850491266247 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_47_09_574_pp_e2dsff_A.fits
+SNR[EXTSN060] = -0.01222538844983596 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_47_09_574_pp_e2dsff_A.fits
+SNR[EXTSN015] = 0.3907127888873865 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_52_21_685_pp_e2dsff_A.fits
+SNR[EXTSN060] = 0.5437981167862146 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_52_21_685_pp_e2dsff_A.fits
+SNR[EXTSN015] = 0.3341911816567951 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_46_30_560_pp_e2dsff_A.fits
+SNR[EXTSN060] = 0.10089544148097247 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_46_30_560_pp_e2dsff_A.fits
+SNR[EXTSN015] = 0.27041695575260316 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_51_03_658_pp_e2dsff_A.fits
+SNR[EXTSN060] = -0.08270139683332976 (Should be > 10)
+	DRSOBJN = HD20794
+	File: /cosmos99/nirps/apero-data/nirps_he_online/red/2026-06-23/NIRPS_2026-06-23T15_51_03_658_pp_e2dsff_A.fits
+
+[1;91;1m2026-07-02 23:07:11.380069 | 
+2026-07-02 23:07:11.380069 | 	 - One or more tests FAILED[0;0m
+[1;93;1m2026-07-02 23:07:12.975624 | **************************************************
+2026-07-02 23:07:12.975624 | Please note
+2026-07-02 23:07:12.975624 | **************************************************
+2026-07-02 23:07:12.975624 | 	Single test mode (--test) does NOT update the database. 
+2026-07-02 23:07:12.975624 | 	Please run without the --test argument to update the database. 
+2026-07-02 23:07:12.975624 | 	--testfilter can be used to run only some tests.[0;0m
+[92;1m2026-07-02 23:07:12.976669 | **************************************************
+2026-07-02 23:07:12.976669 | Saving to check log
+2026-07-02 23:07:12.976669 | **************************************************[0;0m
+[92;1m2026-07-02 23:07:14.898203 | **************************************************
+2026-07-02 23:07:14.898203 | Code finished successfully
+2026-07-02 23:07:14.898203 | **************************************************[0;0m
