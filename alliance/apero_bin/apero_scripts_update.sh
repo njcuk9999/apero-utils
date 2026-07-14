@@ -64,6 +64,40 @@ INSTALL_SCRIPT=""
 REPOS=()
 
 
+is_git_repo() {
+    local repo_path="$1"
+    [[ -d "$repo_path" ]] || return 1
+    git -C "$repo_path" rev-parse --is-inside-work-tree >/dev/null 2>&1
+}
+
+
+resolve_repo_path() {
+    local script_path="$1"
+    local repo_dir="$2"
+    local candidate=""
+
+    if [[ "$repo_dir" = /* ]]; then
+        candidate="$repo_dir"
+    else
+        candidate="$script_path/$repo_dir"
+    fi
+
+    if [[ -d "$candidate" ]]; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
+
+    # Allow repo entries that refer to nested repositories anywhere below SCRIPT_PATH.
+    candidate=$(find "$script_path" -maxdepth 6 -type d \( -path "$script_path/$repo_dir" -o -path "*/$repo_dir" \) -print -quit 2>/dev/null || true)
+    if [[ -n "$candidate" ]]; then
+        printf '%s\n' "$candidate"
+        return 0
+    fi
+
+    return 1
+}
+
+
 process_instrument() {
     local instrument="$1"
     local install_script="$2"
@@ -131,13 +165,22 @@ process_instrument() {
         # entry format: dir_name|branch_name
         local repo_dir="${entry%%|*}"
         local branch_name="${entry##*|}"
-        local REPO_PATH="$SCRIPT_PATH/$repo_dir"
+        local REPO_PATH=""
 
         echo "--------------------------------------------------"
         echo "Repo: $repo_dir (branch: $branch_name)"
         echo "--------------------------------------------------"
 
-        if [[ ! -d "$REPO_PATH/.git" ]]; then
+        REPO_PATH="$(resolve_repo_path "$SCRIPT_PATH" "$repo_dir")"
+        if [[ -z "$REPO_PATH" ]]; then
+            echo "✗ Repo path does not exist under scripts path: $repo_dir"
+            echo
+            continue
+        fi
+
+        echo "Resolved path: $REPO_PATH"
+
+        if ! is_git_repo "$REPO_PATH"; then
             echo "✗ Not a git repo: $REPO_PATH"
             echo
             continue
