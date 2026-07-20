@@ -426,9 +426,9 @@ def _sqlalchemy_test(args: argparse.Namespace, password: str) -> bool:
         engine.dispose()
 
 
-def _pymysql_probe(args: argparse.Namespace, password: str) -> bool:
-    """Run a direct PyMySQL connection probe."""
-    print('\n[TEST] Direct PyMySQL probe')
+def _staged_pymysql_probe(args: argparse.Namespace, password: str) -> bool:
+    """Run staged TCP/auth/db/query PyMySQL probes."""
+    print('\n[TEST] Direct PyMySQL staged probe')
     try:
         pymysql = importlib.import_module('pymysql')
     except Exception:
@@ -440,6 +440,63 @@ def _pymysql_probe(args: argparse.Namespace, password: str) -> bool:
         f'host=127.0.0.1 port={args.local_port} user={args.db_user} '
         f'db={args.db_name or "<none>"} password={_mask_password(password)}'
     )
+
+    stage_bits = []
+
+    try:
+        with socket.create_connection(('127.0.0.1', args.local_port), timeout=5):
+            stage_bits.append('tcp=ok')
+    except Exception:
+        stage_bits.append('tcp=fail')
+        print('[TEST] TCP probe failed:')
+        print(traceback.format_exc().rstrip())
+        print('[TEST] Stages: ' + ', '.join(stage_bits))
+        return False
+
+    try:
+        with pymysql.connect(
+            host='127.0.0.1',
+            user=args.db_user,
+            password=password,
+            database=None,
+            port=args.local_port,
+            connect_timeout=10,
+            read_timeout=10,
+            write_timeout=10,
+            autocommit=True,
+            charset='utf8mb4',
+        ) as conn:
+            conn.ping(reconnect=False)
+        stage_bits.append('auth=ok')
+    except Exception:
+        stage_bits.append('auth=fail')
+        print('[TEST] Direct MySQL connect/auth failed:')
+        print(traceback.format_exc().rstrip())
+        print('[TEST] Stages: ' + ', '.join(stage_bits))
+        return False
+
+    try:
+        with pymysql.connect(
+            host='127.0.0.1',
+            user=args.db_user,
+            password=password,
+            database=args.db_name or None,
+            port=args.local_port,
+            connect_timeout=10,
+            read_timeout=10,
+            write_timeout=10,
+            autocommit=True,
+            charset='utf8mb4',
+        ) as conn:
+            conn.ping(reconnect=False)
+        stage_bits.append('db_select=ok')
+    except Exception:
+        stage_bits.append('db_select=fail')
+        print('[TEST] Direct MySQL database selection failed:')
+        print(traceback.format_exc().rstrip())
+        print('[TEST] Stages: ' + ', '.join(stage_bits))
+        return False
+
     try:
         with pymysql.connect(
             host='127.0.0.1',
@@ -457,20 +514,19 @@ def _pymysql_probe(args: argparse.Namespace, password: str) -> bool:
                 print(f'[TEST] Server info: {conn.get_server_info()}')
             except Exception:
                 print('[TEST] Could not read server info.')
-            try:
-                with conn.cursor() as cursor:
-                    cursor.execute('SELECT 1 AS ok')
-                    row = cursor.fetchone()
-                    print(f'[TEST] Cursor SELECT 1 result: {row}')
-            except Exception:
-                print('[TEST] Query failed during direct MySQL probe:')
-                print(traceback.format_exc().rstrip())
-                return False
-        print('[TEST] Direct PyMySQL connection probe succeeded.')
+            with conn.cursor() as cursor:
+                cursor.execute('SELECT 1 AS ok')
+                row = cursor.fetchone()
+                print(f'[TEST] Cursor SELECT 1 result: {row}')
+        stage_bits.append('query=ok')
+        print('[TEST] Direct PyMySQL staged probe succeeded.')
+        print('[TEST] Stages: ' + ', '.join(stage_bits))
         return True
     except Exception:
-        print('[TEST] Direct PyMySQL connection probe failed:')
+        stage_bits.append('query=fail')
+        print('[TEST] Direct MySQL query failed:')
         print(traceback.format_exc().rstrip())
+        print('[TEST] Stages: ' + ', '.join(stage_bits))
         return False
 
 
@@ -484,7 +540,7 @@ def _run_test_step(args: argparse.Namespace, password: str) -> None:
         return
 
     sql_ok = _sqlalchemy_test(args, password)
-    pymysql_ok = _pymysql_probe(args, password)
+    pymysql_ok = _staged_pymysql_probe(args, password)
 
     if sql_ok:
         print('\n[TEST] Final result: connection test passed.')
