@@ -465,7 +465,7 @@ def _pymysql_probe(args: argparse.Namespace, password: str) -> bool:
             except Exception:
                 print('[TEST] Query failed during direct MySQL probe:')
                 print(traceback.format_exc().rstrip())
-                return True
+                return False
         print('[TEST] Direct PyMySQL connection probe succeeded.')
         return True
     except Exception:
