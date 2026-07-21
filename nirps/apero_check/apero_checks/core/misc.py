@@ -35,9 +35,16 @@ OLDEST_DATE = '2022-05-04'
 # =============================================================================
 # Define functions
 # =============================================================================
-def get_args() -> Dict[str, Any]:
+def get_args(custom_params: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """
     Define the command line arguments
+
+    :param custom_params: optional dictionary of extra command line arguments
+                          to add. Keys are the argument name(s) (e.g.
+                          "--comment") and values are dictionaries of keyword
+                          arguments passed straight to
+                          ArgumentParser.add_argument (e.g. dict(type=str,
+                          default=None, help='...'))
 
     :return: argparse namespace object containing arguments
     """
@@ -77,6 +84,10 @@ def get_args() -> Dict[str, Any]:
                         help='If we do not give an ooobsdir process '
                              'observation directories until this date '
                              '(thie date included)')
+    # add any custom arguments (each value is a dict of add_argument kwargs)
+    if custom_params is not None:
+        for arg_name in custom_params:
+            parser.add_argument(arg_name, **custom_params[arg_name])
     # load arguments with parser
     args = parser.parse_args()
     # return arguments
@@ -197,7 +208,8 @@ def load_params(yaml_file: Optional[str] = None,
                 obsdir: Optional[str] = None,
                 test_name: Optional[str] = None,
                 today: bool = False, yest: bool = False,
-                since: str = 'None', until: str = 'None') -> Dict[str, Any]:
+                since: str = 'None', until: str = 'None',
+                custom_params: Dict[str, Any] = None) -> Dict[str, Any]:
     # set up the return dictionary
     params = dict()
     # string for printing variables used
@@ -207,7 +219,7 @@ def load_params(yaml_file: Optional[str] = None,
         params[key] = copy.deepcopy(parameters.parameters[key].value)
     # -------------------------------------------------------------------------
     # read from command line
-    args = get_args()
+    args = get_args(custom_params)
     # get yaml file from cmd args
     yaml_file , yaml_source = add_cmd_arg(args, 'yaml', yaml_file)
     sources['yaml'] = add_source('yaml', yaml_file, yaml_source)
@@ -241,6 +253,18 @@ def load_params(yaml_file: Optional[str] = None,
             filtered_tests.append(raw_filtered_test.strip().upper())
         # update the test_filter list
         params['test_filter'] = filtered_tests
+    # -------------------------------------------------------------------------
+    # add any custom parameters from cmd args into params
+    if custom_params is not None:
+        for arg_name in custom_params:
+            # work out the argparse destination name for this argument
+            if 'dest' in custom_params[arg_name]:
+                dest = custom_params[arg_name]['dest']
+            else:
+                dest = arg_name.lstrip('-').replace('-', '_')
+            # push the command line value into params (copied to each profile
+            #   later on)
+            params[dest] = args.get(dest)
     # -------------------------------------------------------------------------
     # load from yaml file
     yaml_params = io.read_yaml(yaml_file, profile_mode=True)
