@@ -44,6 +44,34 @@ def override_tests(params: Dict[str, Any],
     # get test_name
     test_name = params['test_name']
     # -------------------------------------------------------------------------
+    # get any custom override values from the command line (None = ask user)
+    override_current_value = params.get('current_value', None)
+    override_who = params.get('who', None)
+    override_comment = params.get('comment', None)
+    # convert current_value from a string (True/False/None) to a bool or None
+    if str(override_current_value) in ['None', 'Null', '']:
+        override_current_value = None
+    elif str(override_current_value).lower() in ['true', '1']:
+        override_current_value = True
+    else:
+        override_current_value = False
+    # if any of these were set, confirm with the user that they are correct
+    if any(v is not None for v in [override_current_value, override_who,
+                                   override_comment]):
+        # build confirmation message
+        cmsg = 'The following override values were provided on the command line:'
+        cmsg += f'\n\t--current_value = {override_current_value}'
+        cmsg += f'\n\t--who           = {override_who}'
+        cmsg += f'\n\t--comment       = {override_comment}'
+        cmsg += '\nIs this correct?\n [Y]es or [N]o\t'
+        # ask user
+        uinput = str(input(cmsg))
+        # if not confirmed, reset to None so the questions are asked as normal
+        if 'y' not in uinput.lower():
+            override_current_value = None
+            override_who = None
+            override_comment = None
+    # -------------------------------------------------------------------------
     # loop around observation directories
     for obsdir in obsdirs:
         # print message on which observation directory we are processing
@@ -88,20 +116,36 @@ def override_tests(params: Dict[str, Any],
             question = (f'Current value for test {test_name} is '
                         f'{current_value}. Change to {not current_value}?'
                         f'\n [Y]es or [N]o\t')
-            # ask user
-            uinput = str(input(question))
+            # decide whether to apply the override
+            #   if --current_value was given and it matches the actual current
+            #   value, apply the override without asking, otherwise ask as normal
+            if override_current_value is not None:
+                do_override = override_current_value == current_value
+                if not do_override:
+                    do_override = 'y' in str(input(question)).lower()
+            else:
+                # ask user
+                do_override = 'y' in str(input(question)).lower()
             # deal with user input
-            if 'y' in uinput.lower():
-                name, reason = '', ''
-
-                while len(name) == 0:
-                    # ask for name
-                    question = 'Please enter your name:\t'
-                    name = str(input(question))
-                while len(reason) == 0:
-                    # ask for reason
-                    question = 'Please enter the reason for the override:\t'
-                    reason = str(input(question))
+            if do_override:
+                # get the name (from --who or ask the user)
+                if override_who is not None:
+                    name = override_who
+                else:
+                    name = ''
+                    while len(name) == 0:
+                        # ask for name
+                        question = 'Please enter your name:\t'
+                        name = str(input(question))
+                # get the reason (from --comment or ask the user)
+                if override_comment is not None:
+                    reason = override_comment
+                else:
+                    reason = ''
+                    while len(reason) == 0:
+                        # ask for reason
+                        question = 'Please enter the reason for the override:\t'
+                        reason = str(input(question))
                 # set the new value opposite to the old value
                 new_value = not current_value
                 # add to overrides
