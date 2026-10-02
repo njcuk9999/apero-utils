@@ -24,22 +24,28 @@ from scipy import interpolate
 # =============================================================================
 # Define variables
 # =============================================================================
-DEFAULT_MODEL_HA = (
-    '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
-    'apero-assets/nirps_ha/reset/telludb/sky_model_ha.fits'
-)
-DEFAULT_MODEL_HE = (
-    '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
-    'apero-assets/nirps_he/reset/telludb/sky_model_he.fits'
-)
-DEFAULT_WAVE_NEW_HA = (
-    '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
-    'apero-assets/nirps_ha/calib/static_wave_ref_A.fits'
-)
-DEFAULT_WAVE_NEW_HE = (
-    '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
-    'apero-assets/nirps_he/calib/static_wave_ref_A.fits'
-)
+MODE = 'HE'
+
+
+if MODE == 'HA':
+    DEFAULT_MODEL = (
+        '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
+        'apero-assets/nirps_ha/reset/telludb/sky_model_ha.fits'
+    )
+    DEFAULT_WAVE_NEW = (
+        '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
+        'apero-assets/nirps_ha/calib/static_wave_ref_A.fits'
+    )
+else:
+    DEFAULT_MODEL = (
+        '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
+        'apero-assets/nirps_he/reset/telludb/sky_model_he.fits'
+    )
+    DEFAULT_WAVE_NEW = (
+        '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/'
+        'apero-assets/nirps_he/calib/static_wave_ref_A.fits'
+    )
+
 
 
 # =============================================================================
@@ -68,9 +74,9 @@ def resolve_wave_new_path(model_in_path: str, wave_new_arg: str | None) -> str:
 
     model_path = model_in_path.lower()
     if 'nirps_ha' in model_path or 'sky_model_ha' in model_path:
-        return DEFAULT_WAVE_NEW_HA
+        return DEFAULT_WAVE_NEW
     if 'nirps_he' in model_path or 'sky_model_he' in model_path:
-        return DEFAULT_WAVE_NEW_HE
+        return DEFAULT_WAVE_NEW
 
     emsg = (
         'Cannot infer wave_new path from model filename. '
@@ -564,7 +570,7 @@ def build_argparser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         '--model-in',
-        default=DEFAULT_MODEL_HA,
+        default=DEFAULT_MODEL,
         help='Input sky-model FITS file (e.g. HA or HE model).',
     )
     parser.add_argument(
@@ -577,7 +583,7 @@ def build_argparser() -> argparse.ArgumentParser:
         default=None,
         help=(
             'Target wave FITS file defining output pixel size. If omitted, '
-            'script uses DEFAULT_WAVE_NEW_HA/HE based on --model-in path.'
+            'script uses DEFAULT_WAVE_NEW based on --model-in path.'
         ),
     )
     parser.add_argument('--dry-run', action='store_true')
