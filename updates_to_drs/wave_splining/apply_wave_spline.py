@@ -22,10 +22,16 @@ from astropy.io import fits
 # Define variables
 # =============================================================================
 # Directory to search for wave files
-WAVEDIR = '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/apero-assets/spirou/calib/'
-# WAVEDIR = '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/apero-assets/nirps_he/calib/'
-# WAVEDIR = '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/apero-assets/nirps_ha/calib/'
+INSTRUMENT = 'spirou'
 
+if INSTRUMENT == 'spirou':
+    WAVEDIR = '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/apero-assets/spirou/calib/'
+elif INSTRUMENT == 'nirps_he':
+    WAVEDIR = '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/apero-assets/nirps_he/calib/'
+elif INSTRUMENT == 'nirps_ha':
+    WAVEDIR = '/scratch2/spirou/drs-bin/apero-drs-spirou-08XXX/apero-drs/apero/apero-assets/nirps_ha/calib/'
+else:
+    raise ValueError(f'Unknown INSTRUMENT: {INSTRUMENT}')
 
 # Glob pattern used to find wave files inside WAVEDIR
 WAVEPAT = '*wave*.fits'
