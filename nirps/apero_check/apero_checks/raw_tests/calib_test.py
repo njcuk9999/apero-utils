@@ -44,9 +44,17 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     :return: bool, True if passed, False otherwise
     """
 
-    # Here you can add more calibrations that are required (one day LFC maybe)
-    must_have_dprtypes = ['DARK', 'WAVE,FP,FP', 'WAVE,UN1,FP', 'WAVE,FP,UN1',
-                          'FLAT,DARK,LAMP', 'FLAT,LAMP,DARK', 'WAVE,UN1,UN1']
+    # Required DPRTYPE groups. Each inner list is an OR condition.
+    # For example, ['WAVE,UN1,FP', 'WAVE,UN2,FP'] means either is accepted.
+    must_have_dprtypes = [
+        ['DARK'],
+        ['WAVE,FP,FP'],
+        ['WAVE,UN1,FP', 'WAVE,UN2,FP'],
+        ['WAVE,FP,UN1', 'WAVE,FP,UN2'],
+        ['FLAT,DARK,LAMP'],
+        ['FLAT,LAMP,DARK'],
+        ['WAVE,UN1,UN1', 'WAVE,UN2,UN2']
+    ]
     # This tells use what the header keys are
     header_keys = dict()
     header_keys['DPR_TYPE'] = 'HIERARCH ESO DPR TYPE'
@@ -101,12 +109,30 @@ def test(params: Dict[str, Any], obsdir: str, log=False) -> Tuple[bool, str]:
     # now we test must have dpr types
     # -------------------------------------------------------------------------
     # could be updated to force a minimum number of calibrations
-    for dpr_type in must_have_dprtypes:
-        # deal with no values found for this night
-        if dpr_type not in dpr_counts:
-            fmsg = '\tNo "ESO DPR TYPE" = {} on that night'
-            failed_log.append(fmsg.format(dpr_type))
+    for dpr_group in must_have_dprtypes:
+        found = False
+        matched_dpr = None
+        for dpr_type in dpr_group:
+            if dpr_type in dpr_counts:
+                found = True
+                matched_dpr = dpr_type
+                break
+        if not found:
+            if len(dpr_group) == 1:
+                fmsg = '\tNo "ESO DPR TYPE" = {} on that night'
+                failed_log.append(fmsg.format(dpr_group[0]))
+            else:
+                dmsg = '\tNo "ESO DPR TYPE" in ({}) on that night'
+                failed_log.append(dmsg.format(' OR '.join(dpr_group)))
             dpr_type_qc_passed = False
+        else:
+            if len(dpr_group) == 1:
+                pmsg = '\tFound "ESO DPR TYPE" = {}'
+                passed_log.append(pmsg.format(matched_dpr))
+            else:
+                pmsg = '\tFound "ESO DPR TYPE" = {} (from {})'
+                pargs = [matched_dpr, ' OR '.join(dpr_group)]
+                passed_log.append(pmsg.format(*pargs))
     # deal with passed log
     if dpr_type_qc_passed:
         passed_log.append('\tAll "must have" calibrations have been obtained '
