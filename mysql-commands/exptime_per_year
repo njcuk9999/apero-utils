@@ -1,0 +1,20 @@
+
+-- /
+-- / Calculate the total exposure time per year for raw object observations
+-- /
+-- / Replace findex_nirps_he_online_db with your database name if different
+-- /
+-- / Columns:
+-- /   obs_year: Year of observation
+-- /   total_exptime_hrs: Total exposure time in hours
+
+SELECT
+    SUBSTRING(KW_DATE_OBS, 1, 4) AS obs_year,
+    SUM(KW_EXPTIME) / 3600.0 AS total_exptime_hrs
+FROM findex_nirps_he_online_db
+WHERE BLOCK_KIND = 'raw'
+  AND KW_RAW_DPRTYPE LIKE '%OBJECT%'
+GROUP BY
+    SUBSTRING(KW_DATE_OBS, 1, 4)
+ORDER BY
+    obs_year DESC;
